@@ -1,0 +1,44 @@
+import React from 'react';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import LoginPage from '../pages/LoginPage';
+import CallbackPage from '../pages/CallbackPage';
+import GuestPage from '../pages/GuestPage';
+import DashboardPage from '../pages/DashboardPage';
+import SettingsPage from '../pages/SettingsPage';
+import MetricsPage from '../pages/MetricsPage';
+import ActivitiesPage from '../pages/ActivitiesPage';
+import SupportPage from '../pages/SupportPage';
+import { RootLayout } from '../components/layout/RootLayout';
+import { useAuthStore } from '../store/useAuthStore';
+
+function RequireAuth({ children }) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  return children;
+}
+
+const router = createBrowserRouter([
+  { path: '/', element: <LoginPage /> },
+  { path: '/callback', element: <CallbackPage /> },
+  { path: '/guest/:sessionId', element: <GuestPage /> },
+  {
+    path: '/app',
+    element: (
+      <RequireAuth>
+        <RootLayout />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'metrics', element: <MetricsPage /> },
+      { path: 'activities', element: <ActivitiesPage /> },
+      { path: 'settings', element: <SettingsPage /> },
+      { path: 'support', element: <SupportPage /> },
+    ],
+  },
+]);
+
+export default function AppRouter() {
+  return <RouterProvider router={router} />;
+}
