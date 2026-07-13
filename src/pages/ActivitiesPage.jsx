@@ -2,18 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Zap, HelpCircle, Mic2, Users, X } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 
-// Mock lyrics for karaoke demo
-const DEMO_LYRICS = [
-  { time: 0, text: 'En el silencio de la noche' },
-  { time: 3, text: 'Tu voz me llama sin cesar' },
-  { time: 6, text: 'Y entre las sombras de mi mente' },
-  { time: 9, text: 'Solo te puedo recordar' },
-  { time: 12, text: 'Envairo — La música nos une' },
-  { time: 15, text: 'Pide tu canción favorita' },
-  { time: 18, text: 'Y déjate llevar por el ritmo' },
-  { time: 21, text: 'Esta noche es tuya, disfruta' },
-];
-
+// Remove mock DEMO_LYRICS
 const ICE_BREAKER_OPTIONS = [
   ['María 🌸', 'Carlos 🎸', 'Ana 💃', 'Pedro 🎤'],
   ['La mesa del fondo 🍻', 'El DJ 🎧', 'Los de la barra 🥂', 'Los bailarines 💃'],
@@ -21,7 +10,7 @@ const ICE_BREAKER_OPTIONS = [
 ];
 
 export default function ActivitiesPage() {
-  const { currentTrack } = usePlayerStore();
+  const { currentTrack, progress, duration } = usePlayerStore();
   const [iceOptions] = useState(ICE_BREAKER_OPTIONS[Math.floor(Math.random() * ICE_BREAKER_OPTIONS.length)]);
   const [revealed, setRevealed] = useState(false);
   const [answer] = useState(Math.floor(Math.random() * 4));
@@ -29,21 +18,76 @@ export default function ActivitiesPage() {
 
   // Karaoke
   const [karaokeOpen, setKaraokeOpen] = useState(false);
-  const [karaokeTime, setKaraokeTime] = useState(0);
   const karaokeRef = useRef(null);
+  const lyricsContainerRef = useRef(null);
 
+  const [lyricsLines, setLyricsLines] = useState([]);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState('');
+
+  // Fetch real lyrics
   useEffect(() => {
-    if (!karaokeOpen) return;
-    const interval = setInterval(() => {
-      setKaraokeTime((t) => (t + 1) % (DEMO_LYRICS.length * 3 + 3));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [karaokeOpen]);
+    if (!currentTrack) {
+       setLyricsLines([]);
+       return;
+    }
 
-  const currentLyricIdx = DEMO_LYRICS.reduce((acc, l, i) => {
-    if (karaokeTime >= l.time) return i;
-    return acc;
-  }, 0);
+    const fetchLyrics = async () => {
+      setLyricsLoading(true);
+      setLyricsError('');
+      try {
+        const artist = currentTrack.artists.split(',')[0].trim();
+        const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
+        const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
+        
+        if (!res.ok) throw new Error('Letras no encontradas');
+        const data = await res.json();
+        
+        if (data.lyrics) {
+          const cleaned = data.lyrics.replace(/Paroles de la chanson.*?\r?\n\r?\n/, '');
+          const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          setLyricsLines(lines);
+        } else {
+          throw new Error('Letras no encontradas');
+        }
+      } catch (err) {
+        setLyricsError(err.message);
+        setLyricsLines([]);
+      } finally {
+        setLyricsLoading(false);
+      }
+    };
+
+    fetchLyrics();
+  }, [currentTrack]);
+
+  // Autoscroll logic
+  useEffect(() => {
+    if (karaokeOpen && lyricsLines.length > 0 && lyricsContainerRef.current && duration > 0) {
+      const scrollRatio = progress / duration;
+      const container = lyricsContainerRef.current;
+      const adjustedRatio = Math.max(0, Math.min(1, (scrollRatio - 0.1) / 0.8));
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      
+      if (maxScroll > 0) {
+        container.scrollTo({
+          top: maxScroll * adjustedRatio,
+          behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto'
+        });
+      }
+    }
+  }, [karaokeOpen, progress, duration, lyricsLines]);
+
+  // Close karaoke automatically if user switches tabs to prevent audio/performance issues
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setKaraokeOpen(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const openKaraoke = () => {
     setKaraokeOpen(true);
@@ -143,19 +187,23 @@ export default function ActivitiesPage() {
 
           {/* Lyrics preview */}
           <div className="bg-bg-elevated rounded-xl p-4 mb-5 min-h-[120px] flex flex-col items-center justify-center text-center">
-            {DEMO_LYRICS.map((line, i) => (
-              <p
-                key={i}
-                className={`text-lg font-bold transition-all duration-300 leading-relaxed karaoke-word ${
-                  i === currentLyricIdx && karaokeOpen ? 'active' : 'text-text-muted'
-                }`}
-                style={{ display: i === currentLyricIdx ? 'block' : i === currentLyricIdx - 1 || i === currentLyricIdx + 1 ? 'block' : 'none' }}
-              >
-                {line.text}
-              </p>
-            ))}
-            {!karaokeOpen && (
-              <p className="text-text-subtle text-sm">Haz clic en "Activar Karaoke" para iniciar</p>
+            {lyricsLoading ? (
+              <p className="text-text-muted text-sm animate-pulse">Buscando letras reales...</p>
+            ) : lyricsError ? (
+              <p className="text-text-muted text-sm">{lyricsError}</p>
+            ) : lyricsLines.length > 0 ? (
+              <div className="space-y-1">
+                <p className="text-lg font-bold text-text-primary leading-relaxed truncate px-4">
+                  {lyricsLines[0]}
+                </p>
+                {lyricsLines.length > 1 && (
+                  <p className="text-text-muted text-sm truncate px-4">
+                    {lyricsLines[1]}
+                  </p>
+                )}
+              </div>
+            ) : (
+               <p className="text-text-subtle text-sm">Reproduce una canción para buscar letras</p>
             )}
           </div>
 
@@ -188,21 +236,27 @@ export default function ActivitiesPage() {
             </div>
           )}
 
-          <div className="space-y-4">
-            {DEMO_LYRICS.map((line, i) => (
-              <p
-                key={i}
-                className={`font-bold transition-all duration-500 karaoke-word ${
-                  i === currentLyricIdx
-                    ? 'active text-5xl md:text-6xl'
-                    : Math.abs(i - currentLyricIdx) === 1
-                    ? 'text-2xl text-text-muted'
-                    : 'text-lg text-text-subtle opacity-30'
-                }`}
-              >
-                {line.text}
-              </p>
-            ))}
+          <div 
+            ref={lyricsContainerRef}
+            className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 scroll-smooth no-scrollbar"
+          >
+            <div className="space-y-8 pt-32 pb-64 text-center">
+              {lyricsLoading ? (
+                <p className="text-2xl text-text-muted animate-pulse">Cargando letras...</p>
+              ) : lyricsError ? (
+                <p className="text-2xl text-text-muted">{lyricsError}</p>
+              ) : (
+                lyricsLines.map((line, i) => (
+                  <p
+                    key={i}
+                    className="font-bold text-3xl md:text-5xl text-white/90 hover:text-accent transition-colors"
+                    style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                  >
+                    {line}
+                  </p>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

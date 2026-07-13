@@ -19,17 +19,44 @@ async function apiFetch(path, options = {}) {
     throw new Error('UNAUTHORIZED');
   }
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
+    const text = await res.text();
+    let err;
+    try {
+      err = JSON.parse(text);
+    } catch {
+      err = {};
+    }
     throw new Error(err?.error?.message || `API error ${res.status}`);
   }
 
   if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn('API returned non-JSON:', text);
+    return text;
+  }
 }
 
 // ── User ─────────────────────────────────────────────────────────────────────
 export async function getCurrentUser() {
   return apiFetch('/me');
+}
+
+export async function getArtists(ids) {
+  const params = new URLSearchParams({ ids: ids.join(',') });
+  return apiFetch(`/artists?${params}`);
+}
+
+export async function getArtist(id) {
+  return apiFetch(`/artists/${id}`);
+}
+
+export async function searchArtists(query, limit = 1) {
+  const params = new URLSearchParams({ q: query, type: 'artist', limit });
+  return apiFetch(`/search?${params}`);
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ export const usePlayerStore = create(
 
       // Envairo
       queue: [],
+      currentQueueIndex: -1,
       pendingRequests: [],
       playHistory: [],
 
@@ -40,24 +41,68 @@ export const usePlayerStore = create(
         })),
 
       removeFromQueue: (queueId) =>
-        set((state) => ({
-          queue: state.queue.filter((t) => t.queueId !== queueId),
-        })),
+        set((state) => {
+          const index = state.queue.findIndex((t) => t.queueId === queueId);
+          if (index === -1) return state;
+          
+          let updatedIndex = state.currentQueueIndex;
+          if (index < state.currentQueueIndex) {
+            updatedIndex--;
+          } else if (index === state.currentQueueIndex) {
+            updatedIndex--;
+          }
+          
+          return {
+            queue: state.queue.filter((t) => t.queueId !== queueId),
+            currentQueueIndex: updatedIndex,
+          };
+        }),
 
       reorderQueue: (oldIndex, newIndex) =>
         set((state) => {
           const q = [...state.queue];
           const [removed] = q.splice(oldIndex, 1);
           q.splice(newIndex, 0, removed);
-          return { queue: q };
+          
+          let updatedIndex = state.currentQueueIndex;
+          if (oldIndex === state.currentQueueIndex) {
+            updatedIndex = newIndex;
+          } else if (oldIndex < state.currentQueueIndex && newIndex >= state.currentQueueIndex) {
+            updatedIndex--;
+          } else if (oldIndex > state.currentQueueIndex && newIndex <= state.currentQueueIndex) {
+            updatedIndex++;
+          }
+          return { queue: q, currentQueueIndex: updatedIndex };
         }),
 
       shiftQueue: () => {
         const state = get();
-        const [next, ...rest] = state.queue;
+        const nextIndex = state.currentQueueIndex + 1;
+        const next = state.queue[nextIndex];
         if (next) {
-          set({ queue: rest, currentTrack: next });
+          set({ currentQueueIndex: nextIndex, currentTrack: next });
           return next;
+        }
+        return null;
+      },
+
+      prevQueue: () => {
+        const state = get();
+        const prevIndex = state.currentQueueIndex - 1;
+        const prev = state.queue[prevIndex];
+        if (prev) {
+          set({ currentQueueIndex: prevIndex, currentTrack: prev });
+          return prev;
+        }
+        return null;
+      },
+
+      playTrackFromQueue: (queueId) => {
+        const state = get();
+        const index = state.queue.findIndex(t => t.queueId === queueId);
+        if (index !== -1) {
+          set({ currentQueueIndex: index, currentTrack: state.queue[index] });
+          return state.queue[index];
         }
         return null;
       },
@@ -103,6 +148,7 @@ export const usePlayerStore = create(
       name: 'bq-player',
       partialize: (state) => ({
         queue: state.queue,
+        currentQueueIndex: state.currentQueueIndex,
         volume: state.volume,
         playHistory: state.playHistory,
         pendingRequests: state.pendingRequests,

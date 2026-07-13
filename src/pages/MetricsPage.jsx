@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -16,22 +16,45 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+function getLocalDateString(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function MetricsPage() {
   const { playHistory, queue, pendingRequests } = usePlayerStore();
 
-  const metrics = useMemo(() => {
-    const totalRequests = playHistory.length + queue.length + pendingRequests.length;
-    const totalApproved = playHistory.length + queue.length;
-    
-    const artistCounts = {};
-    const genreCounts = {};
-    const hourCounts = {};
+  const last15Days = useMemo(() => {
+    const days = [];
+    for (let i = 0; i <= 15; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(getLocalDateString(d));
+    }
+    return days;
+  }, []);
 
+  const [selectedDate, setSelectedDate] = useState(last15Days[0]);
+
+  const metrics = useMemo(() => {
     const allTracks = [
       ...playHistory,
       ...queue,
       ...pendingRequests.map(req => req.track)
-    ];
+    ].filter(track => {
+      if (selectedDate === 'all') return true;
+      const dateToUse = track.playedAt ? new Date(track.playedAt) : new Date();
+      return getLocalDateString(dateToUse) === selectedDate;
+    });
+
+    const totalRequests = allTracks.length;
+    const totalApproved = allTracks.filter(t => !pendingRequests.some(r => r.track.id === t.id)).length;
+
+    const artistCounts = {};
+    const hourCounts = {};
 
     allTracks.forEach(track => {
       const mainArtist = track.artists?.split(',')[0]?.trim() || 'Desconocido';
@@ -39,9 +62,6 @@ export default function MetricsPage() {
         artistCounts[mainArtist] = { name: mainArtist, plays: 0, image: track.image };
       }
       artistCounts[mainArtist].plays++;
-
-      const g = track.genre || 'Otros';
-      genreCounts[g] = (genreCounts[g] || 0) + 1;
 
       // Usar la hora de reproducción o la actual si está en cola
       const dateToUse = track.playedAt ? new Date(track.playedAt) : new Date();
@@ -52,21 +72,6 @@ export default function MetricsPage() {
     const topArtists = Object.values(artistCounts)
       .sort((a, b) => b.plays - a.plays)
       .slice(0, 5);
-
-    const totalGenres = Object.values(genreCounts).reduce((a, b) => a + b, 0);
-    const colors = ['#9D4EDD', '#B57BEE', '#22D3A5', '#FBBF24', '#F87171'];
-    const genreData = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count], i) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        value: Math.round((count / (totalGenres || 1)) * 100),
-        color: colors[i % colors.length]
-      }));
-
-    if (genreData.length === 0) {
-       genreData.push({ name: 'Sin datos', value: 100, color: '#333' });
-    }
 
     const hourData = Object.entries(hourCounts)
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -86,20 +91,34 @@ export default function MetricsPage() {
       uniqueArtists: Object.keys(artistCounts).length,
       peakHour,
       topArtists,
-      genreData,
       hourData
     };
-  }, [playHistory, queue, pendingRequests]);
+  }, [playHistory, queue, pendingRequests, selectedDate]);
 
   const maxPlays = Math.max(...metrics.topArtists.map((a) => a.plays), 1);
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <BarChart2 size={22} className="text-accent" /> Métricas
-        </h1>
-        <p className="text-text-muted text-sm mt-1">Estadísticas reales de la sesión actual</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+            <BarChart2 size={22} className="text-accent" /> Métricas
+          </h1>
+          <p className="text-text-muted text-sm mt-1">Estadísticas de reproducciones por fecha</p>
+        </div>
+        
+        <select
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="input-field max-w-[200px]"
+        >
+          <option value="all">Todo el historial</option>
+          {last15Days.map((date, index) => (
+            <option key={date} value={date}>
+              {index === 0 ? 'Hoy' : index === 1 ? 'Ayer' : date}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Stats row */}
@@ -119,46 +138,6 @@ export default function MetricsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Genre Pie */}
-        <div className="card p-5">
-          <h2 className="font-bold text-text-primary mb-4">Distribución por Género</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={metrics.genreData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {metrics.genreData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload }) =>
-                  active && payload?.length ? (
-                    <div className="bg-bg-card border border-white/10 rounded-xl px-3 py-2">
-                      <p className="text-text-primary font-semibold">{payload[0].name}</p>
-                      <p className="text-accent">{payload[0].value}%</p>
-                    </div>
-                  ) : null
-                }
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
-            {metrics.genreData.map((g) => (
-              <div key={g.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: g.color }} />
-                <span className="text-xs text-text-muted">{g.name} ({g.value}%)</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Top Artists */}
         <div className="card p-5">
           <h2 className="font-bold text-text-primary mb-4">Top Artistas Reales</h2>
@@ -194,9 +173,8 @@ export default function MetricsPage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Peak hours bar chart */}
+        {/* Peak hours bar chart */}
       <div className="card p-5">
         <h2 className="font-bold text-text-primary mb-4">Reproducciones por Hora</h2>
         <ResponsiveContainer width="100%" height={200}>
@@ -208,6 +186,7 @@ export default function MetricsPage() {
             <Bar dataKey="reproducciones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+      </div>
       </div>
     </div>
   );

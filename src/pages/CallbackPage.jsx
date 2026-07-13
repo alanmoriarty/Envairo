@@ -9,6 +9,7 @@ export default function CallbackPage() {
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
   const [error, setError] = useState(null);
+  const fetchedRef = React.useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -25,6 +26,9 @@ export default function CallbackPage() {
       return;
     }
 
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     (async () => {
       try {
         await fetchSpotifyToken(code);
@@ -35,7 +39,7 @@ export default function CallbackPage() {
         setError(err.message || 'Error al autenticar');
       }
     })();
-  }, []);
+  }, [navigate, setUser]);
 
   if (error) {
     return (

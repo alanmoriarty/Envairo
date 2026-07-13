@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { getValidToken } from '../lib/spotifyAuth';
 import {
@@ -10,6 +10,10 @@ import {
   setVolume as apiSetVolume,
   transferPlayback,
 } from '../lib/spotifyApi';
+
+let sdkInitialized = false;
+let progressInterval = null;
+let isTransitioning = false;
 
 export function useSpotifySDK() {
   const {
@@ -26,19 +30,16 @@ export function useSpotifySDK() {
     queue,
   } = usePlayerStore();
 
-  const progressInterval = useRef(null);
-  const isTransitioning = useRef(false);
-
   useEffect(() => {
-    let scriptLoaded = false;
-    let playerInstance = null;
+    if (sdkInitialized) return;
+    sdkInitialized = true;
 
     // Load the SDK script if not already loaded
     if (window.Spotify) {
-      initPlayer().then(p => { playerInstance = p; });
+      initPlayer();
     } else {
       window.onSpotifyWebPlaybackSDKReady = () => {
-        initPlayer().then(p => { playerInstance = p; });
+        initPlayer();
       };
 
       if (!document.getElementById('spotify-player-script')) {
@@ -47,16 +48,8 @@ export function useSpotifySDK() {
         script.src = 'https://sdk.scdn.co/spotify-player.js';
         script.async = true;
         document.body.appendChild(script);
-        scriptLoaded = true;
       }
     }
-
-    return () => {
-      if (playerInstance) {
-        playerInstance.disconnect();
-      }
-      clearInterval(progressInterval.current);
-    };
   }, []);
 
   async function initPlayer() {
@@ -95,7 +88,6 @@ export function useSpotifySDK() {
       }
 
       // Track end / Auto-queue transition
-      // Add a check for progress to ensure we don't trigger trackFinished just because of a buffer reset or manual skip to start
       const trackFinished = storeState.isPlaying && state.paused && state.position === 0 && storeState.progress > 5000;
 
       setCurrentTrack(normalizedTrack);
@@ -103,9 +95,9 @@ export function useSpotifySDK() {
       setDuration(state.duration);
       setProgress(state.position);
 
-      clearInterval(progressInterval.current);
+      clearInterval(progressInterval);
       if (!state.paused) {
-        progressInterval.current = setInterval(() => {
+        progressInterval = setInterval(() => {
           const currentProg = usePlayerStore.getState().progress;
           if (currentProg < state.duration) {
             usePlayerStore.getState().setProgress(currentProg + 1000);
@@ -113,22 +105,21 @@ export function useSpotifySDK() {
         }, 1000);
       }
 
-      if (trackFinished && !isTransitioning.current) {
-        isTransitioning.current = true;
+      if (trackFinished && !isTransitioning) {
+        isTransitioning = true;
         // Reproducir la siguiente canción en la cola local si existe
         const nextTrack = usePlayerStore.getState().shiftQueue();
         if (nextTrack && storeState.deviceId) {
           playTrack(storeState.deviceId, [nextTrack.uri])
             .then(() => {
-              // Liberar el candado tras 1.5s para evitar eventos fantasma del SDK
-              setTimeout(() => { isTransitioning.current = false; }, 1500);
+              setTimeout(() => { isTransitioning = false; }, 1500);
             })
             .catch((err) => {
               console.error(err);
-              isTransitioning.current = false;
+              isTransitioning = false;
             });
         } else {
-          isTransitioning.current = false;
+          isTransitioning = false;
         }
       }
     });
@@ -155,21 +146,36 @@ export function useSpotifySDK() {
     };
   }
 
-  // ── Controls ─────────────────────────────────────────────────────────────
   const controls = {
     play: async (uris) => {
       if (!deviceId) return;
-      await playTrack(deviceId, uris);
+      try {
+        await playTrack(deviceId, uris);
+      } catch (e) {
+        console.error('Play API failed', e);
+      }
     },
     pause: async () => {
-      if (deviceId) await pausePlayback(deviceId);
+      const p = usePlayerStore.getState().player;
+      if (p) {
+        try { await p.pause(); return; } catch (err) { /* ignore */ }
+      }
+      if (deviceId) {
+        try { await pausePlayback(deviceId); } catch (e) { console.error('Pause API failed', e); }
+      }
     },
     resume: async () => {
-      if (deviceId) await resumePlayback(deviceId);
+      const p = usePlayerStore.getState().player;
+      if (p) {
+        try { await p.resume(); return; } catch (err) { /* ignore */ }
+      }
+      if (deviceId) {
+        try { await resumePlayback(deviceId); } catch (e) { console.error('Resume API failed', e); }
+      }
     },
     skipNext: async () => {
-      if (isTransitioning.current) return;
-      isTransitioning.current = true;
+      if (isTransitioning) return;
+      isTransitioning = true;
       const nextTrack = usePlayerStore.getState().shiftQueue();
       if (nextTrack && deviceId) {
         try {
@@ -177,26 +183,50 @@ export function useSpotifySDK() {
         } catch (e) {
           console.error(e);
         } finally {
-          setTimeout(() => { isTransitioning.current = false; }, 1500);
+          setTimeout(() => { isTransitioning = false; }, 1500);
         }
       } else {
-        if (deviceId) await pausePlayback(deviceId);
-        isTransitioning.current = false;
+        const p = usePlayerStore.getState().player;
+        let success = false;
+        if (p) {
+          try { await p.nextTrack(); success = true; } catch (err) { /* ignore */ }
+        }
+        if (!success && deviceId) {
+          try { await skipToNext(deviceId); } catch (e) { console.error('Skip API failed', e); }
+        }
+        isTransitioning = false;
       }
     },
     skipPrev: async () => {
-      if (deviceId) await skipToPrevious(deviceId);
+      if (isTransitioning) return;
+      isTransitioning = true;
+      const prevTrack = usePlayerStore.getState().prevQueue();
+      if (prevTrack && deviceId) {
+        try {
+          await playTrack(deviceId, [prevTrack.uri]);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setTimeout(() => { isTransitioning = false; }, 1500);
+        }
+      } else {
+        const p = usePlayerStore.getState().player;
+        let success = false;
+        if (p) {
+          try { await p.previousTrack(); success = true; } catch (err) { /* ignore */ }
+        }
+        if (!success && deviceId) {
+          try { await skipToPrevious(deviceId); } catch (e) { console.error('Prev API failed', e); }
+        }
+        isTransitioning = false;
+      }
     },
     setVolume: async (vol) => {
-      if (deviceId) {
-        try {
-          // Attempt via API first
-          await apiSetVolume(Math.round(vol), deviceId);
-        } catch (e) {
-          console.error('Volume API error, falling back to SDK', e);
-          const p = usePlayerStore.getState().player;
-          if (p) p.setVolume(vol / 100);
-        }
+      const p = usePlayerStore.getState().player;
+      if (p) {
+        try { await p.setVolume(vol / 100); } catch (err) { /* ignore */ }
+      } else if (deviceId) {
+        try { await apiSetVolume(Math.round(vol), deviceId); } catch (e) { console.error('Volume API failed', e); }
       }
       usePlayerStore.getState().setVolume(vol);
     },

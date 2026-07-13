@@ -5,17 +5,20 @@ import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X } from 'lucid
 import { useAvailability } from '../hooks/useAvailability';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { searchTracks } from '../lib/spotifyApi';
+import { searchTracks, getArtist } from '../lib/spotifyApi';
 import { getAccessToken } from '../lib/spotifyAuth';
 
 const COOLDOWN_SECONDS = 5 * 60; // 5 minutes
 const MAX_REQUESTS = 3;
 
+
+
 export default function GuestPage() {
   const { sessionId } = useParams();
   const { isAvailable } = useAvailability();
-  const { mode, blacklistGenres } = useSettingsStore();
-  const { queue, addPendingRequest } = usePlayerStore();
+  const { mode, blacklistGenres, whitelistArtists, blacklistArtists, allowRepeats } = useSettingsStore();
+  const { queue, currentQueueIndex, addPendingRequest, playHistory, pendingRequests } = usePlayerStore();
+  const upcomingQueue = queue.slice(currentQueueIndex + 1);
 
   const [identifier, setIdentifier] = useState('');
   const [query, setQuery] = useState('');
@@ -39,21 +42,20 @@ export default function GuestPage() {
     }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
-      try {
-        const token = getAccessToken();
-        if (!token) {
-          // Fallback mock results
+        try {
+          const token = getAccessToken();
+          if (!token) {
+            setResults(getMockResults(query));
+            return;
+          }
+          const data = await searchTracks(query, 6);
+          const items = data?.tracks?.items || [];
+          setResults(items.map(normalizeApiTrack));
+        } catch (err) {
           setResults(getMockResults(query));
-          return;
+        } finally {
+          setSearching(false);
         }
-        const data = await searchTracks(query, 6);
-        const tracks = data?.tracks?.items?.map(normalizeApiTrack) || [];
-        setResults(tracks);
-      } catch {
-        setResults(getMockResults(query));
-      } finally {
-        setSearching(false);
-      }
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
@@ -94,6 +96,39 @@ export default function GuestPage() {
       );
       if (blocked) {
         toast.error('Esta canción pertenece a un género bloqueado por el anfitrión');
+        return;
+      }
+    }
+
+    // Artist Whitelist check
+    if (whitelistArtists?.length > 0) {
+      const allowed = whitelistArtists.some((a) =>
+        selected.artists.toLowerCase().includes(a.toLowerCase())
+      );
+      if (!allowed) {
+        toast.error('El artista de esta canción no está permitido en esta sesión');
+        return;
+      }
+    }
+
+    // Artist Blacklist check
+    if (blacklistArtists?.length > 0) {
+      const blocked = blacklistArtists.some((a) =>
+        selected.artists.toLowerCase().includes(a.toLowerCase())
+      );
+      if (blocked) {
+        toast.error('Este artista está bloqueado por el anfitrión');
+        return;
+      }
+    }
+
+    // Allow Repeats check
+    if (!allowRepeats) {
+      const alreadyInQueue = queue.some(t => t.id === selected.id);
+      const alreadyInHistory = playHistory.some(t => t.id === selected.id);
+      const alreadyPending = pendingRequests.some(r => r.track.id === selected.id);
+      if (alreadyInQueue || alreadyInHistory || alreadyPending) {
+        toast.error('Esta canción ya fue pedida o reproducida y no se admiten repeticiones');
         return;
       }
     }
@@ -202,7 +237,9 @@ export default function GuestPage() {
                   <p className="text-sm font-semibold text-text-primary truncate group-hover:text-accent transition-colors">
                     {track.name}
                   </p>
-                  <p className="text-xs text-text-muted truncate">{track.artists} · {track.album}</p>
+                  <p className="text-xs text-text-muted truncate">
+                    {track.artists} · {track.album}
+                  </p>
                 </div>
               </button>
             ))}
@@ -248,13 +285,13 @@ export default function GuestPage() {
       )}
 
       {/* Mini queue */}
-      {queue.length > 0 && (
+      {upcomingQueue.length > 0 && (
         <div className="card p-4 mt-6">
           <h3 className="text-sm font-semibold text-text-muted mb-3 flex items-center gap-2">
             <Music2 size={14} />Próximas en cola
           </h3>
           <div className="space-y-2">
-            {queue.slice(0, 3).map((track, i) => (
+            {upcomingQueue.slice(0, 3).map((track, i) => (
               <div key={track.queueId} className="flex items-center gap-3">
                 <span className="text-xs text-text-subtle w-4 text-center">{i + 1}</span>
                 {track.image && (

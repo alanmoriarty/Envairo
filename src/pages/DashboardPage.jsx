@@ -24,7 +24,7 @@ import { useSpotifySDK } from '../hooks/useSpotifySDK';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 
-function SortableQueueItem({ track, onRemove, onPlay }) {
+function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: track.queueId,
   });
@@ -32,7 +32,7 @@ function SortableQueueItem({ track, onRemove, onPlay }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : isPlayed ? 0.6 : 1,
   };
 
   const formatDuration = (ms) => {
@@ -44,7 +44,9 @@ function SortableQueueItem({ track, onRemove, onPlay }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border border-white/5 group hover:border-accent/20 transition-all"
+      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group ${
+        isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
+      }`}
     >
       <button
         {...attributes}
@@ -97,8 +99,11 @@ function SortableQueueItem({ track, onRemove, onPlay }) {
 }
 
 export default function DashboardPage() {
+  const [showRequests, setShowRequests] = useState(true);
+  const [showQR, setShowQR] = useState(true);
+
   const {
-    queue, pendingRequests,
+    queue, currentQueueIndex, pendingRequests,
     reorderQueue, removeFromQueue, approveRequest, rejectRequest,
     currentTrack, sdkReady,
   } = usePlayerStore();
@@ -136,6 +141,7 @@ export default function DashboardPage() {
 
   const handlePlayNow = async (track) => {
     if (sdkReady && track.uri) {
+      usePlayerStore.getState().playTrackFromQueue(track.queueId);
       await controls.play([track.uri]);
       toast.success(`Reproduciendo "${track.name}"`);
     }
@@ -183,6 +189,15 @@ export default function DashboardPage() {
             </button>
           </div>
 
+          {/* Panel toggles */}
+          <div className="card px-4 py-3 flex items-center gap-3 hidden md:flex">
+            <span className="text-sm font-medium text-text-primary">Peticiones</span>
+            <Toggle checked={showRequests} onChange={setShowRequests} />
+            <div className="w-px h-4 bg-white/10" />
+            <span className="text-sm font-medium text-text-primary">QR</span>
+            <Toggle checked={showQR} onChange={setShowQR} />
+          </div>
+
           {/* Auto-DJ */}
           <div className="card px-4 py-3 flex items-center gap-3">
             <Sparkles size={16} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
@@ -207,66 +222,70 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Pending Requests */}
-        <div className="xl:col-span-1 space-y-4">
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-text-primary flex items-center gap-2">
-                <Clock size={16} className="text-accent" />
-                Peticiones
-                {pendingRequests.length > 0 && (
-                  <span className="badge bg-accent text-white">{pendingRequests.length}</span>
-                )}
-              </h2>
-            </div>
+      <div className={`grid grid-cols-1 gap-6 ${(!showRequests && !showQR) ? 'xl:grid-cols-1' : 'xl:grid-cols-3'}`}>
+        {/* Pending Requests & QR */}
+        {(showRequests || showQR) && (
+          <div className="xl:col-span-1 space-y-4">
+            {showRequests && (
+              <div className="card p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-bold text-text-primary flex items-center gap-2">
+                    <Clock size={16} className="text-accent" />
+                    Peticiones
+                    {pendingRequests.length > 0 && (
+                      <span className="badge bg-accent text-white">{pendingRequests.length}</span>
+                    )}
+                  </h2>
+                </div>
 
-            {pendingRequests.length === 0 ? (
-              <div className="text-center py-8">
-                <Music2 size={32} className="text-text-subtle mx-auto mb-3" />
-                <p className="text-text-muted text-sm">Sin peticiones pendientes</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {pendingRequests.map((req) => (
-                  <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
-                    <div className="flex items-center gap-3 mb-3">
-                      {req.track.image && (
-                        <img src={req.track.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
-                        <p className="text-xs text-text-muted truncate">
-                          {req.track.artists} · pedido por <span className="text-accent">{req.requester}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(req.reqId, req.track.name)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-success/15 hover:bg-success/25 text-success text-sm font-semibold transition-all"
-                      >
-                        <CheckCircle2 size={14} /> Aprobar
-                      </button>
-                      <button
-                        onClick={() => handleReject(req.reqId, req.track.name)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger/15 hover:bg-danger/25 text-danger text-sm font-semibold transition-all"
-                      >
-                        <XCircle size={14} /> Rechazar
-                      </button>
-                    </div>
+                {pendingRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Music2 size={32} className="text-text-subtle mx-auto mb-3" />
+                    <p className="text-text-muted text-sm">Sin peticiones pendientes</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {pendingRequests.map((req) => (
+                      <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3 mb-3">
+                          {req.track.image && (
+                            <img src={req.track.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
+                            <p className="text-xs text-text-muted truncate">
+                              {req.track.artists} · pedido por <span className="text-accent">{req.requester}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApprove(req.reqId, req.track.name)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-success/15 hover:bg-success/25 text-success text-sm font-semibold transition-all"
+                          >
+                            <CheckCircle2 size={14} /> Aprobar
+                          </button>
+                          <button
+                            onClick={() => handleReject(req.reqId, req.track.name)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger/15 hover:bg-danger/25 text-danger text-sm font-semibold transition-all"
+                          >
+                            <XCircle size={14} /> Rechazar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
-          {/* QR Card */}
-          <QRCard />
-        </div>
+            {/* QR Card */}
+            {showQR && <QRCard />}
+          </div>
+        )}
 
         {/* Playlist Queue with DnD */}
-        <div className="xl:col-span-2">
+        <div className={(!showRequests && !showQR) ? "xl:col-span-1" : "xl:col-span-2"}>
           <div className="card p-5 h-full">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-text-primary flex items-center gap-2">
@@ -296,12 +315,14 @@ export default function DashboardPage() {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                    {queue.map((track) => (
+                    {queue.map((track, index) => (
                       <SortableQueueItem
                         key={track.queueId}
                         track={track}
                         onRemove={handleRemoveQueue}
                         onPlay={handlePlayNow}
+                        isPlaying={index === currentQueueIndex}
+                        isPlayed={index < currentQueueIndex}
                       />
                     ))}
                   </div>

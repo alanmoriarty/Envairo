@@ -13,6 +13,8 @@ export const useSettingsStore = create(
       explicitFilter: false,
       whitelistGenres: [],
       blacklistGenres: [],
+      whitelistArtists: [],
+      blacklistArtists: [],
 
       // Session QR ID
       sessionId: `session-${Date.now()}`,
@@ -32,6 +34,14 @@ export const useSettingsStore = create(
         set((s) => ({ blacklistGenres: [...new Set([...s.blacklistGenres, g])] })),
       removeBlacklistGenre: (g) =>
         set((s) => ({ blacklistGenres: s.blacklistGenres.filter((x) => x !== g) })),
+      addWhitelistArtist: (a) =>
+        set((s) => ({ whitelistArtists: [...new Set([...s.whitelistArtists, a])] })),
+      removeWhitelistArtist: (a) =>
+        set((s) => ({ whitelistArtists: s.whitelistArtists.filter((x) => x !== a) })),
+      addBlacklistArtist: (a) =>
+        set((s) => ({ blacklistArtists: [...new Set([...s.blacklistArtists, a])] })),
+      removeBlacklistArtist: (a) =>
+        set((s) => ({ blacklistArtists: s.blacklistArtists.filter((x) => x !== a) })),
       regenerateSession: () => set({ sessionId: `session-${Date.now()}` }),
     }),
     { name: 'bq-settings' }

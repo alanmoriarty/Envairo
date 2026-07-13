@@ -97,6 +97,14 @@
   .radial-gradient-bg {
     background: radial-gradient(ellipse at 50% 0%, rgba(157,78,221,0.15) 0%, transparent 70%);
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Progress range slider */

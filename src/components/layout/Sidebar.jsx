@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { to: '/app/support', icon: HelpCircle, label: 'Soporte' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -26,7 +26,16 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-bg-card border-r border-white/5 flex flex-col h-full fixed left-0 top-0 z-40">
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      <aside className={`w-64 bg-bg-card border-r border-white/5 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -71,6 +80,7 @@ export function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={onClose}
             className={({ isActive }) =>
               `nav-link ${isActive ? 'active' : ''}`
             }
@@ -93,5 +103,6 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

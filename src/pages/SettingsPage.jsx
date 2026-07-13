@@ -13,6 +13,8 @@ export default function SettingsPage() {
     explicitFilter, setExplicitFilter,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
+    whitelistArtists, addWhitelistArtist, removeWhitelistArtist,
+    blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
   } = useSettingsStore();
 
   return (
@@ -124,6 +126,41 @@ export default function SettingsPage() {
             onAdd={addBlacklistGenre}
             onRemove={removeBlacklistGenre}
             placeholder="Ej: trap, metal, reggaeton..."
+          />
+        </div>
+      </section>
+      {/* Artist filters */}
+      <section className="card p-5 space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Filter size={16} className="text-accent" />
+          <h2 className="font-bold text-text-primary">Filtros Avanzados de Artistas</h2>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <List size={14} className="text-success" />
+            <label className="text-sm font-semibold text-success">Lista Blanca de Artistas</label>
+          </div>
+          <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos artistas (deja vacío para no filtrar)</p>
+          <TagInput
+            tags={whitelistArtists}
+            onAdd={addWhitelistArtist}
+            onRemove={removeWhitelistArtist}
+            placeholder="Ej: Bad Bunny, Dua Lipa, Feid..."
+          />
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Ban size={14} className="text-danger" />
+            <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
+          </div>
+          <p className="text-xs text-text-muted mb-2">Las canciones de estos artistas serán bloqueadas automáticamente</p>
+          <TagInput
+            tags={blacklistArtists}
+            onAdd={addBlacklistArtist}
+            onRemove={removeBlacklistArtist}
+            placeholder="Ej: Anuel AA, Yeri Mua..."
           />
         </div>
       </section>
