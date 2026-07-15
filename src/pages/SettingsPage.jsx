@@ -2,6 +2,7 @@ import React from 'react';
 import { Settings, Clock, Shield, Filter, List, Ban } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
+import { ArtistTagInput } from '../components/ui/ArtistTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export default function SettingsPage() {
@@ -142,7 +143,7 @@ export default function SettingsPage() {
             <label className="text-sm font-semibold text-success">Lista Blanca de Artistas</label>
           </div>
           <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos artistas (deja vacío para no filtrar)</p>
-          <TagInput
+          <ArtistTagInput
             tags={whitelistArtists}
             onAdd={addWhitelistArtist}
             onRemove={removeWhitelistArtist}
@@ -156,7 +157,7 @@ export default function SettingsPage() {
             <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
           </div>
           <p className="text-xs text-text-muted mb-2">Las canciones de estos artistas serán bloqueadas automáticamente</p>
-          <TagInput
+          <ArtistTagInput
             tags={blacklistArtists}
             onAdd={addBlacklistArtist}
             onRemove={removeBlacklistArtist}

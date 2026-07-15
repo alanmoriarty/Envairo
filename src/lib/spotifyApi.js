@@ -45,6 +45,14 @@ export async function getCurrentUser() {
   return apiFetch('/me');
 }
 
+export async function getUserPlaylists(limit = 20) {
+  return apiFetch(`/me/playlists?limit=${limit}`);
+}
+
+export async function getPlaylistTracks(playlistId) {
+  return apiFetch(`/playlists/${playlistId}/items?limit=50`);
+}
+
 export async function getArtists(ids) {
   const params = new URLSearchParams({ ids: ids.join(',') });
   return apiFetch(`/artists?${params}`);
@@ -77,10 +85,21 @@ export async function transferPlayback(deviceId, play = true) {
   });
 }
 
-export async function playTrack(deviceId, uris) {
+export async function playTrack(deviceId, uris, positionMs = 0) {
+  const body = { uris };
+  if (positionMs > 0) {
+    body.position_ms = positionMs;
+  }
   return apiFetch(`/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
-    body: JSON.stringify({ uris }),
+    body: JSON.stringify(body),
+  });
+}
+
+export async function playContext(deviceId, contextUri) {
+  return apiFetch(`/me/player/play?device_id=${deviceId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ context_uri: contextUri }),
   });
 }
 

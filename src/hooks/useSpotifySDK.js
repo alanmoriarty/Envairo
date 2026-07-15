@@ -3,6 +3,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { getValidToken } from '../lib/spotifyAuth';
 import {
   playTrack,
+  playContext,
   pausePlayback,
   resumePlayback,
   skipToNext,
@@ -69,6 +70,18 @@ export function useSpotifySDK() {
       setDeviceId(device_id);
       setSdkReady(true);
       await transferPlayback(device_id, false);
+      
+      // Auto-resume logic
+      const storeState = usePlayerStore.getState();
+      if (storeState.isPlaying && storeState.currentTrack) {
+        setTimeout(async () => {
+          try {
+            await playTrack(device_id, [storeState.currentTrack.uri], storeState.progress);
+          } catch(err) {
+            console.error('Failed to auto-resume playback:', err);
+          }
+        }, 500); // Pequeña espera para que el transfer se estabilice
+      }
     });
 
     p.addListener('not_ready', () => {
@@ -140,6 +153,7 @@ export function useSpotifySDK() {
       uri: sdkTrack.uri,
       name: sdkTrack.name,
       artists: sdkTrack.artists.map((a) => a.name).join(', '),
+      artistIds: sdkTrack.artists.map((a) => a.uri?.split(':').pop()), // SDK returns uris like spotify:artist:ID
       album: sdkTrack.album.name,
       image: sdkTrack.album.images?.[0]?.url,
       duration_ms: sdkTrack.duration_ms,
@@ -153,6 +167,14 @@ export function useSpotifySDK() {
         await playTrack(deviceId, uris);
       } catch (e) {
         console.error('Play API failed', e);
+      }
+    },
+    playContext: async (contextUri) => {
+      if (!deviceId) return;
+      try {
+        await playContext(deviceId, contextUri);
+      } catch (e) {
+        console.error('PlayContext API failed', e);
       }
     },
     pause: async () => {

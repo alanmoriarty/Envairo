@@ -75,7 +75,7 @@ export function Sidebar({ isOpen, onClose }) {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto pb-24">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -90,18 +90,17 @@ export function Sidebar({ isOpen, onClose }) {
             <ChevronRight size={14} className="opacity-30" />
           </NavLink>
         ))}
-      </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/5">
-        <button
-          onClick={handleLogout}
-          className="nav-link w-full text-danger hover:text-danger hover:bg-danger/10"
-        >
-          <LogOut size={18} />
-          <span>Cerrar sesión</span>
-        </button>
-      </div>
+        <div className="pt-4 mt-4 border-t border-white/5">
+          <button
+            onClick={handleLogout}
+            className="nav-link w-full text-danger hover:text-danger hover:bg-danger/10"
+          >
+            <LogOut size={18} />
+            <span className="flex-1 text-left">Cerrar sesión</span>
+          </button>
+        </div>
+      </nav>
     </aside>
     </>
   );

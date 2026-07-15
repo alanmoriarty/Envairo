@@ -329,6 +329,7 @@ function normalizeApiTrack(t) {
     uri: t.uri,
     name: t.name,
     artists: t.artists.map((a) => a.name).join(', '),
+    artistIds: t.artists.map((a) => a.id),
     album: t.album.name,
     image: t.album.images?.[0]?.url,
     duration_ms: t.duration_ms,

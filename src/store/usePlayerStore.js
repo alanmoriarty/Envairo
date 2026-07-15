@@ -21,6 +21,7 @@ export const usePlayerStore = create(
       currentQueueIndex: -1,
       pendingRequests: [],
       playHistory: [],
+      requestHistory: [],
 
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
@@ -35,6 +36,11 @@ export const usePlayerStore = create(
       setVolume: (volume) => set({ volume }),
 
       // ── Queue ─────────────────────────────────────────────────────────────
+      setQueue: (tracks) => set({ 
+        queue: tracks.map((t, i) => ({ ...t, queueId: `${t.id}-${Date.now()}-${i}` })), 
+        currentQueueIndex: -1 
+      }),
+
       addToQueue: (track) =>
         set((state) => ({
           queue: [...state.queue, { ...track, queueId: `${track.id}-${Date.now()}` }],
@@ -45,6 +51,8 @@ export const usePlayerStore = create(
           const index = state.queue.findIndex((t) => t.queueId === queueId);
           if (index === -1) return state;
           
+          const trackToRemove = state.queue[index];
+
           let updatedIndex = state.currentQueueIndex;
           if (index < state.currentQueueIndex) {
             updatedIndex--;
@@ -55,6 +63,21 @@ export const usePlayerStore = create(
           return {
             queue: state.queue.filter((t) => t.queueId !== queueId),
             currentQueueIndex: updatedIndex,
+            // Remove from requestHistory if it was a user request
+            requestHistory: trackToRemove.reqId 
+              ? state.requestHistory.filter(r => r.reqId !== trackToRemove.reqId)
+              : state.requestHistory
+          };
+        }),
+        
+      clearQueue: () =>
+        set((state) => {
+          // Si eliminamos la cola completa, también deberíamos borrar las peticiones asociadas que estaban en cola
+          const reqIdsToRemove = state.queue.map(t => t.reqId).filter(Boolean);
+          return {
+            queue: [],
+            currentQueueIndex: -1,
+            requestHistory: state.requestHistory.filter(r => !reqIdsToRemove.includes(r.reqId))
           };
         }),
 
@@ -119,29 +142,47 @@ export const usePlayerStore = create(
 
       // ── Pending requests ─────────────────────────────────────────────────
       addPendingRequest: (req) =>
-        set((state) => ({
-          pendingRequests: [
-            { ...req, reqId: `req-${Date.now()}`, timestamp: new Date() },
-            ...state.pendingRequests,
-          ],
-        })),
+        set((state) => {
+          const newReq = { ...req, reqId: `req-${Date.now()}`, timestamp: new Date().toISOString(), status: 'pending' };
+          return {
+            pendingRequests: [newReq, ...state.pendingRequests],
+            requestHistory: [newReq, ...(state.requestHistory || [])].slice(0, 500)
+          };
+        }),
 
       approveRequest: (reqId) =>
         set((state) => {
           const req = state.pendingRequests.find((r) => r.reqId === reqId);
           if (!req) return {};
+          
+          const newTrack = { 
+            ...req.track, 
+            queueId: `${req.track.id}-${Date.now()}`, 
+            requestedBy: req.requester,
+            requestedAt: req.timestamp,
+            reqId: req.reqId
+          };
+          
+          const newQueue = [...state.queue];
+          let insertIndex = newQueue.length;
+          
+          if (state.currentQueueIndex >= 0) {
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 3);
+          }
+          
+          newQueue.splice(insertIndex, 0, newTrack);
+
           return {
             pendingRequests: state.pendingRequests.filter((r) => r.reqId !== reqId),
-            queue: [
-              ...state.queue,
-              { ...req.track, queueId: `${req.track.id}-${Date.now()}`, requestedBy: req.requester },
-            ],
+            queue: newQueue,
+            requestHistory: state.requestHistory.map(r => r.reqId === reqId ? { ...r, status: 'approved' } : r)
           };
         }),
 
       rejectRequest: (reqId) =>
         set((state) => ({
           pendingRequests: state.pendingRequests.filter((r) => r.reqId !== reqId),
+          requestHistory: state.requestHistory.map(r => r.reqId === reqId ? { ...r, status: 'rejected' } : r)
         })),
     }),
     {
@@ -152,6 +193,10 @@ export const usePlayerStore = create(
         volume: state.volume,
         playHistory: state.playHistory,
         pendingRequests: state.pendingRequests,
+        requestHistory: state.requestHistory,
+        currentTrack: state.currentTrack,
+        isPlaying: state.isPlaying,
+        progress: state.progress,
       }),
     }
   )

@@ -1,20 +1,23 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { BarChart2, Music2, TrendingUp, Clock } from 'lucide-react';
+import { BarChart2, Music2, TrendingUp, Clock, Disc } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { getArtists } from '../lib/spotifyApi';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-bg-card border border-white/10 rounded-xl px-3 py-2 shadow-card">
-      <p className="text-text-muted text-xs">{label}</p>
+      <p className="text-text-muted text-xs">{label || payload[0].name}</p>
       <p className="text-accent font-bold">{payload[0].value} reproducciones</p>
     </div>
   );
 };
+
+const COLORS = ['#9D4EDD', '#7B2CBF', '#5A189A', '#3C096C', '#240046'];
 
 function getLocalDateString(date) {
   const d = new Date(date);
@@ -25,7 +28,9 @@ function getLocalDateString(date) {
 }
 
 export default function MetricsPage() {
-  const { playHistory, queue, pendingRequests } = usePlayerStore();
+  const { playHistory, queue, pendingRequests, requestHistory = [] } = usePlayerStore();
+  const [genreData, setGenreData] = useState([]);
+  const [loadingGenres, setLoadingGenres] = useState(false);
 
   const last15Days = useMemo(() => {
     const days = [];
@@ -40,38 +45,43 @@ export default function MetricsPage() {
   const [selectedDate, setSelectedDate] = useState(last15Days[0]);
 
   const metrics = useMemo(() => {
-    const allTracks = [
-      ...playHistory,
-      ...queue,
-      ...pendingRequests.map(req => req.track)
-    ].filter(track => {
+    const allRequests = requestHistory.filter(req => {
       if (selectedDate === 'all') return true;
-      const dateToUse = track.playedAt ? new Date(track.playedAt) : new Date();
+      const dateToUse = new Date(req.timestamp);
       return getLocalDateString(dateToUse) === selectedDate;
     });
 
-    const totalRequests = allTracks.length;
-    const totalApproved = allTracks.filter(t => !pendingRequests.some(r => r.track.id === t.id)).length;
+    const totalRequests = allRequests.length;
+    const totalApproved = allRequests.filter(req => req.status === 'approved').length;
 
     const artistCounts = {};
     const hourCounts = {};
 
-    allTracks.forEach(track => {
-      const mainArtist = track.artists?.split(',')[0]?.trim() || 'Desconocido';
-      if (!artistCounts[mainArtist]) {
-        artistCounts[mainArtist] = { name: mainArtist, plays: 0, image: track.image };
-      }
-      artistCounts[mainArtist].plays++;
+    allRequests.forEach(req => {
+      const track = req.track;
+      const mainArtistName = track.artists?.split(',')[0]?.trim() || 'Desconocido';
+      const mainArtistId = track.artistIds?.[0]; 
+      
+      const key = mainArtistId || mainArtistName;
 
-      // Usar la hora de reproducción o la actual si está en cola
-      const dateToUse = track.playedAt ? new Date(track.playedAt) : new Date();
+      if (!artistCounts[key]) {
+        artistCounts[key] = { 
+          id: mainArtistId, 
+          name: mainArtistName, 
+          plays: 0, 
+          image: track.image 
+        };
+      }
+      artistCounts[key].plays++;
+
+      const dateToUse = new Date(req.timestamp);
       const h = dateToUse.getHours().toString().padStart(2, '0') + ':00';
       hourCounts[h] = (hourCounts[h] || 0) + 1;
     });
 
     const topArtists = Object.values(artistCounts)
       .sort((a, b) => b.plays - a.plays)
-      .slice(0, 5);
+      .slice(0, 50);
 
     const hourData = Object.entries(hourCounts)
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -81,7 +91,7 @@ export default function MetricsPage() {
       hourData.push({ hour: new Date().getHours().toString().padStart(2, '0') + ':00', reproducciones: 0 });
     }
 
-    let peakHour = hourData.length > 0 && playHistory.length > 0
+    let peakHour = hourData.length > 0 && allRequests.length > 0
       ? hourData.reduce((max, h) => h.reproducciones > max.reproducciones ? h : max, hourData[0]).hour
       : '--:--';
 
@@ -91,11 +101,55 @@ export default function MetricsPage() {
       uniqueArtists: Object.keys(artistCounts).length,
       peakHour,
       topArtists,
+      displayTopArtists: topArtists.slice(0, 5),
       hourData
     };
-  }, [playHistory, queue, pendingRequests, selectedDate]);
+  }, [requestHistory, selectedDate]);
 
-  const maxPlays = Math.max(...metrics.topArtists.map((a) => a.plays), 1);
+  useEffect(() => {
+    async function fetchGenres() {
+      // Filtrar artistas que sí tienen ID
+      const artistsWithIds = metrics.topArtists.filter(a => a.id);
+      if (artistsWithIds.length === 0) {
+        setGenreData([]);
+        return;
+      }
+
+      setLoadingGenres(true);
+      try {
+        const ids = artistsWithIds.map(a => a.id).slice(0, 50); // API limit is 50
+        const res = await getArtists(ids);
+        
+        if (res && res.artists) {
+          const genreCounts = {};
+          
+          res.artists.forEach(artist => {
+            if (!artist) return;
+            // Buscar cuántas veces se reprodujo este artista
+            const plays = metrics.topArtists.find(a => a.id === artist.id)?.plays || 0;
+            
+            artist.genres.forEach(genre => {
+              genreCounts[genre] = (genreCounts[genre] || 0) + plays;
+            });
+          });
+
+          const formattedGenres = Object.entries(genreCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5) // Top 5 géneros
+            .map(([name, value]) => ({ name, value }));
+
+          setGenreData(formattedGenres);
+        }
+      } catch (err) {
+        console.error('Error al obtener géneros', err);
+      } finally {
+        setLoadingGenres(false);
+      }
+    }
+    fetchGenres();
+  }, [metrics.topArtists]);
+
+  const maxPlays = Math.max(...metrics.displayTopArtists.map((a) => a.plays), 1);
 
   return (
     <div className="p-6 space-y-6">
@@ -138,13 +192,14 @@ export default function MetricsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
         {/* Top Artists */}
         <div className="card p-5">
           <h2 className="font-bold text-text-primary mb-4">Top Artistas Reales</h2>
           <div className="space-y-4">
-            {metrics.topArtists.length === 0 ? (
+            {metrics.displayTopArtists.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-8">No hay suficientes datos aún.</p>
-            ) : metrics.topArtists.map((artist, i) => (
+            ) : metrics.displayTopArtists.map((artist, i) => (
               <div key={artist.name} className="flex items-center gap-3">
                 <span className="text-text-subtle text-sm w-4">{i + 1}</span>
                 {artist.image ? (
@@ -175,18 +230,19 @@ export default function MetricsPage() {
         </div>
 
         {/* Peak hours bar chart */}
-      <div className="card p-5">
-        <h2 className="font-bold text-text-primary mb-4">Reproducciones por Hora</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={metrics.hourData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="hour" tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="reproducciones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+        <div className="card p-5">
+          <h2 className="font-bold text-text-primary mb-4">Peticiones por Hora</h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={metrics.hourData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="hour" tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="reproducciones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
       </div>
     </div>
   );

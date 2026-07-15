@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
-  Users, Store, Sparkles, Music2, Clock
+  Users, Store, Sparkles, Music2, Clock, ListMusic
 } from 'lucide-react';
 import {
   DndContext,
@@ -23,6 +23,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useSpotifySDK } from '../hooks/useSpotifySDK';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
+import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -44,20 +45,18 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group ${
+      {...attributes}
+      {...listeners}
+      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing ${
         isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
       }`}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-text-subtle hover:text-text-muted cursor-grab active:cursor-grabbing p-1"
-      >
+      <div className="text-text-subtle p-1">
         <GripVertical size={16} />
-      </button>
+      </div>
 
       {track.image ? (
-        <img src={track.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+        <img src={track.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" draggable={false} />
       ) : (
         <div className="w-10 h-10 rounded-lg bg-bg-card flex items-center justify-center flex-shrink-0">
           <Music2 size={14} className="text-text-muted" />
@@ -78,7 +77,10 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
         {formatDuration(track.duration_ms || 0)}
       </span>
 
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div 
+        className="flex gap-1"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <button
           onClick={() => onPlay(track)}
           className="p-1.5 rounded-lg hover:bg-accent/20 hover:text-accent text-text-muted transition-all"
@@ -100,7 +102,8 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 
 export default function DashboardPage() {
   const [showRequests, setShowRequests] = useState(true);
-  const [showQR, setShowQR] = useState(true);
+  const [showQR, setShowQR] = useState(false);
+  const [showPlaylists, setShowPlaylists] = useState(true);
 
   const {
     queue, currentQueueIndex, pendingRequests,
@@ -153,9 +156,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 flex flex-col h-[calc(100vh-2rem)]">
       {/* Header toggles */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
           <p className="text-text-muted text-sm mt-0.5">
@@ -190,12 +193,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Panel toggles */}
-          <div className="card px-4 py-3 flex items-center gap-3 hidden md:flex">
+          <div className="card px-4 py-3 flex items-center gap-3 hidden xl:flex">
             <span className="text-sm font-medium text-text-primary">Peticiones</span>
             <Toggle checked={showRequests} onChange={setShowRequests} />
             <div className="w-px h-4 bg-white/10" />
             <span className="text-sm font-medium text-text-primary">QR</span>
             <Toggle checked={showQR} onChange={setShowQR} />
+            <div className="w-px h-4 bg-white/10" />
+            <span className="text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> Playlists</span>
+            <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
           </div>
 
           {/* Auto-DJ */}
@@ -209,7 +215,7 @@ export default function DashboardPage() {
 
       {/* Now playing */}
       {currentTrack && (
-        <div className="card p-4 flex items-center gap-4 border border-accent/20 bg-accent/5">
+        <div className="card p-4 flex items-center gap-4 border border-accent/20 bg-accent/5 flex-shrink-0">
           {currentTrack.image && (
             <img src={currentTrack.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
           )}
@@ -222,10 +228,11 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className={`grid grid-cols-1 gap-6 ${(!showRequests && !showQR) ? 'xl:grid-cols-1' : 'xl:grid-cols-3'}`}>
-        {/* Pending Requests & QR */}
-        {(showRequests || showQR) && (
-          <div className="xl:col-span-1 space-y-4">
+      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'xl:grid-cols-1' : 'xl:grid-cols-3'} min-h-0`}>
+        {/* Left Column: Modules */}
+        {(showRequests || showQR || showPlaylists) && (
+          <div className="xl:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+            
             {showRequests && (
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -244,7 +251,7 @@ export default function DashboardPage() {
                     <p className="text-text-muted text-sm">Sin peticiones pendientes</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                     {pendingRequests.map((req) => (
                       <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
@@ -279,25 +286,35 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {showPlaylists && <PlaylistsPanel />}
+
             {/* QR Card */}
             {showQR && <QRCard />}
           </div>
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={(!showRequests && !showQR) ? "xl:col-span-1" : "xl:col-span-2"}>
-          <div className="card p-5 h-full">
-            <div className="flex items-center justify-between mb-4">
+        <div className={`flex flex-col min-h-0 h-full ${(!showRequests && !showQR && !showPlaylists) ? "xl:col-span-1" : "xl:col-span-2"}`}>
+          <div className="card p-5 flex flex-col h-full overflow-hidden">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="font-bold text-text-primary flex items-center gap-2">
                 <Music2 size={16} className="text-accent" />
                 Playlist Activa
                 <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
+                {queue.length > 0 && (
+                  <button
+                    onClick={() => usePlayerStore.getState().clearQueue()}
+                    className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
+                  >
+                    Vaciar
+                  </button>
+                )}
               </h2>
               <p className="text-xs text-text-muted">Arrastra para reordenar</p>
             </div>
 
             {queue.length === 0 ? (
-              <div className="text-center py-16">
+              <div className="text-center py-16 m-auto">
                 <Music2 size={40} className="text-text-subtle mx-auto mb-4" />
                 <p className="text-text-muted">La cola está vacía</p>
                 {autoDJ && (
@@ -314,7 +331,7 @@ export default function DashboardPage() {
                   items={queue.map((t) => t.queueId)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {queue.map((track, index) => (
                       <SortableQueueItem
                         key={track.queueId}

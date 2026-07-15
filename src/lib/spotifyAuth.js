@@ -10,6 +10,8 @@ export const SPOTIFY_SCOPES = [
   'user-read-currently-playing',
   'playlist-modify-public',
   'playlist-modify-private',
+  'playlist-read-private',
+  'playlist-read-collaborative'
 ].join(' ');
 
 // ── PKCE Helpers ─────────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ export async function redirectToSpotifyAuth() {
     redirect_uri: SPOTIFY_REDIRECT_URI,
     code_challenge_method: 'S256',
     code_challenge: codeChallenge,
+    show_dialog: 'true',
   });
 
   window.location.href = `https://accounts.spotify.com/authorize?${params}`;
