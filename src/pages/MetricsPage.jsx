@@ -1,11 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { BarChart2, Music2, TrendingUp, Clock, Disc } from 'lucide-react';
+import { BarChart2, Music2, TrendingUp, Clock } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { getArtists } from '../lib/spotifyApi';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -17,8 +16,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const COLORS = ['#9D4EDD', '#7B2CBF', '#5A189A', '#3C096C', '#240046'];
-
 function getLocalDateString(date) {
   const d = new Date(date);
   const year = d.getFullYear();
@@ -29,8 +26,6 @@ function getLocalDateString(date) {
 
 export default function MetricsPage() {
   const { playHistory, queue, pendingRequests, requestHistory = [] } = usePlayerStore();
-  const [genreData, setGenreData] = useState([]);
-  const [loadingGenres, setLoadingGenres] = useState(false);
 
   const last15Days = useMemo(() => {
     const days = [];
@@ -60,16 +55,16 @@ export default function MetricsPage() {
     allRequests.forEach(req => {
       const track = req.track;
       const mainArtistName = track.artists?.split(',')[0]?.trim() || 'Desconocido';
-      const mainArtistId = track.artistIds?.[0]; 
-      
+      const mainArtistId = track.artistIds?.[0];
+
       const key = mainArtistId || mainArtistName;
 
       if (!artistCounts[key]) {
-        artistCounts[key] = { 
-          id: mainArtistId, 
-          name: mainArtistName, 
-          plays: 0, 
-          image: track.image 
+        artistCounts[key] = {
+          id: mainArtistId,
+          name: mainArtistName,
+          plays: 0,
+          image: track.image
         };
       }
       artistCounts[key].plays++;
@@ -86,7 +81,7 @@ export default function MetricsPage() {
     const hourData = Object.entries(hourCounts)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([hour, count]) => ({ hour, reproducciones: count }));
-    
+
     if (hourData.length === 0) {
       hourData.push({ hour: new Date().getHours().toString().padStart(2, '0') + ':00', reproducciones: 0 });
     }
@@ -106,49 +101,6 @@ export default function MetricsPage() {
     };
   }, [requestHistory, selectedDate]);
 
-  useEffect(() => {
-    async function fetchGenres() {
-      // Filtrar artistas que sí tienen ID
-      const artistsWithIds = metrics.topArtists.filter(a => a.id);
-      if (artistsWithIds.length === 0) {
-        setGenreData([]);
-        return;
-      }
-
-      setLoadingGenres(true);
-      try {
-        const ids = artistsWithIds.map(a => a.id).slice(0, 50); // API limit is 50
-        const res = await getArtists(ids);
-        
-        if (res && res.artists) {
-          const genreCounts = {};
-          
-          res.artists.forEach(artist => {
-            if (!artist) return;
-            // Buscar cuántas veces se reprodujo este artista
-            const plays = metrics.topArtists.find(a => a.id === artist.id)?.plays || 0;
-            
-            artist.genres.forEach(genre => {
-              genreCounts[genre] = (genreCounts[genre] || 0) + plays;
-            });
-          });
-
-          const formattedGenres = Object.entries(genreCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5) // Top 5 géneros
-            .map(([name, value]) => ({ name, value }));
-
-          setGenreData(formattedGenres);
-        }
-      } catch (err) {
-        console.error('Error al obtener géneros', err);
-      } finally {
-        setLoadingGenres(false);
-      }
-    }
-    fetchGenres();
-  }, [metrics.topArtists]);
-
   const maxPlays = Math.max(...metrics.displayTopArtists.map((a) => a.plays), 1);
 
   return (
@@ -160,7 +112,7 @@ export default function MetricsPage() {
           </h1>
           <p className="text-text-muted text-sm mt-1">Estadísticas de reproducciones por fecha</p>
         </div>
-        
+
         <select
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
@@ -192,10 +144,10 @@ export default function MetricsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Top Artists */}
         <div className="card p-5">
-          <h2 className="font-bold text-text-primary mb-4">Top Artistas Reales</h2>
+          <h2 className="font-bold text-text-primary mb-4">Top Artistas</h2>
           <div className="space-y-4">
             {metrics.displayTopArtists.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-8">No hay suficientes datos aún.</p>
@@ -203,16 +155,16 @@ export default function MetricsPage() {
               <div key={artist.name} className="flex items-center gap-3">
                 <span className="text-text-subtle text-sm w-4">{i + 1}</span>
                 {artist.image ? (
-                   <img
-                     src={artist.image}
-                     alt={artist.name}
-                     className="w-8 h-8 rounded-full object-cover"
-                     onError={(e) => { e.target.style.display = 'none'; }}
-                   />
+                  <img
+                    src={artist.image}
+                    alt={artist.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
                 ) : (
-                   <div className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center">
-                     <Music2 size={12} className="text-text-muted" />
-                   </div>
+                  <div className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center">
+                    <Music2 size={12} className="text-text-muted" />
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-text-primary truncate">{artist.name}</p>

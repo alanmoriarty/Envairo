@@ -8,6 +8,8 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -78,7 +80,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       </span>
 
       <div 
-        className="flex gap-1"
+        className="flex gap-1 flex-shrink-0"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <button
@@ -113,7 +115,19 @@ export default function DashboardPage() {
   const { mode, setMode, autoDJ, setAutoDJ } = useSettingsStore();
   const { controls } = useSpotifySDK();
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8, // Requiere mover el mouse 8px para iniciar el drag, previniendo clicks accidentales
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // En móvil, requiere presionar por 250ms antes de arrastrar
+        tolerance: 5, // Permite 5px de movimiento durante la espera sin cancelar
+      },
+    })
+  );
 
   const handleDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
@@ -156,7 +170,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 flex flex-col h-[calc(100vh-2rem)]">
+    <div className="p-4 sm:p-6 space-y-6 flex flex-col xl:h-[calc(100vh-2rem)]">
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -193,15 +207,21 @@ export default function DashboardPage() {
           </div>
 
           {/* Panel toggles */}
-          <div className="card px-4 py-3 flex items-center gap-3 hidden xl:flex">
-            <span className="text-sm font-medium text-text-primary">Peticiones</span>
-            <Toggle checked={showRequests} onChange={setShowRequests} />
-            <div className="w-px h-4 bg-white/10" />
-            <span className="text-sm font-medium text-text-primary">QR</span>
-            <Toggle checked={showQR} onChange={setShowQR} />
-            <div className="w-px h-4 bg-white/10" />
-            <span className="text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> Playlists</span>
-            <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
+          <div className="card px-4 py-3 flex flex-wrap items-center gap-3 lg:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-text-primary">Peticiones</span>
+              <Toggle checked={showRequests} onChange={setShowRequests} />
+            </div>
+            <div className="hidden sm:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-text-primary">QR</span>
+              <Toggle checked={showQR} onChange={setShowQR} />
+            </div>
+            <div className="hidden sm:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> Playlists</span>
+              <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
+            </div>
           </div>
 
           {/* Auto-DJ */}
@@ -212,20 +232,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {/* Now playing */}
-      {currentTrack && (
-        <div className="card p-4 flex items-center gap-4 border border-accent/20 bg-accent/5 flex-shrink-0">
-          {currentTrack.image && (
-            <img src={currentTrack.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
-          )}
-          <div>
-            <p className="text-xs text-accent font-semibold uppercase tracking-wider">Reproduciendo ahora</p>
-            <p className="font-bold text-text-primary">{currentTrack.name}</p>
-            <p className="text-sm text-text-muted">{currentTrack.artists}</p>
-          </div>
-        </div>
-      )}
 
       {/* Main grid */}
       <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'xl:grid-cols-1' : 'xl:grid-cols-3'} min-h-0`}>
@@ -256,7 +262,7 @@ export default function DashboardPage() {
                       <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                           {req.track.image && (
-                            <img src={req.track.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                            <img src={req.track.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
@@ -294,12 +300,14 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col min-h-0 h-full ${(!showRequests && !showQR && !showPlaylists) ? "xl:col-span-1" : "xl:col-span-2"}`}>
+        <div className={`flex flex-col h-[400px] xl:h-full ${(!showRequests && !showQR && !showPlaylists) ? "xl:col-span-1" : "xl:col-span-2"}`}>
           <div className="card p-5 flex flex-col h-full overflow-hidden">
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <h2 className="font-bold text-text-primary flex items-center gap-2">
-                <Music2 size={16} className="text-accent" />
-                Playlist Activa
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-bold text-text-primary flex items-center gap-2">
+                  <Music2 size={16} className="text-accent" />
+                  Playlist Activa
+                </h2>
                 <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
                 {queue.length > 0 && (
                   <button
@@ -309,7 +317,7 @@ export default function DashboardPage() {
                     Vaciar
                   </button>
                 )}
-              </h2>
+              </div>
               <p className="text-xs text-text-muted">Arrastra para reordenar</p>
             </div>
 

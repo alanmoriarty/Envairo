@@ -18,9 +18,15 @@ export function PlaylistsPanel() {
   useEffect(() => {
     async function fetchPlaylists() {
       try {
-        const res = await getUserPlaylists(30);
-        if (res && res.items) {
-          setPlaylists(res.items);
+        const [res, user] = await Promise.all([
+          getUserPlaylists(50),
+          import('../../lib/spotifyApi').then(m => m.getCurrentUser())
+        ]);
+        
+        if (res && res.items && user && user.id) {
+          // Filtrar para mostrar SOLO las playlists creadas por el propio usuario logueado
+          const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
+          setPlaylists(myPlaylists);
         }
       } catch (err) {
         console.error('Error fetching playlists:', err);
@@ -82,7 +88,11 @@ export function PlaylistsPanel() {
 
     } catch (err) {
       console.error(err);
-      toast.error(`Error al importar "${playlist.name}"`, { id: toastId });
+      if (err.message === 'Forbidden' || err.message.includes('403')) {
+        toast.error(`Modo de Desarrollo: Spotify bloquea el acceso a playlists de otros usuarios.`, { id: toastId });
+      } else {
+        toast.error(`Error al importar "${playlist.name}"`, { id: toastId });
+      }
     } finally {
       setImporting(false);
     }
@@ -143,9 +153,6 @@ export function PlaylistsPanel() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
-                <p className="text-xs text-text-muted mt-0.5 truncate">
-                  {pl.tracks?.total || 0} canciones
-                </p>
               </div>
 
               <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:scale-110 shadow-glow-sm">
