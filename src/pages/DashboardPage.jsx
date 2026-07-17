@@ -131,8 +131,10 @@ export default function DashboardPage() {
   );
 
   React.useEffect(() => {
-    const sessionId = useSettingsStore.getState().sessionId;
+    const authStore = useAuthStore.getState();
+    const sessionId = authStore.user?.id || useSettingsStore.getState().sessionId;
     const { mode, blacklistGenres, whitelistArtists, blacklistArtists, allowRepeats, requestsPerHour } = useSettingsStore.getState();
+    const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
     
     const syncSession = async () => {
       const { data } = await supabase.from('sessions').select('id').eq('id', sessionId).single();
@@ -157,9 +159,10 @@ export default function DashboardPage() {
           blacklist_artists: blacklistArtists,
           allow_repeats: allowRepeats,
           requests_per_hour: requestsPerHour,
-          queue: [],
-          current_queue_index: -1,
-          volume: 70,
+          queue: queue || [],
+          current_queue_index: currentQueueIndex ?? -1,
+          volume: volume ?? 70,
+          active_device_id: activeDeviceId,
           updated_at: new Date().toISOString()
         });
       }

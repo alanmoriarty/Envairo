@@ -93,7 +93,8 @@ export function useSpotifySDK() {
       
       // Auto-resume logic
       const storeState = usePlayerStore.getState();
-      if (storeState.isPlaying && storeState.currentTrack) {
+      const actualActiveDevice = storeState.activeDeviceId;
+      if (storeState.isPlaying && storeState.currentTrack && (!actualActiveDevice || actualActiveDevice === device_id)) {
         usePlayerStore.getState().setIsPlaying(false);
         usePlayerStore.getState().setPendingResume(true);
       }

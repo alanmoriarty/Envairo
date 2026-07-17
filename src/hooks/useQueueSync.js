@@ -3,8 +3,11 @@ import { supabase } from '../lib/supabase';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 
+import { useAuthStore } from '../store/useAuthStore';
+
 export function useQueueSync() {
-  const sessionId = useSettingsStore((state) => state.sessionId);
+  const authStore = useAuthStore((state) => state);
+  const sessionId = authStore.user?.id || useSettingsStore((state) => state.sessionId);
   const isRemoteUpdate = useRef(false);
 
   useEffect(() => {
