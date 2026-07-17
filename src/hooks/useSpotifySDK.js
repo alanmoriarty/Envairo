@@ -146,24 +146,30 @@ export function useSpotifySDK() {
         // Sincronizar el índice de la cola si cambió la canción (ej. por Spotify Connect)
         const queue = storeState.queue;
         const currentIndex = storeState.currentQueueIndex;
-        let MathIndex = queue.findIndex((t, i) => i >= currentIndex && (t.id === normalizedTrack.id || t.uri === normalizedTrack.uri));
+        const isSameTrack = (t, target) => {
+          if (t.id === target.id) return true;
+          if (t.uri === target.uri) return true;
+          if (t.name === target.name && Math.abs(t.duration_ms - target.duration_ms) < 5000) return true;
+          return false;
+        };
+
+        let MathIndex = queue.findIndex((t, i) => i >= currentIndex && isSameTrack(t, normalizedTrack));
         
         if (MathIndex === -1) {
-          MathIndex = queue.findIndex(t => t.id === normalizedTrack.id || t.uri === normalizedTrack.uri);
+          MathIndex = queue.findIndex(t => isSameTrack(t, normalizedTrack));
         }
         
         if (MathIndex !== -1 && MathIndex !== currentIndex) {
           usePlayerStore.setState({ currentQueueIndex: MathIndex });
         } else if (MathIndex === -1 && normalizedTrack.id) {
           // Retrasar la inyección 1.5s para evitar colisiones con Supabase
-          // (Ej: El celular añade una canción y le da a play muy rápido, Spotify avisa a la PC antes de que Supabase sincronice la cola)
           setTimeout(() => {
             const latestState = usePlayerStore.getState();
             const latestQueue = latestState.queue;
             const latestCurrentIndex = latestState.currentQueueIndex;
             
-            let finalIndex = latestQueue.findIndex((t, i) => i >= latestCurrentIndex && (t.id === normalizedTrack.id || t.uri === normalizedTrack.uri));
-            if (finalIndex === -1) finalIndex = latestQueue.findIndex(t => t.id === normalizedTrack.id || t.uri === normalizedTrack.uri);
+            let finalIndex = latestQueue.findIndex((t, i) => i >= latestCurrentIndex && isSameTrack(t, normalizedTrack));
+            if (finalIndex === -1) finalIndex = latestQueue.findIndex(t => isSameTrack(t, normalizedTrack));
 
             if (finalIndex !== -1) {
               if (finalIndex !== latestCurrentIndex) usePlayerStore.setState({ currentQueueIndex: finalIndex });
