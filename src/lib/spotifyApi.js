@@ -103,11 +103,6 @@ export async function playContext(deviceId, contextUri) {
   });
 }
 
-export async function getPlaybackState() {
-  const res = await apiFetch('/me/player');
-  // Spotify returns 204 No Content if nothing is playing
-  return res || null;
-}
 
 export async function pausePlayback(deviceId) {
   return apiFetch(`/me/player/pause?device_id=${deviceId}`, { method: 'PUT' });
