@@ -70,7 +70,15 @@ export function useSpotifySDK() {
       setDeviceId(device_id);
       setSdkReady(true);
       usePlayerStore.getState().setDeviceTransferred(false); // Reset transfer state
-      await transferPlayback(device_id, false);
+      
+      const { activeDeviceId, setActiveDeviceId } = usePlayerStore.getState();
+      
+      // If no active device is set in the cloud, we become the active device automatically
+      if (!activeDeviceId || activeDeviceId === device_id) {
+        setActiveDeviceId(device_id); // This syncs to Supabase
+        await transferPlayback(device_id, false);
+      }
+      
       // Auto-resume logic
       const storeState = usePlayerStore.getState();
       if (storeState.isPlaying && storeState.currentTrack) {
@@ -84,6 +92,12 @@ export function useSpotifySDK() {
     });
 
     p.addListener('player_state_changed', (state) => {
+      // Ignore state changes if we are just a remote control
+      const { deviceId, activeDeviceId } = usePlayerStore.getState();
+      if (activeDeviceId && deviceId && activeDeviceId !== deviceId) {
+        return;
+      }
+
       if (!state) {
         usePlayerStore.getState().setDeviceTransferred(true);
         usePlayerStore.getState().setIsPlaying(false);
@@ -160,7 +174,7 @@ export function useSpotifySDK() {
       uri: sdkTrack.uri,
       name: sdkTrack.name,
       artists: sdkTrack.artists.map((a) => a.name).join(', '),
-      artistIds: sdkTrack.artists.map((a) => a.uri?.split(':').pop()), // SDK returns uris like spotify:artist:ID
+      artistIds: sdkTrack.artists.map((a) => a.uri?.split(':').pop()),
       album: sdkTrack.album.name,
       image: sdkTrack.album.images?.[0]?.url,
       duration_ms: sdkTrack.duration_ms,
@@ -169,59 +183,69 @@ export function useSpotifySDK() {
 
   const controls = {
     play: async (uris) => {
-      if (!deviceId) return;
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      if (!targetDevice) return;
       try {
-        await playTrack(deviceId, uris);
+        await playTrack(targetDevice, uris);
       } catch (e) {
         console.error('Play API failed', e);
       }
     },
     playContext: async (contextUri) => {
-      if (!deviceId) return;
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      if (!targetDevice) return;
       try {
-        await playContext(deviceId, contextUri);
+        await playContext(targetDevice, contextUri);
       } catch (e) {
         console.error('PlayContext API failed', e);
       }
     },
     pause: async () => {
-      const p = usePlayerStore.getState().player;
-      if (p) {
-        try { await p.pause(); return; } catch (err) { /* ignore */ }
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      
+      if (state.activeDeviceId === state.deviceId && state.player) {
+        try { await state.player.pause(); return; } catch (err) { /* ignore */ }
       }
-      if (deviceId) {
-        try { await pausePlayback(deviceId); } catch (e) { console.error('Pause API failed', e); }
+      if (targetDevice) {
+        try { await pausePlayback(targetDevice); } catch (e) { console.error('Pause API failed', e); }
       }
     },
     resume: async () => {
-      const p = usePlayerStore.getState().player;
-      if (p) {
-        try { await p.resume(); return; } catch (err) { /* ignore */ }
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+
+      if (state.activeDeviceId === state.deviceId && state.player) {
+        try { await state.player.resume(); return; } catch (err) { /* ignore */ }
       }
-      if (deviceId) {
-        try { await resumePlayback(deviceId); } catch (e) { console.error('Resume API failed', e); }
+      if (targetDevice) {
+        try { await resumePlayback(targetDevice); } catch (e) { console.error('Resume API failed', e); }
       }
     },
     skipNext: async () => {
       if (isTransitioning) return;
       isTransitioning = true;
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+
       const nextTrack = usePlayerStore.getState().shiftQueue();
-      if (nextTrack && deviceId) {
+      if (nextTrack && targetDevice) {
         try {
-          await playTrack(deviceId, [nextTrack.uri]);
+          await playTrack(targetDevice, [nextTrack.uri]);
         } catch (e) {
           console.error(e);
         } finally {
           setTimeout(() => { isTransitioning = false; }, 1500);
         }
       } else {
-        const p = usePlayerStore.getState().player;
         let success = false;
-        if (p) {
-          try { await p.nextTrack(); success = true; } catch (err) { /* ignore */ }
+        if (state.activeDeviceId === state.deviceId && state.player) {
+          try { await state.player.nextTrack(); success = true; } catch (err) { /* ignore */ }
         }
-        if (!success && deviceId) {
-          try { await skipToNext(deviceId); } catch (e) { console.error('Skip API failed', e); }
+        if (!success && targetDevice) {
+          try { await skipToNext(targetDevice); } catch (e) { console.error('Skip API failed', e); }
         }
         isTransitioning = false;
       }
@@ -229,33 +253,37 @@ export function useSpotifySDK() {
     skipPrev: async () => {
       if (isTransitioning) return;
       isTransitioning = true;
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+
       const prevTrack = usePlayerStore.getState().prevQueue();
-      if (prevTrack && deviceId) {
+      if (prevTrack && targetDevice) {
         try {
-          await playTrack(deviceId, [prevTrack.uri]);
+          await playTrack(targetDevice, [prevTrack.uri]);
         } catch (e) {
           console.error(e);
         } finally {
           setTimeout(() => { isTransitioning = false; }, 1500);
         }
       } else {
-        const p = usePlayerStore.getState().player;
         let success = false;
-        if (p) {
-          try { await p.previousTrack(); success = true; } catch (err) { /* ignore */ }
+        if (state.activeDeviceId === state.deviceId && state.player) {
+          try { await state.player.previousTrack(); success = true; } catch (err) { /* ignore */ }
         }
-        if (!success && deviceId) {
-          try { await skipToPrevious(deviceId); } catch (e) { console.error('Prev API failed', e); }
+        if (!success && targetDevice) {
+          try { await skipToPrevious(targetDevice); } catch (e) { console.error('Prev API failed', e); }
         }
         isTransitioning = false;
       }
     },
     setVolume: async (vol) => {
-      const p = usePlayerStore.getState().player;
-      if (p) {
-        try { await p.setVolume(vol / 100); } catch (err) { /* ignore */ }
-      } else if (deviceId) {
-        try { await apiSetVolume(Math.round(vol), deviceId); } catch (e) { console.error('Volume API failed', e); }
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+
+      if (state.activeDeviceId === state.deviceId && state.player) {
+        try { await state.player.setVolume(vol / 100); } catch (err) { /* ignore */ }
+      } else if (targetDevice) {
+        try { await apiSetVolume(Math.round(vol), targetDevice); } catch (e) { console.error('Volume API failed', e); }
       }
       usePlayerStore.getState().setVolume(vol);
     },

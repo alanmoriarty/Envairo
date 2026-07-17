@@ -7,6 +7,7 @@ export const usePlayerStore = create(
       // Spotify Web Playback SDK
       player: null,
       deviceId: null,
+      activeDeviceId: null,
       sdkReady: false,
 
       // Playback state
@@ -28,6 +29,7 @@ export const usePlayerStore = create(
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
       setDeviceId: (deviceId) => set({ deviceId }),
+      setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),
 
       // ── Playback ─────────────────────────────────────────────────────────

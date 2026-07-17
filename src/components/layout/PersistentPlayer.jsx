@@ -11,7 +11,7 @@ export function PersistentPlayer() {
   const {
     currentTrack, isPlaying, progress, duration, volume,
     sdkReady, queue, pendingResume, setPendingResume,
-    setVolume,
+    setVolume, activeDeviceId, deviceId
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
   const progressRef = useRef(null);
@@ -33,10 +33,11 @@ export function PersistentPlayer() {
     const rect = progressRef.current.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
     const posMs = Math.round(pct * duration);
-    const { deviceId } = usePlayerStore.getState();
-    if (deviceId) {
+    const state = usePlayerStore.getState();
+    const targetDevice = state.activeDeviceId || state.deviceId;
+    if (targetDevice) {
       import('../../lib/spotifyApi').then(({ seekToPosition }) =>
-        seekToPosition(posMs, deviceId)
+        seekToPosition(posMs, targetDevice)
       );
     }
   };
@@ -49,10 +50,11 @@ export function PersistentPlayer() {
     
     clearTimeout(volumeDebounce.current);
     volumeDebounce.current = setTimeout(() => {
-      const { deviceId } = usePlayerStore.getState();
-      if (deviceId) {
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      if (targetDevice) {
         import('../../lib/spotifyApi')
-          .then(({ setVolume: apiSetVolume }) => apiSetVolume(vol, deviceId))
+          .then(({ setVolume: apiSetVolume }) => apiSetVolume(vol, targetDevice))
           .catch((err) => console.error('Error setting volume:', err));
       }
     }, 300);
@@ -83,10 +85,11 @@ export function PersistentPlayer() {
               onClick={() => {
                 setPendingResume(false);
                 if (currentTrack) {
-                  const { deviceId } = usePlayerStore.getState();
-                  if (deviceId) {
+                  const state = usePlayerStore.getState();
+                  const targetDevice = state.activeDeviceId || state.deviceId;
+                  if (targetDevice) {
                     import('../../lib/spotifyApi').then(({ playTrack }) => {
-                      playTrack(deviceId, [currentTrack.uri], progress).catch(err => console.error(err));
+                      playTrack(targetDevice, [currentTrack.uri], progress).catch(err => console.error(err));
                     });
                   }
                 }
@@ -105,36 +108,29 @@ export function PersistentPlayer() {
         </div>
       )}
 
-      {/* Device Transferred Overlay */}
-      {usePlayerStore.getState().deviceTransferred && (
-        <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
-          <div className="card p-8 flex flex-col items-center gap-4 text-center max-w-sm animate-in zoom-in-95 fade-in">
-            <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center text-danger mb-2">
-              <WifiOff size={32} fill="currentColor" />
-            </div>
-            <h3 className="text-xl font-bold text-text-primary">Reproducción Transferida</h3>
-            <p className="text-text-muted text-sm mb-4">
-              Spotify está reproduciendo en otro dispositivo. Haz clic abajo para recuperar el control del audio en esta pantalla.
-            </p>
+      <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
+        
+        {/* Remote Control Banner */}
+        {activeDeviceId && deviceId && activeDeviceId !== deviceId && (
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-bg-elevated/95 backdrop-blur-md border border-accent/30 border-b-0 text-text-primary px-4 py-1.5 rounded-t-xl shadow-glow-sm flex items-center gap-3 whitespace-nowrap">
+            <span className="text-xs flex items-center gap-1.5"><Wifi size={14} className="text-accent animate-pulse" /> Controlando otro dispositivo</span>
+            <div className="w-px h-3 bg-white/20" />
             <button 
               onClick={() => {
-                const { deviceId } = usePlayerStore.getState();
+                const { deviceId, setActiveDeviceId } = usePlayerStore.getState();
                 if (deviceId) {
+                  setActiveDeviceId(deviceId); // Triggers Supabase sync via hook
                   import('../../lib/spotifyApi').then(({ transferPlayback }) => {
-                    transferPlayback(deviceId, true).catch(err => console.error(err));
+                    transferPlayback(deviceId, true).catch(console.error);
                   });
-                  usePlayerStore.getState().setDeviceTransferred(false);
                 }
               }}
-              className="btn-primary w-full py-3 text-base bg-accent hover:bg-accent-light"
+              className="text-xs bg-accent/20 hover:bg-accent/40 text-accent px-2 py-1 rounded-md transition-colors font-semibold"
             >
-              Tomar Control Aquí
+              Escuchar Aquí
             </button>
           </div>
-        </div>
-      )}
-
-      <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
+        )}
         {/* Progress bar */}
       <div
         ref={progressRef}

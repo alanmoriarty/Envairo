@@ -15,7 +15,8 @@ export function useQueueSync() {
       if (
         state.queue === prevState.queue &&
         state.currentQueueIndex === prevState.currentQueueIndex &&
-        state.currentTrack?.id === prevState.currentTrack?.id
+        state.currentTrack?.id === prevState.currentTrack?.id &&
+        state.activeDeviceId === prevState.activeDeviceId
       ) {
         return;
       }
@@ -32,6 +33,7 @@ export function useQueueSync() {
           queue: state.queue,
           current_queue_index: state.currentQueueIndex,
           current_track: state.currentTrack,
+          active_device_id: state.activeDeviceId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId)
@@ -54,13 +56,15 @@ export function useQueueSync() {
           const queueChanged = JSON.stringify(newSession.queue) !== JSON.stringify(currentState.queue);
           const indexChanged = newSession.current_queue_index !== currentState.currentQueueIndex;
           const trackChanged = newSession.current_track?.id !== currentState.currentTrack?.id;
+          const deviceChanged = newSession.active_device_id !== currentState.activeDeviceId;
 
-          if (queueChanged || indexChanged || trackChanged) {
+          if (queueChanged || indexChanged || trackChanged || deviceChanged) {
             isRemoteUpdate.current = true;
             usePlayerStore.setState({
               queue: newSession.queue || [],
               currentQueueIndex: newSession.current_queue_index ?? -1,
               currentTrack: newSession.current_track || null,
+              activeDeviceId: newSession.active_device_id || null,
             });
           }
         }
@@ -70,7 +74,7 @@ export function useQueueSync() {
     // 3. Initial pull
     supabase
       .from('sessions')
-      .select('queue, current_queue_index, current_track')
+      .select('queue, current_queue_index, current_track, active_device_id')
       .eq('id', sessionId)
       .single()
       .then(({ data, error }) => {
@@ -80,6 +84,7 @@ export function useQueueSync() {
             queue: data.queue || [],
             currentQueueIndex: data.current_queue_index ?? -1,
             currentTrack: data.current_track || null,
+            activeDeviceId: data.active_device_id || null,
           });
         }
       });
