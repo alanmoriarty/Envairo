@@ -87,26 +87,44 @@ export async function evaluateTrack(track, settings) {
   return { approved: true, reason: 'Aprobada por Auto DJ' };
 }
 
-/**
- * Obtiene recomendaciones para llenar la cola basándose en un artista reciente
- */
 export async function getAutoQueueRecommendations(history, settings) {
   if (history.length === 0) return null;
 
-  // Tomar un artista al azar de las últimas 5 canciones
+  // Tomar un track al azar de los últimos 5 para usar como "semilla"
   const recentTracks = history.slice(0, 5);
   const randomTrack = recentTracks[Math.floor(Math.random() * recentTracks.length)];
   const artistName = randomTrack.artists ? randomTrack.artists.split(',')[0].trim() : null;
+  const artistId = randomTrack.artistIds && randomTrack.artistIds.length > 0 ? randomTrack.artistIds[0] : null;
   
   if (!artistName) return null;
 
   try {
-    // Usamos el endpoint de búsqueda ya que top-tracks fue restringido/deprecado por Spotify
-    const data = await searchTracks(`artist:"${artistName}"`, 50);
-    if (!data || !data.tracks || !data.tracks.items) return null;
+    let searchResults = null;
+    let usedGenre = false;
 
-    // Desordenar las top tracks para dar variedad
-    const shuffledTracks = data.tracks.items.sort(() => 0.5 - Math.random());
+    // Intentar obtener géneros del artista para buscar canciones SIMILARES de ese mismo género
+    if (artistId) {
+      const genres = await getArtistGenres(artistId);
+      if (genres && genres.length > 0) {
+        // Elegir un género al azar de los que tiene el artista
+        const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+        // Búsqueda en Spotify por género exacto
+        searchResults = await searchTracks(`genre:"${randomGenre}"`, 50);
+        usedGenre = true;
+      }
+    }
+
+    // Fallback: Si no tiene géneros o la búsqueda por género falló/no devolvió nada, 
+    // buscamos por nombre de artista o algo más genérico.
+    if (!searchResults || !searchResults.tracks || !searchResults.tracks.items || searchResults.tracks.items.length === 0) {
+      searchResults = await searchTracks(`artist:"${artistName}"`, 50);
+      usedGenre = false;
+    }
+
+    if (!searchResults || !searchResults.tracks || !searchResults.tracks.items) return null;
+
+    // Desordenar los resultados para dar variedad
+    const shuffledTracks = searchResults.tracks.items.sort(() => 0.5 - Math.random());
 
     for (const apiTrack of shuffledTracks) {
       const normalizedTrack = {
@@ -123,6 +141,12 @@ export async function getAutoQueueRecommendations(history, settings) {
       // Si no permitimos repetidas, verificamos que no esté en el historial reciente
       if (!settings.allowRepeats) {
         if (history.slice(0, 30).some(t => t.id === normalizedTrack.id)) continue;
+      }
+
+      // Si buscamos por género, evitar devolver al MISMO artista para aumentar la variedad musical!
+      if (usedGenre && normalizedTrack.artistIds.includes(artistId)) {
+        // Con una probabilidad del 80%, evitamos al artista semilla para forzar que suenen OTROS artistas del mismo género
+        if (Math.random() < 0.8) continue;
       }
 
       const result = await evaluateTrack(normalizedTrack, settings);
