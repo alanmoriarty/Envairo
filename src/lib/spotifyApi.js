@@ -46,7 +46,7 @@ export async function getCurrentUser() {
 }
 
 export async function getUserPlaylists(limit = 20) {
-  return apiFetch(`/me/playlists?limit=${limit}`, { cache: 'no-store' });
+  return apiFetch(`/me/playlists?limit=${limit}&_t=${Date.now()}`, { cache: 'no-store' });
 }
 
 export async function getPlaylistTracks(playlistId, limit = 100, offset = 0) {

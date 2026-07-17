@@ -33,10 +33,11 @@ export function PlaylistsPanel() {
           const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
           
           setPlaylists(prev => {
-            // Comparar de forma simple para evitar re-renders innecesarios
-            const prevIds = prev.map(p => p.id).join(',');
-            const newIds = myPlaylists.map(p => p.id).join(',');
-            return prevIds === newIds ? prev : myPlaylists;
+            // Comparar usando 'snapshot_id' detecta no solo si hay nuevas playlists,
+            // sino también si agregaste canciones a una playlist existente
+            const prevSnaps = prev.map(p => p.snapshot_id).join(',');
+            const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
+            return prevSnaps === newSnaps ? prev : myPlaylists;
           });
         }
       } catch (err) {
