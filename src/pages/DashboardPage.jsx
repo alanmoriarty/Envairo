@@ -134,24 +134,37 @@ export default function DashboardPage() {
     const sessionId = useSettingsStore.getState().sessionId;
     const { mode, blacklistGenres, whitelistArtists, blacklistArtists, allowRepeats, requestsPerHour } = useSettingsStore.getState();
     
-    // Sync session to Supabase
-    supabase.from('sessions').upsert({
-      id: sessionId,
-      active: true,
-      mode,
-      blacklist_genres: blacklistGenres,
-      whitelist_artists: whitelistArtists,
-      blacklist_artists: blacklistArtists,
-      allow_repeats: allowRepeats,
-      requests_per_hour: requestsPerHour,
-      updated_at: new Date().toISOString()
-    }).then(({ error }) => {
-      if (error) {
-        console.error('Failed to sync session. Make sure requests_per_hour column exists in sessions table.', error);
+    const syncSession = async () => {
+      const { data } = await supabase.from('sessions').select('id').eq('id', sessionId).single();
+      if (data) {
+        await supabase.from('sessions').update({
+          active: true,
+          mode,
+          blacklist_genres: blacklistGenres,
+          whitelist_artists: whitelistArtists,
+          blacklist_artists: blacklistArtists,
+          allow_repeats: allowRepeats,
+          requests_per_hour: requestsPerHour,
+          updated_at: new Date().toISOString()
+        }).eq('id', sessionId);
       } else {
-        console.log('Session synced to Supabase');
+        await supabase.from('sessions').insert({
+          id: sessionId,
+          active: true,
+          mode,
+          blacklist_genres: blacklistGenres,
+          whitelist_artists: whitelistArtists,
+          blacklist_artists: blacklistArtists,
+          allow_repeats: allowRepeats,
+          requests_per_hour: requestsPerHour,
+          queue: [],
+          current_queue_index: -1,
+          volume: 70,
+          updated_at: new Date().toISOString()
+        });
       }
-    });
+    };
+    syncSession();
 
     // Listen for new requests
     const channel = supabase

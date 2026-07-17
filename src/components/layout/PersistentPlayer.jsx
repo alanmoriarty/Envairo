@@ -188,6 +188,23 @@ export function PersistentPlayer() {
           <button onClick={controls.skipNext} className="btn-ghost p-2">
             <SkipForward size={18} />
           </button>
+
+          {/* Mobile Volume Control */}
+          <div className="relative group md:hidden flex items-center ml-1">
+            <button className="btn-ghost p-2">
+              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-24 h-1 bg-white/20 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full cursor-pointer -rotate-90 origin-center"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Time */}
