@@ -146,21 +146,36 @@ export function useSpotifySDK() {
         // Sincronizar el índice de la cola si cambió la canción (ej. por Spotify Connect)
         const queue = storeState.queue;
         const currentIndex = storeState.currentQueueIndex;
-        let newIndex = queue.findIndex((t, i) => i >= currentIndex && t.id === normalizedTrack.id);
+        let MathIndex = queue.findIndex((t, i) => i >= currentIndex && (t.id === normalizedTrack.id || t.uri === normalizedTrack.uri));
         
-        if (newIndex === -1) {
-          newIndex = queue.findIndex(t => t.id === normalizedTrack.id);
+        if (MathIndex === -1) {
+          MathIndex = queue.findIndex(t => t.id === normalizedTrack.id || t.uri === normalizedTrack.uri);
         }
         
-        if (newIndex !== -1 && newIndex !== currentIndex) {
-          usePlayerStore.setState({ currentQueueIndex: newIndex });
-        } else if (newIndex === -1 && normalizedTrack.id) {
-          // Si el usuario puso una canción desde Spotify que no está en la cola, la inyectamos para mantener sincronía
-          const newQueue = [...queue];
-          const newTrack = { ...normalizedTrack, queueId: Date.now().toString(), requestedBy: 'Spotify Connect' };
-          const insertIdx = Math.max(0, currentIndex + 1);
-          newQueue.splice(insertIdx, 0, newTrack);
-          usePlayerStore.setState({ queue: newQueue, currentQueueIndex: insertIdx });
+        if (MathIndex !== -1 && MathIndex !== currentIndex) {
+          usePlayerStore.setState({ currentQueueIndex: MathIndex });
+        } else if (MathIndex === -1 && normalizedTrack.id) {
+          // Retrasar la inyección 1.5s para evitar colisiones con Supabase
+          // (Ej: El celular añade una canción y le da a play muy rápido, Spotify avisa a la PC antes de que Supabase sincronice la cola)
+          setTimeout(() => {
+            const latestState = usePlayerStore.getState();
+            const latestQueue = latestState.queue;
+            const latestCurrentIndex = latestState.currentQueueIndex;
+            
+            let finalIndex = latestQueue.findIndex((t, i) => i >= latestCurrentIndex && (t.id === normalizedTrack.id || t.uri === normalizedTrack.uri));
+            if (finalIndex === -1) finalIndex = latestQueue.findIndex(t => t.id === normalizedTrack.id || t.uri === normalizedTrack.uri);
+
+            if (finalIndex !== -1) {
+              if (finalIndex !== latestCurrentIndex) usePlayerStore.setState({ currentQueueIndex: finalIndex });
+            } else {
+              // Si después de 1.5s sigue sin estar en la cola, entonces SÍ fue reproducida desde fuera de Envairo (Spotify Connect puro)
+              const newQueue = [...latestQueue];
+              const newTrack = { ...normalizedTrack, queueId: Date.now().toString(), requestedBy: 'Spotify Connect' };
+              const insertIdx = Math.max(0, latestCurrentIndex + 1);
+              newQueue.splice(insertIdx, 0, newTrack);
+              usePlayerStore.setState({ queue: newQueue, currentQueueIndex: insertIdx });
+            }
+          }, 1500);
         }
       }
 
