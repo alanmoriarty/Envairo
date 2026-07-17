@@ -204,6 +204,35 @@ export function useSpotifySDK() {
     };
   }
 
+  // Remote Control Sync: Poll playback state if we are the remote control
+  useEffect(() => {
+    let pollInterval;
+    const syncRemoteState = async () => {
+      const state = usePlayerStore.getState();
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      
+      // If we are definitely a remote control (not the active device playing locally)
+      if (state.activeDeviceId && state.deviceId && state.activeDeviceId !== state.deviceId) {
+        try {
+          const { getPlaybackState } = await import('../lib/spotifyApi');
+          const data = await getPlaybackState();
+          if (data && data.device?.id === targetDevice) {
+            usePlayerStore.getState().setIsPlaying(data.is_playing);
+            usePlayerStore.getState().setProgress(data.progress_ms);
+          } else if (data === null) {
+            // Nothing is playing
+            usePlayerStore.getState().setIsPlaying(false);
+          }
+        } catch (e) {
+          console.error('Remote sync failed', e);
+        }
+      }
+    };
+
+    pollInterval = setInterval(syncRemoteState, 3000);
+    return () => clearInterval(pollInterval);
+  }, []);
+
   const controls = {
     play: async (uris) => {
       const state = usePlayerStore.getState();
