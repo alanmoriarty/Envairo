@@ -21,6 +21,11 @@ export function RootLayout() {
   const isPremium = user?.product === 'premium';
 
   useEffect(() => {
+    // Unificar el sessionId en todos los dispositivos usando el ID de Spotify
+    if (user?.id) {
+      useSettingsStore.getState().setSessionId(user.id);
+    }
+
     // Si el usuario no tiene Premium, forzamos que su sesión sea inactiva
     // para que nadie pueda escanear su QR ni enviarle peticiones.
     if (!isPremium) {

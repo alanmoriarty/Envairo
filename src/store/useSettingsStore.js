@@ -19,6 +19,7 @@ export const useSettingsStore = create(
 
       // Session QR ID
       sessionId: `session-${Date.now()}`,
+      setSessionId: (id) => set({ sessionId: id }),
 
       setMode: (mode) => set({ mode }),
       setAutoDJ: (autoDJ) => set({ autoDJ }),
