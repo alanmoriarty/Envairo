@@ -61,7 +61,11 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       </div>
 
       {track.image ? (
-        <img src={track.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" draggable={false} />
+        <img src={track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'} 
+             onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
+             alt="" 
+             className="w-10 h-10 rounded-lg object-cover flex-shrink-0" 
+             draggable={false} />
       ) : (
         <div className="w-10 h-10 rounded-lg bg-bg-card flex items-center justify-center flex-shrink-0">
           <Music2 size={14} className="text-text-muted" />
@@ -347,7 +351,10 @@ export default function DashboardPage() {
                       <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                           {req.track.image && (
-                            <img src={req.track.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                            <img src={req.track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'} 
+                                 onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
+                                 alt="" 
+                                 className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>

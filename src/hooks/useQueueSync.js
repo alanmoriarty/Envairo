@@ -50,7 +50,14 @@ export function useQueueSync() {
           })
           .eq('id', sessionId)
           .then(({ error }) => {
-            if (error) console.error('Error syncing queue to Supabase:', error);
+            if (error) {
+              console.error('Error syncing queue to Supabase:', error);
+              import('sonner').then(({ toast }) => toast.error('Error guardando en la nube: ' + error.message));
+            }
+          })
+          .catch(err => {
+            console.error('Catch error syncing:', err);
+            import('sonner').then(({ toast }) => toast.error('Fallo crítico al sincronizar: ' + err.message));
           });
       }, 500);
     });
@@ -64,23 +71,35 @@ export function useQueueSync() {
         (payload) => {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
+          let updates = {};
 
-          // Solo actualizamos si realmente hay un cambio para evitar re-renders innecesarios
-          const queueChanged = JSON.stringify(newSession.queue) !== JSON.stringify(currentState.queue);
-          const indexChanged = newSession.current_queue_index !== currentState.currentQueueIndex;
-          const trackChanged = newSession.current_track?.id !== currentState.currentTrack?.id;
-          const deviceChanged = newSession.active_device_id !== currentState.activeDeviceId;
-          const volumeChanged = newSession.volume !== null && newSession.volume !== currentState.volume;
+          // FIX: PostgreSQL TOAST issue. If a JSONB column is large (>8KB), and an UPDATE doesn't modify it,
+          // Postgres omits it from the WAL to save space. Supabase Realtime then delivers it as `null` or `undefined`.
+          // Therefore, we only accept the queue from Realtime if it's explicitly an Array (including []).
+          if (Array.isArray(newSession.queue)) {
+            const queueChanged = JSON.stringify(newSession.queue) !== JSON.stringify(currentState.queue);
+            if (queueChanged) updates.queue = newSession.queue;
+          }
 
-          if (queueChanged || indexChanged || trackChanged || deviceChanged || volumeChanged) {
+          if (newSession.current_queue_index !== undefined && newSession.current_queue_index !== currentState.currentQueueIndex) {
+            updates.currentQueueIndex = newSession.current_queue_index;
+          }
+
+          if (newSession.current_track !== undefined && newSession.current_track?.id !== currentState.currentTrack?.id) {
+            updates.currentTrack = newSession.current_track;
+          }
+
+          if (newSession.active_device_id !== undefined && newSession.active_device_id !== currentState.activeDeviceId) {
+            updates.activeDeviceId = newSession.active_device_id;
+          }
+
+          if (newSession.volume !== undefined && newSession.volume !== null && newSession.volume !== currentState.volume) {
+            updates.volume = newSession.volume;
+          }
+
+          if (Object.keys(updates).length > 0) {
             isRemoteUpdate.current = true;
-            usePlayerStore.setState({
-              queue: newSession.queue || [],
-              currentQueueIndex: newSession.current_queue_index ?? -1,
-              currentTrack: newSession.current_track || null,
-              activeDeviceId: newSession.active_device_id || null,
-              ...(newSession.volume !== null ? { volume: newSession.volume } : {})
-            });
+            usePlayerStore.setState(updates);
           }
         }
       )

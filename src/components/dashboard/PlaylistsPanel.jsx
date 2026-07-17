@@ -49,12 +49,12 @@ export function PlaylistsPanel() {
     const toastId = toast.loading(`Importando "${playlist.name}" a la cola...`);
 
     try {
-      // 1. Obtener las canciones de la playlist (hasta 300 por ahora)
+      // 1. Obtener las canciones de la playlist (hasta 150 por ahora)
       let allItems = [];
       let offset = 0;
       let hasMore = true;
 
-      while (hasMore && allItems.length < 300) {
+      while (hasMore && allItems.length < 150) {
         const res = await getPlaylistTracks(playlist.id, 100, offset);
         if (res && res.items && res.items.length > 0) {
           allItems = [...allItems, ...res.items];
@@ -67,8 +67,8 @@ export function PlaylistsPanel() {
         }
       }
 
-      // Limitar exactamente a 300
-      allItems = allItems.slice(0, 300);
+      // Limitar exactamente a 150
+      allItems = allItems.slice(0, 150);
 
       // 2. Mapearlas al formato que usa nuestro store
       const normalizedTracks = allItems
