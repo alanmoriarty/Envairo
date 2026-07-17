@@ -1,6 +1,6 @@
 // ── Spotify OAuth 2.0 PKCE Config ───────────────────────────────────────────
 export const SPOTIFY_CLIENT_ID = 'c0a9f233e0754212a60a6a3b35def559';
-export const SPOTIFY_REDIRECT_URI = 'http://127.0.0.1:5173/callback';
+export const SPOTIFY_REDIRECT_URI = `${window.location.origin}/callback`;
 export const SPOTIFY_SCOPES = [
   'streaming',
   'user-read-email',
