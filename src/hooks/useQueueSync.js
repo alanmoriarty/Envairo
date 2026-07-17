@@ -85,7 +85,7 @@ export function useQueueSync() {
             updates.currentQueueIndex = newSession.current_queue_index;
           }
 
-          if (newSession.current_track !== undefined && newSession.current_track?.id !== currentState.currentTrack?.id) {
+          if (newSession.current_track !== undefined && JSON.stringify(newSession.current_track) !== JSON.stringify(currentState.currentTrack)) {
             updates.currentTrack = newSession.current_track;
           }
 

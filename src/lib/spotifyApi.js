@@ -142,8 +142,12 @@ export async function getAvailableDevices() {
 }
 
 // ── Auto DJ ───────────────────────────────────────────────────────────────────
-export async function getArtistTopTracks(artistId, market = 'US') {
-  return apiFetch(`/artists/${artistId}/top-tracks?market=${market}`);
+export async function getArtistTopTracks(artistId) {
+  return apiFetch(`/artists/${artistId}/top-tracks?market=US`);
+}
+
+export async function searchTracks(query, limit = 20) {
+  return apiFetch(`/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`);
 }
 
 export async function getTracks(ids) {

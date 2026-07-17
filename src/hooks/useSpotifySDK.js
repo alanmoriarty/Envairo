@@ -221,8 +221,7 @@ export function useSpotifySDK() {
     pause: async () => {
       const state = usePlayerStore.getState();
       const targetDevice = state.activeDeviceId || state.deviceId;
-      
-      if (state.activeDeviceId === state.deviceId && state.player) {
+      if (state.player && state.deviceId === targetDevice) {
         try { await state.player.pause(); return; } catch (err) { /* ignore */ }
       }
       if (targetDevice) {
@@ -232,8 +231,7 @@ export function useSpotifySDK() {
     resume: async () => {
       const state = usePlayerStore.getState();
       const targetDevice = state.activeDeviceId || state.deviceId;
-
-      if (state.activeDeviceId === state.deviceId && state.player) {
+      if (state.player && state.deviceId === targetDevice) {
         try { await state.player.resume(); return; } catch (err) { /* ignore */ }
       }
       if (targetDevice) {
@@ -257,7 +255,7 @@ export function useSpotifySDK() {
         }
       } else {
         let success = false;
-        if (state.activeDeviceId === state.deviceId && state.player) {
+        if (state.player && state.deviceId === targetDevice) {
           try { await state.player.nextTrack(); success = true; } catch (err) { /* ignore */ }
         }
         if (!success && targetDevice) {
@@ -283,7 +281,7 @@ export function useSpotifySDK() {
         }
       } else {
         let success = false;
-        if (state.activeDeviceId === state.deviceId && state.player) {
+        if (state.player && state.deviceId === targetDevice) {
           try { await state.player.previousTrack(); success = true; } catch (err) { /* ignore */ }
         }
         if (!success && targetDevice) {

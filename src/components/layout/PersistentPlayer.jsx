@@ -63,8 +63,10 @@ export function PersistentPlayer() {
   const handlePlayPause = () => {
     if (isPlaying) {
       controls.pause();
+      usePlayerStore.getState().setIsPlaying(false);
     } else {
       controls.resume();
+      usePlayerStore.getState().setIsPlaying(true);
     }
   };
 

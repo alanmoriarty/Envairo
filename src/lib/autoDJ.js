@@ -1,4 +1,4 @@
-import { getArtists, getArtistTopTracks } from './spotifyApi';
+import { getArtists, searchTracks } from './spotifyApi';
 
 const artistGenreCache = new Map();
 
@@ -96,17 +96,17 @@ export async function getAutoQueueRecommendations(history, settings) {
   // Tomar un artista al azar de las últimas 5 canciones
   const recentTracks = history.slice(0, 5);
   const randomTrack = recentTracks[Math.floor(Math.random() * recentTracks.length)];
-  const artistId = randomTrack.artistIds?.[0];
+  const artistName = randomTrack.artists ? randomTrack.artists.split(',')[0].trim() : null;
   
-  if (!artistId) return null;
+  if (!artistName) return null;
 
   try {
-    // Usamos el endpoint de top-tracks ya que recommendations fue deprecado por Spotify
-    const data = await getArtistTopTracks(artistId);
-    if (!data || !data.tracks) return null;
+    // Usamos el endpoint de búsqueda ya que top-tracks fue restringido/deprecado por Spotify
+    const data = await searchTracks(`artist:"${artistName}"`, 50);
+    if (!data || !data.tracks || !data.tracks.items) return null;
 
     // Desordenar las top tracks para dar variedad
-    const shuffledTracks = data.tracks.sort(() => 0.5 - Math.random());
+    const shuffledTracks = data.tracks.items.sort(() => 0.5 - Math.random());
 
     for (const apiTrack of shuffledTracks) {
       const normalizedTrack = {
