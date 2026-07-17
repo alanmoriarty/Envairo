@@ -94,14 +94,26 @@ export function PlaylistsPanel() {
         return;
       }
 
-      // 3. Reemplazar la cola activa con estas canciones
-      setQueue(normalizedTracks);
+      // 3. Añadir a la cola activa en lugar de reemplazar
+      const currentQueue = usePlayerStore.getState().queue;
+      const isQueueEmpty = currentQueue.length === 0;
+      
+      const newTracksWithIds = normalizedTracks.map((t, i) => ({ 
+        ...t, 
+        queueId: `${t.id}-${Date.now()}-${i}` 
+      }));
+      
+      usePlayerStore.setState({ queue: [...currentQueue, ...newTracksWithIds] });
 
-      // 4. Iniciar la reproducción con la primera canción
-      const firstTrack = shiftQueue();
-      if (firstTrack) {
-        await controls.play([firstTrack.uri]);
-        toast.success(`¡"${playlist.name}" lista! Reproduciendo...`, { id: toastId });
+      // 4. Iniciar la reproducción solo si la cola estaba vacía
+      if (isQueueEmpty) {
+        const firstTrack = shiftQueue();
+        if (firstTrack) {
+          await controls.play([firstTrack.uri]);
+          toast.success(`¡"${playlist.name}" añadida! Reproduciendo...`, { id: toastId });
+        }
+      } else {
+        toast.success(`¡"${playlist.name}" añadida al final de la cola!`, { id: toastId });
       }
 
     } catch (err) {
