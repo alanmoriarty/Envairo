@@ -24,6 +24,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSpotifySDK } from '../hooks/useSpotifySDK';
+import { useAutoQueue } from '../hooks/useAutoQueue';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
@@ -131,6 +132,8 @@ export default function DashboardPage() {
     })
   );
 
+  useAutoQueue();
+
   React.useEffect(() => {
     const authStore = useAuthStore.getState();
     const sessionId = authStore.user?.id || useSettingsStore.getState().sessionId;
@@ -173,14 +176,35 @@ export default function DashboardPage() {
     // Listen for new requests
     const channel = supabase
       .channel(`requests-${sessionId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, async (payload) => {
         const newReq = payload.new;
-        usePlayerStore.getState().addPendingRequest({
+        const store = usePlayerStore.getState();
+        const settings = useSettingsStore.getState();
+
+        store.addPendingRequest({
           reqId: newReq.id,
           track: newReq.track,
           requester: newReq.requester,
           timestamp: newReq.created_at
         });
+
+        if (settings.autoDJ) {
+          try {
+            const { evaluateTrack } = await import('../lib/autoDJ');
+            const result = await evaluateTrack(newReq.track, settings);
+            
+            if (result.approved) {
+              store.approveRequest(newReq.id);
+              toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
+            } else {
+              store.rejectRequest(newReq.id);
+              toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
+              await supabase.from('requests').update({ status: 'rejected' }).eq('id', newReq.id);
+            }
+          } catch (err) {
+            console.error('Error evaluating track in Auto DJ', err);
+          }
+        }
       })
       .subscribe();
 

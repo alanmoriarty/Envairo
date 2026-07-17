@@ -140,3 +140,17 @@ export async function getQueue() {
 export async function getAvailableDevices() {
   return apiFetch('/me/player/devices');
 }
+
+// ── Auto DJ ───────────────────────────────────────────────────────────────────
+export async function getRecommendations(seedTracks, limit = 5) {
+  const params = new URLSearchParams({ 
+    seed_tracks: seedTracks.join(','),
+    limit 
+  });
+  return apiFetch(`/recommendations?${params}`);
+}
+
+export async function getTracks(ids) {
+  const params = new URLSearchParams({ ids: ids.join(',') });
+  return apiFetch(`/tracks?${params}`);
+}
