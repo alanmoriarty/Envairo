@@ -73,10 +73,22 @@ export function useSpotifySDK() {
       
       const { activeDeviceId, setActiveDeviceId } = usePlayerStore.getState();
       
-      // If no active device is set in the cloud, we become the active device automatically
-      if (!activeDeviceId || activeDeviceId === device_id) {
-        setActiveDeviceId(device_id); // This syncs to Supabase
-        await transferPlayback(device_id, false);
+      try {
+        const { getAvailableDevices } = await import('../lib/spotifyApi');
+        const data = await getAvailableDevices();
+        const devices = data?.devices || [];
+        const isActiveDeviceAlive = devices.some(d => d.id === activeDeviceId);
+        
+        // Si no hay dispositivo activo, o es este, o el activo está muerto (ej. recargó página), lo reclamamos
+        if (!activeDeviceId || activeDeviceId === device_id || !isActiveDeviceAlive) {
+          setActiveDeviceId(device_id);
+          await transferPlayback(device_id, false);
+        }
+      } catch (err) {
+        if (!activeDeviceId || activeDeviceId === device_id) {
+          setActiveDeviceId(device_id);
+          await transferPlayback(device_id, false);
+        }
       }
       
       // Auto-resume logic
@@ -190,6 +202,9 @@ export function useSpotifySDK() {
         await playTrack(targetDevice, uris);
       } catch (e) {
         console.error('Play API failed', e);
+        if (e.message?.includes('Device not found')) {
+           import('sonner').then(({ toast }) => toast.error('Dispositivo principal desconectado. Refresca la pestaña.'));
+        }
       }
     },
     playContext: async (contextUri) => {

@@ -136,3 +136,7 @@ export async function setVolume(volumePercent, deviceId) {
 export async function getQueue() {
   return apiFetch('/me/player/queue');
 }
+
+export async function getAvailableDevices() {
+  return apiFetch('/me/player/devices');
+}
