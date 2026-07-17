@@ -26,6 +26,7 @@ import { useSpotifySDK } from '../hooks/useSpotifySDK';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
+import { supabase } from '../lib/supabase';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -129,6 +130,49 @@ export default function DashboardPage() {
     })
   );
 
+  React.useEffect(() => {
+    const sessionId = useSettingsStore.getState().sessionId;
+    const { mode, blacklistGenres, whitelistArtists, blacklistArtists, allowRepeats, requestsPerHour } = useSettingsStore.getState();
+    
+    // Sync session to Supabase
+    supabase.from('sessions').upsert({
+      id: sessionId,
+      active: true,
+      mode,
+      blacklist_genres: blacklistGenres,
+      whitelist_artists: whitelistArtists,
+      blacklist_artists: blacklistArtists,
+      allow_repeats: allowRepeats,
+      requests_per_hour: requestsPerHour,
+      updated_at: new Date().toISOString()
+    }).then(({ error }) => {
+      if (error) {
+        console.error('Failed to sync session. Make sure requests_per_hour column exists in sessions table.', error);
+      } else {
+        console.log('Session synced to Supabase');
+      }
+    });
+
+    // Listen for new requests
+    const channel = supabase
+      .channel(`requests-${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
+        const newReq = payload.new;
+        usePlayerStore.getState().addPendingRequest({
+          reqId: newReq.id,
+          track: newReq.track,
+          requester: newReq.requester,
+          timestamp: newReq.created_at
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.from('sessions').update({ active: false }).eq('id', sessionId);
+    };
+  }, []);
+
   const handleDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
     const oldIdx = queue.findIndex((t) => t.queueId === active.id);
@@ -170,7 +214,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 flex flex-col xl:h-[calc(100vh-2rem)]">
+    <div className="p-4 sm:p-6 space-y-6 flex flex-col lg:h-[calc(100vh-2rem)]">
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -234,10 +278,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Main grid */}
-      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'xl:grid-cols-1' : 'xl:grid-cols-3'} min-h-0`}>
+      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} min-h-0`}>
         {/* Left Column: Modules */}
         {(showRequests || showQR || showPlaylists) && (
-          <div className="xl:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-0">
             
             {showRequests && (
               <div className="card p-5">
@@ -300,8 +344,8 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col h-[400px] xl:h-full ${(!showRequests && !showQR && !showPlaylists) ? "xl:col-span-1" : "xl:col-span-2"}`}>
-          <div className="card p-5 flex flex-col h-full overflow-hidden">
+        <div className={`flex flex-col min-h-0 h-[400px] lg:h-full ${(!showRequests && !showQR && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+          <div className="card p-5 flex flex-col h-full overflow-hidden min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-bold text-text-primary flex items-center gap-2">

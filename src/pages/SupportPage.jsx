@@ -4,14 +4,9 @@ import { Accordion } from '../components/ui/Accordion';
 
 const FAQS = [
   {
-    question: '¿Qué hago si el reproductor no se conecta?',
-    answer:
-      'Asegúrate de tener Spotify Premium activo y de haber iniciado sesión correctamente. El SDK de Spotify Web Playback requiere Premium para funcionar. Si el problema persiste, cierra sesión y vuelve a iniciarla. Verifica también que el Redirect URI en tu app de Spotify Developer sea exactamente "http://localhost:5173/callback".',
-  },
-  {
     question: '¿Cómo funciona el Auto-DJ?',
     answer:
-      'Cuando activas el Auto-DJ desde el toggle del Dashboard, el sistema monitorea la cola de reproducción. Si la cola se vacía, Envairo añade automáticamente una canción compatible con tu Lista Blanca de géneros configurada en Ajustes. Puedes desactivarlo en cualquier momento.',
+      'Proximamente.',
   },
   {
     question: '¿Cuántas canciones puede pedir un invitado?',
@@ -21,18 +16,23 @@ const FAQS = [
   {
     question: '¿Cómo proyecto el código QR en una pantalla grande?',
     answer:
-      'En el Dashboard verás la tarjeta del Código QR. Haz clic en el botón "Proyectar en pantalla completa" o haz doble clic en el QR para activar el modo pantalla completa. Perfecto para TVs o proyectores en tu local.',
+      'En el Dashboard verás la tarjeta del Código QR. Puedes seleccionar el botón para expandir',
   },
   {
-    question: '¿Puedo bloquear géneros o contenido explícito?',
+    question: '¿Puedo bloquear artistas?',
     answer:
-      'Sí. En la sección de Configuración puedes agregar géneros a la Lista Negra para bloquearlos automáticamente. También hay un toggle para filtrar contenido explícito de Spotify. Los invitados recibirán un mensaje de error si intentan pedir canciones bloqueadas.',
+      'Sí. En la sección de Configuración puedes agregar artistas a la Lista Negra para bloquearlos automáticamente. Los invitados recibirán un mensaje de error si intentan pedir canciones bloqueadas.',
   },
   {
     question: '¿Qué diferencia hay entre Modo Fiesta y Modo Comercial?',
     answer:
       'En Modo Fiesta los invitados pueden poner un apodo opcional. En Modo Comercial el número de mesa es obligatorio para identificar de dónde vienen las peticiones. Útil para bares y restaurantes donde el DJ necesita saber la ubicación del cliente.',
   },
+  {
+    question: '¿Necesito Spotify Premium para utilizar la aplicación?',
+    answer:
+      'El Dashboard, Actividades y Configuración controlan el reproductor en tiempo real. Debido a las políticas de Spotify, estas funciones son exclusivas para usuarios con una cuenta Premium activa.',
+  }
 ];
 
 export default function SupportPage() {

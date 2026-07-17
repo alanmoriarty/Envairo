@@ -12,6 +12,7 @@ export default function SettingsPage() {
     endTime, setEndTime,
     allowRepeats, setAllowRepeats,
     explicitFilter, setExplicitFilter,
+    requestsPerHour, setRequestsPerHour,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
     whitelistArtists, addWhitelistArtist, removeWhitelistArtist,
@@ -92,6 +93,23 @@ export default function SettingsPage() {
             label="Filtro de contenido explícito"
             description="Bloquear automáticamente canciones con contenido explícito"
           />
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="text-sm font-semibold text-text-primary">Peticiones por hora (Global)</label>
+              <p className="text-xs text-text-muted mt-0.5">Límite total de canciones que todos los invitados sumados pueden pedir en una hora</p>
+            </div>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={requestsPerHour}
+              onChange={(e) => setRequestsPerHour(parseInt(e.target.value) || 15)}
+              className="input-field w-full sm:w-24 text-center"
+            />
+          </div>
         </div>
       </section>
 

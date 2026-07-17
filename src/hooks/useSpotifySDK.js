@@ -70,17 +70,11 @@ export function useSpotifySDK() {
       setDeviceId(device_id);
       setSdkReady(true);
       await transferPlayback(device_id, false);
-      
       // Auto-resume logic
       const storeState = usePlayerStore.getState();
       if (storeState.isPlaying && storeState.currentTrack) {
-        setTimeout(async () => {
-          try {
-            await playTrack(device_id, [storeState.currentTrack.uri], storeState.progress);
-          } catch(err) {
-            console.error('Failed to auto-resume playback:', err);
-          }
-        }, 500); // Pequeña espera para que el transfer se estabilice
+        usePlayerStore.getState().setIsPlaying(false);
+        usePlayerStore.getState().setPendingResume(true);
       }
     });
 

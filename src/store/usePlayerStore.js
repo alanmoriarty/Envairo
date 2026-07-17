@@ -12,6 +12,7 @@ export const usePlayerStore = create(
       // Playback state
       currentTrack: null,
       isPlaying: false,
+      pendingResume: false,
       progress: 0,
       duration: 0,
       volume: 70,
@@ -31,6 +32,7 @@ export const usePlayerStore = create(
       // ── Playback ─────────────────────────────────────────────────────────
       setCurrentTrack: (track) => set({ currentTrack: track }),
       setIsPlaying: (isPlaying) => set({ isPlaying }),
+      setPendingResume: (pendingResume) => set({ pendingResume }),
       setProgress: (progress) => set({ progress }),
       setDuration: (duration) => set({ duration }),
       setVolume: (volume) => set({ volume }),
@@ -141,9 +143,22 @@ export const usePlayerStore = create(
       }),
 
       // ── Pending requests ─────────────────────────────────────────────────
+      cleanupOldRequests: () => set((state) => {
+        const now = Date.now();
+        const threeHours = 3 * 60 * 60 * 1000;
+        return {
+          pendingRequests: state.pendingRequests.filter(req => (now - new Date(req.timestamp).getTime()) < threeHours)
+        };
+      }),
+
       addPendingRequest: (req) =>
         set((state) => {
-          const newReq = { ...req, reqId: `req-${Date.now()}`, timestamp: new Date().toISOString(), status: 'pending' };
+          const newReq = { 
+            ...req, 
+            reqId: req.reqId || `req-${Date.now()}`, 
+            timestamp: req.timestamp || new Date().toISOString(), 
+            status: req.status || 'pending' 
+          };
           return {
             pendingRequests: [newReq, ...state.pendingRequests],
             requestHistory: [newReq, ...(state.requestHistory || [])].slice(0, 500)

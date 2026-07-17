@@ -34,7 +34,11 @@ export default function CallbackPage() {
         await fetchSpotifyToken(code);
         const user = await getCurrentUser();
         setUser(user);
-        navigate('/app/dashboard');
+        if (user.product === 'premium') {
+          navigate('/app/dashboard');
+        } else {
+          navigate('/app/metrics');
+        }
       } catch (err) {
         setError(err.message || 'Error al autenticar');
       }
@@ -42,12 +46,45 @@ export default function CallbackPage() {
   }, [navigate, setUser]);
 
   if (error) {
+    const isAuthError = error.includes('403') || error.toLowerCase().includes('forbidden') || error.includes('API error 403');
+
     return (
-      <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center gap-4">
-        <p className="text-danger text-lg font-semibold">{error}</p>
-        <button onClick={() => navigate('/')} className="btn-primary">
-          Volver al inicio
-        </button>
+      <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center p-4">
+        <div className="card p-8 flex flex-col items-center text-center max-w-md w-full animate-in zoom-in-95">
+          <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center text-danger mb-4">
+            <Music2 size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-text-primary mb-2">
+            {isAuthError ? 'Cuenta no autorizada' : 'Error de Autenticación'}
+          </h2>
+          <p className="text-text-muted text-sm mb-6">
+            {isAuthError
+              ? 'Para ser anfitrión en Envairo QR necesitas una cuenta de Spotify Premium.'
+              : error}
+          </p>
+          <div className="flex flex-col w-full gap-3">
+            {isAuthError && (
+              <a
+                href="https://www.spotify.com/premium/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full py-3 flex items-center justify-center"
+              >
+                Obtener Spotify Premium
+              </a>
+            )}
+            <button
+              onClick={() => {
+                localStorage.removeItem('spotify_access_token');
+                localStorage.removeItem('spotify_refresh_token');
+                navigate('/');
+              }}
+              className="btn-ghost w-full py-3 text-sm text-text-muted hover:text-text-primary"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

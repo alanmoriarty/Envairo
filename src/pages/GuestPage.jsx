@@ -2,23 +2,46 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X } from 'lucide-react';
-import { useAvailability } from '../hooks/useAvailability';
-import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { searchTracks, getArtist } from '../lib/spotifyApi';
-import { getAccessToken } from '../lib/spotifyAuth';
+import { supabase } from '../lib/supabase';
 
-const COOLDOWN_SECONDS = 5 * 60; // 5 minutes
+const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
+const MAX_USER_REQUESTS = 3;
 
 
 
 export default function GuestPage() {
   const { sessionId } = useParams();
-  const { isAvailable } = useAvailability();
-  const { mode, blacklistGenres, whitelistArtists, blacklistArtists, allowRepeats } = useSettingsStore();
-  const { queue, currentQueueIndex, addPendingRequest, playHistory, pendingRequests } = usePlayerStore();
+  
+  // Real-time session config from Supabase
+  const [sessionConfig, setSessionConfig] = useState(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data } = await supabase.from('sessions').select('*').eq('id', sessionId).single();
+      if (data) setSessionConfig(data);
+    };
+    fetchSession();
+
+    const channel = supabase.channel(`session-${sessionId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
+        setSessionConfig(payload.new);
+      })
+      .subscribe();
+      
+    return () => supabase.removeChannel(channel);
+  }, [sessionId]);
+
+  const { queue, currentQueueIndex, playHistory, pendingRequests } = usePlayerStore();
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
+
+  const isAvailable = sessionConfig?.active ?? true;
+  const isCommercial = sessionConfig?.mode === 'commercial';
+  const blacklistGenres = sessionConfig?.blacklist_genres || [];
+  const whitelistArtists = sessionConfig?.whitelist_artists || [];
+  const blacklistArtists = sessionConfig?.blacklist_artists || [];
+  const allowRepeats = sessionConfig?.allow_repeats ?? true;
 
   const [identifier, setIdentifier] = useState('');
   const [query, setQuery] = useState('');
@@ -30,7 +53,6 @@ export default function GuestPage() {
   const debounceRef = useRef(null);
   const cooldownRef = useRef(null);
 
-  const isCommercial = mode === 'commercial';
   const isInCooldown = cooldown > 0;
 
   // Debounced search
@@ -43,12 +65,10 @@ export default function GuestPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
         try {
-          const token = getAccessToken();
-          if (!token) {
-            setResults(getMockResults(query));
-            return;
-          }
-          const data = await searchTracks(query, 6);
+          const { data, error } = await supabase.functions.invoke('search-spotify', {
+            body: { query, limit: 6 }
+          });
+          if (error) throw error;
           const items = data?.tracks?.items || [];
           setResults(items.map(normalizeApiTrack));
         } catch (err) {
@@ -59,6 +79,23 @@ export default function GuestPage() {
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
+
+  // Restore cooldown from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`user_reqs_${sessionId}`);
+      if (stored) {
+        const reqs = JSON.parse(stored);
+        if (reqs.length > 0) {
+          const lastReq = reqs[reqs.length - 1];
+          const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
+          if (secondsSinceLast < COOLDOWN_SECONDS) {
+            setCooldown(COOLDOWN_SECONDS - secondsSinceLast);
+          }
+        }
+      }
+    } catch (e) {}
+  }, [sessionId]);
 
   // Cooldown countdown
   useEffect(() => {
@@ -75,19 +112,33 @@ export default function GuestPage() {
     return () => clearInterval(cooldownRef.current);
   }, [cooldown > 0]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selected) { toast.error('Selecciona una canción primero'); return; }
     if (isCommercial && !identifier.trim()) {
       toast.error('El número de mesa es obligatorio');
       return;
     }
 
-    // Check song request count
+    // Check individual user max requests limit
+    let userRequests = [];
+    try { 
+      const stored = localStorage.getItem(`user_reqs_${sessionId}`);
+      if (stored) userRequests = JSON.parse(stored);
+    } catch (e) {}
+    
+    if (userRequests.length >= MAX_USER_REQUESTS) {
+      toast.error(`Has alcanzado el límite de ${MAX_USER_REQUESTS} peticiones por sesión`);
+      return;
+    }
+
+    // Check song request count (same song)
     const count = requestCount[selected.id] || 0;
     if (count >= MAX_REQUESTS) {
       toast.error(`Esta canción ya fue pedida ${MAX_REQUESTS} veces en esta sesión`);
       return;
     }
+
+
 
     // Blacklist genre check
     if (blacklistGenres.length > 0 && selected.genre) {
@@ -133,22 +184,51 @@ export default function GuestPage() {
       }
     }
 
-    addPendingRequest({
-      track: selected,
-      requester: identifier.trim() || 'Anónimo',
-    });
+    const sendRequest = async () => {
+      // Check global requests per hour limit against Supabase
+      const limit = sessionConfig?.requests_per_hour ?? 15;
+      const oneHourAgoTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      
+      const { count: globalCount, error: countError } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId)
+        .gte('created_at', oneHourAgoTime);
 
-    setRequestCount((prev) => ({
-      ...prev,
-      [selected.id]: (prev[selected.id] || 0) + 1,
-    }));
+      if (!countError && globalCount >= limit) {
+        toast.error(`El evento ha alcanzado su límite global de ${limit} peticiones por hora. Intenta más tarde.`);
+        return;
+      }
 
-    toast.success(`¡"${selected.name}" enviada al anfitrión!`);
-    setSelected(null);
-    setQuery('');
-    setResults([]);
-    setCooldown(COOLDOWN_SECONDS);
+      const { error } = await supabase.from('requests').insert({
+        session_id: sessionId,
+        track: selected,
+        requester: identifier.trim() || 'Anónimo',
+        status: 'pending'
+      });
+
+      if (error) {
+        toast.error('Error al enviar la petición. Intenta nuevamente.');
+        return;
+      }
+
+      setRequestCount((prev) => ({
+        ...prev,
+        [selected.id]: (prev[selected.id] || 0) + 1,
+      }));
+
+      localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify([...userRequests, Date.now()]));
+
+      toast.success(`¡"${selected.name}" enviada al anfitrión!`);
+      setSelected(null);
+      setQuery('');
+      setResults([]);
+      setCooldown(COOLDOWN_SECONDS);
+    };
+
+    await sendRequest();
   };
+
 
   const formatCooldown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 

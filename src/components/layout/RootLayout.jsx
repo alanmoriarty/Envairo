@@ -1,15 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PersistentPlayer } from './PersistentPlayer';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { useAutoDJ } from '../../hooks/useAutoDJ';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { usePlayerStore } from '../../store/usePlayerStore';
+import { supabase } from '../../lib/supabase';
 import { Menu, Music2 } from 'lucide-react';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
   useAutoDJ(controls);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const { user } = useAuthStore();
+  const isPremium = user?.product === 'premium';
+
+  useEffect(() => {
+    // Si el usuario no tiene Premium, forzamos que su sesión sea inactiva
+    // para que nadie pueda escanear su QR ni enviarle peticiones.
+    if (!isPremium) {
+      const sessionId = useSettingsStore.getState().sessionId;
+      supabase.from('sessions').upsert({ id: sessionId, active: false }).then();
+    }
+    
+    // Limpiar peticiones más antiguas a 3 horas cada minuto
+    const interval = setInterval(() => {
+      usePlayerStore.getState().cleanupOldRequests();
+    }, 60000);
+    
+    // Ejecutar una vez al montar
+    usePlayerStore.getState().cleanupOldRequests();
+    
+    return () => clearInterval(interval);
+  }, [isPremium]);
 
   return (
     <div className="flex h-screen bg-bg-root overflow-hidden">

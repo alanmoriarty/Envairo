@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, BarChart2, Zap,
-  HelpCircle, LogOut, Music2, ChevronRight
+  HelpCircle, LogOut, Music2, ChevronRight, XCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
@@ -18,6 +18,8 @@ const NAV_ITEMS = [
 export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const isPremium = user?.product === 'premium';
 
   const handleLogout = () => {
     clearSpotifyTokens();
@@ -68,7 +70,9 @@ export function Sidebar({ isOpen, onClose }) {
               <p className="text-sm font-semibold text-text-primary truncate">
                 {user.display_name}
               </p>
-              <p className="text-xs text-text-muted truncate">{user.email}</p>
+              <p className="text-xs text-text-muted truncate">
+                {user.email} {!isPremium && <span className="text-warning">(Free)</span>}
+              </p>
             </div>
           </div>
         </div>
@@ -80,7 +84,14 @@ export function Sidebar({ isOpen, onClose }) {
           <NavLink
             key={to}
             to={to}
-            onClick={onClose}
+            onClick={(e) => {
+              if (!isPremium && ['/app/dashboard', '/app/activities', '/app/settings'].includes(to)) {
+                e.preventDefault();
+                setShowPremiumModal(true);
+                return;
+              }
+              onClose();
+            }}
             className={({ isActive }) =>
               `nav-link ${isActive ? 'active' : ''}`
             }
@@ -102,6 +113,39 @@ export function Sidebar({ isOpen, onClose }) {
         </div>
       </nav>
     </aside>
+
+    {showPremiumModal && (
+      <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
+        <div className="card p-8 flex flex-col items-center text-center max-w-md w-full animate-in zoom-in-95 fade-in mx-4">
+          <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center text-warning mb-4">
+            <XCircle size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-text-primary mb-2">
+            Se requiere Spotify Premium
+          </h2>
+          <p className="text-text-muted text-sm mb-6">
+            El Dashboard, Actividades y Configuración controlan el reproductor en tiempo real. 
+            Debido a las políticas de Spotify, estas funciones son exclusivas para usuarios con una cuenta Premium activa.
+          </p>
+          <div className="flex flex-col w-full gap-3">
+            <a 
+              href="https://www.spotify.com/premium/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn-primary w-full py-3 flex items-center justify-center"
+            >
+              Obtener Spotify Premium
+            </a>
+            <button 
+              onClick={() => setShowPremiumModal(false)} 
+              className="btn-ghost w-full py-3 text-sm text-text-muted hover:text-text-primary transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

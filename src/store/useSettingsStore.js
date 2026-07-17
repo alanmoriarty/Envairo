@@ -15,6 +15,7 @@ export const useSettingsStore = create(
       blacklistGenres: [],
       whitelistArtists: [],
       blacklistArtists: [],
+      requestsPerHour: 15,
 
       // Session QR ID
       sessionId: `session-${Date.now()}`,
@@ -26,6 +27,7 @@ export const useSettingsStore = create(
       setEndTime: (t) => set({ endTime: t }),
       setAllowRepeats: (v) => set({ allowRepeats: v }),
       setExplicitFilter: (v) => set({ explicitFilter: v }),
+      setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),
       removeWhitelistGenre: (g) =>

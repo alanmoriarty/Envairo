@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import {
   Play, Pause, SkipForward, SkipBack,
@@ -9,13 +10,18 @@ import {
 export function PersistentPlayer() {
   const {
     currentTrack, isPlaying, progress, duration, volume,
-    sdkReady, queue,
+    sdkReady, queue, pendingResume, setPendingResume,
     setVolume,
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
   const progressRef = useRef(null);
 
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
+
+  const { user } = useAuthStore.getState();
+  const isPremium = user?.product === 'premium';
+
+  if (!isPremium) return null;
 
   const formatTime = (ms) => {
     const s = Math.floor(ms / 1000);
@@ -61,8 +67,46 @@ export function PersistentPlayer() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
-      {/* Progress bar */}
+    <>
+      {/* Resume Prompt Overlay */}
+      {pendingResume && (
+        <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
+          <div className="card p-8 flex flex-col items-center gap-4 text-center max-w-sm animate-in zoom-in-95 fade-in">
+            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-2">
+              <Play size={32} fill="currentColor" />
+            </div>
+            <h3 className="text-xl font-bold text-text-primary">Sesión Restaurada</h3>
+            <p className="text-text-muted text-sm mb-4">
+              Haz clic para reanudar la música automáticamente desde donde la dejaste.
+            </p>
+            <button 
+              onClick={() => {
+                setPendingResume(false);
+                if (currentTrack) {
+                  const { deviceId } = usePlayerStore.getState();
+                  if (deviceId) {
+                    import('../../lib/spotifyApi').then(({ playTrack }) => {
+                      playTrack(deviceId, [currentTrack.uri], progress).catch(err => console.error(err));
+                    });
+                  }
+                }
+              }}
+              className="btn-primary w-full py-3 text-base"
+            >
+              Reanudar Música
+            </button>
+            <button 
+              onClick={() => setPendingResume(false)}
+              className="w-full py-2 text-sm text-text-muted hover:text-text-primary transition-colors"
+            >
+              Mantener en pausa
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
+        {/* Progress bar */}
       <div
         ref={progressRef}
         className="h-1 bg-white/10 cursor-pointer group"
@@ -161,5 +205,6 @@ export function PersistentPlayer() {
         </div>
       </div>
     </div>
+    </>
   );
 }
