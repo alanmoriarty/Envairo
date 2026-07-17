@@ -73,14 +73,20 @@ export function useSpotifySDK() {
       
       const checkAndTransfer = async (currentActiveId) => {
         try {
-          const { getAvailableDevices, transferPlayback } = await import('../lib/spotifyApi');
-          const data = await getAvailableDevices();
-          const devices = data?.devices || [];
-          const isActiveDeviceAlive = devices.some(d => d.id === currentActiveId);
+          const isActiveDeviceAlive = currentActiveId 
+            ? await import('../lib/spotifyApi').then(m => m.getPlaybackState()).then(state => state && state.device.id === currentActiveId).catch(() => false) 
+            : false;
           
           if (!currentActiveId || currentActiveId === device_id || !isActiveDeviceAlive) {
             usePlayerStore.getState().setActiveDeviceId(device_id);
-            await transferPlayback(device_id, false);
+            await import('../lib/spotifyApi').then(m => m.transferPlayback(device_id, false));
+
+            // Auto-resume logic
+            const storeState = usePlayerStore.getState();
+            if (storeState.isPlaying && storeState.currentTrack) {
+              usePlayerStore.getState().setIsPlaying(false);
+              usePlayerStore.getState().setPendingResume(true);
+            }
           }
         } catch (err) {
           if (!currentActiveId || currentActiveId === device_id) {
@@ -99,14 +105,6 @@ export function useSpotifySDK() {
             unsub();
           }
         });
-      }
-      
-      // Auto-resume logic
-      const storeState = usePlayerStore.getState();
-      const actualActiveDevice = storeState.activeDeviceId;
-      if (storeState.isPlaying && storeState.currentTrack && (!actualActiveDevice || actualActiveDevice === device_id)) {
-        usePlayerStore.getState().setIsPlaying(false);
-        usePlayerStore.getState().setPendingResume(true);
       }
     });
 
