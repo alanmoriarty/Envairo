@@ -16,26 +16,48 @@ export function PlaylistsPanel() {
   const shiftQueue = usePlayerStore((s) => s.shiftQueue);
 
   useEffect(() => {
-    async function fetchPlaylists() {
+    let isMounted = true;
+
+    async function fetchPlaylists(showLoading = true) {
+      if (showLoading) setLoading(true);
       try {
         const [res, user] = await Promise.all([
           getUserPlaylists(50),
           import('../../lib/spotifyApi').then(m => m.getCurrentUser())
         ]);
         
+        if (!isMounted) return;
+
         if (res && res.items && user && user.id) {
           // Filtrar para mostrar SOLO las playlists creadas por el propio usuario logueado
           const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
-          setPlaylists(myPlaylists);
+          
+          setPlaylists(prev => {
+            // Comparar de forma simple para evitar re-renders innecesarios
+            const prevIds = prev.map(p => p.id).join(',');
+            const newIds = myPlaylists.map(p => p.id).join(',');
+            return prevIds === newIds ? prev : myPlaylists;
+          });
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error fetching playlists:', err);
-        setError('No se pudieron cargar tus playlists.');
+        if (showLoading) setError('No se pudieron cargar tus playlists.');
       } finally {
-        setLoading(false);
+        if (isMounted && showLoading) setLoading(false);
       }
     }
-    fetchPlaylists();
+
+    fetchPlaylists(true);
+
+    const intervalId = setInterval(() => {
+      fetchPlaylists(false);
+    }, 10000); // Consultar cada 10 segundos para "tiempo real"
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   const handleSelectPlaylist = async (playlist) => {
