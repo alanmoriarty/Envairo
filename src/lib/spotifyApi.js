@@ -49,8 +49,8 @@ export async function getUserPlaylists(limit = 20) {
   return apiFetch(`/me/playlists?limit=${limit}`);
 }
 
-export async function getPlaylistTracks(playlistId) {
-  return apiFetch(`/playlists/${playlistId}/items?limit=50`);
+export async function getPlaylistTracks(playlistId, limit = 100, offset = 0) {
+  return apiFetch(`/playlists/${playlistId}/items?limit=${limit}&offset=${offset}`);
 }
 
 export async function getArtists(ids) {
@@ -142,12 +142,8 @@ export async function getAvailableDevices() {
 }
 
 // ── Auto DJ ───────────────────────────────────────────────────────────────────
-export async function getRecommendations(seedTracks, limit = 5) {
-  const params = new URLSearchParams({ 
-    seed_tracks: seedTracks.join(','),
-    limit 
-  });
-  return apiFetch(`/recommendations?${params}`);
+export async function getArtistTopTracks(artistId, market = 'US') {
+  return apiFetch(`/artists/${artistId}/top-tracks?market=${market}`);
 }
 
 export async function getTracks(ids) {

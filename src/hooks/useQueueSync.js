@@ -9,6 +9,7 @@ export function useQueueSync() {
   const authStore = useAuthStore((state) => state);
   const sessionId = authStore.user?.id || useSettingsStore((state) => state.sessionId);
   const isRemoteUpdate = useRef(false);
+  const syncTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -30,21 +31,28 @@ export function useQueueSync() {
         return;
       }
 
-      // Local change detected, push to Supabase
-      supabase
-        .from('sessions')
-        .update({
-          queue: state.queue,
-          current_queue_index: state.currentQueueIndex,
-          current_track: state.currentTrack,
-          active_device_id: state.activeDeviceId,
-          volume: state.volume,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId)
-        .then(({ error }) => {
-          if (error) console.error('Error syncing queue to Supabase:', error);
-        });
+      // Limpiar el timeout anterior si existe
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+
+      // Debounce the Supabase push by 500ms to avoid race conditions with rapid synchronous state updates (like setQueue + shiftQueue)
+      syncTimeoutRef.current = setTimeout(() => {
+        supabase
+          .from('sessions')
+          .update({
+            queue: state.queue,
+            current_queue_index: state.currentQueueIndex,
+            current_track: state.currentTrack,
+            active_device_id: state.activeDeviceId,
+            volume: state.volume,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId)
+          .then(({ error }) => {
+            if (error) console.error('Error syncing queue to Supabase:', error);
+          });
+      }, 500);
     });
 
     // 2. Subscribe to Supabase changes to pull to Zustand

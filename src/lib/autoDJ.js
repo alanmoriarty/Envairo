@@ -1,4 +1,4 @@
-import { getArtists, getRecommendations } from './spotifyApi';
+import { getArtists, getArtistTopTracks } from './spotifyApi';
 
 const artistGenreCache = new Map();
 
@@ -88,18 +88,27 @@ export async function evaluateTrack(track, settings) {
 }
 
 /**
- * Obtiene recomendaciones para llenar la cola, filtrando según las reglas
+ * Obtiene recomendaciones para llenar la cola basándose en un artista reciente
  */
 export async function getAutoQueueRecommendations(history, settings) {
-  // Tomar hasta 5 semillas del historial reciente
-  const seedTracks = history.slice(0, 5).map(t => t.id).filter(Boolean);
-  if (seedTracks.length === 0) return null;
+  if (history.length === 0) return null;
+
+  // Tomar un artista al azar de las últimas 5 canciones
+  const recentTracks = history.slice(0, 5);
+  const randomTrack = recentTracks[Math.floor(Math.random() * recentTracks.length)];
+  const artistId = randomTrack.artistIds?.[0];
+  
+  if (!artistId) return null;
 
   try {
-    const data = await getRecommendations(seedTracks, 20); // Pedimos 20 para tener opciones tras filtrar
+    // Usamos el endpoint de top-tracks ya que recommendations fue deprecado por Spotify
+    const data = await getArtistTopTracks(artistId);
     if (!data || !data.tracks) return null;
 
-    for (const apiTrack of data.tracks) {
+    // Desordenar las top tracks para dar variedad
+    const shuffledTracks = data.tracks.sort(() => 0.5 - Math.random());
+
+    for (const apiTrack of shuffledTracks) {
       const normalizedTrack = {
         id: apiTrack.id,
         uri: apiTrack.uri,
@@ -111,16 +120,20 @@ export async function getAutoQueueRecommendations(history, settings) {
         duration_ms: apiTrack.duration_ms,
       };
 
+      // Si no permitimos repetidas, verificamos que no esté en el historial reciente
+      if (!settings.allowRepeats) {
+        if (history.slice(0, 30).some(t => t.id === normalizedTrack.id)) continue;
+      }
+
       const result = await evaluateTrack(normalizedTrack, settings);
       if (result.approved) {
         return normalizedTrack;
       }
     }
     
-    // Si ninguna de las 20 pasó el filtro, devolver null
     return null;
   } catch (err) {
-    console.error('Error fetching recommendations for Auto DJ', err);
+    console.error('Error fetching auto DJ track', err);
     return null;
   }
 }

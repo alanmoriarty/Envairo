@@ -49,11 +49,29 @@ export function PlaylistsPanel() {
     const toastId = toast.loading(`Importando "${playlist.name}" a la cola...`);
 
     try {
-      // 1. Obtener las canciones de la playlist (hasta 50 por ahora)
-      const res = await getPlaylistTracks(playlist.id);
-      
+      // 1. Obtener las canciones de la playlist (hasta 300 por ahora)
+      let allItems = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore && allItems.length < 300) {
+        const res = await getPlaylistTracks(playlist.id, 100, offset);
+        if (res && res.items && res.items.length > 0) {
+          allItems = [...allItems, ...res.items];
+          offset += 100;
+          if (res.items.length < 100) {
+            hasMore = false; // No hay más páginas
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Limitar exactamente a 300
+      allItems = allItems.slice(0, 300);
+
       // 2. Mapearlas al formato que usa nuestro store
-      const normalizedTracks = (res.items || [])
+      const normalizedTracks = allItems
         .map(wrapper => wrapper.item || wrapper.track || wrapper) // Spotify puede usar 'item' o 'track'
         .filter(t => t && t.uri && t.type !== 'episode') // Asegurar que sea una pista válida
         .map(t => {
