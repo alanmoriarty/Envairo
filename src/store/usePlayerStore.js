@@ -9,6 +9,7 @@ export const usePlayerStore = create(
       deviceId: null,
       activeDeviceId: null,
       sdkReady: false,
+      initialSyncDone: false,
 
       // Playback state
       currentTrack: null,
@@ -31,6 +32,7 @@ export const usePlayerStore = create(
       setDeviceId: (deviceId) => set({ deviceId }),
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),
+      setInitialSyncDone: (initialSyncDone) => set({ initialSyncDone }),
 
       // ── Playback ─────────────────────────────────────────────────────────
       setCurrentTrack: (track) => set({ currentTrack: track }),

@@ -71,24 +71,34 @@ export function useSpotifySDK() {
       setSdkReady(true);
       usePlayerStore.getState().setDeviceTransferred(false); // Reset transfer state
       
-      const { activeDeviceId, setActiveDeviceId } = usePlayerStore.getState();
-      
-      try {
-        const { getAvailableDevices } = await import('../lib/spotifyApi');
-        const data = await getAvailableDevices();
-        const devices = data?.devices || [];
-        const isActiveDeviceAlive = devices.some(d => d.id === activeDeviceId);
-        
-        // Si no hay dispositivo activo, o es este, o el activo está muerto (ej. recargó página), lo reclamamos
-        if (!activeDeviceId || activeDeviceId === device_id || !isActiveDeviceAlive) {
-          setActiveDeviceId(device_id);
-          await transferPlayback(device_id, false);
+      const checkAndTransfer = async (currentActiveId) => {
+        try {
+          const { getAvailableDevices, transferPlayback } = await import('../lib/spotifyApi');
+          const data = await getAvailableDevices();
+          const devices = data?.devices || [];
+          const isActiveDeviceAlive = devices.some(d => d.id === currentActiveId);
+          
+          if (!currentActiveId || currentActiveId === device_id || !isActiveDeviceAlive) {
+            usePlayerStore.getState().setActiveDeviceId(device_id);
+            await transferPlayback(device_id, false);
+          }
+        } catch (err) {
+          if (!currentActiveId || currentActiveId === device_id) {
+            usePlayerStore.getState().setActiveDeviceId(device_id);
+            import('../lib/spotifyApi').then(m => m.transferPlayback(device_id, false)).catch(console.error);
+          }
         }
-      } catch (err) {
-        if (!activeDeviceId || activeDeviceId === device_id) {
-          setActiveDeviceId(device_id);
-          await transferPlayback(device_id, false);
-        }
+      };
+
+      if (usePlayerStore.getState().initialSyncDone) {
+        checkAndTransfer(usePlayerStore.getState().activeDeviceId);
+      } else {
+        const unsub = usePlayerStore.subscribe((state) => {
+          if (state.initialSyncDone) {
+            checkAndTransfer(state.activeDeviceId);
+            unsub();
+          }
+        });
       }
       
       // Auto-resume logic

@@ -122,6 +122,7 @@ export function useQueueSync() {
             ...(data.volume !== null ? { volume: data.volume } : {})
           });
         }
+        usePlayerStore.getState().setInitialSyncDone(true);
       });
 
     return () => {
