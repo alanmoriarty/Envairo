@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
-  Users, Store, Sparkles, Music2, Clock, ListMusic
+  Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList
 } from 'lucide-react';
 import {
   DndContext,
@@ -253,12 +253,12 @@ export default function DashboardPage() {
           {/* Panel toggles */}
           <div className="card px-4 py-3 flex flex-wrap items-center gap-3 lg:gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-text-primary">Peticiones</span>
+              <span className="text-sm font-medium text-text-primary flex items-center gap-1"><ClipboardList size={14} className="text-accent" /> Peticiones</span>
               <Toggle checked={showRequests} onChange={setShowRequests} />
             </div>
             <div className="hidden sm:block w-px h-4 bg-white/10" />
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-text-primary">QR</span>
+              <span className="text-sm font-medium text-text-primary flex items-center gap-1"><QrCode size={14} className="text-accent" /> QR</span>
               <Toggle checked={showQR} onChange={setShowQR} />
             </div>
             <div className="hidden sm:block w-px h-4 bg-white/10" />

@@ -97,15 +97,27 @@ export const usePlayerStore = create(
           } else if (oldIndex > state.currentQueueIndex && newIndex <= state.currentQueueIndex) {
             updatedIndex++;
           }
+          
+          if (updatedIndex >= 10) {
+            q.splice(0, 5);
+            updatedIndex -= 5;
+          }
           return { queue: q, currentQueueIndex: updatedIndex };
         }),
 
       shiftQueue: () => {
         const state = get();
-        const nextIndex = state.currentQueueIndex + 1;
-        const next = state.queue[nextIndex];
+        let nextIndex = state.currentQueueIndex + 1;
+        let newQueue = [...state.queue];
+
+        if (nextIndex >= 10) {
+          newQueue.splice(0, 5);
+          nextIndex -= 5;
+        }
+
+        const next = newQueue[nextIndex];
         if (next) {
-          set({ currentQueueIndex: nextIndex, currentTrack: next });
+          set({ currentQueueIndex: nextIndex, currentTrack: next, queue: newQueue });
           return next;
         }
         return null;
@@ -124,10 +136,17 @@ export const usePlayerStore = create(
 
       playTrackFromQueue: (queueId) => {
         const state = get();
-        const index = state.queue.findIndex(t => t.queueId === queueId);
+        let index = state.queue.findIndex(t => t.queueId === queueId);
+        let newQueue = [...state.queue];
+
+        if (index >= 10) {
+          newQueue.splice(0, 5);
+          index -= 5;
+        }
+
         if (index !== -1) {
-          set({ currentQueueIndex: index, currentTrack: state.queue[index] });
-          return state.queue[index];
+          set({ currentQueueIndex: index, currentTrack: newQueue[index], queue: newQueue });
+          return newQueue[index];
         }
         return null;
       },

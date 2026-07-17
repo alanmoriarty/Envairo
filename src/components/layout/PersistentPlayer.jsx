@@ -191,7 +191,7 @@ export function PersistentPlayer() {
         </div>
 
         {/* SDK status + queue count */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
           {sdkReady ? (
             <Wifi size={14} className="text-success" title="SDK conectado" />
           ) : (
