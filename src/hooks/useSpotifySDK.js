@@ -142,10 +142,30 @@ export function useSpotifySDK() {
       // Historial
       if (normalizedTrack && storeState.currentTrack?.id !== normalizedTrack.id) {
         storeState.addToHistory(normalizedTrack);
+        
+        // Sincronizar el índice de la cola si cambió la canción (ej. por Spotify Connect)
+        const queue = storeState.queue;
+        const currentIndex = storeState.currentQueueIndex;
+        let newIndex = queue.findIndex((t, i) => i >= currentIndex && t.id === normalizedTrack.id);
+        
+        if (newIndex === -1) {
+          newIndex = queue.findIndex(t => t.id === normalizedTrack.id);
+        }
+        
+        if (newIndex !== -1 && newIndex !== currentIndex) {
+          usePlayerStore.setState({ currentQueueIndex: newIndex });
+        } else if (newIndex === -1 && normalizedTrack.id) {
+          // Si el usuario puso una canción desde Spotify que no está en la cola, la inyectamos para mantener sincronía
+          const newQueue = [...queue];
+          const newTrack = { ...normalizedTrack, queueId: Date.now().toString(), requestedBy: 'Spotify Connect' };
+          const insertIdx = Math.max(0, currentIndex + 1);
+          newQueue.splice(insertIdx, 0, newTrack);
+          usePlayerStore.setState({ queue: newQueue, currentQueueIndex: insertIdx });
+        }
       }
 
       // Track end / Auto-queue transition
-      const trackFinished = storeState.isPlaying && state.paused && state.position === 0 && storeState.progress > 5000;
+      const trackFinished = storeState.isPlaying && state.paused && state.position === 0 && storeState.duration > 0 && (storeState.duration - storeState.progress) <= 10000;
 
       setCurrentTrack(normalizedTrack);
       setIsPlaying(!state.paused);
