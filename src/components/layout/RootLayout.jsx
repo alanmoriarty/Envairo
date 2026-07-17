@@ -7,12 +7,14 @@ import { useAutoDJ } from '../../hooks/useAutoDJ';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useQueueSync } from '../../hooks/useQueueSync';
 import { supabase } from '../../lib/supabase';
 import { Menu, Music2 } from 'lucide-react';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
   useAutoDJ(controls);
+  useQueueSync();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { user } = useAuthStore();

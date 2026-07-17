@@ -69,6 +69,7 @@ export function useSpotifySDK() {
     p.addListener('ready', async ({ device_id }) => {
       setDeviceId(device_id);
       setSdkReady(true);
+      usePlayerStore.getState().setDeviceTransferred(false); // Reset transfer state
       await transferPlayback(device_id, false);
       // Auto-resume logic
       const storeState = usePlayerStore.getState();
@@ -83,8 +84,20 @@ export function useSpotifySDK() {
     });
 
     p.addListener('player_state_changed', (state) => {
-      if (!state) return;
+      if (!state) {
+        usePlayerStore.getState().setDeviceTransferred(true);
+        usePlayerStore.getState().setIsPlaying(false);
+        return;
+      }
+      
       const track = state.track_window.current_track;
+      if (!track) {
+        usePlayerStore.getState().setDeviceTransferred(true);
+        usePlayerStore.getState().setIsPlaying(false);
+        return;
+      }
+      usePlayerStore.getState().setDeviceTransferred(false);
+      
       const normalizedTrack = normalizeTrack(track);
       
       const storeState = usePlayerStore.getState();

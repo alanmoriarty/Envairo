@@ -105,6 +105,35 @@ export function PersistentPlayer() {
         </div>
       )}
 
+      {/* Device Transferred Overlay */}
+      {usePlayerStore.getState().deviceTransferred && (
+        <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
+          <div className="card p-8 flex flex-col items-center gap-4 text-center max-w-sm animate-in zoom-in-95 fade-in">
+            <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center text-danger mb-2">
+              <WifiOff size={32} fill="currentColor" />
+            </div>
+            <h3 className="text-xl font-bold text-text-primary">Reproducción Transferida</h3>
+            <p className="text-text-muted text-sm mb-4">
+              Spotify está reproduciendo en otro dispositivo. Haz clic abajo para recuperar el control del audio en esta pantalla.
+            </p>
+            <button 
+              onClick={() => {
+                const { deviceId } = usePlayerStore.getState();
+                if (deviceId) {
+                  import('../../lib/spotifyApi').then(({ transferPlayback }) => {
+                    transferPlayback(deviceId, true).catch(err => console.error(err));
+                  });
+                  usePlayerStore.getState().setDeviceTransferred(false);
+                }
+              }}
+              className="btn-primary w-full py-3 text-base bg-accent hover:bg-accent-light"
+            >
+              Tomar Control Aquí
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
         {/* Progress bar */}
       <div
