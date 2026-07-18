@@ -80,7 +80,8 @@ export function useSpotifySDK() {
           const playbackState = await api.getPlaybackState().catch(() => null);
           
           const isActiveDeviceAlive = playbackState && currentActiveId ? playbackState.device.id === currentActiveId : false;
-          const wasActuallyPlaying = playbackState ? playbackState.is_playing : false;
+          // Si Spotify dice que está sonando, o si nuestro estado local dice que estaba sonando justo antes de refrescar la página.
+          const wasActuallyPlaying = (playbackState ? playbackState.is_playing : false) || usePlayerStore.getState().isPlaying;
           
           if (!currentActiveId || currentActiveId === device_id || !isActiveDeviceAlive) {
             usePlayerStore.getState().setActiveDeviceId(device_id);
