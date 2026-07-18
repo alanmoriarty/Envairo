@@ -51,13 +51,8 @@ export function PlaylistsPanel() {
 
     fetchPlaylists(true);
 
-    const intervalId = setInterval(() => {
-      fetchPlaylists(false);
-    }, 10000); // Consultar cada 10 segundos para "tiempo real"
-
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
     };
   }, []);
 
