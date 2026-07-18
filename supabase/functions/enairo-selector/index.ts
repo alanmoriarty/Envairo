@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai@0.1.1'
+import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,15 +29,15 @@ Eres "EnAIro Selector", un DJ de Inteligencia Artificial super avanzado.
 Tu objetivo es analizar la vibra de la música que está sonando y la lista de canciones en cola.
 
 Contexto actual de la fiesta:
-${settings?.enairoPrompt ? \`Instrucciones especiales del usuario: "\${settings.enairoPrompt}"\` : 'Sin instrucciones especiales.'}
+${settings?.enairoPrompt ? `Instrucciones especiales del usuario: "${settings.enairoPrompt}"` : 'Sin instrucciones especiales.'}
 Géneros permitidos (Whitelist): ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Todos'}
 Géneros prohibidos (Blacklist): ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}
 
 Historial de canciones reproducidas recientemente (el "Mood" actual):
-${history?.map((t: any) => \`- \${t.name} por \${t.artists?.[0]?.name}\`).join('\n') || 'Ninguna aún'}
+${history?.map((t: any) => `- ${t.name} por ${t.artists?.[0]?.name}`).join('\n') || 'Ninguna aún'}
 
 Cola de reproducción actual (próximas a sonar):
-${queue?.map((t: any, idx: number) => \`[ID de Cola: \${t.queueId}] \${t.name} por \${t.artists?.[0]?.name}\`).join('\n') || 'Vacía'}
+${queue?.map((t: any, idx: number) => `[ID de Cola: ${t.queueId}] ${t.name} por ${t.artists?.[0]?.name}`).join('\n') || 'Vacía'}
 
 TUS TAREAS:
 1. SI la cola tiene pocas canciones, debes sugerir un lote grande de al menos 20 canciones que continúen perfectamente con la vibra del historial reciente.
