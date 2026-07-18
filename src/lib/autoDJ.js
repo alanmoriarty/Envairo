@@ -33,6 +33,20 @@ async function getArtistGenres(artistId) {
   return [];
 }
 
+async function getTrackGenre(trackName, artistName) {
+  try {
+    const term = encodeURIComponent(`${trackName} ${artistName}`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&entity=song`);
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
+      return data.results[0].primaryGenreName;
+    }
+  } catch (err) {
+    console.error('Error fetching track genre', err);
+  }
+  return null;
+}
+
 /**
  * Evalúa si una canción cumple con las reglas del Auto DJ
  */
@@ -65,16 +79,20 @@ export async function evaluateTrack(track, settings) {
   }
 
   // 3. Blacklist Genres
-  if (blacklistGenres.length > 0 && track.artistIds && track.artistIds.length > 0) {
-    const blockedGenres = blacklistGenres.map(g => normalizeString(g));
-    const mainArtistId = track.artistIds[0];
-    const artistGenres = await getArtistGenres(mainArtistId);
+  if (blacklistGenres.length > 0) {
+    const artistName = track.artists ? track.artists.split(',')[0] : '';
+    const trackGenre = await getTrackGenre(track.name, artistName);
     
-    for (const genre of artistGenres) {
-      // Búsqueda parcial: si el género del artista es "latin pop" y bloqueamos "pop", se bloquea
-      if (blockedGenres.some(bg => genre.includes(bg))) {
-        return { approved: false, reason: `El género "${genre}" está prohibido en esta sesión.` };
-      }
+    if (!trackGenre) {
+      // Si la canción no tiene tags o no la encontramos, requiere revisión manual
+      return { approved: null, reason: 'No se encontraron etiquetas de género para esta pista' };
+    }
+
+    const normalizedTrackGenre = normalizeString(trackGenre);
+    const blockedGenres = blacklistGenres.map(g => normalizeString(g));
+    
+    if (blockedGenres.some(bg => normalizedTrackGenre.includes(bg))) {
+      return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
     }
   }
 

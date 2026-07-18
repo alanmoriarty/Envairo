@@ -205,14 +205,17 @@ export default function DashboardPage() {
             const { evaluateTrack } = await import('../lib/autoDJ');
             const result = await evaluateTrack(newReq.track, settings);
             
-            if (result.approved) {
+            if (result.approved === true) {
               store.approveRequest(newReq.id);
               toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
               await supabase.from('requests').update({ status: 'approved' }).eq('id', newReq.id);
-            } else {
+            } else if (result.approved === false) {
               store.rejectRequest(newReq.id);
               toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
               await supabase.from('requests').update({ status: 'rejected' }).eq('id', newReq.id);
+            } else {
+              // Manual review needed
+              toast.info(`Auto DJ requiere revisión manual para la petición de ${newReq.requester} (${result.reason || 'Sin etiquetas claras'})`);
             }
           } catch (err) {
             console.error('Error evaluating track in Auto DJ', err);
