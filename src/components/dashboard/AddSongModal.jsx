@@ -59,7 +59,18 @@ export function AddSongModal({ onClose }) {
       requestedBy: 'Host'
     };
 
-    const newQueue = [...queue, newTrack];
+    const newQueue = [...queue];
+    
+    // Insertar 2 canciones adelante de la actual
+    // currentQueueIndex es la que está sonando. 
+    // +1 es la inmediatamente siguiente, +2 es 2 canciones adelante.
+    // Si la cola no tiene tantas canciones, se pone al final.
+    let insertIndex = queue.length;
+    if (currentQueueIndex >= -1) {
+      insertIndex = Math.min(queue.length, currentQueueIndex + 2);
+    }
+    
+    newQueue.splice(insertIndex, 0, newTrack);
     usePlayerStore.setState({ queue: newQueue });
 
     if (isAdminMode) {

@@ -114,6 +114,7 @@ export function useQueueSync() {
           }
 
           // Procesar Comandos de Reproducción (Solo el Host principal los ejecuta)
+
           if (!isAdminMode && newSession.playback_command) {
             const cmd = newSession.playback_command;
             if (cmd.ts > currentState.lastCommandTs) {
@@ -193,7 +194,35 @@ export function useQueueSync() {
           }
         }
       )
+      .on('broadcast', { event: 'playback_sync' }, (payload) => {
+        const user = useAuthStore.getState().user;
+        if (!user) {
+          const store = usePlayerStore.getState();
+          if (store.isPlaying !== payload.payload.isPlaying) {
+             store.setIsPlaying(payload.payload.isPlaying);
+          }
+          if (Math.abs(store.progress - payload.payload.progress) > 3000) {
+             store.setProgress(payload.payload.progress);
+          }
+        }
+      })
       .subscribe();
+
+    // Broadcast para sincronizar el progreso de la canción con controles remotos/invitados
+    let broadcastInterval = setInterval(() => {
+      const user = useAuthStore.getState().user;
+      if (user && channel && channel.state === 'joined') {
+         const store = usePlayerStore.getState();
+         channel.send({
+           type: 'broadcast',
+           event: 'playback_sync',
+           payload: {
+             progress: store.progress,
+             isPlaying: store.isPlaying
+           }
+         }).catch(()=>{}); // ignorar errores si falla
+      }
+    }, 2000);
 
     // 3. Initial pull
     supabase
@@ -217,6 +246,7 @@ export function useQueueSync() {
 
     return () => {
       unsubscribe();
+      clearInterval(broadcastInterval);
       supabase.removeChannel(channel);
     };
   }, [sessionId]);
