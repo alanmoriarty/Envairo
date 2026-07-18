@@ -319,9 +319,9 @@ export default function ActivitiesPage() {
       {karaokeOpen && createPortal(
         <div
           ref={karaokeRef}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
+          className="fixed inset-0 z-[9999] flex flex-col items-center text-center p-4 md:p-8 overflow-hidden bg-bg-root"
         >
-          <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
+          <div className="relative z-10 w-full flex-1 flex flex-col items-center min-h-0">
             <button
               onClick={() => setKaraokeOpen(false)}
               className="fixed top-6 right-6 md:top-8 md:right-8 z-[10000] p-3 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-lg border border-white/10 shadow-xl cursor-pointer transition-all hover:scale-105"
@@ -331,16 +331,16 @@ export default function ActivitiesPage() {
             </button>
 
             {!currentTrack ? (
-              <div className="flex-1 flex flex-col items-center justify-center w-full h-full">
+              <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0">
                 <Mic2 size={64} className="text-accent/30 mb-6 animate-bounce" />
                 <p className="text-4xl font-bold text-white/50 animate-pulse">Preparando pista...</p>
               </div>
             ) : (
               <>
-                <div className="mb-8 mt-4">
+                <div className="mb-4 md:mb-8 mt-12 md:mt-4 shrink-0">
                   <p className="text-text-muted text-sm mb-1">Reproduciendo</p>
-                  <p className="text-xl font-bold text-text-primary">{currentTrack.name}</p>
-                  <p className="text-text-muted">{currentTrack.artists}</p>
+                  <p className="text-xl md:text-3xl font-bold text-text-primary px-4">{currentTrack.name}</p>
+                  <p className="text-text-muted md:text-lg">{currentTrack.artists}</p>
                 </div>
 
                 <div 
@@ -348,7 +348,7 @@ export default function ActivitiesPage() {
                   onScroll={handleScroll}
                   onTouchMove={handleScroll}
                   onWheel={handleScroll}
-                  className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 no-scrollbar"
+                  className="flex-1 w-full max-w-4xl overflow-y-auto mt-2 px-4 pb-32 no-scrollbar min-h-0"
                 >
                   <div className="space-y-8 pt-32 pb-64 text-center">
                     {lyricsLoading ? (
