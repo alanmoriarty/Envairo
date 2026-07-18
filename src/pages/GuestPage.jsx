@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { supabase } from '../lib/supabase';
+import { AdSense } from '../components/ads/AdSense';
 
 const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
@@ -285,6 +286,9 @@ export default function GuestPage() {
         </p>
       </div>
 
+      {/* Top Banner Ad */}
+      <AdSense slot={import.meta.env.VITE_ADSENSE_SLOT_TOP} />
+
       {/* Identifier input */}
       <div className="card p-4 mb-4">
         <label className="block text-sm text-text-muted mb-2">
@@ -446,6 +450,11 @@ export default function GuestPage() {
           </div>
         </div>
       )}
+
+      {/* Bottom Banner Ad */}
+      <div className="mt-8">
+        <AdSense slot={import.meta.env.VITE_ADSENSE_SLOT_BOTTOM} />
+      </div>
     </div>
   );
 }
