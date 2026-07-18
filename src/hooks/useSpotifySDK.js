@@ -76,19 +76,21 @@ export function useSpotifySDK() {
       
       const checkAndTransfer = async (currentActiveId) => {
         try {
-          const isActiveDeviceAlive = currentActiveId 
-            ? await import('../lib/spotifyApi').then(m => m.getPlaybackState()).then(state => state && state.device.id === currentActiveId).catch(() => false) 
-            : false;
+          const api = await import('../lib/spotifyApi');
+          const playbackState = await api.getPlaybackState().catch(() => null);
+          
+          const isActiveDeviceAlive = playbackState && currentActiveId ? playbackState.device.id === currentActiveId : false;
+          const wasActuallyPlaying = playbackState ? playbackState.is_playing : false;
           
           if (!currentActiveId || currentActiveId === device_id || !isActiveDeviceAlive) {
             usePlayerStore.getState().setActiveDeviceId(device_id);
-            await import('../lib/spotifyApi').then(m => m.transferPlayback(device_id, false));
+            
+            // Transferir reproducción conservando el estado de Play/Pause real de Spotify
+            await api.transferPlayback(device_id, wasActuallyPlaying);
 
-            // Auto-resume logic
-            const storeState = usePlayerStore.getState();
-            if (storeState.isPlaying && storeState.currentTrack) {
-              usePlayerStore.getState().setIsPlaying(false);
-              usePlayerStore.getState().setPendingResume(true);
+            if (wasActuallyPlaying) {
+              usePlayerStore.getState().setIsPlaying(true);
+              usePlayerStore.getState().setPendingResume(false);
             }
           }
         } catch (err) {

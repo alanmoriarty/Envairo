@@ -84,6 +84,20 @@ export function useQueueSync() {
             import('sonner').then(({ toast }) => {
               toast.error('Sesión iniciada en otro dispositivo. Cerrando reproductor.', { duration: 8000 });
             });
+            
+            // Pausar y desconectar el reproductor del dispositivo viejo
+            try {
+              const state = usePlayerStore.getState();
+              if (state.player) {
+                state.player.pause().catch(()=>{});
+                setTimeout(() => state.player.disconnect(), 100);
+              }
+              const targetDevice = state.activeDeviceId || state.deviceId;
+              if (targetDevice) {
+                import('../lib/spotifyApi').then(m => m.pausePlayback(targetDevice)).catch(()=>{});
+              }
+            } catch (err) {}
+
             logout();
             return;
           }
