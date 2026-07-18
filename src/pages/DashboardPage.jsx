@@ -92,15 +92,12 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
         className="flex gap-1 flex-shrink-0"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {!isAdminMode && (
-          <button
-            onClick={() => onPlay(track)}
-            className="p-1.5 rounded-lg hover:bg-accent/20 hover:text-accent text-text-muted transition-all"
-            title="Reproducir ahora"
-          >
-            <Music2 size={14} />
-          </button>
-        )}
+        <button
+          onClick={() => onPlay(track)}
+          className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/20"
+        >
+          <Play size={14} />
+        </button>
         <button
           onClick={() => onRemove(track.queueId)}
           className="p-1.5 rounded-lg hover:bg-danger/20 hover:text-danger text-text-muted transition-all"
@@ -179,9 +176,18 @@ export default function DashboardPage() {
   };
 
   const handlePlayNow = async (track) => {
-    if (sdkReady && track.uri) {
-      usePlayerStore.getState().playTrackFromQueue(track.queueId);
-      await controls.play([track.uri]);
+    const isAdminMode = useSettingsStore.getState().isAdminMode;
+    if ((sdkReady || isAdminMode) && track.uri) {
+      if (isAdminMode) {
+        import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
+          p_session_id: sessionId, 
+          p_secret: useSettingsStore.getState().hostSecret, 
+          p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } 
+        }).then());
+      } else {
+        usePlayerStore.getState().playTrackFromQueue(track.queueId);
+        await controls.play([track.uri]);
+      }
       toast.success(`Reproduciendo "${track.name}"`);
     }
   };

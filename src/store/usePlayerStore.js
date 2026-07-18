@@ -110,10 +110,6 @@ export const usePlayerStore = create(
             updatedIndex++;
           }
           
-          if (updatedIndex >= 10) {
-            q.splice(0, 5);
-            updatedIndex -= 5;
-          }
           return { queue: q, currentQueueIndex: updatedIndex };
         }),
 

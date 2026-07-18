@@ -57,7 +57,8 @@ export function PlaylistsPanel() {
   }, []);
 
   const handleSelectPlaylist = async (playlist) => {
-    if (!sdkReady) {
+    const isAdminMode = useSettingsStore.getState().isAdminMode;
+    if (!sdkReady && !isAdminMode) {
       toast.error('El reproductor aún no está conectado.');
       return;
     }
@@ -127,7 +128,15 @@ export function PlaylistsPanel() {
       if (isQueueEmpty) {
         const firstTrack = shiftQueue();
         if (firstTrack) {
-          await controls.play([firstTrack.uri]);
+          if (isAdminMode) {
+            import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
+              p_session_id: useSettingsStore.getState().sessionId, 
+              p_secret: useSettingsStore.getState().hostSecret, 
+              p_updates: { playback_command: { action: 'play', ts: Date.now() } } 
+            }).then());
+          } else {
+            await controls.play([firstTrack.uri]);
+          }
           toast.success(`¡"${playlist.name}" añadida! Reproduciendo...`, { id: toastId });
         }
       } else {

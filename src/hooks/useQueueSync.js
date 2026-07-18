@@ -145,6 +145,11 @@ export function useQueueSync() {
                     } else {
                       api.skipToNext(targetDevice).catch(() => {});
                     }
+                  } else if (cmd.action === 'play_specific') {
+                    const track = usePlayerStore.getState().playTrackFromQueue(cmd.queueId);
+                    if (track) {
+                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [track.uri])).catch(()=>{});
+                    }
                   } else if (cmd.action === 'prev') {
                     const prevTrack = usePlayerStore.getState().prevQueue();
                     if (prevTrack) {
