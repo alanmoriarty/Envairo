@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
-import { searchSpotifyTracks } from '../lib/spotifyApi';
+import { searchTracks } from '../lib/spotifyApi';
 import toast from 'react-hot-toast';
 
 export function useEnairoSelector() {
@@ -86,10 +86,19 @@ export function useEnairoSelector() {
         if (tracksToAdd.length > 0) {
           for (const query of tracksToAdd) {
             try {
-              const results = await searchSpotifyTracks(query, 1);
-              if (results && results.length > 0) {
-                // Añadir a la cola con una marca de que fue agregada por IA
-                const track = { ...results[0], addedBy: 'EnvAIro Selector' };
+              const results = await searchTracks(query, 1);
+              if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
+                const spotifyTrack = results.tracks.items[0];
+                // Formatear la canción para el store interno
+                const track = {
+                  id: spotifyTrack.id,
+                  name: spotifyTrack.name,
+                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                  image: spotifyTrack.album?.images?.[0]?.url || '',
+                  duration_ms: spotifyTrack.duration_ms,
+                  uri: spotifyTrack.uri,
+                  addedBy: 'EnvAIro Selector'
+                };
                 addToQueue(track);
               }
             } catch (err) {
