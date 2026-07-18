@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
 
-export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...' }) {
+export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...', suggestions = [] }) {
   const [input, setInput] = useState('');
   const inputRef = useRef(null);
+  
+  // Use useMemo to keep the list ID stable across renders
+  const listId = React.useMemo(() => `tag-suggestions-${Math.random().toString(36).substring(2, 9)}`, []);
 
   const handleKeyDown = (e) => {
     if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
@@ -38,8 +41,16 @@ export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...' }) 
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={tags.length === 0 ? placeholder : ''}
+        list={suggestions.length > 0 ? listId : undefined}
         className="flex-1 min-w-[120px] bg-transparent outline-none text-text-primary placeholder-text-subtle text-sm"
       />
+      {suggestions.length > 0 && (
+        <datalist id={listId}>
+          {suggestions.map((suggestion) => (
+            <option key={suggestion} value={suggestion} />
+          ))}
+        </datalist>
+      )}
     </div>
   );
 }

@@ -5,6 +5,15 @@ import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 
+const COMMON_GENRES = [
+  "Alternativo", "Anime", "Blues", "Clásica", "Country", "Dance", 
+  "Electrónica", "Hip-Hop", "Rap", "Jazz", "K-Pop", "Latino", 
+  "Pop", "Pop Latino", "R&B", "Soul", "Reggae", "Rock", 
+  "Rock Latino", "Reggaeton", "Regional Mexicano", "Salsa", 
+  "Tropical", "Urbano latino", "Banda", "Cumbia", "Merengue", 
+  "Bachata", "Vallenato", "Indie"
+];
+
 export default function SettingsPage() {
   const {
     alwaysAvailable, setAlwaysAvailable,
@@ -193,6 +202,7 @@ export default function SettingsPage() {
             onAdd={addWhitelistGenre}
             onRemove={removeWhitelistGenre}
             placeholder="Ej: pop, reggaeton, rock..."
+            suggestions={COMMON_GENRES}
           />
         </div>
 
@@ -207,6 +217,7 @@ export default function SettingsPage() {
             onAdd={addBlacklistGenre}
             onRemove={removeBlacklistGenre}
             placeholder="Ej: trap, metal, reggaeton..."
+            suggestions={COMMON_GENRES}
           />
         </div>
       </section>
