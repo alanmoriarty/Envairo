@@ -95,15 +95,18 @@ export function RootLayout() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-bg-root overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-bg-root overflow-hidden">
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card border-b border-white/5 flex items-center justify-between px-4 z-30">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center shadow-glow-sm">
               <Music2 size={16} className="text-accent" />
             </div>
-            <span className="font-bold text-text-primary">Envairo</span>
+            <div className="leading-none">
+              <span className="font-bold text-text-primary block leading-none">Envairo</span>
+              <span className="text-[10px] text-accent font-semibold block mt-0.5">QR</span>
+            </div>
           </div>
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-text-muted hover:text-white">
             <Menu size={24} />
