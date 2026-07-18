@@ -51,16 +51,21 @@ export default function ActivitiesPage() {
     return result;
   };
 
-  // Fetch lyrics when track changes
+  // Fetch lyrics when track changes or karaoke opens
   useEffect(() => {
-    if (!currentTrack) {
+    // Si no hay canción o el karaoke está cerrado, no hacer nada y limpiar
+    if (!currentTrack || !karaokeOpen) {
       setLyricsLines([]);
       setLyricsError('');
       setIsSynced(false);
       return;
     }
 
+    let isMounted = true;
+    
     const fetchLyrics = async () => {
+      if (!isMounted) return;
+      
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
@@ -79,6 +84,8 @@ export default function ActivitiesPage() {
         
         if (!res.ok) throw new Error('Letras no encontradas');
         const results = await res.json();
+        
+        if (!isMounted) return;
         
         if (!results || results.length === 0) throw new Error('Letras no encontradas');
         
@@ -103,16 +110,25 @@ export default function ActivitiesPage() {
           throw new Error('Letras no encontradas');
         }
       } catch (err) {
+        if (!isMounted) return;
         setLyricsError(err.message);
         setLyricsLines([]);
         setIsSynced(false);
       } finally {
-        setLyricsLoading(false);
+        if (isMounted) setLyricsLoading(false);
       }
     };
 
-    fetchLyrics();
-  }, [currentTrack?.id]);
+    // Darle 1 segundo para que la posición (progress) se estabilice
+    const timerId = setTimeout(() => {
+      fetchLyrics();
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timerId);
+    };
+  }, [currentTrack?.id, karaokeOpen]);
 
   // Autoscroll logic & sync
   useEffect(() => {
