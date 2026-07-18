@@ -139,14 +139,16 @@ export function useQueueSync() {
                       api.pausePlayback(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'next') {
-                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                      currentState.player.nextTrack().catch(() => {});
+                    const nextTrack = usePlayerStore.getState().shiftQueue();
+                    if (nextTrack) {
+                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [nextTrack.uri])).catch(()=>{});
                     } else {
                       api.skipToNext(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'prev') {
-                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                      currentState.player.previousTrack().catch(() => {});
+                    const prevTrack = usePlayerStore.getState().prevQueue();
+                    if (prevTrack) {
+                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [prevTrack.uri])).catch(()=>{});
                     } else {
                       api.skipToPrevious(targetDevice).catch(() => {});
                     }
