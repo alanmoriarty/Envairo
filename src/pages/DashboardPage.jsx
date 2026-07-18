@@ -268,25 +268,46 @@ export default function DashboardPage() {
         <div className="fixed bottom-0 left-0 right-0 md:left-64 z-50 shrink-0 glass border-t border-white/10 p-3 flex items-center justify-center gap-6 shadow-glow-sm">
           <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">Control Remoto</span>
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'prev', ts: Date.now() } } }).then()}
+            onClick={() => {
+              const track = usePlayerStore.getState().prevQueue();
+              if (track) {
+                supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } }).then();
+              }
+            }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"
           >
             <SkipBack size={24} />
           </button>
+          
+          {usePlayerStore.getState().isPlaying ? (
+            <button 
+              onClick={() => {
+                usePlayerStore.getState().setIsPlaying(false);
+                supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then();
+              }}
+              className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
+            >
+              <Pause size={28} />
+            </button>
+          ) : (
+            <button 
+              onClick={() => {
+                usePlayerStore.getState().setIsPlaying(true);
+                supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then();
+              }}
+              className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
+            >
+              <Play size={28} />
+            </button>
+          )}
+
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then()}
-            className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
-          >
-            <Pause size={28} />
-          </button>
-          <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then()}
-            className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
-          >
-            <Play size={28} />
-          </button>
-          <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'next', ts: Date.now() } } }).then()}
+            onClick={() => {
+              const track = usePlayerStore.getState().shiftQueue();
+              if (track) {
+                supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } }).then();
+              }
+            }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"
           >
             <SkipForward size={24} />

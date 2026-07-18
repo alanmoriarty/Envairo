@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ListMusic, Play, Loader2 } from 'lucide-react';
-import { getUserPlaylists, getPlaylistTracks } from '../../lib/spotifyApi';
+import { ListMusic, Play, Loader2, Link as LinkIcon } from 'lucide-react';
+import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spotifyApi';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 export function PlaylistsPanel() {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [playlistLink, setPlaylistLink] = useState('');
   const { controls } = useSpotifySDK();
   const sdkReady = usePlayerStore((s) => s.sdkReady);
   const setQueue = usePlayerStore((s) => s.setQueue);
   const shiftQueue = usePlayerStore((s) => s.shiftQueue);
+  const sessionId = useSettingsStore(s => s.sessionId);
 
   useEffect(() => {
     let isMounted = true;
@@ -29,12 +32,9 @@ export function PlaylistsPanel() {
         if (!isMounted) return;
 
         if (res && res.items && user && user.id) {
-          // Filtrar para mostrar SOLO las playlists creadas por el propio usuario logueado
           const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
           
           setPlaylists(prev => {
-            // Comparar usando 'snapshot_id' detecta no solo si hay nuevas playlists,
-            // sino también si agregaste canciones a una playlist existente
             const prevSnaps = prev.map(p => p.snapshot_id).join(',');
             const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
             return prevSnaps === newSnaps ? prev : myPlaylists;
@@ -58,81 +58,62 @@ export function PlaylistsPanel() {
 
   const handleSelectPlaylist = async (playlist) => {
     const isAdminMode = useSettingsStore.getState().isAdminMode;
-    if (!sdkReady && !isAdminMode) {
-      toast.error('El reproductor aún no está conectado.');
+    if (!isAdminMode && !sdkReady) {
+      toast.error('Reproductor no listo. Espera un momento.');
       return;
     }
-    if (importing) return;
 
     setImporting(true);
-    const toastId = toast.loading(`Importando "${playlist.name}" a la cola...`);
+    const toastId = toast.loading(`Importando "${playlist.name}"...`);
 
     try {
-      // 1. Obtener las canciones de la playlist (hasta 150 por ahora)
-      let allItems = [];
-      let offset = 0;
-      let hasMore = true;
+      const res = await getPlaylistTracks(playlist.id, 100);
+      const items = res?.items || [];
+      
+      const tracksToQueue = items
+        .filter(item => item.track && !item.track.is_local)
+        .map(item => ({
+          id: item.track.id,
+          uri: item.track.uri,
+          name: item.track.name,
+          artists: item.track.artists.map((a) => a.name).join(', '),
+          image: item.track.album.images[0]?.url,
+          duration_ms: item.track.duration_ms,
+          requestedBy: 'Host (Playlist)',
+          queueId: crypto.randomUUID()
+        }));
 
-      while (hasMore && allItems.length < 150) {
-        const res = await getPlaylistTracks(playlist.id, 100, offset);
-        if (res && res.items && res.items.length > 0) {
-          allItems = [...allItems, ...res.items];
-          offset += 100;
-          if (res.items.length < 100) {
-            hasMore = false; // No hay más páginas
-          }
-        } else {
-          hasMore = false;
-        }
-      }
-
-      // Limitar exactamente a 150
-      allItems = allItems.slice(0, 150);
-
-      // 2. Mapearlas al formato que usa nuestro store
-      const normalizedTracks = allItems
-        .map(wrapper => wrapper.item || wrapper.track || wrapper) // Spotify puede usar 'item' o 'track'
-        .filter(t => t && t.uri && t.type !== 'episode') // Asegurar que sea una pista válida
-        .map(t => {
-          return {
-            id: t.id,
-            uri: t.uri,
-            name: t.name,
-            artists: t.artists ? t.artists.map((a) => a.name).join(', ') : 'Unknown Artist',
-            artistIds: t.artists ? t.artists.map((a) => a.id).filter(Boolean) : [],
-            album: t.album ? t.album.name : 'Unknown Album',
-            image: t.album?.images?.[0]?.url,
-            duration_ms: t.duration_ms,
-            requestedBy: 'Playlist',
-          };
-        });
-
-      if (normalizedTracks.length === 0) {
-        toast.error('La playlist está vacía o sus canciones no se pueden reproducir.', { id: toastId });
+      if (tracksToQueue.length === 0) {
+        toast.error('La playlist está vacía o solo contiene archivos locales.', { id: toastId });
         setImporting(false);
         return;
       }
 
-      // 3. Añadir a la cola activa en lugar de reemplazar
-      const currentQueue = usePlayerStore.getState().queue;
+      const currentState = usePlayerStore.getState();
+      const currentQueue = currentState.queue;
       const isQueueEmpty = currentQueue.length === 0;
-      
-      const newTracksWithIds = normalizedTracks.map((t, i) => ({ 
-        ...t, 
-        queueId: `${t.id}-${Date.now()}-${i}` 
-      }));
-      
-      usePlayerStore.setState({ queue: [...currentQueue, ...newTracksWithIds] });
 
-      // 4. Iniciar la reproducción solo si la cola estaba vacía
+      usePlayerStore.setState({ queue: [...currentQueue, ...tracksToQueue] });
+
+      if (isAdminMode) {
+        import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
+          p_session_id: sessionId, 
+          p_secret: useSettingsStore.getState().hostSecret, 
+          p_updates: { 
+            queue: [...currentQueue, ...tracksToQueue],
+            current_queue_index: currentState.currentQueueIndex
+          } 
+        }).then());
+      }
+
       if (isQueueEmpty) {
         const firstTrack = shiftQueue();
         if (firstTrack) {
           if (isAdminMode) {
             import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
-              p_session_id: useSettingsStore.getState().sessionId, 
+              p_session_id: sessionId, 
               p_secret: useSettingsStore.getState().hostSecret, 
-              p_updates: { playback_command: { action: 'play', ts: Date.now() } } 
+              p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 
             }).then());
           } else {
             await controls.play([firstTrack.uri]);
@@ -140,17 +121,41 @@ export function PlaylistsPanel() {
           toast.success(`¡"${playlist.name}" añadida! Reproduciendo...`, { id: toastId });
         }
       } else {
-        toast.success(`¡"${playlist.name}" añadida al final de la cola!`, { id: toastId });
+        toast.success(`¡Se añadieron ${tracksToQueue.length} canciones al final de la cola!`, { id: toastId });
       }
 
     } catch (err) {
-      console.error(err);
-      if (err.message === 'Forbidden' || err.message.includes('403')) {
-        toast.error(`Modo de Desarrollo: Spotify bloquea el acceso a playlists de otros usuarios.`, { id: toastId });
-      } else {
-        toast.error(`Error al importar "${playlist.name}"`, { id: toastId });
-      }
+      console.error('Error importando playlist:', err);
+      toast.error('Ocurrió un error al importar la playlist', { id: toastId });
     } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleLinkImport = async (e) => {
+    e.preventDefault();
+    if (!playlistLink) return;
+    
+    const match = playlistLink.match(/playlist\/([a-zA-Z0-9]+)/);
+    if (!match) {
+      toast.error('Por favor, ingresa un link válido de playlist de Spotify.');
+      return;
+    }
+    
+    const playlistId = match[1];
+    setImporting(true);
+    const toastId = toast.loading('Obteniendo información de la playlist...');
+    
+    try {
+      const playlistData = await getPlaylist(playlistId);
+      if (!playlistData) throw new Error('No se encontró la playlist');
+      
+      toast.dismiss(toastId);
+      await handleSelectPlaylist(playlistData);
+      setPlaylistLink('');
+    } catch (err) {
+      console.error('Error al importar por link:', err);
+      toast.error('No se pudo encontrar la playlist. Asegúrate de que sea pública.', { id: toastId });
       setImporting(false);
     }
   };
@@ -175,9 +180,34 @@ export function PlaylistsPanel() {
 
   return (
     <div className="card p-5">
+      <div className="mb-6">
+        <h2 className="font-bold text-text-primary flex items-center gap-2 mb-3">
+          <ListMusic size={16} className="text-accent" />
+          Importar Playlist por Link
+        </h2>
+        <form onSubmit={handleLinkImport} className="flex gap-2">
+          <div className="relative flex-1">
+            <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Pega un link de Spotify..."
+              value={playlistLink}
+              onChange={(e) => setPlaylistLink(e.target.value)}
+              className="input-field w-full pl-9 py-2 text-sm"
+            />
+          </div>
+          <button 
+            type="submit" 
+            disabled={!playlistLink || importing} 
+            className="btn-primary px-4 py-2 text-sm"
+          >
+            {importing ? <Loader2 size={16} className="animate-spin" /> : 'Importar'}
+          </button>
+        </form>
+      </div>
+
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="font-bold text-text-primary flex items-center gap-2">
-          <ListMusic size={16} className="text-accent" />
           Tus Playlists
           <span className="badge bg-bg-elevated text-text-muted">{playlists.length}</span>
         </h2>

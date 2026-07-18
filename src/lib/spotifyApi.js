@@ -53,6 +53,10 @@ export async function getPlaylistTracks(playlistId, limit = 100, offset = 0) {
   return apiFetch(`/playlists/${playlistId}/items?limit=${limit}&offset=${offset}`);
 }
 
+export async function getPlaylist(playlistId) {
+  return apiFetch(`/playlists/${playlistId}`);
+}
+
 export async function getArtists(ids) {
   const params = new URLSearchParams({ ids: ids.join(',') });
   return apiFetch(`/artists?${params}`);
