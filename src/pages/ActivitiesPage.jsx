@@ -51,18 +51,25 @@ export default function ActivitiesPage() {
     return result;
   };
 
-  // Fetch real lyrics
+  // Fetch lyrics when track changes
   useEffect(() => {
     if (!currentTrack) {
-       setLyricsLines([]);
-       setIsSynced(false);
-       return;
+      setLyricsLines([]);
+      setLyricsError('');
+      setIsSynced(false);
+      return;
     }
 
     const fetchLyrics = async () => {
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
+      
+      // Reset scroll position for new song
+      if (lyricsContainerRef.current) {
+        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
