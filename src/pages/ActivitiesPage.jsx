@@ -283,8 +283,8 @@ export default function ActivitiesPage() {
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
           {/* Animated Background */}
-          {currentTrack?.image && (
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            {currentTrack?.image ? (
               <img 
                 src={currentTrack.image} 
                 alt="" 
@@ -294,11 +294,20 @@ export default function ActivitiesPage() {
                   transform: 'scale(1.2)'
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
-            </div>
-          )}
+            ) : (
+              <div 
+                className="absolute inset-0 w-full h-full opacity-40 animate-pulse-slow" 
+                style={{ 
+                  background: 'radial-gradient(ellipse at center, #9D4EDD 0%, #1E1830 100%)', 
+                  filter: 'blur(60px)',
+                  transform: 'scale(1.2)'
+                }}
+              ></div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
+          </div>
 
-          <div className="relative z-10 w-full flex-1 flex flex-col">
+          <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
               onClick={() => setKaraokeOpen(false)}
               className="absolute top-6 right-6 btn-ghost z-20"
