@@ -31,15 +31,15 @@ export default function ActivitiesPage() {
   const parseLRC = (lrcString) => {
     const lines = lrcString.split('\n');
     const result = [];
-    // Matches [mm:ss.xx] or [mm:ss.xxx]
-    const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+    // Matches [mm:ss.xx] or [mm:ss]
+    const regex = /\[(\d{2,}):(\d{2})(?:\.(\d{1,3}))?\](.*)/;
     
     for (const line of lines) {
       const match = regex.exec(line);
       if (match) {
         const minutes = parseInt(match[1], 10);
         const seconds = parseInt(match[2], 10);
-        const milliseconds = parseInt(match[3].padEnd(3, '0'), 10);
+        const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
         const text = match[4].trim();
         
         const timeMs = minutes * 60000 + seconds * 1000 + milliseconds;
@@ -310,9 +310,10 @@ export default function ActivitiesPage() {
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
               onClick={() => setKaraokeOpen(false)}
-              className="absolute top-6 right-6 btn-ghost z-20"
+              className="absolute top-0 right-0 md:top-4 md:right-4 z-50 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors"
+              title="Cerrar Karaoke"
             >
-              <X size={24} />
+              <X size={28} />
             </button>
 
             {!currentTrack ? (
