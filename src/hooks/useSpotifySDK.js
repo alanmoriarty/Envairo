@@ -186,6 +186,23 @@ export function useSpotifySDK() {
       // Track end / Auto-queue transition
       const trackFinished = storeState.isPlaying && state.paused && state.position === 0 && storeState.duration > 0 && (storeState.duration - storeState.progress) <= 10000;
 
+      // Ensure we preserve the requestedBy property from the queue
+      const latestQueue = usePlayerStore.getState().queue;
+      const latestIndex = usePlayerStore.getState().currentQueueIndex;
+      const queueTrack = latestQueue[latestIndex];
+      
+      const checkIsSame = (t, target) => {
+        if (!t || !target) return false;
+        if (t.id === target.id) return true;
+        if (t.uri === target.uri) return true;
+        if (t.name === target.name && Math.abs(t.duration_ms - target.duration_ms) < 5000) return true;
+        return false;
+      };
+
+      if (checkIsSame(queueTrack, normalizedTrack)) {
+        normalizedTrack.requestedBy = queueTrack.requestedBy;
+      }
+
       setCurrentTrack(normalizedTrack);
       setIsPlaying(!state.paused);
       setDuration(state.duration);
