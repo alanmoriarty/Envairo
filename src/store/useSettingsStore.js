@@ -18,6 +18,7 @@ export const useSettingsStore = create(
       blacklistSongs: [],
       blacklistArtists: [],
       requestsPerHour: 15,
+      requestsPerGuest: 0,
       tableCount: 0,
 
       // Session QR ID
@@ -34,6 +35,7 @@ export const useSettingsStore = create(
       setCooldownMinutes: (v) => set({ cooldownMinutes: v }),
       setExplicitFilter: (v) => set({ explicitFilter: v }),
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
+      setRequestsPerGuest: (v) => set({ requestsPerGuest: v }),
       setTableCount: (v) => set({ tableCount: v }),
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),

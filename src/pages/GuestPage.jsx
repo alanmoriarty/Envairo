@@ -372,7 +372,15 @@ export default function GuestPage() {
       </div>
 
       {/* Submit / Cooldown */}
-      {isInCooldown ? (
+      {sessionConfig?.requests_per_guest > 0 && userRequests.length >= sessionConfig.requests_per_guest ? (
+        <div className="card p-5 text-center bg-danger/10 border border-danger/30">
+          <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center mx-auto mb-3">
+            <X size={24} className="text-danger" />
+          </div>
+          <p className="font-semibold text-danger">Límite alcanzado</p>
+          <p className="text-text-muted text-sm mt-1">Ya has pedido el máximo de {sessionConfig.requests_per_guest} canciones permitidas para esta sesión.</p>
+        </div>
+      ) : isInCooldown ? (
         <div className="card p-5 text-center">
           <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-3">
             <Clock size={24} className="text-accent" />

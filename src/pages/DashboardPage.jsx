@@ -141,7 +141,7 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const authStore = useAuthStore.getState();
     const sessionId = authStore.user?.id || useSettingsStore.getState().sessionId;
-    const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
+    const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
     const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
     
     const syncSession = async () => {
@@ -158,6 +158,7 @@ export default function DashboardPage() {
           cooldown_minutes: cooldownMinutes,
           table_count: tableCount,
           requests_per_hour: requestsPerHour,
+          requests_per_guest: requestsPerGuest,
           updated_at: new Date().toISOString()
         }).eq('id', sessionId);
       } else {
@@ -173,6 +174,7 @@ export default function DashboardPage() {
           cooldown_minutes: cooldownMinutes,
           table_count: tableCount,
           requests_per_hour: requestsPerHour,
+          requests_per_guest: requestsPerGuest,
           queue: queue || [],
           current_queue_index: currentQueueIndex ?? -1,
           volume: volume ?? 70,
@@ -186,7 +188,7 @@ export default function DashboardPage() {
     // Subscribe to settings changes to sync them in real-time
     const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
       // Only sync if something relevant actually changed
-      const relevantKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour'];
+      const relevantKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
       const changed = relevantKeys.some(k => state[k] !== prevState[k]);
       if (changed) {
         supabase.from('sessions').update({
@@ -199,6 +201,7 @@ export default function DashboardPage() {
           cooldown_minutes: state.cooldownMinutes,
           table_count: state.tableCount,
           requests_per_hour: state.requestsPerHour,
+          requests_per_guest: state.requestsPerGuest,
           updated_at: new Date().toISOString()
         }).eq('id', sessionId).then();
       }

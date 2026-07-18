@@ -13,6 +13,8 @@ CREATE TABLE sessions (
   allow_repeats BOOLEAN DEFAULT true,
   cooldown_enabled BOOLEAN DEFAULT true,
   cooldown_minutes INTEGER DEFAULT 10,
+  table_count INTEGER DEFAULT 0,
+  requests_per_guest INTEGER DEFAULT 0,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

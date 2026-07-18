@@ -15,6 +15,7 @@ export default function SettingsPage() {
     cooldownMinutes, setCooldownMinutes,
     explicitFilter, setExplicitFilter,
     requestsPerHour, setRequestsPerHour,
+    requestsPerGuest, setRequestsPerGuest,
     tableCount, setTableCount,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
@@ -106,7 +107,7 @@ export default function SettingsPage() {
                 min="1"
                 max="120"
                 value={cooldownMinutes}
-                onChange={(e) => setCooldownMinutes(parseInt(e.target.value) || 10)}
+                onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
                 className="input-field w-24 text-center"
               />
             </div>
@@ -118,7 +119,7 @@ export default function SettingsPage() {
             checked={explicitFilter}
             onChange={setExplicitFilter}
             label="Filtro de contenido explícito"
-            description="Bloquear automáticamente canciones con contenido explícito"
+            description="Bloquear automáticamente canciones marcadas como explícitas (E) en Spotify"
           />
         </div>
 
@@ -133,7 +134,24 @@ export default function SettingsPage() {
               min="1"
               max="100"
               value={requestsPerHour}
-              onChange={(e) => setRequestsPerHour(parseInt(e.target.value) || 15)}
+              onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
+              className="input-field w-full sm:w-24 text-center"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="text-sm font-semibold text-text-primary">Límite de peticiones por invitado</label>
+              <p className="text-xs text-text-muted mt-0.5">Cantidad máxima de canciones que puede pedir una misma persona (0 = Sin límite)</p>
+            </div>
+            <input
+              type="number"
+              min="0"
+              max="20"
+              value={requestsPerGuest}
+              onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
               className="input-field w-full sm:w-24 text-center"
             />
           </div>
@@ -148,9 +166,9 @@ export default function SettingsPage() {
             <input
               type="number"
               min="0"
-              max="100"
+              max="50"
               value={tableCount}
-              onChange={(e) => setTableCount(parseInt(e.target.value) || 0)}
+              onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
               className="input-field w-full sm:w-24 text-center"
             />
           </div>
