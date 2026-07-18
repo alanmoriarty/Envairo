@@ -44,6 +44,33 @@ export function RootLayout() {
     return () => clearInterval(interval);
   }, [isPremium]);
 
+  // Sincronizar configuraciones en tiempo real hacia Supabase desde cualquier pantalla
+  useEffect(() => {
+    const sessionId = useSettingsStore.getState().sessionId;
+    if (!sessionId) return;
+
+    const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
+      const relevantKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
+      const changed = relevantKeys.some(k => state[k] !== prevState[k]);
+      if (changed) {
+        supabase.from('sessions').update({
+          mode: state.mode,
+          blacklist_genres: state.blacklistGenres,
+          blacklist_songs: state.blacklistSongs,
+          blacklist_artists: state.blacklistArtists,
+          allow_repeats: state.allowRepeats,
+          cooldown_enabled: state.cooldownEnabled,
+          cooldown_minutes: state.cooldownMinutes,
+          table_count: state.tableCount,
+          requests_per_hour: state.requestsPerHour,
+          requests_per_guest: state.requestsPerGuest,
+          updated_at: new Date().toISOString()
+        }).eq('id', sessionId).then();
+      }
+    });
+    return () => unsubSettings();
+  }, []);
+
   return (
     <div className="flex h-screen bg-bg-root overflow-hidden">
       {/* Mobile Header */}
