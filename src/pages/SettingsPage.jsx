@@ -181,7 +181,7 @@ export default function SettingsPage() {
           <h2 className="font-bold text-text-primary">Filtros Avanzados de Artistas</h2>
         </div>
 
-        <div className="border-t border-white/5 pt-4">
+        <div>
           <div className="flex items-center gap-2 mb-2">
             <Ban size={14} className="text-danger" />
             <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
@@ -194,6 +194,8 @@ export default function SettingsPage() {
             placeholder="Ej: Despacito, Tusa, Baby..."
           />
         </div>
+
+        <div className="border-t border-white/5 pt-4">
           <div className="flex items-center gap-2 mb-2">
             <Ban size={14} className="text-danger" />
             <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
