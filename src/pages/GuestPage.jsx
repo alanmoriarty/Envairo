@@ -5,6 +5,8 @@ import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X } from 'lucid
 import { usePlayerStore } from '../store/usePlayerStore';
 import { supabase } from '../lib/supabase';
 import { AdSense } from '../components/ads/AdSense';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { useTranslation } from '../store/useLanguageStore';
 
 const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
@@ -46,6 +48,7 @@ export default function GuestPage() {
 
   const { queue, currentQueueIndex, playHistory, pendingRequests } = usePlayerStore();
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
+  const { t, lang } = useTranslation();
 
   const isAvailable = sessionConfig?.active ?? true;
   const isCommercial = sessionConfig?.mode === 'commercial';
@@ -150,7 +153,7 @@ export default function GuestPage() {
     // Check song request count (same song)
     const count = requestCount[selected.id] || 0;
     if (count >= MAX_REQUESTS) {
-      toast.error(`Esta canción ya fue pedida ${MAX_REQUESTS} veces en esta sesión`);
+      toast.error(t('guest.error_max', { max: MAX_REQUESTS }));
       return;
     }
 
@@ -162,7 +165,7 @@ export default function GuestPage() {
         selected.genre?.toLowerCase().includes(g.toLowerCase())
       );
       if (blocked) {
-        toast.error('Esta canción pertenece a un género bloqueado por el anfitrión');
+        toast.error(t('guest.error_genre'));
         return;
       }
     }
@@ -173,7 +176,7 @@ export default function GuestPage() {
         selected.name.toLowerCase().includes(s.toLowerCase())
       );
       if (blocked) {
-        toast.error('Esta canción no está permitida en esta sesión');
+        toast.error(t('guest.error_song'));
         return;
       }
     }
@@ -184,7 +187,7 @@ export default function GuestPage() {
         selected.artists.toLowerCase().includes(a.toLowerCase())
       );
       if (blocked) {
-        toast.error('Este artista está bloqueado por el anfitrión');
+        toast.error(t('guest.error_artist'));
         return;
       }
     }
@@ -195,11 +198,11 @@ export default function GuestPage() {
       const alreadyInQueue = queue.some(t => t.id === selected.id);
       const alreadyPending = pendingRequests.some(r => r.track.id === selected.id);
       if (alreadyInQueue || alreadyPending) {
-        toast.error('Esta canción ya está en la cola o en espera');
+        toast.error(t('guest.error_queue'));
         return;
       }
 
-      const historyTrack = playHistory.find(t => t.id === selected.id);
+      const historyTrack = playHistory.find(h => h.id === selected.id);
       if (historyTrack && historyTrack.playedAt) {
         const playedTime = new Date(historyTrack.playedAt).getTime();
         const now = Date.now();
@@ -207,10 +210,10 @@ export default function GuestPage() {
 
         if (repeatCooldown === 0 || diffMinutes < repeatCooldown) {
           if (repeatCooldown === 0) {
-            toast.error('Esta canción ya fue reproducida en esta sesión');
+            toast.error(t('guest.error_repeated'));
           } else {
             const remaining = Math.ceil(repeatCooldown - diffMinutes);
-            toast.error(`Esta canción sonó hace poco. Disponible en ${remaining} min.`);
+            toast.error(t('guest.error_cooldown', { min: remaining }));
           }
           return;
         }
@@ -229,7 +232,7 @@ export default function GuestPage() {
         .gte('created_at', oneHourAgoTime);
 
       if (!countError && globalCount >= limit) {
-        toast.error(`El evento ha alcanzado su límite global de ${limit} peticiones por hora. Intenta más tarde.`);
+        toast.error(t('guest.error_limit', { limit }));
         return;
       }
 
@@ -241,7 +244,7 @@ export default function GuestPage() {
       }).select().single();
 
       if (error) {
-        toast.error('Error al enviar la petición. Intenta nuevamente.');
+        toast.error(t('guest.error_send'));
         return;
       }
 
@@ -259,7 +262,7 @@ export default function GuestPage() {
       setUserRequests(newReqs);
       localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify(newReqs));
 
-      toast.success(`¡"${selected.name}" enviada al anfitrión!`);
+      toast.success(t('guest.sent_success', { name: selected.name }));
       setSelected(null);
       setQuery('');
       setResults([]);
@@ -284,13 +287,17 @@ export default function GuestPage() {
   return (
     <div className="min-h-screen bg-bg-root p-4 max-w-lg mx-auto pt-8">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 relative">
+        {/* Language toggle top-right */}
+        <div className="absolute right-0 top-0">
+          <LanguageSelector />
+        </div>
         <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-4 shadow-glow">
           <Music2 size={28} className="text-accent" />
         </div>
-        <h1 className="text-2xl font-bold text-gradient">Pide tu canción</h1>
+        <h1 className="text-2xl font-bold text-gradient">{t('guest.title')}</h1>
         <p className="text-text-muted mt-1 text-sm">
-          {isCommercial ? 'Bar / Restaurante' : 'Modo Fiesta 🎉'}
+          {isCommercial ? t('guest.subtitle_commercial') : t('guest.subtitle_party')}
         </p>
       </div>
 
@@ -302,11 +309,11 @@ export default function GuestPage() {
         <label className="block text-sm text-text-muted mb-2">
           {isCommercial ? (
             <span className="flex items-center gap-1.5">
-              <Hash size={14} />Mesa (obligatorio)
+              <Hash size={14} />{t('guest.label_table')}
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
-              <User size={14} />Tu apodo (opcional)
+              <User size={14} />{t('guest.label_nickname')}
             </span>
           )}
         </label>
@@ -318,8 +325,8 @@ export default function GuestPage() {
             onChange={(e) => setIdentifier(e.target.value)}
             disabled={isInCooldown}
           >
-            <option value="">-- Seleccionar mesa --</option>
-            <option value="Sin especificar">No especificar mesa</option>
+            <option value="">{t('guest.select_table')}</option>
+            <option value="Sin especificar">{t('guest.no_table')}</option>
             {Array.from({ length: sessionConfig?.table_count || 0 }, (_, i) => (
               <option key={i} value={`Mesa ${i + 1}`}>Mesa {i + 1}</option>
             ))}
@@ -327,7 +334,7 @@ export default function GuestPage() {
         ) : (
           <input
             className="input-field"
-            placeholder={isCommercial ? 'Ej: Mesa 7' : 'Ej: DJ Carlos 🎧'}
+            placeholder={isCommercial ? t('guest.placeholder_table') : t('guest.placeholder_nickname')}
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             disabled={isInCooldown}
@@ -338,12 +345,12 @@ export default function GuestPage() {
       {/* Search */}
       <div className="card p-4 mb-4">
         <label className="block text-sm text-text-muted mb-2 flex items-center gap-1.5">
-          <Search size={14} />Buscar canción en Spotify
+          <Search size={14} />{t('guest.search_label')}
         </label>
         <div className="relative">
           <input
             className="input-field pr-10"
-            placeholder="Busca por título, artista o álbum..."
+            placeholder={t('guest.search_placeholder')}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
             disabled={isInCooldown}
@@ -421,8 +428,8 @@ export default function GuestPage() {
           <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-3">
             <Clock size={24} className="text-accent" />
           </div>
-          <p className="font-semibold text-text-primary">¡Canción enviada!</p>
-          <p className="text-text-muted text-sm mt-1">Podrás pedir otra en</p>
+          <p className="font-semibold text-text-primary">{lang === 'es' ? '¡Canción enviada!' : 'Song sent!'}</p>
+          <p className="text-text-muted text-sm mt-1">{t('guest.cooldown_label')}</p>
           <p className="text-3xl font-bold text-accent mt-2">{formatCooldown(cooldown)}</p>
         </div>
       ) : (
@@ -432,7 +439,7 @@ export default function GuestPage() {
           className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Send size={16} />
-          Enviar petición
+          {t('guest.submit')}
         </button>
       )}
 
@@ -440,7 +447,7 @@ export default function GuestPage() {
       {upcomingQueue.length > 0 && (
         <div className="card p-4 mt-6">
           <h3 className="text-sm font-semibold text-text-muted mb-3 flex items-center gap-2">
-            <Music2 size={14} />Próximas en cola
+            <Music2 size={14} />{t('guest.queue_title')}
           </h3>
           <div className="space-y-2">
             {upcomingQueue.slice(0, 3).map((track, i) => (
@@ -468,14 +475,18 @@ export default function GuestPage() {
 }
 
 function ClosedScreen() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center p-8 text-center">
       <div className="text-8xl mb-6">🌙</div>
-      <h1 className="text-3xl font-bold text-text-primary mb-3">Fuera de horario</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-3">{t('guest.closed_title')}</h1>
       <p className="text-text-muted max-w-xs">
-        El anfitrión ha cerrado las peticiones por ahora. ¡Vuelve pronto!
+        {t('guest.closed_sub')}
       </p>
       <div className="mt-8 w-20 h-1 rounded-full bg-accent/30 mx-auto" />
+      <div className="mt-6">
+        <LanguageSelector />
+      </div>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import {
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSpotifySDK } from '../hooks/useSpotifySDK';
 import { toast } from 'sonner';
+import { useTranslation } from '../store/useLanguageStore';
+import { TRIVIA_ES } from '../i18n/trivia_es';
 
 // ─── Challenge Lists ──────────────────────────────────────────────────────────
 const CHALLENGES_KIDS = [
@@ -293,12 +295,14 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
 
 // ─── 3. Trivia Musical ───────────────────────────────────────────────────────
 function TriviaCard() {
+  const { t, lang } = useTranslation();
   const [question, setQuestion] = useState(null);
   const [options, setOptions] = useState([]);
   const [answer, setAnswer] = useState('');
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const usedIndexes = useRef([]);
 
   const fetchQuestion = async () => {
     setLoading(true);
@@ -306,27 +310,38 @@ function TriviaCard() {
     setSelected(null);
     setQuestion(null);
     try {
-      // Category 12 = Music
-      const res = await fetch('https://opentdb.com/api.php?amount=1&category=12&type=multiple&encode=url3986');
-      const data = await res.json();
-      if (!data.results?.length) throw new Error('Sin resultados');
-      const q = data.results[0];
-      const correct = decodeURIComponent(q.correct_answer);
-      const allOpts = shuffle([
-        correct,
-        ...q.incorrect_answers.map(decodeURIComponent)
-      ]);
-      setQuestion(decodeURIComponent(q.question));
-      setOptions(allOpts);
-      setAnswer(correct);
+      if (lang === 'es') {
+        // Use local Spanish trivia bank
+        let idx;
+        if (usedIndexes.current.length >= TRIVIA_ES.length) usedIndexes.current = [];
+        do { idx = Math.floor(Math.random() * TRIVIA_ES.length); }
+        while (usedIndexes.current.includes(idx));
+        usedIndexes.current.push(idx);
+        const q = TRIVIA_ES[idx];
+        const allOpts = shuffle([q.correctAnswer, ...q.incorrectAnswers]);
+        setQuestion(q.question);
+        setOptions(allOpts);
+        setAnswer(q.correctAnswer);
+      } else {
+        // Use OpenTDB for English
+        const res = await fetch('https://opentdb.com/api.php?amount=1&category=12&type=multiple&encode=url3986');
+        const data = await res.json();
+        if (!data.results?.length) throw new Error('No results');
+        const q = data.results[0];
+        const correct = decodeURIComponent(q.correct_answer);
+        const allOpts = shuffle([correct, ...q.incorrect_answers.map(decodeURIComponent)]);
+        setQuestion(decodeURIComponent(q.question));
+        setOptions(allOpts);
+        setAnswer(correct);
+      }
     } catch {
-      setError('No se pudo cargar una pregunta. ¿Tienes conexión a internet?');
+      setError(t('activities.trivia_error'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchQuestion(); }, []);
+  useEffect(() => { fetchQuestion(); }, [lang]);
 
   return (
     <div className="space-y-4">
@@ -334,7 +349,7 @@ function TriviaCard() {
         {loading ? (
           <div className="flex items-center gap-2 text-text-muted animate-pulse">
             <Loader2 size={18} className="animate-spin" />
-            <span className="text-sm">Cargando pregunta...</span>
+            <span className="text-sm">{t('activities.trivia_load')}</span>
           </div>
         ) : error ? (
           <p className="text-sm text-danger text-center">{error}</p>
@@ -371,7 +386,7 @@ function TriviaCard() {
       {selected !== null && (
         <div className="text-center animate-slide-up">
           <p className={`font-bold text-lg mb-3 ${selected === answer ? 'text-success' : 'text-danger'}`}>
-            {selected === answer ? '🎉 ¡Correcto!' : `❌ Era: ${answer}`}
+            {selected === answer ? t('activities.trivia_correct') : t('activities.trivia_wrong', { answer })}
           </p>
         </div>
       )}
@@ -382,7 +397,7 @@ function TriviaCard() {
         className="btn-primary w-full flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-        {selected !== null ? 'Siguiente pregunta' : 'Recargar pregunta'}
+        {selected !== null ? t('activities.trivia_next') : t('activities.trivia_reload')}
       </button>
     </div>
   );
@@ -700,21 +715,22 @@ function KaraokeCard({ currentTrack, progress, duration }) {
 export default function ActivitiesPage() {
   const { currentTrack, progress, duration } = usePlayerStore();
   const requestHistory = usePlayerStore(s => s.requestHistory || []);
+  const { t } = useTranslation();
 
   return (
     <div className="p-6 space-y-6 max-w-2xl mx-auto lg:max-w-none">
       <div>
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <Zap size={22} className="text-accent" /> Actividades
+          <Zap size={22} className="text-accent" /> {t('activities.title')}
         </h1>
-        <p className="text-text-muted text-sm mt-1">Anima tu evento con juegos interactivos</p>
+        <p className="text-text-muted text-sm mt-1">{t('activities.subtitle')}</p>
       </div>
 
       <div className="space-y-3">
         {/* Retos */}
         <ActivityCard
           icon={<PartyPopper size={18} className="text-yellow-300" />}
-          title="🎯 Retos"
+          title={t('activities.challenge_title')}
           color="bg-yellow-500/15"
           defaultOpen
         >
@@ -724,7 +740,7 @@ export default function ActivitiesPage() {
         {/* ¿Quién la pidió? */}
         <ActivityCard
           icon={<Users size={18} className="text-blue-300" />}
-          title="🕵️ ¿Quién la pidió?"
+          title={t('activities.guesswho_title')}
           color="bg-blue-500/15"
         >
           <GuessWhoCard currentTrack={currentTrack} requestHistory={requestHistory} />
@@ -733,7 +749,7 @@ export default function ActivitiesPage() {
         {/* Trivia Musical */}
         <ActivityCard
           icon={<HelpCircle size={18} className="text-green-300" />}
-          title="🎵 Trivia Musical"
+          title={t('activities.trivia_title')}
           color="bg-green-500/15"
         >
           <TriviaCard />
@@ -742,7 +758,7 @@ export default function ActivitiesPage() {
         {/* Juego de la Silla */}
         <ActivityCard
           icon={<Timer size={18} className="text-red-300" />}
-          title="🪑 Juego de la Silla"
+          title={t('activities.chair_title')}
           color="bg-red-500/15"
         >
           <ChairGameCard />
@@ -751,7 +767,7 @@ export default function ActivitiesPage() {
         {/* Karaoke */}
         <ActivityCard
           icon={<Mic2 size={18} className="text-accent" />}
-          title="🎤 Modo Karaoke"
+          title={t('activities.karaoke_title')}
           color="bg-accent/15"
         >
           <KaraokeCard currentTrack={currentTrack} progress={progress} duration={duration} />

@@ -6,15 +6,16 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
-
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { LanguageSelector } from '../ui/LanguageSelector';
+import { useTranslation } from '../../store/useLanguageStore';
 
-const NAV_ITEMS = [
-  { to: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/app/metrics', icon: BarChart2, label: 'Métricas' },
-  { to: '/app/activities', icon: Zap, label: 'Actividades' },
-  { to: '/app/settings', icon: Settings, label: 'Configuración' },
-  { to: '/app/support', icon: HelpCircle, label: 'Soporte' },
+const NAV_KEYS = [
+  { to: '/app/dashboard', icon: LayoutDashboard, key: 'nav.dashboard' },
+  { to: '/app/metrics', icon: BarChart2, key: 'nav.metrics' },
+  { to: '/app/activities', icon: Zap, key: 'nav.activities' },
+  { to: '/app/settings', icon: Settings, key: 'nav.settings' },
+  { to: '/app/support', icon: HelpCircle, key: 'nav.support' },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
@@ -23,10 +24,11 @@ export function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const isPremium = user?.product === 'premium';
+  const { t } = useTranslation();
 
-  const visibleNavItems = isAdminMode 
-    ? NAV_ITEMS.filter(item => item.label === 'Dashboard' || item.label === 'Actividades')
-    : NAV_ITEMS;
+  const visibleNavItems = isAdminMode
+    ? NAV_KEYS.filter(item => item.key === 'nav.dashboard' || item.key === 'nav.activities')
+    : NAV_KEYS;
 
   const handleLogout = async () => {
     try {
@@ -125,7 +127,7 @@ export function Sidebar({ isOpen, onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto pb-24">
-        {visibleNavItems.map(({ to, icon: Icon, label }) => (
+        {visibleNavItems.map(({ to, icon: Icon, key }) => (
           <NavLink
             key={to}
             to={to}
@@ -142,18 +144,22 @@ export function Sidebar({ isOpen, onClose }) {
             }
           >
             <Icon size={18} />
-            <span className="flex-1">{label}</span>
+            <span className="flex-1">{t(key)}</span>
             <ChevronRight size={14} className="opacity-30" />
           </NavLink>
         ))}
 
-        <div className="pt-4 mt-4 border-t border-white/5">
+        <div className="pt-4 mt-4 border-t border-white/5 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs text-text-muted font-semibold uppercase tracking-wider">Idioma / Language</span>
+            <LanguageSelector />
+          </div>
           <button
             onClick={handleLogout}
             className="nav-link w-full text-danger hover:text-danger hover:bg-danger/10"
           >
             <LogOut size={18} />
-            <span className="flex-1 text-left">Cerrar sesión</span>
+            <span className="flex-1 text-left">{t('nav.logout')}</span>
           </button>
         </div>
       </nav>

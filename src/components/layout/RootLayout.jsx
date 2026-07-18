@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { Menu, Music2 } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 import { useAutoQueue } from '../../hooks/useAutoQueue';
+import { LanguageSelector } from '../ui/LanguageSelector';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
@@ -108,9 +109,12 @@ export function RootLayout() {
               <span className="text-[10px] text-accent font-semibold block mt-0.5">QR</span>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(true)} className="p-2 text-text-muted hover:text-white">
-            <Menu size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
+            <button onClick={() => setSidebarOpen(true)} className="p-2 text-text-muted hover:text-white">
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
 
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
