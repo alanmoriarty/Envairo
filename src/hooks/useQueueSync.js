@@ -216,10 +216,21 @@ export function useQueueSync() {
         if (authStore.user || secret) {
           // Si somos el host autenticado (no un remote restrictivo), podemos tomar control de la sesión
           if (authStore.user) {
-             await supabase.from('sessions').update({ 
-               active_instance_id: activeInstanceId,
-               supabase_user_id: sbUser?.id
-             }).eq('id', sessionId);
+             try {
+               const { data: newSecret, error: takeoverError } = await supabase.rpc('host_takeover_session', {
+                 p_session_id: sessionId,
+                 p_active_instance_id: activeInstanceId
+               });
+               
+               if (takeoverError) throw takeoverError;
+               
+               // Si entramos desde otro dispositivo y no teníamos el hostSecret, lo recuperamos de la DB
+               if (newSecret && newSecret !== secret) {
+                 useSettingsStore.getState().setHostSecret(newSecret);
+               }
+             } catch (err) {
+               console.error("Error al tomar control de la sesión:", err);
+             }
           }
           await supabase.rpc('update_session_state', {
             p_session_id: sessionId,

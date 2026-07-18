@@ -58,19 +58,10 @@ CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (
 CREATE OR REPLACE FUNCTION update_session_state(p_session_id TEXT, p_secret UUID, p_updates JSONB)
 RETURNS VOID AS $$
 BEGIN
-  IF EXISTS (
-    SELECT 1 FROM sessions 
-    WHERE id = p_session_id 
-    AND (
-      host_secret IS NULL 
-      OR host_secret = p_secret 
-      OR supabase_user_id = auth.uid()
-    )
-  ) THEN
-    UPDATE sessions
-    SET
+  IF p_secret = (SELECT host_secret FROM sessions WHERE id = p_session_id) THEN
+    UPDATE sessions SET
       active = COALESCE((p_updates->>'active')::BOOLEAN, active),
-      mode = COALESCE(p_updates->>'mode', mode),
+      mode = COALESCE((p_updates->>'mode')::TEXT, mode),
       blacklist_genres = COALESCE(p_updates->'blacklist_genres', blacklist_genres),
       blacklist_songs = COALESCE(p_updates->'blacklist_songs', blacklist_songs),
       blacklist_artists = COALESCE(p_updates->'blacklist_artists', blacklist_artists),
@@ -83,16 +74,35 @@ BEGIN
       queue = COALESCE(p_updates->'queue', queue),
       current_queue_index = COALESCE((p_updates->>'current_queue_index')::INTEGER, current_queue_index),
       current_track = COALESCE(p_updates->'current_track', current_track),
-      active_device_id = COALESCE(p_updates->>'active_device_id', active_device_id),
-      active_instance_id = COALESCE((p_updates->>'active_instance_id')::UUID, active_instance_id),
+      active_device_id = COALESCE((p_updates->>'active_device_id')::TEXT, active_device_id),
       active_remote_id = COALESCE((p_updates->>'active_remote_id')::UUID, active_remote_id),
       playback_command = COALESCE(p_updates->'playback_command', playback_command),
       volume = COALESCE((p_updates->>'volume')::INTEGER, volume),
-      updated_at = timezone('utc'::text, now())
+      updated_at = COALESCE((p_updates->>'updated_at')::TIMESTAMP WITH TIME ZONE, updated_at)
     WHERE id = p_session_id;
   ELSE
-    RAISE EXCEPTION 'Unauthorized: Invalid host secret';
+    RAISE EXCEPTION 'Not authorized';
   END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 1.5 Toma de control por el Host Autenticado
+CREATE OR REPLACE FUNCTION host_takeover_session(p_session_id TEXT, p_active_instance_id UUID)
+RETURNS UUID AS $$
+DECLARE
+  v_secret UUID;
+BEGIN
+  -- Verificar si el usuario está autenticado y es el dueño de la sesión
+  UPDATE sessions 
+  SET active_instance_id = p_active_instance_id
+  WHERE id = p_session_id AND supabase_user_id = auth.uid()
+  RETURNING host_secret INTO v_secret;
+  
+  IF v_secret IS NULL THEN
+    RAISE EXCEPTION 'No autorizado o sesión no encontrada';
+  END IF;
+
+  RETURN v_secret;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

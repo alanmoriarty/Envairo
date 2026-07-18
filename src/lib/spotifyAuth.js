@@ -19,7 +19,10 @@ export async function redirectToSpotifyAuth() {
     provider: 'spotify',
     options: {
       scopes: SPOTIFY_SCOPES,
-      redirectTo: `${window.location.origin}/callback`
+      redirectTo: `${window.location.origin}/callback`,
+      queryParams: {
+        show_dialog: 'true'
+      }
     }
   });
 
