@@ -1,5 +1,5 @@
-import React from 'react';
-import { Settings, Clock, Shield, Filter, List, Ban } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Clock, Shield, Filter, List, Ban, Info, X } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
@@ -7,13 +7,76 @@ import { SongTagInput } from '../components/ui/SongTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 const COMMON_GENRES = [
-  "Alternativo", "Anime", "Blues", "Clásica", "Country", "Dance", 
-  "Electrónica", "Hip-Hop", "Rap", "Jazz", "K-Pop", "Latino", 
-  "Pop", "Pop Latino", "R&B", "Soul", "Reggae", "Rock", 
-  "Rock Latino", "Reggaeton", "Regional Mexicano", "Salsa", 
-  "Tropical", "Urbano latino", "Banda", "Cumbia", "Merengue", 
-  "Bachata", "Vallenato", "Indie"
+  "Acústico", "Afrobeats", "Alternativo", "Ambient", "Anime", "Bachata", 
+  "Banda", "Blues", "Bolero", "Cantautor", "Clásica", "Corridos", 
+  "Corridos Tumbados", "Country", "Cumbia", "Dance", "Dancehall", 
+  "Dubstep", "Electrónica", "Folk", "Funk", "Gospel", "Heavy Metal", 
+  "Hip-Hop", "House", "Indie", "Indie Pop", "Indie Rock", "J-Pop", 
+  "Jazz", "K-Pop", "Latino", "Lofi", "Mariachi", "Merengue", "Metal", 
+  "Música Cristiana", "Música Infantil", "Música Mexicana", "Norteño", 
+  "Pop", "Pop Latino", "Punk", "R&B", "Ranchera", "Rap", "Reggae", 
+  "Reggaeton", "Regional Mexicano", "Rock", "Rock Latino", "Salsa", 
+  "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Trap Latino", 
+  "Tropical", "Urbano latino", "Vallenato"
 ];
+
+// Mapeo de géneros relacionados para agregarlos en grupo
+const GENRE_ALIASES = {
+  // Urbano y Reggaeton
+  "reggaeton": ["reggaeton", "urbano latino", "música latina", "latin urban", "perreo"],
+  "urbano latino": ["urbano latino", "reggaeton", "música latina", "latin urban", "trap latino"],
+  "trap latino": ["trap latino", "trap", "urbano latino", "reggaeton", "música latina"],
+  "trap": ["trap", "hip-hop", "rap", "trap latino"],
+  
+  // Pop y Rock
+  "pop latino": ["pop latino", "pop", "latino", "latin pop"],
+  "pop": ["pop", "pop latino", "latin pop", "indie pop"],
+  "rock latino": ["rock latino", "rock", "latino", "latin rock", "rock en español"],
+  "rock": ["rock", "rock latino", "latin rock", "hard rock", "indie rock", "metal", "punk"],
+  "metal": ["metal", "heavy metal", "rock", "hard rock"],
+  "punk": ["punk", "rock", "ska", "punk rock"],
+  "indie": ["indie", "alternativo", "indie pop", "indie rock", "alternative"],
+  "alternativo": ["alternativo", "alternative", "indie", "rock alternativo"],
+  
+  // Música Electrónica
+  "electrónica": ["electrónica", "dance", "house", "techno", "edm", "electronic", "trance", "dubstep"],
+  "dance": ["dance", "electrónica", "edm", "club"],
+  "house": ["house", "electrónica", "dance"],
+  "techno": ["techno", "electrónica", "dance"],
+  "lofi": ["lofi", "lo-fi", "chill", "ambient", "electrónica"],
+  
+  // Hip-Hop, R&B y Soul
+  "hip-hop": ["hip-hop", "rap", "hip hop", "r&b", "trap"],
+  "rap": ["rap", "hip-hop", "hip hop", "trap"],
+  "r&b": ["r&b", "rnb", "soul", "hip-hop", "rhythm and blues"],
+  "soul": ["soul", "r&b", "funk", "blues"],
+  
+  // Tropical y Caribeño
+  "salsa": ["salsa", "tropical", "latino"],
+  "bachata": ["bachata", "tropical", "latino"],
+  "cumbia": ["cumbia", "tropical", "latino"],
+  "merengue": ["merengue", "tropical", "latino"],
+  "tropical": ["tropical", "salsa", "bachata", "merengue", "cumbia", "latino"],
+  "reggae": ["reggae", "dancehall", "ska"],
+  
+  // Regional Mexicano
+  "regional mexicano": ["regional mexicano", "banda", "norteño", "mariachi", "corridos", "corridos tumbados", "ranchera", "música mexicana"],
+  "banda": ["banda", "regional mexicano", "música mexicana"],
+  "norteño": ["norteño", "regional mexicano", "música mexicana"],
+  "corridos": ["corridos", "regional mexicano", "música mexicana", "corridos tumbados"],
+  "corridos tumbados": ["corridos tumbados", "regional mexicano", "corridos", "música mexicana", "sierreño"],
+  "mariachi": ["mariachi", "ranchera", "regional mexicano", "música mexicana"],
+  
+  // Otros géneros globales
+  "clásica": ["clásica", "classical", "instrumental", "orquesta"],
+  "country": ["country", "folk", "americana"],
+  "folk": ["folk", "acústico", "cantautor", "country"],
+  "jazz": ["jazz", "blues", "smooth jazz"],
+  "blues": ["blues", "jazz", "soul"],
+  "afrobeats": ["afrobeats", "world", "afro pop"],
+  "anime": ["anime", "j-pop", "soundtrack"],
+  "soundtrack": ["soundtrack", "banda sonora", "ost", "cine", "películas"]
+};
 
 export default function SettingsPage() {
   const {
@@ -32,6 +95,26 @@ export default function SettingsPage() {
     blacklistSongs, addBlacklistSong, removeBlacklistSong,
     blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
   } = useSettingsStore();
+
+  const [showGenreGuide, setShowGenreGuide] = useState(false);
+
+  const handleAddWhitelistGenre = (genre) => {
+    const aliases = GENRE_ALIASES[genre.toLowerCase()];
+    if (aliases) {
+      aliases.forEach(g => addWhitelistGenre(g));
+    } else {
+      addWhitelistGenre(genre);
+    }
+  };
+
+  const handleAddBlacklistGenre = (genre) => {
+    const aliases = GENRE_ALIASES[genre.toLowerCase()];
+    if (aliases) {
+      aliases.forEach(g => addBlacklistGenre(g));
+    } else {
+      addBlacklistGenre(genre);
+    }
+  };
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
@@ -186,10 +269,18 @@ export default function SettingsPage() {
       </section>
 
       {/* Genre filters */}
-      <section className="card p-5 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Filter size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">Filtros Avanzados de Género</h2>
+      <section className="card p-5 space-y-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-accent" />
+            <h2 className="font-bold text-text-primary">Filtros Avanzados de Género</h2>
+          </div>
+          <button
+            onClick={() => setShowGenreGuide(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+          >
+            <Info size={14} /> Guía de agrupación
+          </button>
         </div>
 
         <div>
@@ -200,7 +291,7 @@ export default function SettingsPage() {
           <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos géneros (deja vacío para no filtrar)</p>
           <TagInput
             tags={whitelistGenres}
-            onAdd={addWhitelistGenre}
+            onAdd={handleAddWhitelistGenre}
             onRemove={removeWhitelistGenre}
             placeholder="Ej: pop, reggaeton, rock..."
             suggestions={COMMON_GENRES}
@@ -215,7 +306,7 @@ export default function SettingsPage() {
           <p className="text-xs text-text-muted mb-2">Las canciones de estos géneros serán bloqueadas automáticamente</p>
           <TagInput
             tags={blacklistGenres}
-            onAdd={addBlacklistGenre}
+            onAdd={handleAddBlacklistGenre}
             onRemove={removeBlacklistGenre}
             placeholder="Ej: trap, metal, reggaeton..."
             suggestions={COMMON_GENRES}
@@ -257,6 +348,68 @@ export default function SettingsPage() {
           />
         </div>
       </section>
+      {showGenreGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-bg-elevated z-10">
+              <h3 className="font-bold text-text-primary flex items-center gap-2">
+                <Info size={18} className="text-accent" />
+                Guía de Familias de Género
+              </h3>
+              <button onClick={() => setShowGenreGuide(false)} className="text-text-muted hover:text-white p-1">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto custom-scrollbar text-sm text-text-muted space-y-4">
+              <p>
+                Al seleccionar un género en los filtros, el Auto-DJ añadirá automáticamente sus variantes y subgéneros asociados para evitar que Apple Music rechace canciones por diferencias en el nombre.
+              </p>
+              
+              <div className="space-y-3">
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Urbano y Reggaeton</h4>
+                  <p><strong>Reggaeton:</strong> incluye Urbano latino, Música latina, Latin urban.</p>
+                  <p><strong>Trap Latino:</strong> incluye Trap, Urbano latino, Reggaeton.</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Pop y Rock</h4>
+                  <p><strong>Pop:</strong> incluye Pop latino, Latin pop, Indie pop.</p>
+                  <p><strong>Rock:</strong> incluye Rock latino, Latin rock, Hard rock, Indie rock, Metal, Punk.</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Música Electrónica</h4>
+                  <p><strong>Electrónica:</strong> incluye Dance, House, Techno, EDM, Trance, Dubstep.</p>
+                  <p><strong>Lofi:</strong> incluye Chill, Ambient.</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Tropical y Caribeño</h4>
+                  <p><strong>Tropical:</strong> incluye Salsa, Bachata, Merengue, Cumbia, Latino.</p>
+                  <p><strong>Reggae:</strong> incluye Dancehall, Ska.</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Regional Mexicano</h4>
+                  <p><strong>Regional Mexicano:</strong> incluye Banda, Norteño, Mariachi, Corridos, Corridos Tumbados, Ranchera.</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <h4 className="font-semibold text-white mb-2">Otros</h4>
+                  <p><strong>Hip-Hop / Rap:</strong> incluye R&B, Trap.</p>
+                  <p><strong>Folk:</strong> incluye Acústico, Cantautor, Country.</p>
+                  <p><strong>Soundtrack:</strong> incluye Banda sonora, OST, Cine.</p>
+                </div>
+              </div>
+
+              <div className="bg-accent/10 text-accent p-3 rounded-xl border border-accent/20 mt-4">
+                <strong>Tip:</strong> Si el sistema añade varios géneros hermanos y hay alguno que en específico NO deseas, simplemente haz clic en la <strong>X</strong> de su etiqueta para removerlo individualmente.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

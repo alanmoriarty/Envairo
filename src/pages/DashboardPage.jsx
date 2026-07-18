@@ -109,16 +109,18 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 }
 
 export default function DashboardPage() {
-  const [showRequests, setShowRequests] = useState(true);
-  const [showQR, setShowQR] = useState(false);
-  const [showPlaylists, setShowPlaylists] = useState(true);
+  const { 
+    mode, setMode, autoDJ, setAutoDJ,
+    showRequests, setShowRequests,
+    showQR, setShowQR,
+    showPlaylists, setShowPlaylists
+  } = useSettingsStore();
 
   const {
     queue, currentQueueIndex, pendingRequests,
     reorderQueue, removeFromQueue, approveRequest, rejectRequest,
     currentTrack, sdkReady,
   } = usePlayerStore();
-  const { mode, setMode, autoDJ, setAutoDJ } = useSettingsStore();
   const { controls } = useSpotifySDK();
 
   const sensors = useSensors(

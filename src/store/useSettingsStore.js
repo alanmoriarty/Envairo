@@ -25,6 +25,14 @@ export const useSettingsStore = create(
       sessionId: `session-${Date.now()}`,
       setSessionId: (id) => set({ sessionId: id }),
 
+      // Dashboard UI State
+      showRequests: true,
+      showQR: true,
+      showPlaylists: true,
+      setShowRequests: (v) => set({ showRequests: v }),
+      setShowQR: (v) => set({ showQR: v }),
+      setShowPlaylists: (v) => set({ showPlaylists: v }),
+
       setMode: (mode) => set({ mode }),
       setAutoDJ: (autoDJ) => set({ autoDJ }),
       setAlwaysAvailable: (v) => set({ alwaysAvailable: v }),
