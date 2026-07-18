@@ -48,6 +48,14 @@ export default function ActivitiesPage() {
         }
       }
     }
+    
+    // Si la primera línea cantada tarda más de 5 segundos en aparecer,
+    // agregamos una línea visual de "Intro musical" para que el usuario
+    // entienda por qué la letra principal aún no se mueve.
+    if (result.length > 0 && result[0].time > 5000) {
+      result.unshift({ time: 0, text: '🎵 (Intro musical)' });
+    }
+    
     return result;
   };
 
@@ -393,14 +401,6 @@ export default function ActivitiesPage() {
                           </p>
                         );
                       })
-                    )}
-                    
-                    {/* Visual indicator for instrumental intros */}
-                    {isSynced && activeLineIndex === -1 && lyricsLines.length > 0 && progress < lyricsLines[0].time && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center animate-pulse">
-                        <Mic2 size={48} className="text-accent/50 mx-auto mb-4" />
-                        <p className="text-2xl font-bold text-white/50">Intro musical...</p>
-                      </div>
                     )}
                   </div>
                 </div>
