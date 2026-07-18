@@ -183,6 +183,27 @@ export default function DashboardPage() {
     };
     syncSession();
 
+    // Subscribe to settings changes to sync them in real-time
+    const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
+      // Only sync if something relevant actually changed
+      const relevantKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour'];
+      const changed = relevantKeys.some(k => state[k] !== prevState[k]);
+      if (changed) {
+        supabase.from('sessions').update({
+          mode: state.mode,
+          blacklist_genres: state.blacklistGenres,
+          blacklist_songs: state.blacklistSongs,
+          blacklist_artists: state.blacklistArtists,
+          allow_repeats: state.allowRepeats,
+          cooldown_enabled: state.cooldownEnabled,
+          cooldown_minutes: state.cooldownMinutes,
+          table_count: state.tableCount,
+          requests_per_hour: state.requestsPerHour,
+          updated_at: new Date().toISOString()
+        }).eq('id', sessionId).then();
+      }
+    });
+
     // Listen for new requests
     const channel = supabase
       .channel(`requests-${sessionId}`)
@@ -219,6 +240,7 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => {
+      unsubSettings();
       supabase.removeChannel(channel);
       supabase.from('sessions').update({ active: false }).eq('id', sessionId);
     };
