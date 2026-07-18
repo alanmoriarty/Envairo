@@ -24,7 +24,6 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSpotifySDK } from '../hooks/useSpotifySDK';
-import { useAutoQueue } from '../hooks/useAutoQueue';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
@@ -135,8 +134,6 @@ export default function DashboardPage() {
       },
     })
   );
-
-  useAutoQueue();
 
   React.useEffect(() => {
     const authStore = useAuthStore.getState();
