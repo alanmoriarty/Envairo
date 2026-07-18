@@ -326,7 +326,7 @@ export function useQueueSync() {
       supabase.removeChannel(channel);
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).catch(() => {});
+        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).then();
       }
     };
   }, [sessionId]);

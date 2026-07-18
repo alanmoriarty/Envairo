@@ -70,15 +70,15 @@ export function QRCard() {
 
       <div 
         ref={containerRef}
-        className={`bg-white p-4 rounded-xl transition-all relative ${isFullscreen ? 'flex flex-col items-center justify-center bg-black' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
+        className={`bg-white p-4 rounded-xl transition-all relative ${isFullscreen ? 'flex flex-col items-center justify-center bg-bg-root' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
       >
         {isFullscreen && (
           <button
             onClick={openFullscreen}
-            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-colors z-50"
+            className="absolute top-4 right-4 p-3 bg-danger text-white rounded-full shadow-lg z-50 flex items-center justify-center border-2 border-bg-root"
             title="Cerrar pantalla completa"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         )}
         <QRCodeSVG
