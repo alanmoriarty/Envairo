@@ -50,11 +50,12 @@ export function RootLayout() {
     if (!sessionId) return;
 
     const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
-      const relevantKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
+      const relevantKeys = ['mode', 'whitelistGenres', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
       const changed = relevantKeys.some(k => state[k] !== prevState[k]);
       if (changed) {
         supabase.from('sessions').update({
           mode: state.mode,
+          whitelist_genres: state.whitelistGenres,
           blacklist_genres: state.blacklistGenres,
           blacklist_songs: state.blacklistSongs,
           blacklist_artists: state.blacklistArtists,

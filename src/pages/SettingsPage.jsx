@@ -3,6 +3,7 @@ import { Settings, Clock, Shield, Filter, List, Ban } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
+import { SongTagInput } from '../components/ui/SongTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 const COMMON_GENRES = [
@@ -234,7 +235,7 @@ export default function SettingsPage() {
             <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
           </div>
           <p className="text-xs text-text-muted mb-2">Las canciones con estos nombres serán bloqueadas automáticamente</p>
-          <TagInput
+          <SongTagInput
             tags={blacklistSongs}
             onAdd={addBlacklistSong}
             onRemove={removeBlacklistSong}

@@ -52,6 +52,7 @@ async function getTrackGenre(trackName, artistName) {
  */
 export async function evaluateTrack(track, settings) {
   const { 
+    whitelistGenres = [],
     blacklistGenres = [], 
     blacklistSongs = [], 
     blacklistArtists = [], 
@@ -78,8 +79,8 @@ export async function evaluateTrack(track, settings) {
     }
   }
 
-  // 3. Blacklist Genres
-  if (blacklistGenres.length > 0) {
+  // 3. Genres Check (Whitelist & Blacklist)
+  if (whitelistGenres.length > 0 || blacklistGenres.length > 0) {
     const artistName = track.artists ? track.artists.split(',')[0] : '';
     const trackGenre = await getTrackGenre(track.name, artistName);
     
@@ -89,10 +90,21 @@ export async function evaluateTrack(track, settings) {
     }
 
     const normalizedTrackGenre = normalizeString(trackGenre);
-    const blockedGenres = blacklistGenres.map(g => normalizeString(g));
-    
-    if (blockedGenres.some(bg => normalizedTrackGenre.includes(bg))) {
-      return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
+
+    // Si hay lista blanca, el género DEBE estar incluido
+    if (whitelistGenres.length > 0) {
+      const allowedGenres = whitelistGenres.map(g => normalizeString(g));
+      if (!allowedGenres.some(ag => normalizedTrackGenre.includes(ag))) {
+        return { approved: false, reason: `El género "${trackGenre}" no está en la lista blanca permitida.` };
+      }
+    }
+
+    // Si hay lista negra, el género NO DEBE estar incluido
+    if (blacklistGenres.length > 0) {
+      const blockedGenres = blacklistGenres.map(g => normalizeString(g));
+      if (blockedGenres.some(bg => normalizedTrackGenre.includes(bg))) {
+        return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
+      }
     }
   }
 
