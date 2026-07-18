@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Zap, HelpCircle, Mic2, Users, X } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 
@@ -315,16 +316,15 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Karaoke fullscreen overlay */}
-      {karaokeOpen && (
+      {karaokeOpen && createPortal(
         <div
           ref={karaokeRef}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
-
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
               onClick={() => setKaraokeOpen(false)}
-              className="fixed top-6 right-6 md:top-8 md:right-8 z-[200] p-3 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-lg border border-white/10 shadow-xl cursor-pointer transition-all hover:scale-105"
+              className="fixed top-6 right-6 md:top-8 md:right-8 z-[10000] p-3 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-lg border border-white/10 shadow-xl cursor-pointer transition-all hover:scale-105"
               title="Cerrar Karaoke"
             >
               <X size={28} />
@@ -382,7 +382,8 @@ export default function ActivitiesPage() {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
