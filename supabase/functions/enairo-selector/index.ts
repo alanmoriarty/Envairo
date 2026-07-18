@@ -75,7 +75,22 @@ Estructura esperada:
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
+      let errorText = await response.text()
+      
+      // Si da 404, vamos a consultar qué modelos sí están disponibles para esta API Key
+      if (response.status === 404) {
+        try {
+          const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+          if (modelsRes.ok) {
+            const modelsData = await modelsRes.json()
+            const availableModels = modelsData.models?.map((m: any) => m.name).join(', ') || 'Ninguno'
+            errorText = `${errorText}\n\n[DEBUG] Modelos disponibles para tu API Key: ${availableModels}`
+          }
+        } catch (e) {
+          // Ignorar error secundario
+        }
+      }
+
       throw new Error(`Gemini API Error (${response.status}): ${errorText}`)
     }
 
