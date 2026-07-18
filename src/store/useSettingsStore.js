@@ -57,6 +57,8 @@ export const useSettingsStore = create(
       }),
       enairoPrompt: '',
       setEnairoPrompt: (v) => set({ enairoPrompt: v }),
+      enairoTestMode: false,
+      setEnairoTestMode: (v) => set({ enairoTestMode: v }),
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),
       removeWhitelistGenre: (g) =>

@@ -96,6 +96,7 @@ export default function SettingsPage() {
     blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
     enairoEnabled, setEnairoEnabled,
     enairoPrompt, setEnairoPrompt,
+    enairoTestMode, setEnairoTestMode,
   } = useSettingsStore();
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
@@ -143,6 +144,15 @@ export default function SettingsPage() {
             onChange={(e) => setEnairoPrompt(e.target.value)}
             placeholder="Escribe las instrucciones para la IA..."
             className="input-field w-full h-24 resize-none"
+          />
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <Toggle
+            checked={enairoTestMode}
+            onChange={setEnairoTestMode}
+            label="Modo Pruebas (Sin restricciones)"
+            description="⚠️ Ignora el límite de 1 hora y el límite de canciones en cola. ¡Úsalo solo para probar porque gastarás tu cuota diaria rápidamente!"
           />
         </div>
       </section>

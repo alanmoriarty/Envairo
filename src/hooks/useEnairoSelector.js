@@ -12,7 +12,8 @@ export function useEnairoSelector() {
     enairoStartedAt,
     enairoLastRunAt,
     setEnairoLastRunAt,
-    enairoPrompt, 
+    enairoPrompt,
+    enairoTestMode,
     whitelistGenres, 
     blacklistGenres 
   } = useSettingsStore();
@@ -33,23 +34,23 @@ export function useEnairoSelector() {
         return;
       }
 
-      // Evitar llamadas múltiples o spam (esperar 5 minutos mínimo)
-      if (isThinking || (now - enairoLastRunAt < 300000)) return;
+      // Evitar llamadas múltiples o spam (esperar 5 minutos mínimo en modo normal, 30s en modo test)
+      const cooldownTime = enairoTestMode ? 30000 : 300000;
+      if (isThinking || (now - enairoLastRunAt < cooldownTime)) return;
       
       // La IA trabajará por lotes:
       // Solo se llama a la IA si:
       // 1. La cola se está quedando vacía (< 3 canciones)
-      // 2. O si acaba de ser activado manualmente (hace menos de 5 segundos)
-      // 3. O si ya pasó 1 hora desde la última revisión (3600000 ms)
-      const justStarted = enairoStartedAt && (now - enairoStartedAt < 5000);
+      // 2. O si ya pasó 1 hora desde la última revisión (3600000 ms)
       const isQueueLow = queue.length < 3;
       const hourPassed = (now - enairoLastRunAt >= 3600000);
       
-      if (!justStarted && !isQueueLow && !hourPassed) return;
+      // En modo test, ignorar estas validaciones
+      if (!enairoTestMode && !isQueueLow && !hourPassed) return;
       
       setIsThinking(true);
       // Se setea primero un timestamp temporal de 5 minutos para evitar spam si hay errores
-      setEnairoLastRunAt(now - 3600000 + 300000); 
+      setEnairoLastRunAt(now - 3600000 + cooldownTime);
 
       
       try {
