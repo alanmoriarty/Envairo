@@ -2,54 +2,27 @@ import React from 'react';
 import { HelpCircle, MessageCircle, ExternalLink } from 'lucide-react';
 import { Accordion } from '../components/ui/Accordion';
 
-const FAQS = [
-  {
-    question: '¿Cómo funciona el Auto-DJ?',
-    answer:
-      'Proximamente.',
-  },
-  {
-    question: '¿Cuántas canciones puede pedir un invitado?',
-    answer:
-      'Cada invitado puede pedir hasta 3 veces la misma canción por sesión. Tras enviar una petición, hay un período de espera de 5 minutos antes de poder enviar otra. Esto evita la saturación de la cola.',
-  },
-  {
-    question: '¿Cómo proyecto el código QR en una pantalla grande?',
-    answer:
-      'En el Dashboard verás la tarjeta del Código QR. Puedes seleccionar el botón para expandir',
-  },
-  {
-    question: '¿Puedo bloquear artistas?',
-    answer:
-      'Sí. En la sección de Configuración puedes agregar artistas a la Lista Negra para bloquearlos automáticamente. Los invitados recibirán un mensaje de error si intentan pedir canciones bloqueadas.',
-  },
-  {
-    question: '¿Qué diferencia hay entre Modo Fiesta y Modo Comercial?',
-    answer:
-      'En Modo Fiesta los invitados pueden poner un apodo opcional. En Modo Comercial el número de mesa es obligatorio para identificar de dónde vienen las peticiones. Útil para bares y restaurantes donde el DJ necesita saber la ubicación del cliente.',
-  },
-  {
-    question: '¿Necesito Spotify Premium para utilizar la aplicación?',
-    answer:
-      'El Dashboard, Actividades y Configuración controlan el reproductor en tiempo real. Debido a las políticas de Spotify, estas funciones son exclusivas para usuarios con una cuenta Premium activa.',
-  }
-];
+import { useTranslation } from '../store/useLanguageStore';
 
 export default function SupportPage() {
+  const { t } = useTranslation();
   const whatsappUrl = 'https://wa.me/1234567890?text=Hola,%20necesito%20ayuda%20con%20Envairo';
+  
+  // Resolve FAQs dynamically
+  const FAQS = t('support.faqs') || [];
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <HelpCircle size={22} className="text-accent" /> Soporte y Ayuda
+          <HelpCircle size={22} className="text-accent" /> {t('support.title')}
         </h1>
-        <p className="text-text-muted text-sm mt-1">Resolvemos todas tus dudas sobre Envairo</p>
+        <p className="text-text-muted text-sm mt-1">{t('support.subtitle')}</p>
       </div>
 
       {/* FAQ Accordion */}
       <section>
-        <h2 className="font-bold text-text-primary mb-4">Preguntas Frecuentes</h2>
+        <h2 className="font-bold text-text-primary mb-4">{t('support.faq_title')}</h2>
         <Accordion items={FAQS} />
       </section>
 
@@ -64,9 +37,9 @@ export default function SupportPage() {
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-text-primary mb-1">¿Necesitas ayuda directa?</h3>
+            <h3 className="font-bold text-text-primary mb-1">{t('support.contact_title')}</h3>
             <p className="text-text-muted text-sm mb-4">
-              Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier problema en tiempo real.
+              {t('support.contact_desc')}
             </p>
             <a
               href={whatsappUrl}
@@ -79,7 +52,7 @@ export default function SupportPage() {
               }}
             >
               <MessageCircle size={18} />
-              Contactar por WhatsApp
+              {t('support.contact_btn')}
               <ExternalLink size={14} className="opacity-70" />
             </a>
           </div>
@@ -88,7 +61,7 @@ export default function SupportPage() {
 
       {/* Version info */}
       <div className="text-center text-xs text-text-subtle pt-2">
-        Envairo v1.0.0 · Construido con ❤️ y Spotify Premium
+        {t('support.version_info')}
       </div>
     </div>
   );

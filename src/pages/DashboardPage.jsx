@@ -30,8 +30,10 @@ import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 import { AddSongModal } from '../components/dashboard/AddSongModal';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from '../store/useLanguageStore';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: track.queueId,
   });
@@ -80,7 +82,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
         <p className="text-xs text-text-muted truncate">
           {track.artists}
           {track.requestedBy && (
-            <span className="ml-2 text-accent">• {track.requestedBy}</span>
+            <span className="ml-2 text-accent">• {t('dashboard.requested_by')} {track.requestedBy}</span>
           )}
         </p>
       </div>
@@ -102,7 +104,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
         <button
           onClick={() => onRemove(track.queueId)}
           className="p-1.5 rounded-lg hover:bg-danger/20 hover:text-danger text-text-muted transition-all"
-          title="Eliminar"
+          title={t('common.cancel')}
         >
           <Trash2 size={14} />
         </button>
@@ -129,6 +131,7 @@ export default function DashboardPage() {
   const { controls } = useSpotifySDK();
   const { enairoIsThinking } = useSettingsStore();
   const [showAddModal, setShowAddModal] = useState(false);
+  const { t } = useTranslation();
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -155,7 +158,7 @@ export default function DashboardPage() {
 
   const handleApprove = async (reqId, trackName) => {
     approveRequest(reqId);
-    toast.success(`"${trackName}" añadida a la playlist`);
+    toast.success(t('dashboard.toast_added', { name: trackName }));
     const secret = useSettingsStore.getState().hostSecret;
     await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'approved' });
     
@@ -165,14 +168,14 @@ export default function DashboardPage() {
       const nextTrack = usePlayerStore.getState().shiftQueue();
       if (nextTrack) {
         await controls.play([nextTrack.uri]);
-        toast.success(`Reproduciendo automáticamente "${nextTrack.name}"`);
+        toast.success(t('dashboard.toast_playing_auto', { name: nextTrack.name }));
       }
     }
   };
 
   const handleReject = async (reqId, trackName) => {
     rejectRequest(reqId);
-    toast.error(`"${trackName}" rechazada`);
+    toast.error(t('dashboard.toast_rejected'));
     const secret = useSettingsStore.getState().hostSecret;
     await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'rejected' });
   };
@@ -191,13 +194,13 @@ export default function DashboardPage() {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
         await controls.play([track.uri]);
       }
-      toast.success(`Reproduciendo "${track.name}"`);
+      toast.success(t('dashboard.toast_playing', { name: track.name }));
     }
   };
 
   const handleRemoveQueue = (queueId) => {
     removeFromQueue(queueId);
-    toast('Canción eliminada de la cola');
+    toast(t('dashboard.toast_removed'));
   };
 
   return (
@@ -205,7 +208,7 @@ export default function DashboardPage() {
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
           <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
               {isAdminMode ? (
@@ -233,7 +236,7 @@ export default function DashboardPage() {
                 mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
               }`}
             >
-              <Users size={14} /> Fiesta
+              <Users size={14} /> {t('dashboard.mode_party')}
             </button>
             <div className="w-px h-4 bg-white/10" />
             <button
@@ -242,7 +245,7 @@ export default function DashboardPage() {
                 mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
               }`}
             >
-              <Store size={14} /> Comercial
+              <Store size={14} /> {t('dashboard.mode_commercial')}
             </button>
           </div>
 
@@ -269,7 +272,7 @@ export default function DashboardPage() {
       {/* Remote Playback Controls (Mobile/Fixed Bottom) */}
       {isAdminMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-64 z-50 shrink-0 glass border-t border-white/10 p-3 flex items-center justify-center gap-6 shadow-glow-sm">
-          <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">Control Remoto</span>
+          <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">{t('nav.remote')}</span>
           <button 
             onClick={() => {
               const track = usePlayerStore.getState().prevQueue();
@@ -329,7 +332,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-bold text-text-primary flex items-center gap-2">
                     <Clock size={16} className="text-accent" />
-                    Peticiones
+                    {t('dashboard.requests_title')}
                     {pendingRequests.length > 0 && (
                       <span className="badge bg-accent text-white">{pendingRequests.length}</span>
                     )}
@@ -344,7 +347,7 @@ export default function DashboardPage() {
                 {pendingRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <Music2 size={32} className="text-text-subtle mx-auto mb-3" />
-                    <p className="text-text-muted text-sm">Sin peticiones pendientes</p>
+                    <p className="text-text-muted text-sm">{t('dashboard.requests_empty')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-96 lg:max-h-full overflow-y-auto pr-2 custom-scrollbar">
@@ -360,7 +363,7 @@ export default function DashboardPage() {
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
                             <p className="text-xs text-text-muted truncate">
-                              {req.track.artists} · pedido por <span className="text-accent">{req.requester}</span>
+                              {req.track.artists} · {t('dashboard.requested_by')} <span className="text-accent">{req.requester}</span>
                             </p>
                           </div>
                         </div>
@@ -369,13 +372,13 @@ export default function DashboardPage() {
                             onClick={() => handleApprove(req.reqId, req.track.name)}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-success/15 hover:bg-success/25 text-success text-sm font-semibold transition-all"
                           >
-                            <CheckCircle2 size={14} /> Aprobar
+                            <CheckCircle2 size={14} /> {t('dashboard.approve')}
                           </button>
                           <button
                             onClick={() => handleReject(req.reqId, req.track.name)}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger/15 hover:bg-danger/25 text-danger text-sm font-semibold transition-all"
                           >
-                            <XCircle size={14} /> Rechazar
+                            <XCircle size={14} /> {t('dashboard.reject')}
                           </button>
                         </div>
                       </div>
@@ -400,13 +403,13 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2 mb-1 sm:mb-0">
                   <h2 className="font-bold text-text-primary flex items-center gap-2">
                     <Music2 size={16} className="text-accent" />
-                    Playlist Activa
+                    {t('dashboard.queue_title')}
                   </h2>
                   <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
                   <button 
                     onClick={() => setShowAddModal(true)}
                     className="ml-1 p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors"
-                    title="Añadir Canción"
+                    title={t('dashboard.add_song')}
                   >
                     <Plus size={14} />
                   </button>
@@ -435,9 +438,11 @@ export default function DashboardPage() {
             {queue.length === 0 ? (
               <div className="text-center py-16 m-auto">
                 <Music2 size={40} className="text-text-subtle mx-auto mb-4" />
-                <p className="text-text-muted">La cola está vacía</p>
-                {autoDJ && (
-                  <p className="text-text-subtle text-sm mt-2">Auto-DJ añadirá canciones automáticamente</p>
+                <p className="text-text-muted">{t('dashboard.queue_empty')}</p>
+                {autoDJ ? (
+                  <p className="text-text-subtle text-sm mt-2">Auto-DJ {t('dashboard.queue_empty_sub')}</p>
+                ) : (
+                  <p className="text-text-subtle text-sm mt-2">{t('dashboard.queue_empty_sub')}</p>
                 )}
               </div>
             ) : (

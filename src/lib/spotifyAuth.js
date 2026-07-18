@@ -14,15 +14,13 @@ export const SPOTIFY_SCOPES = [
   'playlist-read-collaborative'
 ].join(' ');
 
-export async function redirectToSpotifyAuth() {
+export async function redirectToSpotifyAuth(showDialog = true) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'spotify',
     options: {
       scopes: SPOTIFY_SCOPES,
       redirectTo: `${window.location.origin}/callback`,
-      queryParams: {
-        show_dialog: 'true'
-      }
+      queryParams: showDialog ? { show_dialog: 'true' } : {}
     }
   });
 

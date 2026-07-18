@@ -113,6 +113,48 @@ const ES = {
     add_song: 'Añadir canción',
     requested_by: 'por',
     now_playing: 'Reproduciendo',
+    playlists_empty: 'No tienes playlists en tu cuenta',
+    playlists_loading: 'Cargando tus playlists...',
+    playlists_history: 'Historial de Sesiones Anteriores',
+    playlists_history_empty: 'Aún no hay canciones en tu historial',
+    playlists_import: 'Importar Playlist por Link',
+    playlists_import_btn: 'Importar',
+    playlists_songs: 'canciones',
+    add_song_title: 'Añadir Canción',
+    add_song_search: 'Buscar canción o artista...',
+    add_song_searching: 'Buscando...',
+    add_song_empty: 'Escribe para buscar una canción',
+    toast_added: '¡"{{name}}" añadida a la cola!',
+    toast_added_playing: '¡"{{name}}" añadida y reproduciendo!',
+    toast_rejected: 'Petición rechazada',
+    toast_removed: 'Canción eliminada de la cola',
+    toast_playing: 'Reproduciendo "{{name}}"',
+    toast_playing_auto: 'Reproduciendo automáticamente "{{name}}"',
+    toast_pl_empty: 'La playlist está vacía o contiene archivos locales.',
+    toast_pl_added: '¡"{{name}}" añadida! Reproduciendo...',
+    toast_pl_added_multiple: '¡Se añadieron {{count}} canciones a la cola!',
+    toast_pl_dev_error: 'Modo Desarrollo: Spotify bloquea playlists de otros usuarios.',
+    toast_pl_error: 'Error al importar la playlist. Asegúrate de que sea pública.',
+    toast_pl_link_error: 'Ingresa un link válido de Spotify.',
+    toast_pl_importing: 'Importando "{{name}}"...',
+    toast_pl_fetching: 'Obteniendo información...',
+    toast_player_not_ready: 'Reproductor no listo. Espera un momento.',
+  },
+  metrics: {
+    title: 'Métricas',
+    subtitle: 'Estadísticas de reproducciones por fecha',
+    all_history: 'Todo el historial',
+    today: 'Hoy',
+    yesterday: 'Ayer',
+    total_requests: 'Total peticiones',
+    approved: 'Aprobadas',
+    peak_hour: 'Hora pico',
+    unique_artists: 'Artistas únicos',
+    top_artists: 'Top Artistas',
+    not_enough_data: 'No hay suficientes datos aún.',
+    requests_per_hour: 'Peticiones por Hora',
+    plays: 'reproducciones',
+    unknown: 'Desconocido',
   },
   settings: {
     title: 'Configuración',
@@ -132,6 +174,48 @@ const ES = {
     cooldown_title: 'Tiempo de espera',
     cooldown_desc: 'Requerir que los invitados esperen antes de poder pedir otra canción',
     cooldown_minutes: 'Minutos de espera',
+    subtitle: 'Personaliza las reglas de tu sesión',
+    envairo_title: 'EnvAIro Selector (Configuración IA)',
+    envairo_desc: 'EnvAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."',
+    envairo_prompt_label: 'Contexto Especial / Vibra (Opcional)',
+    envairo_prompt_placeholder: 'Escribe las instrucciones para la IA...',
+    envairo_test_label: 'Modo Pruebas (Sin restricciones)',
+    envairo_test_desc: '⚠️ Ignora el límite de 1 hora y el límite de canciones en cola. ¡Úsalo solo para probar porque gastarás tu cuota diaria rápidamente!',
+    time_config: 'Horario configurado: {{start}} a {{end}}',
+    time_cross: ' (cruza medianoche)',
+    explicit_filter_title: 'Filtro de contenido explícito',
+    explicit_filter_desc: 'Bloquear automáticamente canciones marcadas como explícitas (E) en Spotify',
+    req_per_hour_title: 'Peticiones por hora (Global)',
+    req_per_hour_desc: 'Límite total de canciones que todos los invitados sumados pueden pedir en una hora',
+    req_per_guest_title: 'Límite de peticiones por invitado',
+    req_per_guest_desc: 'Cantidad máxima de canciones que puede pedir una misma persona (0 = Sin límite)',
+    table_count_title: 'Cantidad de Mesas',
+    table_count_desc: 'Si usas el Modo Comercial, los clientes podrán seleccionar su mesa (0 para desactivar)',
+    adv_genre_title: 'Filtros Avanzados de Género',
+    guide_btn: 'Guía de agrupación',
+    whitelist_genre_title: 'Lista Blanca de Géneros',
+    whitelist_genre_desc: 'Solo se permitirán canciones de estos géneros (deja vacío para no filtrar)',
+    whitelist_placeholder: 'Ej: pop, reggaeton, rock...',
+    blacklist_genre_title: 'Lista Negra de Géneros',
+    blacklist_genre_desc: 'Las canciones de estos géneros serán bloqueadas automáticamente',
+    blacklist_genre_placeholder: 'Ej: trap, metal, reggaeton...',
+    adv_artist_title: 'Filtros Avanzados de Artistas',
+    blacklist_song_title: 'Lista Negra de Canciones',
+    blacklist_song_desc: 'Las canciones con estos nombres serán bloqueadas automáticamente',
+    blacklist_song_placeholder: 'Ej: Despacito, Tusa, Baby...',
+    blacklist_artist_title: 'Lista Negra de Artistas',
+    blacklist_artist_desc: 'Las canciones de estos artistas serán bloqueadas automáticamente',
+    blacklist_artist_placeholder: 'Ej: Anuel AA, Yeri Mua...',
+    empty_btn: 'Vaciar',
+    guide_modal_title: 'Guía de Familias de Género',
+    guide_modal_intro: 'Al seleccionar un género en los filtros, el Auto-DJ añadirá automáticamente sus variantes y subgéneros asociados para evitar que Spotify rechace canciones por diferencias en el nombre.',
+    guide_modal_urbano: 'Urbano y Reggaeton',
+    guide_modal_pop: 'Pop y Rock',
+    guide_modal_electro: 'Música Electrónica',
+    guide_modal_tropical: 'Tropical y Caribeño',
+    guide_modal_regional: 'Regional Mexicano',
+    guide_modal_other: 'Otros',
+    guide_modal_tip: 'Tip: Si el sistema añade varios géneros hermanos y hay alguno que en específico NO deseas, simplemente haz clic en la X de su etiqueta para removerlo individualmente.',
   },
   activities: {
     title: 'Actividades',
@@ -178,6 +262,57 @@ const ES = {
   player: {
     now_playing: 'Reproduciendo',
     requested_by: 'Pedida por',
+  },
+  support: {
+    title: 'Soporte y Ayuda',
+    subtitle: 'Resolvemos todas tus dudas sobre Envairo',
+    faq_title: 'Preguntas Frecuentes',
+    contact_title: '¿Necesitas ayuda directa?',
+    contact_desc: 'Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier problema en tiempo real.',
+    contact_btn: 'Contactar por WhatsApp',
+    version_info: 'Envairo v1.0.0 · Construido con ❤️ y Spotify Premium',
+    faqs: [
+      {
+        question: '¿Qué es Envairo QR?',
+        answer: 'Envairo QR es una plataforma interactiva que permite a los invitados de tus eventos o clientes de tu negocio pedir canciones escaneando un código QR, interactuar con actividades musicales y disfrutar de un ambiente personalizado en tiempo real.'
+      },
+      {
+        question: '¿Cómo funciona el reproductor?',
+        answer: 'El reproductor se sincroniza directamente con Spotify. Desde el panel principal de Envairo, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
+      },
+      {
+        question: '¿Cómo funcionan los QRs?',
+        answer: 'El código QR se genera automáticamente en tu panel de control. Tus invitados solo necesitan escanearlo con la cámara de sus teléfonos para abrir una página web (sin instalar aplicaciones) desde donde podrán buscar y pedir sus canciones favoritas.'
+      },
+      {
+        question: '¿Cómo funcionan las peticiones?',
+        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. Envairo revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción de Spotify en tiempo real.'
+      },
+      {
+        question: '¿Puedo utilizar playlists de Spotify?',
+        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists existentes de Spotify. Envairo puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
+      },
+      {
+        question: '¿Cómo funciona el Auto-DJ?',
+        answer: 'El Auto-DJ es un sistema inteligente que se encarga de mantener la música sonando si no hay peticiones de los invitados. Selecciona canciones adecuadas basándose en los géneros permitidos y el ambiente del evento para que nunca haya silencios.'
+      },
+      {
+        question: '¿Cómo funciona EnvAIro Selector?',
+        answer: 'EnvAIro Selector utiliza Inteligencia Artificial para analizar el contexto de tu evento. Solo necesitas darle una breve descripción (ej. "Boda elegante y romántica") y la IA analizará cada petición para asegurarse de que encaja perfectamente con la vibra que has configurado.'
+      },
+      {
+        question: '¿Qué son las actividades interactivas?',
+        answer: 'Envairo incluye actividades divertidas para animar tu evento, como el Juego de la Silla, Trivia Musical y Retos personalizados. Estas dinámicas se activan desde la pestaña Actividades y utilizan la música en curso para crear experiencias memorables con tus invitados.'
+      },
+      {
+        question: '¿Qué diferencia hay entre el Modo Fiesta y el Modo Comercial?',
+        answer: 'El Modo Fiesta es ideal para eventos sociales, permitiendo a los invitados usar apodos divertidos. El Modo Comercial está pensado para bares o restaurantes, donde se requiere que el usuario introduzca su número de mesa para llevar un control preciso de dónde viene la petición.'
+      },
+      {
+        question: '¿Necesito Spotify Premium para utilizar la aplicación?',
+        answer: 'Sí, debido a las políticas de reproducción de Spotify, se requiere una cuenta Premium activa para que Envairo pueda controlar la música y reproducir las peticiones. Sin embargo, aún sin una cuenta Premium, puedes visualizar las métricas de los eventos pasados.'
+      }
+    ]
   },
   common: {
     loading: 'Cargando...',
@@ -261,6 +396,48 @@ const EN = {
     add_song: 'Add song',
     requested_by: 'by',
     now_playing: 'Playing',
+    playlists_empty: "You don't have any playlists",
+    playlists_loading: 'Loading your playlists...',
+    playlists_history: 'Previous Sessions History',
+    playlists_history_empty: 'No songs in your history yet',
+    playlists_import: 'Import Playlist by Link',
+    playlists_import_btn: 'Import',
+    playlists_songs: 'songs',
+    add_song_title: 'Add Song',
+    add_song_search: 'Search song or artist...',
+    add_song_searching: 'Searching...',
+    add_song_empty: 'Type to search for a song',
+    toast_added: '"{{name}}" added to the queue!',
+    toast_added_playing: '"{{name}}" added and playing!',
+    toast_rejected: 'Request rejected',
+    toast_removed: 'Song removed from queue',
+    toast_playing: 'Playing "{{name}}"',
+    toast_playing_auto: 'Auto-playing "{{name}}"',
+    toast_pl_empty: 'The playlist is empty or contains local files.',
+    toast_pl_added: '"{{name}}" added! Playing...',
+    toast_pl_added_multiple: 'Added {{count}} songs to the queue!',
+    toast_pl_dev_error: 'Dev Mode: Spotify blocks third-party playlists.',
+    toast_pl_error: 'Error importing playlist. Make sure it is public.',
+    toast_pl_link_error: 'Please enter a valid Spotify link.',
+    toast_pl_importing: 'Importing "{{name}}"...',
+    toast_pl_fetching: 'Fetching information...',
+    toast_player_not_ready: 'Player not ready. Please wait.',
+  },
+  metrics: {
+    title: 'Metrics',
+    subtitle: 'Playback statistics by date',
+    all_history: 'All history',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    total_requests: 'Total requests',
+    approved: 'Approved',
+    peak_hour: 'Peak hour',
+    unique_artists: 'Unique artists',
+    top_artists: 'Top Artists',
+    not_enough_data: 'Not enough data yet.',
+    requests_per_hour: 'Requests per Hour',
+    plays: 'plays',
+    unknown: 'Unknown',
   },
   settings: {
     title: 'Settings',
@@ -280,6 +457,48 @@ const EN = {
     cooldown_title: 'Request cooldown',
     cooldown_desc: 'Require guests to wait before requesting another song',
     cooldown_minutes: 'Wait time (minutes)',
+    subtitle: 'Customize the rules for your session',
+    envairo_title: 'EnvAIro Selector (AI Config)',
+    envairo_desc: 'EnvAIro Selector is activated from the Dashboard. Here you can give instructions on how it should behave. Ex: "It is an elegant wedding, keep the music romantic but danceable, avoid vulgar stuff."',
+    envairo_prompt_label: 'Special Context / Vibe (Optional)',
+    envairo_prompt_placeholder: 'Write instructions for the AI...',
+    envairo_test_label: 'Test Mode (No restrictions)',
+    envairo_test_desc: '⚠️ Ignores the 1-hour limit and the queue limit. Use this only for testing because it consumes your daily quota quickly!',
+    time_config: 'Schedule set: {{start}} to {{end}}',
+    time_cross: ' (crosses midnight)',
+    explicit_filter_title: 'Explicit content filter',
+    explicit_filter_desc: 'Automatically block songs marked as explicit (E) on Spotify',
+    req_per_hour_title: 'Requests per hour (Global)',
+    req_per_hour_desc: 'Total limit of songs all guests combined can request in one hour',
+    req_per_guest_title: 'Requests limit per guest',
+    req_per_guest_desc: 'Maximum amount of songs a single person can request (0 = No limit)',
+    table_count_title: 'Number of Tables',
+    table_count_desc: 'If using Commercial Mode, customers will be able to select their table (0 to disable)',
+    adv_genre_title: 'Advanced Genre Filters',
+    guide_btn: 'Grouping Guide',
+    whitelist_genre_title: 'Genre Whitelist',
+    whitelist_genre_desc: 'Only songs from these genres will be allowed (leave empty to not filter)',
+    whitelist_placeholder: 'Ex: pop, reggaeton, rock...',
+    blacklist_genre_title: 'Genre Blacklist',
+    blacklist_genre_desc: 'Songs from these genres will be blocked automatically',
+    blacklist_genre_placeholder: 'Ex: trap, metal, reggaeton...',
+    adv_artist_title: 'Advanced Artist Filters',
+    blacklist_song_title: 'Song Blacklist',
+    blacklist_song_desc: 'Songs with these names will be blocked automatically',
+    blacklist_song_placeholder: 'Ex: Despacito, Tusa, Baby...',
+    blacklist_artist_title: 'Artist Blacklist',
+    blacklist_artist_desc: 'Songs from these artists will be blocked automatically',
+    blacklist_artist_placeholder: 'Ex: Anuel AA, Yeri Mua...',
+    empty_btn: 'Clear',
+    guide_modal_title: 'Genre Families Guide',
+    guide_modal_intro: 'When selecting a genre in filters, Auto-DJ will automatically add its variants and associated subgenres to prevent Spotify from rejecting songs due to naming differences.',
+    guide_modal_urbano: 'Urban and Reggaeton',
+    guide_modal_pop: 'Pop and Rock',
+    guide_modal_electro: 'Electronic Music',
+    guide_modal_tropical: 'Tropical and Caribbean',
+    guide_modal_regional: 'Regional Mexican',
+    guide_modal_other: 'Other',
+    guide_modal_tip: 'Tip: If the system adds several sibling genres and there is one you specifically DO NOT want, simply click the X on its tag to remove it individually.',
   },
   activities: {
     title: 'Activities',
@@ -326,6 +545,57 @@ const EN = {
   player: {
     now_playing: 'Now Playing',
     requested_by: 'Requested by',
+  },
+  support: {
+    title: 'Support and Help',
+    subtitle: 'We solve all your doubts about Envairo',
+    faq_title: 'Frequently Asked Questions',
+    contact_title: 'Need direct help?',
+    contact_desc: 'Our support team is available on WhatsApp to solve any problem in real time.',
+    contact_btn: 'Contact via WhatsApp',
+    version_info: 'Envairo v1.0.0 · Built with ❤️ and Spotify Premium',
+    faqs: [
+      {
+        question: 'What is Envairo QR?',
+        answer: 'Envairo QR is an interactive platform that allows your event guests or business customers to request songs by scanning a QR code, interact with musical activities, and enjoy a personalized environment in real time.'
+      },
+      {
+        question: 'How does the player work?',
+        answer: 'The player syncs directly with Spotify. From the main Envairo dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
+      },
+      {
+        question: 'How do the QRs work?',
+        answer: 'The QR code is automatically generated in your dashboard. Your guests just need to scan it with their phone\'s camera to open a web page (no app installation required) from where they can search and request their favorite songs.'
+      },
+      {
+        question: 'How do requests work?',
+        answer: 'Requests sent by guests are added to a smart queue. Envairo checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the Spotify playlist in real time.'
+      },
+      {
+        question: 'Can I use Spotify playlists?',
+        answer: 'Yes! From the dashboard, you can search and load your existing Spotify playlists. Envairo can alternate between guest requests and your playlist to ensure the music never stops.'
+      },
+      {
+        question: 'How does Auto-DJ work?',
+        answer: 'Auto-DJ is a smart system that keeps the music playing if there are no guest requests. It selects appropriate songs based on the allowed genres and the atmosphere of the event so there are never any silences.'
+      },
+      {
+        question: 'How does EnvAIro Selector work?',
+        answer: 'EnvAIro Selector uses Artificial Intelligence to analyze the context of your event. You just need to give it a brief description (e.g., "Elegant and romantic wedding") and the AI will analyze each request to make sure it perfectly fits the vibe you\'ve set.'
+      },
+      {
+        question: 'What are the interactive activities?',
+        answer: 'Envairo includes fun activities to liven up your event, such as Musical Chairs, Musical Trivia, and personalized Challenges. These dynamics are activated from the Activities tab and use the current music to create memorable experiences with your guests.'
+      },
+      {
+        question: 'What is the difference between Party Mode and Commercial Mode?',
+        answer: 'Party Mode is ideal for social events, allowing guests to use fun nicknames. Commercial Mode is designed for bars or restaurants, where the user is required to enter their table number to keep precise track of where the request comes from.'
+      },
+      {
+        question: 'Do I need Spotify Premium to use the application?',
+        answer: 'Yes, due to Spotify\'s playback policies, an active Premium account is required for Envairo to control the music and play requests. However, even without a Premium account, you can still view the metrics from past events.'
+      }
+    ]
   },
   common: {
     loading: 'Loading...',

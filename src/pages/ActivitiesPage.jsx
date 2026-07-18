@@ -78,6 +78,72 @@ const CHALLENGES_ADULTS = [
   'Propón el próximo after de la fiesta con total convicción 🌙',
 ];
 
+const CHALLENGES_KIDS_EN = [
+  'Imitate the artist of the song for 10 seconds 🎤',
+  'Dance without moving your feet for 15 seconds 🕺',
+  'Make a funny face and hold it for 5 seconds 😜',
+  'Guess the next word of the song lyrics 🎵',
+  'Imitate an animal of your choice for 10 seconds 🐾',
+  'Dance in slow motion for 15 seconds 🐌',
+  'Say the name of the song artist backwards 🔄',
+  'Do 5 jumping jacks dancing to the beat 🤸',
+  'Whistle the melody of the song for 10 seconds 😙',
+  'Tell a joke and have everyone rate it from 1 to 5 😄',
+  'Pretend to be a statue for 10 seconds 🗿',
+  'Do the robot dance to the rhythm of the song 🤖',
+  'Name 3 musical artists in 5 seconds ⚡',
+  'Dance acting like you are carrying something very heavy 🏋️',
+  'Describe the song using only 3 words 🎯',
+  'Imitate your musical idol for 10 seconds 🌟',
+  'Do the choreography of the most famous dance you know 💃',
+  'Sing the first line of the song without making a mistake 🎙️',
+  'Dance with your eyes closed for 15 seconds 😌',
+  'Guess what year this song is from 📅',
+  'Move only your shoulders to the beat for 10 seconds 💪',
+  'Name 5 songs by the same artist in 10 seconds 🎶',
+  'Have someone else guess the song with mime 🤫',
+  'Invent a new dance move right now 🆕',
+  'Sing the song with a cartoon voice 🎠',
+  'Dance with your back to the audience for 10 seconds 🔙',
+  'Imitate a radio host announcing this song 📻',
+  'Count how many times the main word of the song is said 🔢',
+  'Choose someone from the group to dance with you 🤝',
+  'Do the most exaggerated dance you can for 15 seconds 🌀',
+];
+
+const CHALLENGES_ADULTS_EN = [
+  'Turn up the volume and sing the chorus at the top of your lungs 🎤',
+  'Convince someone that this is the best song of the event 🏆',
+  'Imitate the song artist in an exaggerated way for 20 seconds 🤩',
+  'Toast with the person on your right and say something nice about them 🥂',
+  'Be the DJ for a moment: describe what song you would play next 🎧',
+  'Tell the most embarrassing story that has happened to you at a party 😳',
+  'Dance with the most energetic person in the group right now 💃',
+  'Choose someone and guess how many songs by this artist they know 🎵',
+  'Describe this song as if it were a luxury perfume 🌹',
+  'Name 5 songs from the 90s in 10 seconds ⚡',
+  'Pretend to be a music critic and review this song 🎓',
+  'Make a spontaneous toast dedicated to whoever requested the song 🥃',
+  'Move your hips to the rhythm of the song for 20 seconds 🌊',
+  'Say in which movie or series you would hear this song 🎬',
+  'Convince your neighbor that this song is a national anthem 🏳️',
+  'Invent an alternative lyric for the song chorus ✍️',
+  'Pretend to be the artist\'s manager and introduce them to the audience 🎙️',
+  'Name 3 artists who could collaborate with this one 🤝',
+  'Dance in pairs with whoever you want for 30 seconds 💑',
+  'Hum the song and have someone in the group guess it 🎼',
+  'Pick a nearby object and use it as a microphone 🎤',
+  'Imitate the dance style of another decade (80s, 90s, 2000s) 💫',
+  'Say the lyrics of the song as if it were a romantic poem 💌',
+  'Describe whoever requested the song with 3 musical adjectives 🎶',
+  'Put on the most serious face possible while everyone dances around you 😐',
+  'Dedicate this song to someone in the group publicly 📣',
+  'Pretend to be a rock star entering the stage ⭐',
+  'Say when was the last time you danced this well 😎',
+  'Do the most epic album cover pose you can 📀',
+  'Propose the next after-party with total conviction 🌙',
+];
+
 // ─── Trivia helpers ───────────────────────────────────────────────────────────
 function decodeHTML(html) {
   const txt = document.createElement('textarea');
@@ -121,9 +187,12 @@ function ChallengeCard({ currentTrack }) {
   const [mode, setMode] = useState('adults'); // 'kids' | 'adults'
   const [challenge, setChallenge] = useState(null);
   const [revealed, setRevealed] = useState(false);
+  const { t, lang } = useTranslation();
 
   const generate = () => {
-    const list = mode === 'kids' ? CHALLENGES_KIDS : CHALLENGES_ADULTS;
+    const list = mode === 'kids' 
+      ? (lang === 'en' ? CHALLENGES_KIDS_EN : CHALLENGES_KIDS)
+      : (lang === 'en' ? CHALLENGES_ADULTS_EN : CHALLENGES_ADULTS);
     setChallenge(list[Math.floor(Math.random() * list.length)]);
     setRevealed(true);
   };
@@ -148,7 +217,7 @@ function ChallengeCard({ currentTrack }) {
         <div className="flex items-center gap-2 p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
           <Crown size={14} className="text-yellow-400 flex-shrink-0" />
           <p className="text-sm text-yellow-300">
-            El reto va para: <strong>{requester}</strong>
+            {t('activities.challenge_for')}: <strong>{requester}</strong>
           </p>
         </div>
       )}
@@ -161,7 +230,7 @@ function ChallengeCard({ currentTrack }) {
             mode === 'kids' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'
           }`}
         >
-          <Baby size={14} /> Para todos
+          <Baby size={14} /> {t('activities.challenge_for_all')}
         </button>
         <button
           onClick={() => { setMode('adults'); setRevealed(false); setChallenge(null); }}
@@ -169,7 +238,7 @@ function ChallengeCard({ currentTrack }) {
             mode === 'adults' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'
           }`}
         >
-          <Wine size={14} /> Adultos
+          <Wine size={14} /> {t('activities.challenge_adults')}
         </button>
       </div>
 
@@ -185,7 +254,7 @@ function ChallengeCard({ currentTrack }) {
         className="btn-primary w-full flex items-center justify-center gap-2"
       >
         <Shuffle size={16} />
-        {revealed ? 'Nuevo reto' : 'Generar reto'}
+        {revealed ? t('activities.challenge_new') : t('activities.challenge_btn')}
       </button>
     </div>
   );
@@ -193,6 +262,7 @@ function ChallengeCard({ currentTrack }) {
 
 // ─── 2. ¿Quién la pidió? ─────────────────────────────────────────────────────
 function GuessWhoCard({ currentTrack, requestHistory }) {
+  const { t } = useTranslation();
   const [options, setOptions] = useState([]);
   const [answer, setAnswer] = useState(-1);
   const [selected, setSelected] = useState(null);
@@ -232,15 +302,15 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
     || currentTrack.requestedBy === 'Spotify Connect';
 
   if (!currentTrack) {
-    return <p className="text-text-muted text-sm text-center py-4">Reproduce una canción para activar este juego</p>;
+    return <p className="text-text-muted text-sm text-center py-4">{t('activities.guesswho_no_track')}</p>;
   }
 
   if (isAnon) {
     return (
       <div className="text-center py-6 space-y-2">
         <p className="text-4xl">🕵️</p>
-        <p className="font-semibold text-text-primary">Este invitado prefirió el anonimato</p>
-        <p className="text-sm text-text-muted">Solo funciona cuando los invitados dejan su nombre o mesa</p>
+        <p className="font-semibold text-text-primary">{t('activities.guesswho_anon')}</p>
+        <p className="text-sm text-text-muted">{t('activities.guesswho_anon_sub')}</p>
       </div>
     );
   }
@@ -250,7 +320,7 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
       <div className="flex items-center gap-3 p-3 bg-accent/10 border border-accent/20 rounded-xl">
         {currentTrack.image && <img src={currentTrack.image} alt="" className="w-10 h-10 rounded-lg object-cover" />}
         <div className="min-w-0">
-          <p className="text-xs text-text-muted mb-0.5">¿Quién pidió esta canción?</p>
+          <p className="text-xs text-text-muted mb-0.5">{t('activities.guesswho_question')}</p>
           <p className="text-sm font-bold text-text-primary truncate">{currentTrack.name}</p>
           <p className="text-xs text-text-muted truncate">{currentTrack.artists}</p>
         </div>
@@ -282,10 +352,10 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
       {selected !== null && (
         <div className="text-center space-y-2 animate-slide-up">
           <p className={`font-bold text-lg ${selected === answer ? 'text-success' : 'text-danger'}`}>
-            {selected === answer ? '🎉 ¡Correcto!' : `❌ Era ${options[answer]}`}
+            {selected === answer ? t('activities.guesswho_correct') : t('activities.guesswho_wrong', { answer: options[answer] })}
           </p>
           <button onClick={setup} className="btn-secondary text-sm py-2 px-4 flex items-center gap-2 mx-auto">
-            <RefreshCw size={14} /> Jugar con la próxima canción
+            <RefreshCw size={14} /> {t('activities.guesswho_next')}
           </button>
         </div>
       )}
@@ -405,6 +475,7 @@ function TriviaCard() {
 
 // ─── 4. Juego de la Silla ────────────────────────────────────────────────────
 function ChairGameCard() {
+  const { t } = useTranslation();
   const [active, setActive] = useState(false);
   const [paused, setPaused] = useState(false);
   const [countdown, setCountdown] = useState(null);
@@ -430,7 +501,7 @@ function ChairGameCard() {
     setPaused(false);
     setRound(1);
     scheduleNext();
-    toast.success('🪑 ¡Juego de la Silla activado! La música se detendrá en cualquier momento...');
+    toast.success('🪑 ' + t('activities.chair_start') + '!');
   };
 
   const stopGame = () => {
@@ -459,24 +530,24 @@ function ChairGameCard() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-text-muted">
-        La música se detendrá en momentos aleatorios (entre 20 y 60 segundos). ¡El último que se siente pierde!
+        {t('activities.chair_desc')}
       </p>
 
       {active && (
         <div className="p-4 bg-accent/10 border border-accent/20 rounded-xl text-center">
           <p className="text-2xl mb-1">🪑</p>
-          <p className="font-bold text-text-primary">Ronda {round} en curso</p>
-          <p className="text-xs text-text-muted mt-1">La música parará en cualquier momento...</p>
+          <p className="font-bold text-text-primary">{t('activities.chair_round', { n: round })}</p>
+          <p className="text-xs text-text-muted mt-1">{t('activities.chair_hint')}</p>
         </div>
       )}
 
       {!active ? (
         <button onClick={startGame} className="btn-primary w-full flex items-center justify-center gap-2">
-          <Play size={16} /> Iniciar Juego de la Silla
+          <Play size={16} /> {t('activities.chair_start')}
         </button>
       ) : (
         <button onClick={stopGame} className="btn-secondary w-full flex items-center justify-center gap-2">
-          <Pause size={16} /> Detener Juego
+          <Pause size={16} /> {t('activities.chair_stop')}
         </button>
       )}
 
@@ -491,21 +562,21 @@ function ChairGameCard() {
             </div>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-bounce">
-            ¡PARA!
+            {t('activities.chair_paused')}
           </h1>
-          <p className="text-2xl text-white/80 mb-2">Ronda {round}</p>
+          <p className="text-2xl text-white/80 mb-2">{t('activities.chair_round', { n: round })}</p>
           <p className="text-lg text-white/60 mb-10">¿Quién se quedó sin silla?</p>
           <button
             onClick={nextRound}
             className="px-10 py-4 rounded-2xl bg-accent font-bold text-white text-xl shadow-glow hover:bg-accent-light transition-all hover:scale-105 active:scale-95"
           >
-            🎵 ¡Siguiente Ronda!
+            {t('activities.chair_next_round')}
           </button>
           <button
             onClick={stopGame}
             className="mt-4 text-white/40 hover:text-white/70 text-sm transition-colors"
           >
-            Terminar juego
+            {t('activities.chair_end')}
           </button>
         </div>,
         document.body
@@ -516,6 +587,7 @@ function ChairGameCard() {
 
 // ─── Karaoke Logic (preserved intact) ────────────────────────────────────────
 function KaraokeCard({ currentTrack, progress, duration }) {
+  const { t } = useTranslation();
   const [karaokeOpen, setKaraokeOpen] = useState(false);
   const karaokeRef = useRef(null);
   const lyricsContainerRef = useRef(null);
@@ -632,7 +704,7 @@ function KaraokeCard({ currentTrack, progress, duration }) {
     <div className="space-y-4">
       <div className="bg-bg-elevated rounded-xl p-4 min-h-[100px] flex flex-col items-center justify-center text-center">
         {lyricsLoading ? (
-          <p className="text-text-muted text-sm animate-pulse">Buscando letras...</p>
+          <p className="text-text-muted text-sm animate-pulse">{t('activities.karaoke_loading')}</p>
         ) : lyricsError ? (
           <p className="text-text-muted text-sm">{lyricsError}</p>
         ) : lyricsLines.length > 0 ? (
@@ -647,11 +719,11 @@ function KaraokeCard({ currentTrack, progress, duration }) {
             )}
           </div>
         ) : (
-          <p className="text-text-subtle text-sm">Reproduce una canción para buscar letras</p>
+          <p className="text-text-subtle text-sm">{t('activities.karaoke_no_track')}</p>
         )}
       </div>
       <button onClick={openKaraoke} className="btn-primary w-full flex items-center justify-center gap-2">
-        <Mic2 size={16} /> Activar Modo Karaoke
+        <Mic2 size={16} /> {t('activities.karaoke_btn')}
       </button>
 
       {karaokeOpen && createPortal(
@@ -671,20 +743,20 @@ function KaraokeCard({ currentTrack, progress, duration }) {
             {!currentTrack ? (
               <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0">
                 <Mic2 size={64} className="text-accent/30 mb-6 animate-bounce" />
-                <p className="text-4xl font-bold text-white/50 animate-pulse">Preparando pista...</p>
+                <p className="text-4xl font-bold text-white/50 animate-pulse">{t('activities.karaoke_preparing')}</p>
               </div>
             ) : (
               <>
                 <div className="mb-4 md:mb-8 mt-12 md:mt-4 shrink-0">
-                  <p className="text-text-muted text-sm mb-1">Reproduciendo</p>
+                  <p className="text-text-muted text-sm mb-1">{t('activities.karaoke_playing')}</p>
                   <p className="text-xl md:text-3xl font-bold text-text-primary px-4">{currentTrack.name}</p>
                   <p className="text-text-muted md:text-lg">{currentTrack.artists}</p>
-                  {currentTrack.requestedBy && <p className="text-accent text-sm font-semibold uppercase tracking-wider mt-1">Pedida por: {currentTrack.requestedBy}</p>}
+                  {currentTrack.requestedBy && <p className="text-accent text-sm font-semibold uppercase tracking-wider mt-1">{t('activities.karaoke_by')}: {currentTrack.requestedBy}</p>}
                 </div>
                 <div ref={lyricsContainerRef} onScroll={handleScroll} onTouchMove={handleScroll} onWheel={handleScroll} className="flex-1 w-full max-w-4xl overflow-y-auto mt-2 px-4 pb-32 no-scrollbar min-h-0">
                   <div className="space-y-8 pt-32 pb-64 text-center">
                     {lyricsLoading ? (
-                      <p className="text-2xl text-text-muted animate-pulse">Cargando letras...</p>
+                      <p className="text-2xl text-text-muted animate-pulse">{t('activities.karaoke_loading')}</p>
                     ) : lyricsError ? (
                       <p className="text-2xl text-text-muted">{lyricsError}</p>
                     ) : (
@@ -726,7 +798,7 @@ export default function ActivitiesPage() {
         <p className="text-text-muted text-sm mt-1">{t('activities.subtitle')}</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
         {/* Retos */}
         <ActivityCard
           icon={<PartyPopper size={18} className="text-yellow-300" />}

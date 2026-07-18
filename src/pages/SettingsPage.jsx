@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
+import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
 import { SongTagInput } from '../components/ui/SongTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../store/useLanguageStore';
 
 const COMMON_GENRES = [
   "Acústico", "Afrobeats", "Alternativo", "Ambient", "Anime", "Bachata", 
@@ -98,6 +100,7 @@ export default function SettingsPage() {
     enairoPrompt, setEnairoPrompt,
     enairoTestMode, setEnairoTestMode,
   } = useSettingsStore();
+  const { t } = useTranslation();
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
 
@@ -123,26 +126,26 @@ export default function SettingsPage() {
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="mb-2">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <Settings size={22} className="text-accent" /> Configuración
+          <Settings size={22} className="text-accent" /> {t('settings.title')}
         </h1>
-        <p className="text-text-muted text-sm mt-1">Personaliza las reglas de tu sesión</p>
+        <p className="text-text-muted text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
 
       {/* EnvAIro Selector (IA) */}
       <section className="card p-5 space-y-4 border border-accent/20">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">EnvAIro Selector (Configuración IA)</h2>
+          <h2 className="font-bold text-text-primary">{t('settings.envairo_title')}</h2>
         </div>
         
-        <p className="text-xs text-text-muted mb-2">EnvAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."</p>
+        <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
 
         <div className="pt-2">
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto Especial / Vibra (Opcional)</label>
+          <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
           <textarea
             value={enairoPrompt}
             onChange={(e) => setEnairoPrompt(e.target.value)}
-            placeholder="Escribe las instrucciones para la IA..."
+            placeholder={t('settings.envairo_prompt_placeholder')}
             className="input-field w-full h-24 resize-none"
           />
         </div>
@@ -151,8 +154,8 @@ export default function SettingsPage() {
           <Toggle
             checked={enairoTestMode}
             onChange={setEnairoTestMode}
-            label="Modo Pruebas (Sin restricciones)"
-            description="⚠️ Ignora el límite de 1 hora y el límite de canciones en cola. ¡Úsalo solo para probar porque gastarás tu cuota diaria rápidamente!"
+            label={t('settings.envairo_test_label')}
+            description={t('settings.envairo_test_desc')}
           />
         </div>
       </section>
@@ -161,20 +164,20 @@ export default function SettingsPage() {
       <section className="card p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Clock size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">Horario de Disponibilidad</h2>
+          <h2 className="font-bold text-text-primary">{t('settings.availability_title')}</h2>
         </div>
 
         <Toggle
           checked={alwaysAvailable}
           onChange={setAlwaysAvailable}
-          label="Siempre disponible"
-          description="Los invitados pueden pedir canciones en cualquier momento"
+          label={t('settings.always_available')}
+          description={t('settings.always_available_desc')}
         />
 
         {!alwaysAvailable && (
           <div className="grid grid-cols-2 gap-4 pt-2 animate-slide-up">
             <div>
-              <label className="block text-sm text-text-muted mb-1.5">Hora de inicio</label>
+              <label className="block text-sm text-text-muted mb-1.5">{t('settings.start_time')}</label>
               <input
                 type="time"
                 value={startTime}
@@ -184,7 +187,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-text-muted mb-1.5">Hora de cierre</label>
+              <label className="block text-sm text-text-muted mb-1.5">{t('settings.end_time')}</label>
               <input
                 type="time"
                 value={endTime}
@@ -194,8 +197,13 @@ export default function SettingsPage() {
               />
             </div>
             <p className="col-span-2 text-xs text-text-subtle bg-bg-elevated rounded-lg px-3 py-2">
-              Horario configurado: <span className="text-accent font-semibold">{startTime}</span> a <span className="text-accent font-semibold">{endTime}</span>
-              {endTime < startTime && ' (cruza medianoche)'}
+              {t('settings.time_config', { start: `<span class="text-accent font-semibold">${startTime}</span>`, end: `<span class="text-accent font-semibold">${endTime}</span>` }).split('<span').map((part, i) => {
+                if (i === 0) return part;
+                const match = part.match(/class="([^"]+)">([^<]+)<\/span>(.*)/);
+                if (match) return <React.Fragment key={i}><span className={match[1]}>{match[2]}</span>{match[3]}</React.Fragment>;
+                return part;
+              })}
+              {endTime < startTime && t('settings.time_cross')}
             </p>
           </div>
         )}
@@ -205,24 +213,24 @@ export default function SettingsPage() {
       <section className="card p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Shield size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">Filtros Generales</h2>
+          <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
         </div>
 
         <div className="flex items-center justify-between p-1">
           <div>
-            <p className="font-semibold text-text-primary text-sm">Filtro de Repeticiones</p>
-            <p className="text-xs text-text-muted mt-0.5">Tiempo antes de poder pedir una canción ya sonada</p>
+            <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
+            <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
           </div>
           <select
             value={repeatCooldown}
             onChange={(e) => setRepeatCooldown(Number(e.target.value))}
             className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
           >
-            <option value="-1" className="bg-bg-root text-white">Permitir siempre</option>
-            <option value="30" className="bg-bg-root text-white">Bloquear 30 min</option>
-            <option value="60" className="bg-bg-root text-white">Bloquear 1 hora</option>
-            <option value="120" className="bg-bg-root text-white">Bloquear 2 horas</option>
-            <option value="0" className="bg-bg-root text-white">Bloquear toda la sesión</option>
+            <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
+            <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
+            <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
+            <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
+            <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
           </select>
         </div>
 
@@ -230,13 +238,13 @@ export default function SettingsPage() {
           <Toggle
             checked={cooldownEnabled}
             onChange={setCooldownEnabled}
-            label="Tiempo de espera"
-            description="Requerir que los invitados esperen antes de poder pedir otra canción"
+            label={t('settings.cooldown_title')}
+            description={t('settings.cooldown_desc')}
           />
           {cooldownEnabled && (
             <div className="mt-3 flex items-center justify-between gap-3 animate-slide-up pl-12">
               <div>
-                <label className="text-sm font-medium text-text-primary">Minutos de espera</label>
+                <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
               </div>
               <input
                 type="number"
@@ -254,16 +262,16 @@ export default function SettingsPage() {
           <Toggle
             checked={explicitFilter}
             onChange={setExplicitFilter}
-            label="Filtro de contenido explícito"
-            description="Bloquear automáticamente canciones marcadas como explícitas (E) en Spotify"
+            label={t('settings.explicit_filter_title')}
+            description={t('settings.explicit_filter_desc')}
           />
         </div>
 
         <div className="border-t border-white/5 pt-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label className="text-sm font-semibold text-text-primary">Peticiones por hora (Global)</label>
-              <p className="text-xs text-text-muted mt-0.5">Límite total de canciones que todos los invitados sumados pueden pedir en una hora</p>
+              <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
+              <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
             </div>
             <input
               type="number"
@@ -279,8 +287,8 @@ export default function SettingsPage() {
         <div className="border-t border-white/5 pt-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label className="text-sm font-semibold text-text-primary">Límite de peticiones por invitado</label>
-              <p className="text-xs text-text-muted mt-0.5">Cantidad máxima de canciones que puede pedir una misma persona (0 = Sin límite)</p>
+              <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
+              <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
             </div>
             <input
               type="number"
@@ -296,8 +304,8 @@ export default function SettingsPage() {
         <div className="border-t border-white/5 pt-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label className="text-sm font-semibold text-text-primary">Cantidad de Mesas</label>
-              <p className="text-xs text-text-muted mt-0.5">Si usas el Modo Comercial, los clientes podrán seleccionar su mesa (0 para desactivar)</p>
+              <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
+              <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
             </div>
             <input
               type="number"
@@ -316,13 +324,13 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Filter size={16} className="text-accent" />
-            <h2 className="font-bold text-text-primary">Filtros Avanzados de Género</h2>
+            <h2 className="font-bold text-text-primary">{t('settings.adv_genre_title')}</h2>
           </div>
           <button
             onClick={() => setShowGenreGuide(true)}
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
           >
-            <Info size={14} /> Guía de agrupación
+            <Info size={14} /> {t('settings.guide_btn')}
           </button>
         </div>
 
@@ -330,18 +338,18 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <List size={14} className="text-success" />
-              <label className="text-sm font-semibold text-success">Lista Blanca de Géneros</label>
+              <label className="text-sm font-semibold text-success">{t('settings.whitelist_genre_title')}</label>
             </div>
             {whitelistGenres.length > 0 && (
-              <button onClick={clearWhitelistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+              <button onClick={clearWhitelistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
             )}
           </div>
-          <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos géneros (deja vacío para no filtrar)</p>
+          <p className="text-xs text-text-muted mb-2">{t('settings.whitelist_genre_desc')}</p>
           <TagInput
             tags={whitelistGenres}
             onAdd={handleAddWhitelistGenre}
             onRemove={removeWhitelistGenre}
-            placeholder="Ej: pop, reggaeton, rock..."
+            placeholder={t('settings.whitelist_placeholder')}
             suggestions={COMMON_GENRES}
           />
         </div>
@@ -350,18 +358,18 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Ban size={14} className="text-danger" />
-              <label className="text-sm font-semibold text-danger">Lista Negra de Géneros</label>
+              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_genre_title')}</label>
             </div>
             {blacklistGenres.length > 0 && (
-              <button onClick={clearBlacklistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+              <button onClick={clearBlacklistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
             )}
           </div>
-          <p className="text-xs text-text-muted mb-2">Las canciones de estos géneros serán bloqueadas automáticamente</p>
+          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_genre_desc')}</p>
           <TagInput
             tags={blacklistGenres}
             onAdd={handleAddBlacklistGenre}
             onRemove={removeBlacklistGenre}
-            placeholder="Ej: trap, metal, reggaeton..."
+            placeholder={t('settings.blacklist_genre_placeholder')}
             suggestions={COMMON_GENRES}
           />
         </div>
@@ -370,25 +378,25 @@ export default function SettingsPage() {
       <section className="card p-5 space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <Filter size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">Filtros Avanzados de Artistas</h2>
+          <h2 className="font-bold text-text-primary">{t('settings.adv_artist_title')}</h2>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Ban size={14} className="text-danger" />
-              <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
+              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_song_title')}</label>
             </div>
             {blacklistSongs.length > 0 && (
-              <button onClick={clearBlacklistSongs} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+              <button onClick={clearBlacklistSongs} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
             )}
           </div>
-          <p className="text-xs text-text-muted mb-2">Las canciones con estos nombres serán bloqueadas automáticamente</p>
+          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_song_desc')}</p>
           <SongTagInput
             tags={blacklistSongs}
             onAdd={addBlacklistSong}
             onRemove={removeBlacklistSong}
-            placeholder="Ej: Despacito, Tusa, Baby..."
+            placeholder={t('settings.blacklist_song_placeholder')}
           />
         </div>
 
@@ -396,18 +404,18 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Ban size={14} className="text-danger" />
-              <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
+              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_artist_title')}</label>
             </div>
             {blacklistArtists.length > 0 && (
-              <button onClick={clearBlacklistArtists} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+              <button onClick={clearBlacklistArtists} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
             )}
           </div>
-          <p className="text-xs text-text-muted mb-2">Las canciones de estos artistas serán bloqueadas automáticamente</p>
+          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_artist_desc')}</p>
           <ArtistTagInput
             tags={blacklistArtists}
             onAdd={addBlacklistArtist}
             onRemove={removeBlacklistArtist}
-            placeholder="Ej: Anuel AA, Yeri Mua..."
+            placeholder={t('settings.blacklist_artist_placeholder')}
           />
         </div>
       </section>
@@ -417,7 +425,7 @@ export default function SettingsPage() {
             <div className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-bg-elevated z-10">
               <h3 className="font-bold text-text-primary flex items-center gap-2">
                 <Info size={18} className="text-accent" />
-                Guía de Familias de Género
+                {t('settings.guide_modal_title')}
               </h3>
               <button onClick={() => setShowGenreGuide(false)} className="text-text-muted hover:text-white p-1">
                 <X size={20} />
@@ -425,41 +433,41 @@ export default function SettingsPage() {
             </div>
             <div className="p-4 overflow-y-auto custom-scrollbar text-sm text-text-muted space-y-4">
               <p>
-                Al seleccionar un género en los filtros, el Auto-DJ añadirá automáticamente sus variantes y subgéneros asociados para evitar que Apple Music rechace canciones por diferencias en el nombre.
+                {t('settings.guide_modal_intro')}
               </p>
               
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Urbano y Reggaeton</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_urbano')}</h4>
                   <p><strong>Reggaeton:</strong> incluye Urbano latino, Música latina, Latin urban.</p>
                   <p><strong>Trap Latino:</strong> incluye Trap, Urbano latino, Reggaeton.</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Pop y Rock</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_pop')}</h4>
                   <p><strong>Pop:</strong> incluye Pop latino, Latin pop, Indie pop.</p>
                   <p><strong>Rock:</strong> incluye Rock latino, Latin rock, Hard rock, Indie rock, Metal, Punk.</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Música Electrónica</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_electro')}</h4>
                   <p><strong>Electrónica:</strong> incluye Dance, House, Techno, EDM, Trance, Dubstep.</p>
                   <p><strong>Lofi:</strong> incluye Chill, Ambient.</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Tropical y Caribeño</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_tropical')}</h4>
                   <p><strong>Tropical:</strong> incluye Salsa, Bachata, Merengue, Cumbia, Latino.</p>
                   <p><strong>Reggae:</strong> incluye Dancehall, Ska.</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Regional Mexicano</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_regional')}</h4>
                   <p><strong>Regional Mexicano:</strong> incluye Banda, Norteño, Mariachi, Corridos, Corridos Tumbados, Ranchera.</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <h4 className="font-semibold text-white mb-2">Otros</h4>
+                  <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_other')}</h4>
                   <p><strong>Hip-Hop / Rap:</strong> incluye R&B, Trap.</p>
                   <p><strong>Folk:</strong> incluye Acústico, Cantautor, Country.</p>
                   <p><strong>Soundtrack:</strong> incluye Banda sonora, OST, Cine.</p>
@@ -467,7 +475,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="bg-accent/10 text-accent p-3 rounded-xl border border-accent/20 mt-4">
-                <strong>Tip:</strong> Si el sistema añade varios géneros hermanos y hay alguno que en específico NO deseas, simplemente haz clic en la <strong>X</strong> de su etiqueta para removerlo individualmente.
+                {t('settings.guide_modal_tip').split(/(\bTip:|\bX\b)/).map((part, i) => {
+                  if (part === 'Tip:' || part === 'X') return <strong key={i}>{part}</strong>;
+                  return part;
+                })}
               </div>
             </div>
           </div>

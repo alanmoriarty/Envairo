@@ -5,13 +5,14 @@ import {
 } from 'recharts';
 import { BarChart2, Music2, TrendingUp, Clock } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useTranslation } from '../store/useLanguageStore';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, t }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-bg-card border border-white/10 rounded-xl px-3 py-2 shadow-card">
       <p className="text-text-muted text-xs">{label || payload[0].name}</p>
-      <p className="text-accent font-bold">{payload[0].value} reproducciones</p>
+      <p className="text-accent font-bold">{payload[0].value} {t('metrics.plays')}</p>
     </div>
   );
 };
@@ -26,6 +27,7 @@ function getLocalDateString(date) {
 
 export default function MetricsPage() {
   const { playHistory, queue, pendingRequests, requestHistory = [] } = usePlayerStore();
+  const { t } = useTranslation();
 
   const last7Days = useMemo(() => {
     const days = [];
@@ -59,7 +61,7 @@ export default function MetricsPage() {
       if (req.status === 'rejected') return;
 
       const track = req.track;
-      const mainArtistName = track.artists?.split(',')[0]?.trim() || 'Desconocido';
+      const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
       const mainArtistId = track.artistIds?.[0];
 
       const key = mainArtistId || mainArtistName;
@@ -113,9 +115,9 @@ export default function MetricsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-            <BarChart2 size={22} className="text-accent" /> Métricas
+            <BarChart2 size={22} className="text-accent" /> {t('metrics.title')}
           </h1>
-          <p className="text-text-muted text-sm mt-1">Estadísticas de reproducciones por fecha</p>
+          <p className="text-text-muted text-sm mt-1">{t('metrics.subtitle')}</p>
         </div>
 
         <select
@@ -123,10 +125,10 @@ export default function MetricsPage() {
           onChange={(e) => setSelectedDate(e.target.value)}
           className="input-field max-w-[200px]"
         >
-          <option value="all">Todo el historial</option>
+          <option value="all">{t('metrics.all_history')}</option>
           {last7Days.map((date, index) => (
             <option key={date} value={date}>
-              {index === 0 ? 'Hoy' : index === 1 ? 'Ayer' : date}
+              {index === 0 ? t('metrics.today') : index === 1 ? t('metrics.yesterday') : date}
             </option>
           ))}
         </select>
@@ -135,10 +137,10 @@ export default function MetricsPage() {
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total peticiones', value: metrics.totalRequests, icon: Music2, color: 'text-accent' },
-          { label: 'Aprobadas', value: metrics.totalApproved, icon: TrendingUp, color: 'text-success' },
-          { label: 'Hora pico', value: metrics.peakHour, icon: Clock, color: 'text-warning' },
-          { label: 'Artistas únicos', value: metrics.uniqueArtists, icon: BarChart2, color: 'text-accent' },
+          { label: t('metrics.total_requests'), value: metrics.totalRequests, icon: Music2, color: 'text-accent' },
+          { label: t('metrics.approved'), value: metrics.totalApproved, icon: TrendingUp, color: 'text-success' },
+          { label: t('metrics.peak_hour'), value: metrics.peakHour, icon: Clock, color: 'text-warning' },
+          { label: t('metrics.unique_artists'), value: metrics.uniqueArtists, icon: BarChart2, color: 'text-accent' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="card p-4">
             <Icon size={20} className={`${color} mb-2`} />
@@ -152,10 +154,10 @@ export default function MetricsPage() {
 
         {/* Top Artists */}
         <div className="card p-5">
-          <h2 className="font-bold text-text-primary mb-4">Top Artistas</h2>
+          <h2 className="font-bold text-text-primary mb-4">{t('metrics.top_artists')}</h2>
           <div className="space-y-4">
             {metrics.displayTopArtists.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-8">No hay suficientes datos aún.</p>
+              <p className="text-text-muted text-sm text-center py-8">{t('metrics.not_enough_data')}</p>
             ) : metrics.displayTopArtists.map((artist, i) => (
               <div key={artist.name} className="flex items-center gap-3">
                 <span className="text-text-subtle text-sm w-4">{i + 1}</span>
@@ -188,13 +190,13 @@ export default function MetricsPage() {
 
         {/* Peak hours bar chart */}
         <div className="card p-5">
-          <h2 className="font-bold text-text-primary mb-4">Peticiones por Hora</h2>
+          <h2 className="font-bold text-text-primary mb-4">{t('metrics.requests_per_hour')}</h2>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={metrics.hourData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="hour" tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip t={t} />} />
               <Bar dataKey="reproducciones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

@@ -5,6 +5,7 @@ import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spot
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useTranslation } from '../../store/useLanguageStore';
 
 // Función auxiliar para formatear la fecha como "Hoy", "Ayer", o "DD/MM/YYYY"
 function formatDateLabel(dateString) {
@@ -22,6 +23,7 @@ function formatDateLabel(dateString) {
 }
 
 export function PlaylistsPanel() {
+  const { t } = useTranslation();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,12 +98,12 @@ export function PlaylistsPanel() {
   const handleSelectPlaylist = async (playlist) => {
     const isAdminMode = useSettingsStore.getState().isAdminMode;
     if (!isAdminMode && !sdkReady) {
-      toast.error('Reproductor no listo. Espera un momento.');
+      toast.error(t('dashboard.toast_player_not_ready'));
       return;
     }
 
     setImporting(true);
-    const toastId = toast.loading(`Importando "${playlist.name}"...`);
+    const toastId = toast.loading(t('dashboard.toast_pl_importing', { name: playlist.name }));
 
     try {
       let items = [];
@@ -127,7 +129,7 @@ export function PlaylistsPanel() {
         }));
 
       if (tracksToQueue.length === 0) {
-        toast.error('La playlist está vacía o solo contiene archivos locales.', { id: toastId });
+        toast.error(t('dashboard.toast_pl_empty'), { id: toastId });
         setImporting(false);
         return;
       }
@@ -161,18 +163,18 @@ export function PlaylistsPanel() {
           } else {
             await controls.play([firstTrack.uri]);
           }
-          toast.success(`¡"${playlist.name}" añadida! Reproduciendo...`, { id: toastId });
+          toast.success(t('dashboard.toast_pl_added', { name: playlist.name }), { id: toastId });
         }
       } else {
-        toast.success(`¡Se añadieron ${tracksToQueue.length} canciones al final de la cola!`, { id: toastId });
+        toast.success(t('dashboard.toast_pl_added_multiple', { count: tracksToQueue.length }), { id: toastId });
       }
 
     } catch (err) {
       console.error('Error importando playlist:', err);
       if (err.message === 'Forbidden' || err.message.includes('403')) {
-        toast.error('Modo Desarrollo: Spotify bloquea importar playlists de otros usuarios.', { id: toastId });
+        toast.error(t('dashboard.toast_pl_dev_error'), { id: toastId });
       } else {
-        toast.error('Ocurrió un error al importar la playlist', { id: toastId });
+        toast.error(t('dashboard.toast_pl_error'), { id: toastId });
       }
     } finally {
       setImporting(false);
@@ -185,13 +187,13 @@ export function PlaylistsPanel() {
     
     const match = playlistLink.match(/playlist\/([a-zA-Z0-9]+)/);
     if (!match) {
-      toast.error('Por favor, ingresa un link válido de playlist de Spotify.');
+      toast.error(t('dashboard.toast_pl_link_error'));
       return;
     }
     
     const playlistId = match[1];
     setImporting(true);
-    const toastId = toast.loading('Obteniendo información de la playlist...');
+    const toastId = toast.loading(t('dashboard.toast_pl_fetching'));
     
     try {
       const playlistData = await getPlaylist(playlistId);
@@ -203,9 +205,9 @@ export function PlaylistsPanel() {
     } catch (err) {
       console.error('Error al importar por link:', err);
       if (err.message === 'Forbidden' || err.message.includes('403')) {
-        toast.error('Modo Desarrollo: Spotify bloquea acceder a playlists de otros usuarios.', { id: toastId });
+        toast.error(t('dashboard.toast_pl_dev_error'), { id: toastId });
       } else {
-        toast.error('No se pudo encontrar la playlist. Asegúrate de que sea pública.', { id: toastId });
+        toast.error(t('dashboard.toast_pl_error'), { id: toastId });
       }
       setImporting(false);
     }
@@ -215,7 +217,7 @@ export function PlaylistsPanel() {
     return (
       <div className="card p-5 py-16 flex flex-col items-center justify-center">
         <Loader2 size={32} className="text-accent animate-spin mb-4" />
-        <p className="text-text-muted">Cargando tus playlists...</p>
+        <p className="text-text-muted">{t('dashboard.playlists_loading')}</p>
       </div>
     );
   }
@@ -234,14 +236,14 @@ export function PlaylistsPanel() {
       <div className="mb-6">
         <h2 className="font-bold text-text-primary flex items-center gap-2 mb-3">
           <ListMusic size={16} className="text-accent" />
-          Importar Playlist por Link
+          {t('dashboard.playlists_import')}
         </h2>
         <form onSubmit={handleLinkImport} className="flex gap-2">
           <div className="relative flex-1">
             <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="Pega un link de Spotify..."
+              placeholder="https://open.spotify.com/playlist/..."
               value={playlistLink}
               onChange={(e) => setPlaylistLink(e.target.value)}
               className="input-field w-full pl-9 py-2 text-sm"
@@ -252,14 +254,14 @@ export function PlaylistsPanel() {
             disabled={!playlistLink || importing} 
             className="btn-primary px-4 py-2 text-sm"
           >
-            {importing ? <Loader2 size={16} className="animate-spin" /> : 'Importar'}
+            {importing ? <Loader2 size={16} className="animate-spin" /> : t('dashboard.playlists_import_btn')}
           </button>
         </form>
       </div>
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="font-bold text-text-primary flex items-center gap-2">
-          Historial de Sesiones Anteriores
+          {t('dashboard.playlists_history')}
           <span className="badge bg-bg-elevated text-text-muted">{historyByDay.length}</span>
         </h2>
       </div>
@@ -267,7 +269,7 @@ export function PlaylistsPanel() {
       <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-48 mb-6">
         {historyByDay.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-text-muted text-sm">Aún no hay canciones en tu historial</p>
+            <p className="text-text-muted text-sm">{t('dashboard.playlists_history_empty')}</p>
           </div>
         ) : (
           historyByDay.map((pl) => (
@@ -291,7 +293,7 @@ export function PlaylistsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
                 <p className="text-xs text-text-muted truncate mt-0.5">
-                  {pl.tracks.length} canciones
+                  {pl.tracks.length} {t('dashboard.playlists_songs')}
                 </p>
               </div>
 
@@ -311,7 +313,7 @@ export function PlaylistsPanel() {
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="font-bold text-text-primary flex items-center gap-2">
-          Tus Playlists
+          {t('dashboard.playlists_title')}
           <span className="badge bg-bg-elevated text-text-muted">{playlists.length}</span>
         </h2>
       </div>
@@ -320,7 +322,7 @@ export function PlaylistsPanel() {
         {playlists.length === 0 ? (
           <div className="text-center py-8">
             <ListMusic size={32} className="text-text-subtle mx-auto mb-3" />
-            <p className="text-text-muted text-sm">No tienes playlists en tu cuenta</p>
+            <p className="text-text-muted text-sm">{t('dashboard.playlists_empty')}</p>
           </div>
         ) : (
           playlists.map((pl) => (
@@ -344,7 +346,7 @@ export function PlaylistsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
                 <p className="text-xs text-text-muted truncate mt-0.5">
-                  {pl.tracks?.total || 0} canciones
+                  {pl.tracks?.total || 0} {t('dashboard.playlists_songs')}
                 </p>
               </div>
 

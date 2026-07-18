@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useTranslation } from '../../store/useLanguageStore';
 
 function normalizeApiTrack(t) {
   return {
@@ -21,6 +22,7 @@ export function AddSongModal({ onClose }) {
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
+  const { t } = useTranslation();
 
   const { queue, currentQueueIndex, setQueue, shiftQueue } = usePlayerStore();
   const isAdminMode = useSettingsStore(s => s.isAdminMode);
@@ -93,9 +95,9 @@ export function AddSongModal({ onClose }) {
           p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 
         }).then());
       }
-      toast.success(`¡"${track.name}" añadida y reproduciendo!`);
+      toast.success(t('dashboard.toast_added_playing', { name: track.name }));
     } else {
-      toast.success(`¡"${track.name}" añadida a la cola!`);
+      toast.success(t('dashboard.toast_added', { name: track.name }));
     }
     
     onClose();
@@ -107,7 +109,7 @@ export function AddSongModal({ onClose }) {
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
-          <h3 className="font-bold text-lg text-text-primary">Añadir Canción</h3>
+          <h3 className="font-bold text-lg text-text-primary">{t('dashboard.add_song_title')}</h3>
           <button 
             onClick={onClose}
             className="p-2 rounded-full hover:bg-white/10 text-text-muted hover:text-white transition-colors"
@@ -124,7 +126,7 @@ export function AddSongModal({ onClose }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar canción o artista..."
+              placeholder={t('dashboard.add_song_search')}
               className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
               autoFocus
             />
@@ -136,7 +138,7 @@ export function AddSongModal({ onClose }) {
           {searching ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
-              <p className="text-text-muted text-sm">Buscando...</p>
+              <p className="text-text-muted text-sm">{t('dashboard.add_song_searching')}</p>
             </div>
           ) : results.length > 0 ? (
             <div className="space-y-2">
@@ -159,12 +161,12 @@ export function AddSongModal({ onClose }) {
             </div>
           ) : query.length >= 2 ? (
             <div className="text-center py-8">
-              <p className="text-text-muted">No se encontraron resultados</p>
+              <p className="text-text-muted">{t('common.no_results')}</p>
             </div>
           ) : (
             <div className="text-center py-8">
               <Search className="w-12 h-12 text-white/10 mx-auto mb-3" />
-              <p className="text-text-muted text-sm">Escribe para buscar una canción</p>
+              <p className="text-text-muted text-sm">{t('dashboard.add_song_empty')}</p>
             </div>
           )}
         </div>

@@ -16,6 +16,7 @@ async function apiFetch(path, options = {}) {
   });
 
   if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent('spotify_auth_error'));
     throw new Error('UNAUTHORIZED');
   }
   if (!res.ok) {
