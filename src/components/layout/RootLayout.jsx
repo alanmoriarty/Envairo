@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PersistentPlayer } from './PersistentPlayer';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
-import { useAutoDJ } from '../../hooks/useAutoDJ';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -13,7 +12,6 @@ import { Menu, Music2 } from 'lucide-react';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
-  useAutoDJ(controls);
   useQueueSync();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   

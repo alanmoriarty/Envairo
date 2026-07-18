@@ -326,13 +326,6 @@ export default function DashboardPage() {
               <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
             </div>
           </div>
-
-          {/* Auto-DJ */}
-          <div className="card px-4 py-3 flex items-center gap-3">
-            <Sparkles size={16} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-            <span className="text-sm font-medium text-text-primary">Auto-DJ</span>
-            <Toggle checked={autoDJ} onChange={setAutoDJ} />
-          </div>
         </div>
       </div>
 
@@ -352,6 +345,11 @@ export default function DashboardPage() {
                       <span className="badge bg-accent text-white">{pendingRequests.length}</span>
                     )}
                   </h2>
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
+                    <span className="text-xs font-medium text-text-muted">Auto-DJ</span>
+                    <Toggle checked={autoDJ} onChange={setAutoDJ} />
+                  </div>
                 </div>
 
                 {pendingRequests.length === 0 ? (
