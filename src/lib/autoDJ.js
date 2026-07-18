@@ -60,8 +60,8 @@ export async function evaluateTrack(track, settings) {
   } = settings;
 
   // 1. Blacklist Artists
-  const blockedArtists = blacklistArtists.map(a => normalizeString(a.name || a));
-  const trackArtistNames = (track.artists || '').split(',').map(normalizeString);
+  const blockedArtists = blacklistArtists.map(a => normalizeString(a.name || a)).filter(Boolean);
+  const trackArtistNames = (track.artists || '').split(',').map(normalizeString).filter(Boolean);
   
   for (const name of trackArtistNames) {
     if (blockedArtists.includes(name)) {
@@ -71,16 +71,22 @@ export async function evaluateTrack(track, settings) {
 
   // 2. Blacklist Songs
   if (blacklistSongs && blacklistSongs.length > 0) {
-    const blocked = blacklistSongs.some(s => 
-      normalizeString(track.name).includes(normalizeString(s))
-    );
-    if (blocked) {
-      return { approved: false, reason: 'Canción en lista negra' };
+    const validBlockedSongs = blacklistSongs.map(normalizeString).filter(Boolean);
+    if (validBlockedSongs.length > 0) {
+      const blocked = validBlockedSongs.some(s => 
+        normalizeString(track.name).includes(s)
+      );
+      if (blocked) {
+        return { approved: false, reason: 'Canción en lista negra' };
+      }
     }
   }
 
   // 3. Genres Check (Whitelist & Blacklist)
-  if (whitelistGenres.length > 0 || blacklistGenres.length > 0) {
+  const validWhitelist = whitelistGenres.map(normalizeString).filter(Boolean);
+  const validBlacklist = blacklistGenres.map(normalizeString).filter(Boolean);
+
+  if (validWhitelist.length > 0 || validBlacklist.length > 0) {
     const artistName = track.artists ? track.artists.split(',')[0] : '';
     const trackGenre = await getTrackGenre(track.name, artistName);
     
@@ -91,18 +97,16 @@ export async function evaluateTrack(track, settings) {
 
     const normalizedTrackGenre = normalizeString(trackGenre);
 
-    // Si hay lista blanca, el género DEBE estar incluido
-    if (whitelistGenres.length > 0) {
-      const allowedGenres = whitelistGenres.map(g => normalizeString(g));
-      if (!allowedGenres.some(ag => normalizedTrackGenre.includes(ag))) {
+    // Si hay lista blanca, el género DEBE coincidir parcialmente (bidireccional)
+    if (validWhitelist.length > 0) {
+      if (!validWhitelist.some(ag => normalizedTrackGenre.includes(ag) || ag.includes(normalizedTrackGenre))) {
         return { approved: false, reason: `El género "${trackGenre}" no está en la lista blanca permitida.` };
       }
     }
 
-    // Si hay lista negra, el género NO DEBE estar incluido
-    if (blacklistGenres.length > 0) {
-      const blockedGenres = blacklistGenres.map(g => normalizeString(g));
-      if (blockedGenres.some(bg => normalizedTrackGenre.includes(bg))) {
+    // Si hay lista negra, el género NO DEBE coincidir
+    if (validBlacklist.length > 0) {
+      if (validBlacklist.some(bg => normalizedTrackGenre.includes(bg) || bg.includes(normalizedTrackGenre))) {
         return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
       }
     }
