@@ -68,20 +68,27 @@ export function RootLayout() {
       const relevantKeys = ['mode', 'whitelistGenres', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
       const changed = relevantKeys.some(k => state[k] !== prevState[k]);
       if (changed) {
-        supabase.from('sessions').update({
-          mode: state.mode,
-          whitelist_genres: state.whitelistGenres,
-          blacklist_genres: state.blacklistGenres,
-          blacklist_songs: state.blacklistSongs,
-          blacklist_artists: state.blacklistArtists,
-          allow_repeats: state.allowRepeats,
-          cooldown_enabled: state.cooldownEnabled,
-          cooldown_minutes: state.cooldownMinutes,
-          table_count: state.tableCount,
-          requests_per_hour: state.requestsPerHour,
-          requests_per_guest: state.requestsPerGuest,
-          updated_at: new Date().toISOString()
-        }).eq('id', sessionId).then();
+        // Removemos whitelist_genres porque no está en el schema de Supabase.
+        const hostSecret = useSettingsStore.getState().hostSecret;
+        if (!hostSecret) return; // Si no hay hostSecret, no podemos actualizar
+
+        supabase.rpc('update_session_state', {
+          p_session_id: sessionId,
+          p_secret: hostSecret,
+          p_updates: {
+            mode: state.mode,
+            blacklist_genres: state.blacklistGenres,
+            blacklist_songs: state.blacklistSongs,
+            blacklist_artists: state.blacklistArtists,
+            allow_repeats: state.allowRepeats,
+            cooldown_enabled: state.cooldownEnabled,
+            cooldown_minutes: state.cooldownMinutes,
+            table_count: state.tableCount,
+            requests_per_hour: state.requestsPerHour,
+            requests_per_guest: state.requestsPerGuest,
+            updated_at: new Date().toISOString()
+          }
+        }).then();
       }
     });
     return () => unsubSettings();

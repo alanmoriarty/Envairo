@@ -289,10 +289,10 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} min-h-0`}>
+      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} lg:min-h-0`}>
         {/* Left Column: Modules */}
         {(showRequests || showQR || showPlaylists) && (
-          <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-0">
+          <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto pr-2 custom-scrollbar lg:min-h-0">
             
             {showRequests && (
               <div className="card p-5">
@@ -317,7 +317,7 @@ export default function DashboardPage() {
                     <p className="text-text-muted text-sm">Sin peticiones pendientes</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-3 max-h-96 lg:max-h-full overflow-y-auto pr-2 custom-scrollbar">
                     {pendingRequests.map((req) => (
                       <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
@@ -363,8 +363,8 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col min-h-0 h-[400px] lg:h-full ${(!showRequests && !showQR && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
-          <div className="card p-5 flex flex-col h-full overflow-hidden min-h-0">
+        <div className={`flex flex-col h-[500px] lg:h-full lg:min-h-0 ${(!showRequests && !showQR && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+          <div className="card p-5 flex flex-col h-full overflow-hidden lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">
                 <div className="flex items-center gap-2 mb-1 sm:mb-0">
