@@ -130,4 +130,100 @@ export function useQueueSync() {
       supabase.removeChannel(channel);
     };
   }, [sessionId]);
+
+  // Handle requests and session initialization globally
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const syncSession = async () => {
+      const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
+      const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
+
+      const { data } = await supabase.from('sessions').select('id').eq('id', sessionId).single();
+      if (data) {
+        await supabase.from('sessions').update({
+          active: true,
+          mode,
+          blacklist_genres: blacklistGenres,
+          blacklist_songs: blacklistSongs,
+          blacklist_artists: blacklistArtists,
+          allow_repeats: allowRepeats,
+          cooldown_enabled: cooldownEnabled,
+          cooldown_minutes: cooldownMinutes,
+          table_count: tableCount,
+          requests_per_hour: requestsPerHour,
+          requests_per_guest: requestsPerGuest,
+          updated_at: new Date().toISOString()
+        }).eq('id', sessionId);
+      } else {
+        await supabase.from('sessions').insert({
+          id: sessionId,
+          active: true,
+          mode,
+          blacklist_genres: blacklistGenres,
+          blacklist_songs: blacklistSongs,
+          blacklist_artists: blacklistArtists,
+          allow_repeats: allowRepeats,
+          cooldown_enabled: cooldownEnabled,
+          cooldown_minutes: cooldownMinutes,
+          table_count: tableCount,
+          requests_per_hour: requestsPerHour,
+          requests_per_guest: requestsPerGuest,
+          queue: queue || [],
+          current_queue_index: currentQueueIndex ?? -1,
+          volume: volume ?? 70,
+          active_device_id: activeDeviceId,
+          updated_at: new Date().toISOString()
+        });
+      }
+    };
+    syncSession();
+
+    const channel = supabase
+      .channel(`requests-${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, async (payload) => {
+        const newReq = payload.new;
+        const store = usePlayerStore.getState();
+        const settings = useSettingsStore.getState();
+
+        store.addPendingRequest({
+          reqId: newReq.id,
+          track: newReq.track,
+          requester: newReq.requester,
+          timestamp: newReq.created_at
+        });
+
+        // Use dynamic import for sonner to match useQueueSync pattern
+        const { toast } = await import('sonner');
+
+        if (settings.autoDJ) {
+          try {
+            const { evaluateTrack } = await import('../lib/autoDJ');
+            const result = await evaluateTrack(newReq.track, settings);
+            
+            if (result.approved === true) {
+              store.approveRequest(newReq.id);
+              toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
+              await supabase.from('requests').update({ status: 'approved' }).eq('id', newReq.id);
+            } else if (result.approved === false) {
+              store.rejectRequest(newReq.id);
+              toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
+              await supabase.from('requests').update({ status: 'rejected' }).eq('id', newReq.id);
+            } else {
+              toast.info(`Auto DJ requiere revisión manual para la petición de ${newReq.requester} (${result.reason || 'Sin etiquetas claras'})`);
+            }
+          } catch (err) {
+            console.error('Error evaluating track in Auto DJ', err);
+          }
+        } else {
+          toast(`Nueva petición recibida de ${newReq.requester}`, { icon: '🎵' });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.from('sessions').update({ active: false }).eq('id', sessionId);
+    };
+  }, [sessionId]);
 }

@@ -14,14 +14,14 @@ export function useEnairoSelector() {
     setEnairoLastRunAt,
     enairoPrompt,
     enairoTestMode,
+    enairoIsThinking: isThinking,
+    setEnairoIsThinking: setIsThinking,
     whitelistGenres, 
     blacklistGenres,
     blacklistSongs,
     blacklistArtists
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
-  
-  const [isThinking, setIsThinking] = useState(false);
   
   useEffect(() => {
     if (!enairoEnabled) return;

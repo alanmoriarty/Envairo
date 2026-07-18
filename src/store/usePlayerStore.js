@@ -59,8 +59,18 @@ export const usePlayerStore = create(
             track: track,
             requester: track.addedBy || 'Dashboard'
           };
+          
+          const newQueue = [...state.queue];
+          let insertIndex = newQueue.length;
+          
+          if (state.currentQueueIndex >= 0) {
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+          }
+          
+          newQueue.splice(insertIndex, 0, newTrack);
+          
           return {
-            queue: [...state.queue, newTrack],
+            queue: newQueue,
             requestHistory: [reqEntry, ...(state.requestHistory || [])].slice(0, 500)
           };
         }),
@@ -209,7 +219,7 @@ export const usePlayerStore = create(
           let insertIndex = newQueue.length;
           
           if (state.currentQueueIndex >= 0) {
-            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 3);
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
           }
           
           newQueue.splice(insertIndex, 0, newTrack);
