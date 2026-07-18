@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,33 +20,30 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY no configurada en el servidor.')
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
-
     const prompt = `
 Eres "EnAIro Selector", un DJ de Inteligencia Artificial super avanzado.
-Tu objetivo es analizar la vibra de la música que está sonando y la lista de canciones en cola.
+Tu tarea es analizar la música que ha sonado (history) y la cola de reproducción actual (queue).
+Las configuraciones del administrador son:
+- Instrucciones especiales: ${settings?.enairoPrompt || 'Ninguna'}
+- Géneros permitidos: ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Todos'}
+- Géneros bloqueados: ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}
 
-Contexto actual de la fiesta:
-${settings?.enairoPrompt ? `Instrucciones especiales del usuario: "${settings.enairoPrompt}"` : 'Sin instrucciones especiales.'}
-Géneros permitidos (Whitelist): ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Todos'}
-Géneros prohibidos (Blacklist): ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}
+El usuario quiere mantener el ambiente perfecto. 
+Analiza el history para entender la vibra actual.
+Analiza la queue para ver qué viene.
+Genera una lista de 1 a 20 sugerencias de canciones (formato "Nombre Canción - Artista") que encajen perfectamente.
+Además, si en la queue hay alguna canción que rompa completamente la vibra, genera una acción de "remove".
+Si hay que reordenar, usa "reorder".
 
-Historial de canciones reproducidas recientemente (el "Mood" actual):
-${history?.map((t: any) => `- ${t.name} por ${t.artists?.[0]?.name}`).join('\n') || 'Ninguna aún'}
+Historial reciente:
+${JSON.stringify(history.map((t: any) => t.name + ' - ' + t.artists))}
 
-Cola de reproducción actual (próximas a sonar):
-${queue?.map((t: any, idx: number) => `[ID de Cola: ${t.queueId}] ${t.name} por ${t.artists?.[0]?.name}`).join('\n') || 'Vacía'}
+Cola actual:
+${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
 
-TUS TAREAS:
-1. SI la cola tiene pocas canciones, debes sugerir un lote grande de al menos 20 canciones que continúen perfectamente con la vibra del historial reciente.
-   Retorna tu sugerencia en "tracksToAdd" como una lista de strings con el formato "Nombre Canción - Artista".
-2. REVISIÓN DE LA COLA (Guardián): Revisa la cola actual. 
-   - Si una canción rompe drásticamente el mood o viola los géneros permitidos/prohibidos, puedes sugerir ELIMINARLA.
-   - Si crees que el orden actual de la cola no es fluido, puedes sugerir MOVERLA a otra posición.
-   Retorna tus acciones en "actions". Formatos permitidos:
-   - {"type": "remove", "queueId": "id_de_la_cola"}
-   - {"type": "reorder", "queueId": "id_de_la_cola", "newIndex": indice_entero}
+ACCIONES PERMITIDAS:
+- {"type": "remove", "queueId": "id_de_la_cola"}
+- {"type": "reorder", "queueId": "id_de_la_cola", "newIndex": indice_entero}
 
 REGLAS DE SALIDA:
 Debes responder ESTRICTAMENTE con un objeto JSON válido y nada más (sin backticks de markdown).
@@ -61,8 +57,30 @@ Estructura esperada:
   "reasoning": "Breve explicación de por qué tomaste estas decisiones."
 }
 `
-    const result = await model.generateContent(prompt)
-    const responseText = result.response.text()
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+        }
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Gemini API Error (${response.status}): ${errorText}`)
+    }
+
+    const result = await response.json()
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
     
     // Limpiar backticks si Gemini los añade accidentalmente
     const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim()
