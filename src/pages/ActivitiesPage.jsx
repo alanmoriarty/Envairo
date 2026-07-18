@@ -367,6 +367,9 @@ export default function ActivitiesPage() {
                   <p className="text-text-muted text-sm mb-1">Reproduciendo</p>
                   <p className="text-xl md:text-3xl font-bold text-text-primary px-4">{currentTrack.name}</p>
                   <p className="text-text-muted md:text-lg">{currentTrack.artists}</p>
+                  {currentTrack.requestedBy && (
+                    <p className="text-accent text-sm font-semibold uppercase tracking-wider mt-1">Pedida por: {currentTrack.requestedBy}</p>
+                  )}
                 </div>
 
                 <div 

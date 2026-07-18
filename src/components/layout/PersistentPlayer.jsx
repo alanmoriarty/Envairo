@@ -169,9 +169,16 @@ export function PersistentPlayer() {
             <p className="text-sm font-semibold text-text-primary truncate">
               {currentTrack?.name || 'Sin reproducción'}
             </p>
-            <p className="text-xs text-text-muted truncate">
-              {currentTrack?.artists || 'Conecta Envairo a un altavoz'}
-            </p>
+            <div className="flex items-center gap-2 truncate">
+              <p className="text-xs text-text-muted truncate">
+                {currentTrack?.artists || 'Conecta Envairo a un altavoz'}
+              </p>
+              {currentTrack?.requestedBy && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">
+                  {currentTrack.requestedBy}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
