@@ -73,6 +73,13 @@ export function useQueueSync() {
           const currentState = usePlayerStore.getState();
           let updates = {};
 
+          // SEGURIDAD CRÍTICA: Si este cliente es el Host autenticado (quien maneja la música), 
+          // NUNCA debe absorber actualizaciones de la base de datos para la cola o el reproductor.
+          // El Host es la "Fuente de la Verdad". Esto previene el "Queue Hijacking" (Secuestro de Cola)
+          // por parte de invitados maliciosos usando la llave pública de Supabase.
+          const isHost = !!authStore.user;
+          if (isHost) return;
+
           // FIX: PostgreSQL TOAST issue. If a JSONB column is large (>8KB), and an UPDATE doesn't modify it,
           // Postgres omits it from the WAL to save space. Supabase Realtime then delivers it as `null` or `undefined`.
           // Therefore, we only accept the queue from Realtime if it's explicitly an Array (including []).
@@ -106,24 +113,30 @@ export function useQueueSync() {
       .subscribe();
 
     // 3. Initial pull
-    supabase
-      .from('sessions')
-      .select('queue, current_queue_index, current_track, active_device_id, volume')
-      .eq('id', sessionId)
-      .single()
-      .then(({ data, error }) => {
-        if (!error && data) {
-          isRemoteUpdate.current = true;
-          usePlayerStore.setState({
-            queue: data.queue || [],
-            currentQueueIndex: data.current_queue_index ?? -1,
-            currentTrack: data.current_track || null,
-            activeDeviceId: data.active_device_id || null,
-            ...(data.volume !== null ? { volume: data.volume } : {})
-          });
-        }
-        usePlayerStore.getState().setInitialSyncDone(true);
-      });
+    const isHost = !!authStore.user;
+    
+    if (isHost) {
+      usePlayerStore.getState().setInitialSyncDone(true);
+    } else {
+      supabase
+        .from('sessions')
+        .select('queue, current_queue_index, current_track, active_device_id, volume')
+        .eq('id', sessionId)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            isRemoteUpdate.current = true;
+            usePlayerStore.setState({
+              queue: data.queue || [],
+              currentQueueIndex: data.current_queue_index ?? -1,
+              currentTrack: data.current_track || null,
+              activeDeviceId: data.active_device_id || null,
+              ...(data.volume !== null ? { volume: data.volume } : {})
+            });
+          }
+          usePlayerStore.getState().setInitialSyncDone(true);
+        });
+    }
 
     return () => {
       unsubscribe();

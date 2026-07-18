@@ -32,16 +32,15 @@ CREATE TABLE requests (
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 
--- Políticas ultra-permisivas para prototipo rápido (Cualquiera puede leer y escribir)
--- IMPORTANTE: En producción real, se pueden ajustar para que los invitados solo escriban y el host administre.
+-- Políticas de Seguridad (Restringidas para Producción)
 CREATE POLICY "Public profiles are viewable by everyone." ON sessions FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert a session." ON sessions FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can update a session." ON sessions FOR UPDATE USING (true);
+-- Eliminada la política pública de UPDATE en sessions. Solo el Host debe empujar actualizaciones.
+-- (En un entorno con Auth completo, aquí iría: ON sessions FOR UPDATE USING (auth.uid() = host_id))
 
 CREATE POLICY "Public requests are viewable by everyone." ON requests FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can update a request." ON requests FOR UPDATE USING (true);
-CREATE POLICY "Anyone can delete a request." ON requests FOR DELETE USING (true);
+-- Eliminadas las políticas públicas de UPDATE y DELETE en requests para evitar manipulación por parte de invitados maliciosos.
 
 -- Habilitar REALTIME para que la app se actualice instantáneamente sin recargar la página
 BEGIN;

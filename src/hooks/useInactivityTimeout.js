@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const TIMEOUT_MS = 60 * 60 * 1000;
 
 export function useInactivityTimeout() {
-  const { user, signOut } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { isPlaying } = usePlayerStore();
   const timerRef = useRef(null);
 
@@ -18,9 +18,22 @@ export function useInactivityTimeout() {
       return;
     }
 
-    const logout = async () => {
+    const handleLogout = async () => {
       toast('Sesión cerrada por inactividad prolongada.', { icon: '💤' });
-      await signOut();
+      
+      try {
+        const state = usePlayerStore.getState();
+        if (state.player) {
+          state.player.pause().catch(()=>{});
+          setTimeout(() => state.player.disconnect(), 100);
+        }
+        const activeDevice = state.activeDeviceId || state.deviceId;
+        if (activeDevice) {
+           await import('../lib/spotifyApi').then(m => m.pausePlayback(activeDevice)).catch(()=>{});
+        }
+      } catch (e) {}
+
+      logout();
     };
 
     const resetTimer = () => {
@@ -30,7 +43,7 @@ export function useInactivityTimeout() {
       if (isPlaying) return;
 
       // Si no está sonando nada, iniciamos la cuenta regresiva de 1 hora
-      timerRef.current = setTimeout(logout, TIMEOUT_MS);
+      timerRef.current = setTimeout(handleLogout, TIMEOUT_MS);
     };
 
     // Eventos que cuentan como "actividad"

@@ -21,7 +21,29 @@ export function Sidebar({ isOpen, onClose }) {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const isPremium = user?.product === 'premium';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const { usePlayerStore } = await import('../../store/usePlayerStore');
+      const { pausePlayback } = await import('../../lib/spotifyApi');
+      const state = usePlayerStore.getState();
+      
+      // Attempt to pause local SDK player
+      if (state.player) {
+        state.player.pause().catch(() => {});
+        setTimeout(() => {
+           state.player.disconnect();
+        }, 100);
+      }
+      
+      // Attempt to pause active device via API
+      const activeDevice = state.activeDeviceId || state.deviceId;
+      if (activeDevice) {
+        await pausePlayback(activeDevice).catch(() => {});
+      }
+    } catch (err) {
+      // Ignore errors during logout
+    }
+
     clearSpotifyTokens();
     logout();
     navigate('/');
