@@ -33,23 +33,23 @@ export function useEnairoSelector() {
         return;
       }
 
-      // Evitar llamadas múltiples o spam
-      if (isThinking || (now - enairoLastRunAt < 30000)) return;
+      // Evitar llamadas múltiples o spam (esperar 5 minutos mínimo)
+      if (isThinking || (now - enairoLastRunAt < 300000)) return;
       
       // La IA trabajará por lotes:
       // Solo se llama a la IA si:
-      // 1. La cola se está quedando vacía (<= 10 canciones)
+      // 1. La cola se está quedando vacía (< 3 canciones)
       // 2. O si acaba de ser activado manualmente (hace menos de 5 segundos)
       // 3. O si ya pasó 1 hora desde la última revisión (3600000 ms)
       const justStarted = enairoStartedAt && (now - enairoStartedAt < 5000);
-      const isQueueLow = queue.length <= 10;
+      const isQueueLow = queue.length < 3;
       const hourPassed = (now - enairoLastRunAt >= 3600000);
       
       if (!justStarted && !isQueueLow && !hourPassed) return;
       
       setIsThinking(true);
-      // Se setea primero un timestamp temporal de 30 segundos para evitar spam si hay errores
-      setEnairoLastRunAt(now - 3600000 + 30000); 
+      // Se setea primero un timestamp temporal de 5 minutos para evitar spam si hay errores
+      setEnairoLastRunAt(now - 3600000 + 300000); 
 
       
       try {
@@ -92,13 +92,13 @@ export function useEnairoSelector() {
         
         // Agregar nuevas canciones
         if (tracksToAdd.length > 0) {
-          for (const query of tracksToAdd) {
+          // Ejecutar todas las búsquedas de Spotify en paralelo para ahorrar tiempo
+          const searchPromises = tracksToAdd.map(async (query) => {
             try {
               const results = await searchTracks(query, 1);
               if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
                 const spotifyTrack = results.tracks.items[0];
-                // Formatear la canción para el store interno
-                const track = {
+                return {
                   id: spotifyTrack.id,
                   name: spotifyTrack.name,
                   artists: spotifyTrack.artists.map(a => a.name).join(', '),
@@ -107,13 +107,19 @@ export function useEnairoSelector() {
                   uri: spotifyTrack.uri,
                   addedBy: 'EnvAIro Selector'
                 };
-                addToQueue(track);
               }
             } catch (err) {
               console.error("Error buscando canción recomendada por EnvAIro:", query, err);
             }
-          }
-          toast.success(`EnvAIro añadió ${tracksToAdd.length} canciones al ambiente.`);
+            return null;
+          });
+          
+          const foundTracks = (await Promise.all(searchPromises)).filter(Boolean);
+          
+          // Añadirlas a la cola
+          foundTracks.forEach(track => addToQueue(track));
+          
+          toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
         }
         
         // Exito total, actualizar timestamp

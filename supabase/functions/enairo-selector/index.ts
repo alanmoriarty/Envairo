@@ -31,7 +31,7 @@ Las configuraciones del administrador son:
 El usuario quiere mantener el ambiente perfecto. 
 Analiza el history para entender la vibra actual.
 Analiza la queue para ver qué viene.
-Genera una lista de 1 a 20 sugerencias de canciones (formato "Nombre Canción - Artista") que encajen perfectamente.
+Genera una lista EXACTA de 10 sugerencias de canciones (formato "Nombre Canción - Artista") que encajen perfectamente.
 Además, si en la queue hay alguna canción que rompa completamente la vibra, genera una acción de "remove".
 Si hay que reordenar, usa "reorder".
 
