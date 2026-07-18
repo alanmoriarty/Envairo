@@ -22,37 +22,75 @@ export default function ActivitiesPage() {
   const lyricsContainerRef = useRef(null);
 
   const [lyricsLines, setLyricsLines] = useState([]);
+  const [isSynced, setIsSynced] = useState(false);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState('');
+  const [activeLineIndex, setActiveLineIndex] = useState(-1);
+
+  // Parse LRC format
+  const parseLRC = (lrcString) => {
+    const lines = lrcString.split('\n');
+    const result = [];
+    // Matches [mm:ss.xx] or [mm:ss.xxx]
+    const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+    
+    for (const line of lines) {
+      const match = regex.exec(line);
+      if (match) {
+        const minutes = parseInt(match[1], 10);
+        const seconds = parseInt(match[2], 10);
+        const milliseconds = parseInt(match[3].padEnd(3, '0'), 10);
+        const text = match[4].trim();
+        
+        const timeMs = minutes * 60000 + seconds * 1000 + milliseconds;
+        if (text) {
+          result.push({ time: timeMs, text });
+        }
+      }
+    }
+    return result;
+  };
 
   // Fetch real lyrics
   useEffect(() => {
     if (!currentTrack) {
        setLyricsLines([]);
+       setIsSynced(false);
        return;
     }
 
     const fetchLyrics = async () => {
       setLyricsLoading(true);
       setLyricsError('');
+      setActiveLineIndex(-1);
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
-        const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
+        // Use LRCLIB API
+        const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
         
         if (!res.ok) throw new Error('Letras no encontradas');
         const data = await res.json();
         
-        if (data.lyrics) {
-          const cleaned = data.lyrics.replace(/Paroles de la chanson.*?\r?\n\r?\n/, '');
-          const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (data.syncedLyrics) {
+          const parsed = parseLRC(data.syncedLyrics);
+          if (parsed.length > 0) {
+            setLyricsLines(parsed);
+            setIsSynced(true);
+          } else {
+            throw new Error('Formato LRC inválido');
+          }
+        } else if (data.plainLyrics) {
+          const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
+          setIsSynced(false);
         } else {
           throw new Error('Letras no encontradas');
         }
       } catch (err) {
         setLyricsError(err.message);
         setLyricsLines([]);
+        setIsSynced(false);
       } finally {
         setLyricsLoading(false);
       }
@@ -61,22 +99,46 @@ export default function ActivitiesPage() {
     fetchLyrics();
   }, [currentTrack]);
 
-  // Autoscroll logic
+  // Autoscroll logic & sync
   useEffect(() => {
-    if (karaokeOpen && lyricsLines.length > 0 && lyricsContainerRef.current && duration > 0) {
-      const scrollRatio = progress / duration;
-      const container = lyricsContainerRef.current;
-      const adjustedRatio = Math.max(0, Math.min(1, (scrollRatio - 0.1) / 0.8));
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      
-      if (maxScroll > 0) {
-        container.scrollTo({
-          top: maxScroll * adjustedRatio,
-          behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto'
-        });
+    if (lyricsLines.length === 0 || !karaokeOpen) return;
+
+    if (isSynced) {
+      // Find the active line based on current progress
+      let newActiveIndex = -1;
+      for (let i = 0; i < lyricsLines.length; i++) {
+        if (progress >= lyricsLines[i].time) {
+          newActiveIndex = i;
+        } else {
+          break; // Since it's sorted by time, we can stop
+        }
+      }
+      setActiveLineIndex(newActiveIndex);
+
+      // Auto-scroll to the active element
+      if (newActiveIndex !== -1 && lyricsContainerRef.current) {
+        const activeElem = document.getElementById(`lyric-line-${newActiveIndex}`);
+        if (activeElem) {
+          activeElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    } else {
+      // Fallback naive scrolling for plain text
+      if (lyricsContainerRef.current && duration > 0) {
+        const scrollRatio = progress / duration;
+        const container = lyricsContainerRef.current;
+        const adjustedRatio = Math.max(0, Math.min(1, (scrollRatio - 0.1) / 0.8));
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        
+        if (maxScroll > 0) {
+          container.scrollTo({
+            top: maxScroll * adjustedRatio,
+            behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto'
+          });
+        }
       }
     }
-  }, [karaokeOpen, progress, duration, lyricsLines]);
+  }, [karaokeOpen, progress, duration, lyricsLines, isSynced]);
 
   // Close karaoke automatically if user switches tabs to prevent audio/performance issues
   useEffect(() => {
@@ -194,11 +256,11 @@ export default function ActivitiesPage() {
             ) : lyricsLines.length > 0 ? (
               <div className="space-y-1">
                 <p className="text-lg font-bold text-text-primary leading-relaxed truncate px-4">
-                  {lyricsLines[0]}
+                  {isSynced ? lyricsLines[Math.max(0, activeLineIndex)]?.text : lyricsLines[0]}
                 </p>
                 {lyricsLines.length > 1 && (
                   <p className="text-text-muted text-sm truncate px-4">
-                    {lyricsLines[1]}
+                    {isSynced ? lyricsLines[Math.max(0, activeLineIndex) + 1]?.text : lyricsLines[1]}
                   </p>
                 )}
               </div>
@@ -246,15 +308,26 @@ export default function ActivitiesPage() {
               ) : lyricsError ? (
                 <p className="text-2xl text-text-muted">{lyricsError}</p>
               ) : (
-                lyricsLines.map((line, i) => (
-                  <p
-                    key={i}
-                    className="font-bold text-3xl md:text-5xl text-white/90 hover:text-accent transition-colors"
-                    style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-                  >
-                    {line}
-                  </p>
-                ))
+                lyricsLines.map((line, i) => {
+                  const isActive = isSynced ? i === activeLineIndex : false;
+                  const isPast = isSynced ? i < activeLineIndex : false;
+                  const lineText = isSynced ? line.text : line;
+                  
+                  return (
+                    <p
+                      key={i}
+                      id={`lyric-line-${i}`}
+                      className={`font-bold text-3xl md:text-5xl transition-all duration-300 ${
+                        isSynced 
+                          ? (isActive ? 'text-accent scale-105' : isPast ? 'text-white/40' : 'text-white/80')
+                          : 'text-white/90 hover:text-accent'
+                      }`}
+                      style={{ textShadow: isActive ? '0 0 20px rgba(157, 78, 221, 0.5)' : '0 4px 20px rgba(0,0,0,0.5)' }}
+                    >
+                      {lineText}
+                    </p>
+                  );
+                })
               )}
             </div>
           </div>
