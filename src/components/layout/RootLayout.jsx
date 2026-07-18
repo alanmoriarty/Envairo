@@ -88,8 +88,8 @@ export function RootLayout() {
 
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
-        <main className="flex-1 md:ml-64 mt-16 md:mt-0 overflow-y-auto">
-          <div className="radial-gradient-bg min-h-full pb-8">
+        <main className="flex-1 md:ml-64 mt-16 md:mt-0 overflow-y-auto flex flex-col">
+          <div className="radial-gradient-bg flex-1 flex flex-col pb-6">
             <Outlet />
           </div>
         </main>

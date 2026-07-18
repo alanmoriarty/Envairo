@@ -272,7 +272,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 flex flex-col lg:h-[calc(100vh-2rem)]">
+    <div className="p-4 sm:p-6 space-y-6 flex flex-col flex-1 min-h-0">
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
