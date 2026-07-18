@@ -7,9 +7,6 @@ import { supabase } from '../lib/supabase';
 
 const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
-const MAX_USER_REQUESTS = 3;
-
-
 
 export default function GuestPage() {
   const { sessionId } = useParams();
@@ -50,6 +47,7 @@ export default function GuestPage() {
   const [selected, setSelected] = useState(null);
   const [cooldown, setCooldown] = useState(0);
   const [requestCount, setRequestCount] = useState({});
+  const [userRequests, setUserRequests] = useState([]);
   const debounceRef = useRef(null);
   const cooldownRef = useRef(null);
 
@@ -86,6 +84,7 @@ export default function GuestPage() {
       const stored = localStorage.getItem(`user_reqs_${sessionId}`);
       if (stored) {
         const reqs = JSON.parse(stored);
+        setUserRequests(reqs);
         if (reqs.length > 0) {
           const lastReq = reqs[reqs.length - 1];
           const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
@@ -127,14 +126,9 @@ export default function GuestPage() {
     }
 
     // Check individual user max requests limit
-    let userRequests = [];
-    try { 
-      const stored = localStorage.getItem(`user_reqs_${sessionId}`);
-      if (stored) userRequests = JSON.parse(stored);
-    } catch (e) {}
-    
-    if (userRequests.length >= MAX_USER_REQUESTS) {
-      toast.error(`Has alcanzado el límite de ${MAX_USER_REQUESTS} peticiones por sesión`);
+    const maxUserRequests = sessionConfig?.requests_per_guest || 0;
+    if (maxUserRequests > 0 && userRequests.length >= maxUserRequests) {
+      toast.error(`Has alcanzado el límite de ${maxUserRequests} peticiones por sesión`);
       return;
     }
 
@@ -224,7 +218,9 @@ export default function GuestPage() {
         [selected.id]: (prev[selected.id] || 0) + 1,
       }));
 
-      localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify([...userRequests, Date.now()]));
+      const newReqs = [...userRequests, Date.now()];
+      setUserRequests(newReqs);
+      localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify(newReqs));
 
       toast.success(`¡"${selected.name}" enviada al anfitrión!`);
       setSelected(null);
