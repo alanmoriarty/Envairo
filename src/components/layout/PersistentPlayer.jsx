@@ -110,7 +110,7 @@ export function PersistentPlayer() {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10">
+      <div className="shrink-0 glass border-t border-white/10 relative z-50">
         
         {/* Remote Control Banner */}
         {activeDeviceId && deviceId && activeDeviceId !== deviceId && (
