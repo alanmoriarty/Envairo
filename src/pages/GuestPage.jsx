@@ -25,6 +25,19 @@ export default function GuestPage() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
         setSessionConfig(payload.new);
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
+        if (payload.new.status === 'approved') {
+          setMyPendingRequests(prev => {
+            if (prev[payload.new.id]) {
+              toast.success(`¡Tu petición "${prev[payload.new.id]}" fue aprobada y añadida a la cola!`);
+              const newPending = { ...prev };
+              delete newPending[payload.new.id];
+              return newPending;
+            }
+            return prev;
+          });
+        }
+      })
       .subscribe();
       
     return () => supabase.removeChannel(channel);
@@ -48,6 +61,7 @@ export default function GuestPage() {
   const [cooldown, setCooldown] = useState(0);
   const [requestCount, setRequestCount] = useState({});
   const [userRequests, setUserRequests] = useState([]);
+  const [myPendingRequests, setMyPendingRequests] = useState({});
   const debounceRef = useRef(null);
   const cooldownRef = useRef(null);
 
@@ -201,12 +215,12 @@ export default function GuestPage() {
         return;
       }
 
-      const { error } = await supabase.from('requests').insert({
+      const { data, error } = await supabase.from('requests').insert({
         session_id: sessionId,
         track: selected,
         requester: identifier.trim() || 'Anónimo',
         status: 'pending'
-      });
+      }).select().single();
 
       if (error) {
         toast.error('Error al enviar la petición. Intenta nuevamente.');
@@ -216,6 +230,11 @@ export default function GuestPage() {
       setRequestCount((prev) => ({
         ...prev,
         [selected.id]: (prev[selected.id] || 0) + 1,
+      }));
+
+      setMyPendingRequests((prev) => ({
+        ...prev,
+        [data.id]: selected.name
       }));
 
       const newReqs = [...userRequests, Date.now()];
