@@ -126,7 +126,11 @@ export function PlaylistsPanel() {
 
     } catch (err) {
       console.error('Error importando playlist:', err);
-      toast.error('Ocurrió un error al importar la playlist', { id: toastId });
+      if (err.message === 'Forbidden' || err.message.includes('403')) {
+        toast.error('Modo Desarrollo: Spotify bloquea importar playlists de otros usuarios.', { id: toastId });
+      } else {
+        toast.error('Ocurrió un error al importar la playlist', { id: toastId });
+      }
     } finally {
       setImporting(false);
     }
@@ -155,7 +159,11 @@ export function PlaylistsPanel() {
       setPlaylistLink('');
     } catch (err) {
       console.error('Error al importar por link:', err);
-      toast.error('No se pudo encontrar la playlist. Asegúrate de que sea pública.', { id: toastId });
+      if (err.message === 'Forbidden' || err.message.includes('403')) {
+        toast.error('Modo Desarrollo: Spotify bloquea acceder a playlists de otros usuarios.', { id: toastId });
+      } else {
+        toast.error('No se pudo encontrar la playlist. Asegúrate de que sea pública.', { id: toastId });
+      }
       setImporting(false);
     }
   };

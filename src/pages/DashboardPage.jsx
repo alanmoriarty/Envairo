@@ -179,6 +179,7 @@ export default function DashboardPage() {
     const isAdminMode = useSettingsStore.getState().isAdminMode;
     if ((sdkReady || isAdminMode) && track.uri) {
       if (isAdminMode) {
+        usePlayerStore.getState().playTrackFromQueue(track.queueId);
         import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
           p_session_id: sessionId, 
           p_secret: useSettingsStore.getState().hostSecret, 
