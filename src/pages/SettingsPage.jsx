@@ -90,10 +90,10 @@ export default function SettingsPage() {
     requestsPerHour, setRequestsPerHour,
     requestsPerGuest, setRequestsPerGuest,
     tableCount, setTableCount,
-    whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
-    blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
-    blacklistSongs, addBlacklistSong, removeBlacklistSong,
-    blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
+    whitelistGenres, addWhitelistGenre, removeWhitelistGenre, clearWhitelistGenres,
+    blacklistGenres, addBlacklistGenre, removeBlacklistGenre, clearBlacklistGenres,
+    blacklistSongs, addBlacklistSong, removeBlacklistSong, clearBlacklistSongs,
+    blacklistArtists, addBlacklistArtist, removeBlacklistArtist, clearBlacklistArtists,
     enairoEnabled, setEnairoEnabled,
     enairoPrompt, setEnairoPrompt,
     enairoTestMode, setEnairoTestMode,
@@ -316,9 +316,14 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <List size={14} className="text-success" />
-            <label className="text-sm font-semibold text-success">Lista Blanca de Géneros</label>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <List size={14} className="text-success" />
+              <label className="text-sm font-semibold text-success">Lista Blanca de Géneros</label>
+            </div>
+            {whitelistGenres.length > 0 && (
+              <button onClick={clearWhitelistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+            )}
           </div>
           <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos géneros (deja vacío para no filtrar)</p>
           <TagInput
@@ -331,9 +336,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="border-t border-white/5 pt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Ban size={14} className="text-danger" />
-            <label className="text-sm font-semibold text-danger">Lista Negra de Géneros</label>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Ban size={14} className="text-danger" />
+              <label className="text-sm font-semibold text-danger">Lista Negra de Géneros</label>
+            </div>
+            {blacklistGenres.length > 0 && (
+              <button onClick={clearBlacklistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+            )}
           </div>
           <p className="text-xs text-text-muted mb-2">Las canciones de estos géneros serán bloqueadas automáticamente</p>
           <TagInput
@@ -353,9 +363,14 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Ban size={14} className="text-danger" />
-            <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Ban size={14} className="text-danger" />
+              <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
+            </div>
+            {blacklistSongs.length > 0 && (
+              <button onClick={clearBlacklistSongs} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+            )}
           </div>
           <p className="text-xs text-text-muted mb-2">Las canciones con estos nombres serán bloqueadas automáticamente</p>
           <SongTagInput
@@ -367,9 +382,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="border-t border-white/5 pt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Ban size={14} className="text-danger" />
-            <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Ban size={14} className="text-danger" />
+              <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>
+            </div>
+            {blacklistArtists.length > 0 && (
+              <button onClick={clearBlacklistArtists} className="text-xs text-text-muted hover:text-danger transition-colors">Vaciar</button>
+            )}
           </div>
           <p className="text-xs text-text-muted mb-2">Las canciones de estos artistas serán bloqueadas automáticamente</p>
           <ArtistTagInput

@@ -63,18 +63,22 @@ export const useSettingsStore = create(
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),
       removeWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: s.whitelistGenres.filter((x) => x !== g) })),
+      clearWhitelistGenres: () => set({ whitelistGenres: [] }),
       addBlacklistGenre: (g) =>
         set((s) => ({ blacklistGenres: [...new Set([...s.blacklistGenres, g])] })),
       removeBlacklistGenre: (g) =>
         set((s) => ({ blacklistGenres: s.blacklistGenres.filter((x) => x !== g) })),
+      clearBlacklistGenres: () => set({ blacklistGenres: [] }),
       addBlacklistSong: (song) =>
         set((s) => ({ blacklistSongs: [...new Set([...s.blacklistSongs, song])] })),
       removeBlacklistSong: (song) =>
         set((s) => ({ blacklistSongs: s.blacklistSongs.filter((x) => x !== song) })),
+      clearBlacklistSongs: () => set({ blacklistSongs: [] }),
       addBlacklistArtist: (a) =>
         set((s) => ({ blacklistArtists: [...new Set([...s.blacklistArtists, a])] })),
       removeBlacklistArtist: (a) =>
         set((s) => ({ blacklistArtists: s.blacklistArtists.filter((x) => x !== a) })),
+      clearBlacklistArtists: () => set({ blacklistArtists: [] }),
       regenerateSession: () => set({ sessionId: `session-${Date.now()}` }),
     }),
     { name: 'bq-settings' }
