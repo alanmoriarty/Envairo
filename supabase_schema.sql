@@ -94,7 +94,8 @@ DECLARE
 BEGIN
   -- Verificar si el usuario está autenticado y es el dueño de la sesión
   UPDATE sessions 
-  SET active_instance_id = p_active_instance_id
+  SET active_instance_id = p_active_instance_id,
+      active_device_id = NULL -- Reseteamos el reproductor de Spotify para que el nuevo dispositivo lo reclame
   WHERE id = p_session_id AND supabase_user_id = auth.uid()
   RETURNING host_secret INTO v_secret;
   

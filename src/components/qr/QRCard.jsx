@@ -70,8 +70,17 @@ export function QRCard() {
 
       <div 
         ref={containerRef}
-        className={`bg-white p-4 rounded-xl transition-all ${isFullscreen ? 'flex flex-col items-center justify-center bg-black' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
+        className={`bg-white p-4 rounded-xl transition-all relative ${isFullscreen ? 'flex flex-col items-center justify-center bg-black' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
       >
+        {isFullscreen && (
+          <button
+            onClick={openFullscreen}
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-colors z-50"
+            title="Cerrar pantalla completa"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        )}
         <QRCodeSVG
           value={currentUrl}
           size={qrSize}
@@ -87,11 +96,11 @@ export function QRCard() {
           }}
         />
         {isFullscreen && (
-          <div className="mt-8 text-center">
-            <h2 className={`text-4xl font-bold mb-4 ${showAdminQR ? 'text-danger' : 'text-white'}`}>
-              {showAdminQR ? 'QR DE CONTROL REMOTO (SECRETO)' : '¡Escanea para pedir tu canción!'}
+          <div className="mt-8 text-center px-6">
+            <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${showAdminQR ? 'text-danger' : 'text-white'}`}>
+              {showAdminQR ? 'QR DE CONTROL REMOTO' : '¡Escanea para pedir tu canción!'}
             </h2>
-            <p className="text-xl text-white/70">
+            <p className="text-lg sm:text-xl text-white/70">
               {showAdminQR ? 'No muestres este QR a los invitados.' : 'Apunta con la cámara de tu celular'}
             </p>
           </div>
