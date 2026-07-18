@@ -196,6 +196,11 @@ export const usePlayerStore = create(
           };
         }),
 
+      removePendingRequest: (reqId) =>
+        set((state) => ({
+          pendingRequests: state.pendingRequests.filter((r) => r.reqId !== reqId)
+        })),
+
       approveRequest: (reqId) =>
         set((state) => {
           const req = state.pendingRequests.find((r) => r.reqId === reqId);

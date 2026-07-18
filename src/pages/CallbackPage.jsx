@@ -45,6 +45,8 @@ export default function CallbackPage() {
         const user = await getCurrentUser();
         setUser(user);
         
+        import('../store/useSettingsStore').then(m => m.useSettingsStore.getState().setIsAdminMode(false));
+        
         if (user.product === 'premium') {
           navigate('/app/dashboard');
         } else {

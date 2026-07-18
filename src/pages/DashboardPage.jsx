@@ -199,7 +199,9 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
           <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
-              {sdkReady ? (
+              {isAdminMode ? (
+                <span className="text-success">● Conectado al Host</span>
+              ) : sdkReady ? (
                 <span className="text-success">● SDK conectado</span>
               ) : (
                 <span className="text-warning">● Esperando reproductor...</span>

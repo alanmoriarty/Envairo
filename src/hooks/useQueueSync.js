@@ -336,6 +336,16 @@ export function useQueueSync() {
           toast(`Nueva petición recibida de ${newReq.requester}`, { icon: '🎵' });
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
+        const updatedReq = payload.new;
+        const store = usePlayerStore.getState();
+        // Si otro dispositivo (el control remoto) la aprobó o rechazó, la quitamos de nuestra lista local de pendientes
+        if (updatedReq.status !== 'pending') {
+          // No llamamos a store.approveRequest porque eso la añadiría de nuevo a la cola local.
+          // Solo queremos quitarla de la lista de pendientes, ya que la cola se sincroniza por otro lado.
+          store.removePendingRequest(updatedReq.id);
+        }
+      })
       .subscribe();
 
     return () => {
