@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Music2, AlertCircle } from 'lucide-react';
 import { redirectToSpotifyAuth } from '../lib/spotifyAuth';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     // Interceptar parámetros de "QR de Administrador" para control remoto
     const params = new URLSearchParams(window.location.search);
@@ -11,12 +14,15 @@ export default function LoginPage() {
     const admin = params.get('admin');
 
     if (session && admin) {
-      const { setSessionId, setHostSecret } = useSettingsStore.getState();
+      const { setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore.getState();
       setSessionId(session);
       setHostSecret(admin);
-      import('sonner').then(({ toast }) => toast.success('Vinculando dispositivo como control remoto...'));
+      setIsAdminMode(true);
+      import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
+      // Redirigir directamente al dashboard sin pedir login
+      navigate('/app/dashboard');
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center p-6 relative overflow-hidden">

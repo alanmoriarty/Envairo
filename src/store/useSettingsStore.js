@@ -20,6 +20,8 @@ export const useSettingsStore = create(
       requestsPerHour: 15,
       requestsPerGuest: 0,
       tableCount: 0,
+      
+      enairoEnabled: true,
 
       // Session QR ID
       sessionId: `session-${Date.now()}`,
@@ -27,7 +29,9 @@ export const useSettingsStore = create(
 
       // Host Security Secret (to bypass RLS for remote control)
       hostSecret: crypto.randomUUID(),
+      isAdminMode: false, // Flag to indicate if we are in restricted remote control mode
       setHostSecret: (secret) => set({ hostSecret: secret }),
+      setIsAdminMode: (isAdmin) => set({ isAdminMode: isAdmin }),
 
       // Dashboard UI State
       showRequests: true,

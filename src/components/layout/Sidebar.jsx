@@ -7,6 +7,8 @@ import {
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
 
+import { useSettingsStore } from '../../store/useSettingsStore';
+
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/app/metrics', icon: BarChart2, label: 'Métricas' },
@@ -17,9 +19,14 @@ const NAV_ITEMS = [
 
 export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
+  const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore();
   const navigate = useNavigate();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const isPremium = user?.product === 'premium';
+
+  const visibleNavItems = isAdminMode 
+    ? NAV_ITEMS.filter(item => item.label === 'Dashboard' || item.label === 'Actividades')
+    : NAV_ITEMS;
 
   const handleLogout = async () => {
     try {
@@ -74,7 +81,7 @@ export function Sidebar({ isOpen, onClose }) {
       </div>
 
       {/* User info */}
-      {user && (
+      {user ? (
         <div className="px-4 py-4 border-b border-white/5">
           <div className="flex items-center gap-3 p-3 bg-bg-elevated rounded-xl">
             {user.images?.[0]?.url ? (
@@ -98,16 +105,32 @@ export function Sidebar({ isOpen, onClose }) {
             </div>
           </div>
         </div>
+      ) : isAdminMode && (
+        <div className="px-4 py-4 border-b border-white/5">
+          <div className="flex items-center gap-3 p-3 bg-bg-elevated rounded-xl">
+            <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center text-sm font-bold text-accent">
+              R
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text-primary truncate">
+                Control Remoto
+              </p>
+              <p className="text-xs text-text-muted truncate">
+                Modo Admin
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto pb-24">
-        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+        {visibleNavItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             onClick={(e) => {
-              if (!isPremium && ['/app/dashboard', '/app/activities', '/app/settings'].includes(to)) {
+              if (!isPremium && !isAdminMode && ['/app/dashboard', '/app/activities', '/app/settings'].includes(to)) {
                 e.preventDefault();
                 setShowPremiumModal(true);
                 return;

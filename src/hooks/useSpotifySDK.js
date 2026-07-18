@@ -12,6 +12,8 @@ import {
   transferPlayback,
 } from '../lib/spotifyApi';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 let sdkInitialized = false;
 let progressInterval = null;
 let isTransitioning = false;
@@ -30,9 +32,10 @@ export function useSpotifySDK() {
     volume,
     queue,
   } = usePlayerStore();
+  const isAdminMode = useSettingsStore(state => state.isAdminMode);
 
   useEffect(() => {
-    if (sdkInitialized) return;
+    if (sdkInitialized || isAdminMode) return;
     sdkInitialized = true;
 
     // Load the SDK script if not already loaded

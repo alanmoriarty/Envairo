@@ -21,6 +21,10 @@ CREATE TABLE sessions (
   current_queue_index INTEGER DEFAULT -1,
   current_track JSONB,
   active_device_id TEXT,
+  active_instance_id UUID, -- ID de la pestaña/navegador principal activo (para Kickout)
+  supabase_user_id UUID, -- Enlace con Supabase Auth
+  active_remote_id UUID, -- ID del control remoto activo (para kickout de remotos)
+  playback_command JSONB, -- Comandos del control remoto: { action: 'play'|'pause'|'next'|'prev', ts: 1234 }
   volume INTEGER DEFAULT 70,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -54,7 +58,15 @@ CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (
 CREATE OR REPLACE FUNCTION update_session_state(p_session_id TEXT, p_secret UUID, p_updates JSONB)
 RETURNS VOID AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM sessions WHERE id = p_session_id AND (host_secret IS NULL OR host_secret = p_secret)) THEN
+  IF EXISTS (
+    SELECT 1 FROM sessions 
+    WHERE id = p_session_id 
+    AND (
+      host_secret IS NULL 
+      OR host_secret = p_secret 
+      OR supabase_user_id = auth.uid()
+    )
+  ) THEN
     UPDATE sessions
     SET
       active = COALESCE((p_updates->>'active')::BOOLEAN, active),
@@ -72,6 +84,9 @@ BEGIN
       current_queue_index = COALESCE((p_updates->>'current_queue_index')::INTEGER, current_queue_index),
       current_track = COALESCE(p_updates->'current_track', current_track),
       active_device_id = COALESCE(p_updates->>'active_device_id', active_device_id),
+      active_instance_id = COALESCE((p_updates->>'active_instance_id')::UUID, active_instance_id),
+      active_remote_id = COALESCE((p_updates->>'active_remote_id')::UUID, active_remote_id),
+      playback_command = COALESCE(p_updates->'playback_command', playback_command),
       volume = COALESCE((p_updates->>'volume')::INTEGER, volume),
       updated_at = timezone('utc'::text, now())
     WHERE id = p_session_id;

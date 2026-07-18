@@ -26,6 +26,7 @@ export const usePlayerStore = create(
       pendingRequests: [],
       playHistory: [],
       requestHistory: [],
+      lastCommandTs: 0,
 
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
@@ -33,6 +34,7 @@ export const usePlayerStore = create(
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),
       setInitialSyncDone: (initialSyncDone) => set({ initialSyncDone }),
+      setLastCommandTs: (ts) => set({ lastCommandTs: ts }),
 
       // ── Playback ─────────────────────────────────────────────────────────
       setCurrentTrack: (track) => set({ currentTrack: track }),

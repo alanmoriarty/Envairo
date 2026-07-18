@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchSpotifyToken, getAccessToken } from '../lib/spotifyAuth';
+import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/spotifyApi';
 import { useAuthStore } from '../store/useAuthStore';
 import { Loader2, Music2 } from 'lucide-react';
@@ -12,28 +12,29 @@ export default function CallbackPage() {
   const fetchedRef = React.useRef(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const errorParam = params.get('error');
-
-    if (errorParam) {
-      setError('Acceso denegado por Spotify.');
-      return;
-    }
-
-    if (!code) {
-      navigate('/');
-      return;
-    }
-
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
     (async () => {
       try {
-        await fetchSpotifyToken(code);
+        // Supabase already parsed the URL hash by now.
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        
+        if (authError) throw authError;
+        
+        if (!session) {
+          navigate('/');
+          return;
+        }
+
+        // Save the Spotify access token for the Web Playback SDK
+        if (session.provider_token) {
+          localStorage.setItem('spotify_access_token', session.provider_token);
+        }
+
         const user = await getCurrentUser();
         setUser(user);
+        
         if (user.product === 'premium') {
           navigate('/app/dashboard');
         } else {

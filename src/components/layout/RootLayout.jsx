@@ -14,14 +14,26 @@ import { useAutoQueue } from '../../hooks/useAutoQueue';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
+  const { isAuthenticated, user } = useAuthStore();
+  const { isAdminMode } = useSettingsStore();
+  const location = useLocation();
+  
   useQueueSync();
   useEnairoSelector();
   useAutoQueue();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  const { user } = useAuthStore();
   const isPremium = user?.product === 'premium';
+
+  if (!isAuthenticated && !isAdminMode) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Si no es premium y no es admin, forzar vista a métricas
+  if (user && user.product !== 'premium' && location.pathname !== '/app/metrics') {
+    return <Navigate to="/app/metrics" replace />;
+  }
 
   useEffect(() => {
     // Unificar el sessionId en todos los dispositivos usando el ID de Spotify
@@ -101,7 +113,7 @@ export function RootLayout() {
       </div>
       
       {/* Footer Player */}
-      <PersistentPlayer />
+      {!isAdminMode && <PersistentPlayer />}
     </div>
   );
 }

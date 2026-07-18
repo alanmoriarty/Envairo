@@ -75,7 +75,70 @@ export function useQueueSync() {
         (payload) => {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
+          const { activeInstanceId, user, logout } = useAuthStore.getState();
+          const { isAdminMode } = useSettingsStore.getState();
           let updates = {};
+
+          // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
+          if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
+            import('sonner').then(({ toast }) => toast.error('Sesión iniciada en otro dispositivo. Cerrando reproductor.'));
+            logout();
+            window.location.href = '/';
+            return;
+          }
+
+          // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
+          if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
+            import('sonner').then(({ toast }) => toast.error('Otro control remoto se ha conectado. Desconectando...'));
+            const { clearSpotifyTokens } = await import('../lib/spotifyAuth');
+            clearSpotifyTokens();
+            useSettingsStore.getState().setIsAdminMode(false);
+            window.location.href = '/';
+            return;
+          }
+
+          // Procesar Comandos de Reproducción (Solo el Host principal los ejecuta)
+          if (!isAdminMode && newSession.playback_command) {
+            const cmd = newSession.playback_command;
+            if (cmd.ts > currentState.lastCommandTs) {
+              usePlayerStore.getState().setLastCommandTs(cmd.ts);
+              
+              import('../hooks/useSpotifySDK').then(({ useSpotifySDK }) => {
+                // Instanciar la lógica de controles temporalmente para ejecutar el comando
+                // No llamamos al hook aquí directamente, usamos las funciones exportadas de spotifyApi
+                import('../lib/spotifyApi').then(api => {
+                  const targetDevice = currentState.activeDeviceId || currentState.deviceId;
+                  if (!targetDevice) return;
+                  
+                  if (cmd.action === 'play') {
+                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                      currentState.player.resume().catch(() => {});
+                    } else {
+                      api.resumePlayback(targetDevice).catch(() => {});
+                    }
+                  } else if (cmd.action === 'pause') {
+                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                      currentState.player.pause().catch(() => {});
+                    } else {
+                      api.pausePlayback(targetDevice).catch(() => {});
+                    }
+                  } else if (cmd.action === 'next') {
+                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                      currentState.player.nextTrack().catch(() => {});
+                    } else {
+                      api.skipToNext(targetDevice).catch(() => {});
+                    }
+                  } else if (cmd.action === 'prev') {
+                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                      currentState.player.previousTrack().catch(() => {});
+                    } else {
+                      api.skipToPrevious(targetDevice).catch(() => {});
+                    }
+                  }
+                });
+              });
+            }
+          }
 
           // FIX: PostgreSQL TOAST issue. If a JSONB column is large (>8KB), and an UPDATE doesn't modify it,
           // Postgres omits it from the WAL to save space. Supabase Realtime then delivers it as `null` or `undefined`.
@@ -144,14 +207,25 @@ export function useQueueSync() {
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
 
       const secret = useSettingsStore.getState().hostSecret;
-      const { data } = await supabase.from('sessions').select('id').eq('id', sessionId).single();
+      const { activeInstanceId, logout } = useAuthStore.getState();
+      const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).single();
       
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+
       if (data) {
         if (authStore.user || secret) {
+          // Si somos el host autenticado (no un remote restrictivo), podemos tomar control de la sesión
+          if (authStore.user) {
+             await supabase.from('sessions').update({ 
+               active_instance_id: activeInstanceId,
+               supabase_user_id: sbUser?.id
+             }).eq('id', sessionId);
+          }
           await supabase.rpc('update_session_state', {
             p_session_id: sessionId,
             p_secret: secret,
             p_updates: {
+              ...(useSettingsStore.getState().isAdminMode ? { active_remote_id: activeInstanceId } : {}),
               active: true,
               mode,
               blacklist_genres: blacklistGenres,
@@ -170,6 +244,8 @@ export function useQueueSync() {
         await supabase.from('sessions').insert({
           id: sessionId,
           host_secret: secret, // Guardar el secreto admin inicial
+          active_instance_id: activeInstanceId,
+          supabase_user_id: sbUser?.id,
           active: true,
           mode,
           blacklist_genres: blacklistGenres,
