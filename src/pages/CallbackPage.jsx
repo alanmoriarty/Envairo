@@ -20,9 +20,19 @@ export default function CallbackPage() {
         // Supabase already parsed the URL hash by now.
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         
+        // Comprobar si hay un error en la URL (ej. ?error=access_denied&error_description=...)
+        const params = new URLSearchParams(window.location.search);
+        const urlError = params.get('error');
+        const urlErrorDesc = params.get('error_description');
+        
+        if (urlError) {
+          throw new Error(`Error de Spotify/Supabase: ${urlErrorDesc || urlError}`);
+        }
+
         if (authError) throw authError;
         
         if (!session) {
+          // No session and no error in URL, weird but let's go back
           navigate('/');
           return;
         }

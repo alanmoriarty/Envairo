@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PersistentPlayer } from './PersistentPlayer';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';

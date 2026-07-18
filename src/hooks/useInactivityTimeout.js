@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { toast } from 'sonner';
 
 // 1 hora en milisegundos
@@ -9,11 +10,12 @@ const TIMEOUT_MS = 60 * 60 * 1000;
 export function useInactivityTimeout() {
   const { user, logout } = useAuthStore();
   const { isPlaying } = usePlayerStore();
+  const { isAdminMode } = useSettingsStore();
   const timerRef = useRef(null);
 
   useEffect(() => {
-    // Si no hay un usuario autenticado (host), no hacemos nada
-    if (!user) {
+    // Si no hay un usuario autenticado, o es un control remoto, o es una vista de invitado (fuera de /app), no hacemos nada
+    if (!user || isAdminMode || !window.location.pathname.startsWith('/app')) {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
