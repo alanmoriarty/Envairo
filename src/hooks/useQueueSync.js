@@ -344,4 +344,33 @@ export function useQueueSync() {
       }
     };
   }, [sessionId]);
+
+  // --- Sincronización de progreso para el Control Remoto ---
+  useEffect(() => {
+    if (!sessionId || !useSettingsStore.getState().isAdminMode) return;
+    
+    let remoteSyncInterval = setInterval(async () => {
+      try {
+        const api = await import('../lib/spotifyApi');
+        const state = await api.getPlaybackState();
+        if (state && state.item) {
+          usePlayerStore.getState().setProgress(state.progress_ms);
+          usePlayerStore.getState().setDuration(state.item.duration_ms);
+          usePlayerStore.getState().setIsPlaying(state.is_playing);
+        }
+      } catch (e) {}
+    }, 5000);
+
+    let localProgressInterval = setInterval(() => {
+      const store = usePlayerStore.getState();
+      if (store.isPlaying && store.progress < store.duration) {
+        store.setProgress(store.progress + 1000);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(remoteSyncInterval);
+      clearInterval(localProgressInterval);
+    };
+  }, [sessionId]);
 }

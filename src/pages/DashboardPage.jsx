@@ -55,12 +55,10 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing ${
         isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
       }`}
+      {...attributes} 
+      {...listeners}
     >
-      <div 
-        {...attributes} 
-        {...listeners}
-        className="text-text-subtle p-1"
-      >
+      <div className="text-text-subtle p-1 hidden sm:block">
         <GripVertical size={16} />
       </div>
 
@@ -262,25 +260,25 @@ export default function DashboardPage() {
         <div className="fixed bottom-0 left-0 right-0 md:left-64 z-50 shrink-0 glass border-t border-white/10 p-3 flex items-center justify-center gap-6 shadow-glow-sm">
           <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">Control Remoto</span>
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'prev', ts: Date.now() } } })}
+            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'prev', ts: Date.now() } } }).then()}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"
           >
             <SkipBack size={24} />
           </button>
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } })}
+            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then()}
             className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
           >
             <Pause size={28} />
           </button>
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } })}
+            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then()}
             className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
           >
             <Play size={28} />
           </button>
           <button 
-            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'next', ts: Date.now() } } })}
+            onClick={() => supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'next', ts: Date.now() } } }).then()}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"
           >
             <SkipForward size={24} />
