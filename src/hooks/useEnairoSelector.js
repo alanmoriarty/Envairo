@@ -33,16 +33,24 @@ export function useEnairoSelector() {
         return;
       }
 
-      // Evitar llamadas múltiples (esperar al menos 30 segundos entre chequeos por seguridad)
-      if (now - enairoLastRunAt < 30000 || isThinking) return;
+      // Evitar llamadas múltiples o spam
+      if (isThinking || (now - enairoLastRunAt < 30000)) return;
       
-      // La IA trabajará de manera eficiente (por lotes):
-      // Solo se llama a la IA si han pasado 60 minutos (3600000 ms) desde la última vez,
-      // O si la cola se está quedando vacía (<= 3 canciones).
-      if (queue.length > 3 && now - enairoLastRunAt < 3600000) return;
+      // La IA trabajará por lotes:
+      // Solo se llama a la IA si:
+      // 1. La cola se está quedando vacía (<= 10 canciones)
+      // 2. O si acaba de ser activado manualmente (hace menos de 5 segundos)
+      // 3. O si ya pasó 1 hora desde la última revisión (3600000 ms)
+      const justStarted = enairoStartedAt && (now - enairoStartedAt < 5000);
+      const isQueueLow = queue.length <= 10;
+      const hourPassed = (now - enairoLastRunAt >= 3600000);
       
-      setEnairoLastRunAt(now);
+      if (!justStarted && !isQueueLow && !hourPassed) return;
+      
       setIsThinking(true);
+      // Se setea primero un timestamp temporal de 30 segundos para evitar spam si hay errores
+      setEnairoLastRunAt(now - 3600000 + 30000); 
+
       
       try {
         const { data, error } = await supabase.functions.invoke('enairo-selector', {
@@ -107,6 +115,9 @@ export function useEnairoSelector() {
           }
           toast.success(`EnvAIro añadió ${tracksToAdd.length} canciones al ambiente.`);
         }
+        
+        // Exito total, actualizar timestamp
+        setEnairoLastRunAt(Date.now());
         
       } catch (err) {
         console.error("Error en EnvAIro Selector:", err);
