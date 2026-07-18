@@ -79,19 +79,36 @@ export function useSpotifySDK() {
           const api = await import('../lib/spotifyApi');
           const playbackState = await api.getPlaybackState().catch(() => null);
           
-          const isActiveDeviceAlive = playbackState && currentActiveId ? playbackState.device.id === currentActiveId : false;
-          // Si Spotify dice que está sonando, o si nuestro estado local dice que estaba sonando justo antes de refrescar la página.
-          const wasActuallyPlaying = (playbackState ? playbackState.is_playing : false) || usePlayerStore.getState().isPlaying;
-          
+          const isActiveDeviceAlive = playbackState && currentActiveId
+            ? playbackState.device?.id === currentActiveId
+            : false;
+
+          // Si el dispositivo activo actual ya somos nosotros, no hacer nada
+          if (isActiveDeviceAlive && currentActiveId === device_id) return;
+
+          const wasActuallyPlaying = playbackState
+            ? playbackState.is_playing
+            : usePlayerStore.getState().isPlaying;
+
           if (!currentActiveId || currentActiveId === device_id || !isActiveDeviceAlive) {
             usePlayerStore.getState().setActiveDeviceId(device_id);
             
-            // Transferir reproducción conservando el estado de Play/Pause real de Spotify
-            await api.transferPlayback(device_id, wasActuallyPlaying);
+            // Transferir reproducción SIN iniciar (play: false) para no interrumpir
+            await api.transferPlayback(device_id, false);
 
-            if (wasActuallyPlaying) {
+            if (wasActuallyPlaying && playbackState?.item) {
+              // Esperar a que el dispositivo esté listo, luego retomar en la posición exacta
+              await new Promise(res => setTimeout(res, 600));
+              const posMs = playbackState.progress_ms ?? 0;
+              const uri = playbackState.item.uri;
+              await api.playTrack(device_id, [uri], posMs).catch(() => {});
               usePlayerStore.getState().setIsPlaying(true);
-              usePlayerStore.getState().setPendingResume(false);
+              usePlayerStore.getState().setProgress(posMs);
+            } else if (wasActuallyPlaying) {
+              // Fallback sin estado de Spotify
+              await new Promise(res => setTimeout(res, 600));
+              await api.resumePlayback(device_id).catch(() => {});
+              usePlayerStore.getState().setIsPlaying(true);
             }
           }
         } catch (err) {
