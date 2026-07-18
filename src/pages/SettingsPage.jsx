@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Clock, Shield, Filter, List, Ban, Info, X } from 'lucide-react';
+import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
@@ -94,6 +94,8 @@ export default function SettingsPage() {
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
     blacklistSongs, addBlacklistSong, removeBlacklistSong,
     blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
+    enairoEnabled, setEnairoEnabled,
+    enairoPrompt, setEnairoPrompt,
   } = useSettingsStore();
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
@@ -124,6 +126,26 @@ export default function SettingsPage() {
         </h1>
         <p className="text-text-muted text-sm mt-1">Personaliza las reglas de tu sesión</p>
       </div>
+
+      {/* EnvAIro Selector (IA) */}
+      <section className="card p-5 space-y-4 border border-accent/20">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles size={16} className="text-accent" />
+          <h2 className="font-bold text-text-primary">EnvAIro Selector (Configuración IA)</h2>
+        </div>
+        
+        <p className="text-xs text-text-muted mb-2">EnvAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."</p>
+
+        <div className="pt-2">
+          <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto Especial / Vibra (Opcional)</label>
+          <textarea
+            value={enairoPrompt}
+            onChange={(e) => setEnairoPrompt(e.target.value)}
+            placeholder="Escribe las instrucciones para la IA..."
+            className="input-field w-full h-24 resize-none"
+          />
+        </div>
+      </section>
 
       {/* Availability */}
       <section className="card p-5 space-y-4">

@@ -28,6 +28,7 @@ import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 import { supabase } from '../lib/supabase';
+import { useEnairoSelector } from '../hooks/useEnairoSelector';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -111,6 +112,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 export default function DashboardPage() {
   const { 
     mode, setMode, autoDJ, setAutoDJ,
+    enairoEnabled, setEnairoEnabled,
     showRequests, setShowRequests,
     showQR, setShowQR,
     showPlaylists, setShowPlaylists
@@ -122,6 +124,8 @@ export default function DashboardPage() {
     currentTrack, sdkReady,
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
+  
+  const { isThinking: enairoIsThinking } = useEnairoSelector();
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -277,11 +281,18 @@ export default function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
-          <p className="text-text-muted text-sm mt-0.5">
-            {sdkReady ? (
-              <span className="text-success">● SDK conectado</span>
-            ) : (
-              <span className="text-warning">● Esperando reproductor...</span>
+          <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
+            <span>
+              {sdkReady ? (
+                <span className="text-success">● SDK conectado</span>
+              ) : (
+                <span className="text-warning">● Esperando reproductor...</span>
+              )}
+            </span>
+            {enairoIsThinking && (
+              <span className="text-accent flex items-center gap-1 animate-pulse">
+                <Sparkles size={14} /> EnvAIro pensando...
+              </span>
             )}
           </p>
         </div>
@@ -406,20 +417,31 @@ export default function DashboardPage() {
         <div className={`flex flex-col min-h-0 h-[400px] lg:h-full ${(!showRequests && !showQR && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
           <div className="card p-5 flex flex-col h-full overflow-hidden min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-bold text-text-primary flex items-center gap-2">
-                  <Music2 size={16} className="text-accent" />
-                  Playlist Activa
-                </h2>
-                <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
-                {queue.length > 0 && (
-                  <button
-                    onClick={() => usePlayerStore.getState().clearQueue()}
-                    className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
-                  >
-                    Vaciar
-                  </button>
-                )}
+              <div className="flex flex-wrap items-center justify-between w-full">
+                <div className="flex items-center gap-2 mb-1 sm:mb-0">
+                  <h2 className="font-bold text-text-primary flex items-center gap-2">
+                    <Music2 size={16} className="text-accent" />
+                    Playlist Activa
+                  </h2>
+                  <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-black/20 px-2 py-1 rounded-lg border border-white/5">
+                    <Sparkles size={14} className={enairoEnabled ? 'text-accent' : 'text-text-muted'} />
+                    <span className="text-xs font-medium text-text-muted" title="EnvAIro Selector (Inteligencia Artificial)">EnvAIro</span>
+                    <Toggle checked={enairoEnabled} onChange={setEnairoEnabled} />
+                  </div>
+                  
+                  {queue.length > 0 && (
+                    <button
+                      onClick={() => usePlayerStore.getState().clearQueue()}
+                      className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
+                    >
+                      Vaciar
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-text-muted">Arrastra para reordenar</p>
             </div>

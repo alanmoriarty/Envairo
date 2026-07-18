@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
+import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 
 export default function App() {
+  useInactivityTimeout();
   // Sincronizar el estado entre pestañas (Host vs Guest local)
   useEffect(() => {
     const handleStorage = (e) => {

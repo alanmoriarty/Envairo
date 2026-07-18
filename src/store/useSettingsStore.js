@@ -45,6 +45,18 @@ export const useSettingsStore = create(
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       setRequestsPerGuest: (v) => set({ requestsPerGuest: v }),
       setTableCount: (v) => set({ tableCount: v }),
+      
+      // EnvAIro Selector AI
+      enairoEnabled: false,
+      enairoStartedAt: null,
+      enairoLastRunAt: 0,
+      setEnairoLastRunAt: (v) => set({ enairoLastRunAt: v }),
+      setEnairoEnabled: (v) => set({ 
+        enairoEnabled: v,
+        enairoStartedAt: v ? Date.now() : null 
+      }),
+      enairoPrompt: '',
+      setEnairoPrompt: (v) => set({ enairoPrompt: v }),
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),
       removeWhitelistGenre: (g) =>
