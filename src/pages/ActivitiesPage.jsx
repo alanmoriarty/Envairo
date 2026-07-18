@@ -31,15 +31,15 @@ export default function ActivitiesPage() {
   const parseLRC = (lrcString) => {
     const lines = lrcString.split('\n');
     const result = [];
-    // Matches [mm:ss.xx] or [mm:ss.xxx]
-    const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+    // Matches [mm:ss.xx] or [mm:ss]
+    const regex = /\[(\d{2,}):(\d{2})(?:\.(\d{1,3}))?\](.*)/;
     
     for (const line of lines) {
       const match = regex.exec(line);
       if (match) {
         const minutes = parseInt(match[1], 10);
         const seconds = parseInt(match[2], 10);
-        const milliseconds = parseInt(match[3].padEnd(3, '0'), 10);
+        const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
         const text = match[4].trim();
         
         const timeMs = minutes * 60000 + seconds * 1000 + milliseconds;
@@ -51,22 +51,25 @@ export default function ActivitiesPage() {
     return result;
   };
 
-  // Fetch real lyrics
+  // Fetch lyrics when track changes or karaoke opens
   useEffect(() => {
+    // Si no hay canción o el karaoke está cerrado, no hacer nada y limpiar
     if (!currentTrack || !karaokeOpen) {
-       setLyricsLines([]);
-       setIsSynced(false);
-       return;
+      setLyricsLines([]);
+      setLyricsError('');
+      setIsSynced(false);
+      return;
     }
 
     let isMounted = true;
-
+    
     const fetchLyrics = async () => {
       if (!isMounted) return;
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
       
+      // Reset scroll position for new song
       if (lyricsContainerRef.current) {
         lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
       }
@@ -75,30 +78,63 @@ export default function ActivitiesPage() {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
         
+        // Use LRCLIB API search to prioritize synced lyrics
+        
         // Search API
         const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
         if (!res.ok) throw new Error('Letras no encontradas');
-        
         const results = await res.json();
+        
         if (!isMounted) return;
+        
         if (!results || results.length === 0) throw new Error('Letras no encontradas');
         
-        // Filter out "tour", "en vivo", "live" versions
-        const cleanResults = results.filter(t => {
-          const lowerName = (t.trackName || '').toLowerCase();
-          const lowerAlbum = (t.albumName || '').toLowerCase();
-          const isLive = lowerName.includes('vivo') || lowerName.includes('tour') || lowerName.includes('live') ||
-                         lowerAlbum.includes('vivo') || lowerAlbum.includes('tour') || lowerAlbum.includes('live');
-          return !isLive;
-        });
+        // Find best match by comparing durations
+        const targetDuration = currentTrack.duration_ms / 1000;
+        let bestMatch = null;
+        let minDiff = Infinity;
 
-        const bestMatch = cleanResults.length > 0 ? cleanResults[0] : results[0];
+        // Try to find the synced lyrics with the closest duration
+        const syncedResults = results.filter(t => t.syncedLyrics);
+        for (const t of syncedResults) {
+          const diff = Math.abs(t.duration - targetDuration);
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestMatch = t;
+          }
+        }
+
+        // Si la letra sincronizada más cercana tiene una diferencia de más de 8 segundos,
+        // probablemente sea una versión en vivo o un radio edit totalmente distinto.
+        // En ese caso, o si no hay sincronizadas, buscamos la mejor en formato texto plano.
+        let bestPlain = null;
+        let minPlainDiff = Infinity;
+        const plainResults = results.filter(t => t.plainLyrics);
+        for (const t of plainResults) {
+          const diff = Math.abs(t.duration - targetDuration);
+          if (diff < minPlainDiff) {
+            minPlainDiff = diff;
+            bestPlain = t;
+          }
+        }
+
+        if (!bestMatch || (minDiff > 8 && bestPlain && minPlainDiff < minDiff)) {
+          bestMatch = bestPlain;
+        }
         
-        // Use plainLyrics ALWAYS, avoiding spotify sync as requested
-        const lyricsText = bestMatch.plainLyrics || bestMatch.syncedLyrics?.replace(/\[.*?\]/g, '');
+        if (!bestMatch) throw new Error('Letras no encontradas');
         
-        if (lyricsText) {
-          const lines = lyricsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (bestMatch.syncedLyrics) {
+          const parsed = parseLRC(bestMatch.syncedLyrics);
+          if (parsed.length > 0) {
+            setLyricsLines(parsed);
+            setIsSynced(true);
+          } else {
+            throw new Error('Formato LRC inválido');
+          }
+        } else if (bestMatch.plainLyrics) {
+          const lines = bestMatch.plainLyrics.split('
+').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
           setIsSynced(false); // No se sincroniza, solo muestra el texto plano
         } else {
@@ -114,6 +150,7 @@ export default function ActivitiesPage() {
       }
     };
 
+    // Darle 1 segundo para que la posición (progress) se estabilice
     const timerId = setTimeout(() => {
       fetchLyrics();
     }, 1000);
@@ -307,28 +344,38 @@ export default function ActivitiesPage() {
           ref={karaokeRef}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
-          {/* Animated Background */}
-          {currentTrack?.image && (
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {/* Static Background */}
+          <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-bg-root">
+            {currentTrack?.image ? (
               <img 
                 src={currentTrack.image} 
                 alt="" 
-                className="absolute inset-0 w-full h-full object-cover opacity-40 animate-pulse-slow"
+                className="absolute inset-0 w-full h-full object-cover opacity-40"
                 style={{ 
                   filter: 'blur(80px) saturate(200%)',
                   transform: 'scale(1.2)'
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
-            </div>
-          )}
+            ) : (
+              <div 
+                className="absolute inset-0 w-full h-full opacity-40" 
+                style={{ 
+                  background: 'radial-gradient(ellipse at center, #9D4EDD 0%, #1E1830 100%)', 
+                  filter: 'blur(60px)',
+                  transform: 'scale(1.2)'
+                }}
+              ></div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
+          </div>
 
-          <div className="relative z-10 w-full flex-1 flex flex-col">
+          <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
               onClick={() => setKaraokeOpen(false)}
-              className="absolute top-6 right-6 btn-ghost z-20"
+              className="fixed top-6 right-6 md:top-8 md:right-8 z-[200] p-3 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-lg border border-white/10 shadow-xl cursor-pointer transition-all hover:scale-105"
+              title="Cerrar Karaoke"
             >
-              <X size={24} />
+              <X size={28} />
             </button>
 
             {!currentTrack ? (
@@ -374,6 +421,14 @@ export default function ActivitiesPage() {
                           </p>
                         );
                       })
+                    )}
+                    
+                    {/* Visual indicator for instrumental intros */}
+                    {isSynced && activeLineIndex === -1 && lyricsLines.length > 0 && progress < lyricsLines[0].time && (
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center animate-pulse">
+                        <Mic2 size={48} className="text-accent/50 mx-auto mb-4" />
+                        <p className="text-2xl font-bold text-white/50">Intro musical...</p>
+                      </div>
                     )}
                   </div>
                 </div>
