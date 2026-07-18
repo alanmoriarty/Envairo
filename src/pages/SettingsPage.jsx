@@ -15,6 +15,7 @@ export default function SettingsPage() {
     cooldownMinutes, setCooldownMinutes,
     explicitFilter, setExplicitFilter,
     requestsPerHour, setRequestsPerHour,
+    tableCount, setTableCount,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
     blacklistSongs, addBlacklistSong, removeBlacklistSong,
@@ -133,6 +134,23 @@ export default function SettingsPage() {
               max="100"
               value={requestsPerHour}
               onChange={(e) => setRequestsPerHour(parseInt(e.target.value) || 15)}
+              className="input-field w-full sm:w-24 text-center"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="text-sm font-semibold text-text-primary">Cantidad de Mesas</label>
+              <p className="text-xs text-text-muted mt-0.5">Si usas el Modo Comercial, los clientes podrán seleccionar su mesa (0 para desactivar)</p>
+            </div>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={tableCount}
+              onChange={(e) => setTableCount(parseInt(e.target.value) || 0)}
               className="input-field w-full sm:w-24 text-center"
             />
           </div>

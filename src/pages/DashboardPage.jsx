@@ -141,7 +141,7 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const authStore = useAuthStore.getState();
     const sessionId = authStore.user?.id || useSettingsStore.getState().sessionId;
-    const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, cooldownEnabled, cooldownMinutes } = useSettingsStore.getState();
+    const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
     const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
     
     const syncSession = async () => {
@@ -156,6 +156,7 @@ export default function DashboardPage() {
           allow_repeats: allowRepeats,
           cooldown_enabled: cooldownEnabled,
           cooldown_minutes: cooldownMinutes,
+          table_count: tableCount,
           requests_per_hour: requestsPerHour,
           updated_at: new Date().toISOString()
         }).eq('id', sessionId);
@@ -170,6 +171,7 @@ export default function DashboardPage() {
           allow_repeats: allowRepeats,
           cooldown_enabled: cooldownEnabled,
           cooldown_minutes: cooldownMinutes,
+          table_count: tableCount,
           requests_per_hour: requestsPerHour,
           queue: queue || [],
           current_queue_index: currentQueueIndex ?? -1,

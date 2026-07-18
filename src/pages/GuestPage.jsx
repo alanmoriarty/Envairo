@@ -274,13 +274,29 @@ export default function GuestPage() {
             </span>
           )}
         </label>
-        <input
-          className="input-field"
-          placeholder={isCommercial ? 'Ej: Mesa 7' : 'Ej: DJ Carlos 🎧'}
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          disabled={isInCooldown}
-        />
+        
+        {isCommercial && (sessionConfig?.table_count || 0) > 0 ? (
+          <select
+            className="input-field appearance-none bg-bg-elevated"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            disabled={isInCooldown}
+          >
+            <option value="">-- Seleccionar mesa --</option>
+            <option value="Sin especificar">No especificar mesa</option>
+            {Array.from({ length: sessionConfig?.table_count || 0 }, (_, i) => (
+              <option key={i} value={`Mesa ${i + 1}`}>Mesa {i + 1}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="input-field"
+            placeholder={isCommercial ? 'Ej: Mesa 7' : 'Ej: DJ Carlos 🎧'}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            disabled={isInCooldown}
+          />
+        )}
       </div>
 
       {/* Search */}
