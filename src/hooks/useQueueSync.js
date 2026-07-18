@@ -81,19 +81,21 @@ export function useQueueSync() {
 
           // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
           if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
-            import('sonner').then(({ toast }) => toast.error('Sesión iniciada en otro dispositivo. Cerrando reproductor.'));
+            import('sonner').then(({ toast }) => {
+              toast.error('Sesión iniciada en otro dispositivo. Cerrando reproductor.', { duration: 8000 });
+            });
             logout();
-            window.location.href = '/';
             return;
           }
 
           // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
           if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
-            import('sonner').then(({ toast }) => toast.error('Otro control remoto se ha conectado. Desconectando...'));
+            import('sonner').then(({ toast }) => {
+              toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
+            });
             const { clearSpotifyTokens } = await import('../lib/spotifyAuth');
             clearSpotifyTokens();
             useSettingsStore.getState().setIsAdminMode(false);
-            window.location.href = '/';
             return;
           }
 
