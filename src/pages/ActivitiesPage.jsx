@@ -27,20 +27,33 @@ export default function ActivitiesPage() {
   const [lyricsError, setLyricsError] = useState('');
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
   const lastScrolledIndex = useRef(-1);
+  const userScrolled = useRef(false);
+  const scrollTimeout = useRef(null);
+
+  const handleScroll = () => {
+    userScrolled.current = true;
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      userScrolled.current = false;
+    }, 4000); // Resume autoscroll after 4 seconds of inactivity
+  };
 
   // Parse LRC format
   const parseLRC = (lrcString) => {
     const lines = lrcString.split('\n');
     const result = [];
-    // Matches [mm:ss.xx] or [mm:ss]
-    const regex = /\[(\d{2,}):(\d{2})(?:\.(\d{1,3}))?\](.*)/;
+    // Matches [mm:ss.xx], [mm:ss], [mm:ss.xxxx], or [mm:ss:xx]
+    const regex = /\[(\d{2,}):(\d{2})(?:[:.](\d+))?\](.*)/;
     
     for (const line of lines) {
       const match = regex.exec(line);
       if (match) {
         const minutes = parseInt(match[1], 10);
         const seconds = parseInt(match[2], 10);
-        const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+        // Take up to 3 digits of ms, then pad or parseInt
+        let msStr = match[3] || '0';
+        if (msStr.length > 3) msStr = msStr.slice(0, 3);
+        const milliseconds = parseInt(msStr.padEnd(3, '0'), 10);
         const text = match[4].trim();
         
         const timeMs = minutes * 60000 + seconds * 1000 + milliseconds;
@@ -72,7 +85,13 @@ export default function ActivitiesPage() {
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
-      lastScrolledIndex.current = -1;
+      // Set to -2 so the autoscroll useEffect is forced to trigger its initial top scroll
+      lastScrolledIndex.current = -2;
+      
+      // Reset scroll position for new song (fallback)
+      if (lyricsContainerRef.current) {
+        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      }
       
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
@@ -114,6 +133,7 @@ export default function ActivitiesPage() {
   // Autoscroll logic & sync
   useEffect(() => {
     if (lyricsLines.length === 0 || !karaokeOpen) return;
+    if (userScrolled.current) return; // Prevent autoscroll if user is manually scrolling
 
     if (isSynced) {
       // Find the active line based on current progress
@@ -325,6 +345,9 @@ export default function ActivitiesPage() {
 
                 <div 
                   ref={lyricsContainerRef}
+                  onScroll={handleScroll}
+                  onTouchMove={handleScroll}
+                  onWheel={handleScroll}
                   className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 no-scrollbar"
                 >
                   <div className="space-y-8 pt-32 pb-64 text-center">
