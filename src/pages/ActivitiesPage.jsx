@@ -321,6 +321,32 @@ export default function ActivitiesPage() {
           ref={karaokeRef}
           className="fixed inset-0 z-[9999] flex flex-col items-center text-center p-4 md:p-8 overflow-hidden bg-bg-root"
         >
+          {/* Rich Ambient Background */}
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-bg-root">
+            {currentTrack?.image ? (
+              <img 
+                src={currentTrack.image} 
+                alt="" 
+                className="absolute inset-0 w-full h-full object-cover opacity-50 animate-pulse"
+                style={{ 
+                  filter: 'blur(100px) saturate(250%) brightness(0.8)',
+                  transform: 'scale(1.2)',
+                  animationDuration: '8s'
+                }}
+              />
+            ) : (
+              <div 
+                className="absolute inset-0 w-full h-full opacity-40" 
+                style={{ 
+                  background: 'radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.5) 0%, rgba(30, 24, 48, 1) 100%)', 
+                  filter: 'blur(60px)',
+                  transform: 'scale(1.2)'
+                }}
+              ></div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-bg-root/80 to-bg-root border-b-0"></div>
+          </div>
+
           <div className="relative z-10 w-full flex-1 flex flex-col items-center min-h-0">
             <button
               onClick={() => setKaraokeOpen(false)}
