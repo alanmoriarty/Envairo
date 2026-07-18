@@ -89,38 +89,8 @@ export default function ActivitiesPage() {
         
         if (!results || results.length === 0) throw new Error('Letras no encontradas');
         
-        // Find best match by comparing durations
-        const targetDuration = currentTrack.duration_ms / 1000;
-        let bestMatch = null;
-        let minDiff = Infinity;
-
-        // Try to find the synced lyrics with the closest duration
-        const syncedResults = results.filter(t => t.syncedLyrics);
-        for (const t of syncedResults) {
-          const diff = Math.abs(t.duration - targetDuration);
-          if (diff < minDiff) {
-            minDiff = diff;
-            bestMatch = t;
-          }
-        }
-
-        // Si la letra sincronizada más cercana tiene una diferencia de más de 8 segundos,
-        // probablemente sea una versión en vivo o un radio edit totalmente distinto.
-        // En ese caso, o si no hay sincronizadas, buscamos la mejor en formato texto plano.
-        let bestPlain = null;
-        let minPlainDiff = Infinity;
-        const plainResults = results.filter(t => t.plainLyrics);
-        for (const t of plainResults) {
-          const diff = Math.abs(t.duration - targetDuration);
-          if (diff < minPlainDiff) {
-            minPlainDiff = diff;
-            bestPlain = t;
-          }
-        }
-
-        if (!bestMatch || (minDiff > 8 && bestPlain && minPlainDiff < minDiff)) {
-          bestMatch = bestPlain;
-        }
+        // Find best match: prefer synced lyrics, then plain lyrics
+        const bestMatch = results.find(t => t.syncedLyrics) || results.find(t => t.plainLyrics);
         
         if (!bestMatch) throw new Error('Letras no encontradas');
         
