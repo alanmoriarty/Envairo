@@ -283,34 +283,39 @@ export default function ActivitiesPage() {
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
           {/* Animated Background */}
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <style>{`
+            @keyframes bg-pulse {
+              0%, 100% { opacity: 0.2; transform: scale(1.1); }
+              50% { opacity: 0.5; transform: scale(1.3); }
+            }
+            .animate-bg-pulse {
+              animation: bg-pulse 8s ease-in-out infinite;
+            }
+          `}</style>
+          <div className="fixed inset-0 z-0 pointer-events-none bg-bg-root">
             {currentTrack?.image ? (
               <img 
                 src={currentTrack.image} 
                 alt="" 
-                className="absolute inset-0 w-full h-full object-cover opacity-40 animate-pulse-slow"
-                style={{ 
-                  filter: 'blur(80px) saturate(200%)',
-                  transform: 'scale(1.2)'
-                }}
+                className="absolute inset-0 w-full h-full object-cover animate-bg-pulse"
+                style={{ filter: 'blur(80px) saturate(200%)' }}
               />
             ) : (
               <div 
-                className="absolute inset-0 w-full h-full opacity-40 animate-pulse-slow" 
+                className="absolute inset-0 w-full h-full animate-bg-pulse" 
                 style={{ 
                   background: 'radial-gradient(ellipse at center, #9D4EDD 0%, #1E1830 100%)', 
-                  filter: 'blur(60px)',
-                  transform: 'scale(1.2)'
+                  filter: 'blur(60px)'
                 }}
               ></div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/80 to-black"></div>
           </div>
 
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
               onClick={() => setKaraokeOpen(false)}
-              className="absolute top-0 right-0 md:top-4 md:right-4 z-50 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors"
+              className="fixed top-6 right-6 md:top-8 md:right-8 z-[200] p-3 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-lg border border-white/10 shadow-xl cursor-pointer transition-all hover:scale-105"
               title="Cerrar Karaoke"
             >
               <X size={28} />
