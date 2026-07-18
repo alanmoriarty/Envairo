@@ -53,51 +53,76 @@ export default function ActivitiesPage() {
 
   // Fetch real lyrics
   useEffect(() => {
-    if (!currentTrack) {
+    if (!currentTrack || !karaokeOpen) {
        setLyricsLines([]);
        setIsSynced(false);
        return;
     }
 
+    let isMounted = true;
+
     const fetchLyrics = async () => {
+      if (!isMounted) return;
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
+      
+      if (lyricsContainerRef.current) {
+        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
-        // Use LRCLIB API
-        const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
         
+        // Search API
+        const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
         if (!res.ok) throw new Error('Letras no encontradas');
-        const data = await res.json();
         
-        if (data.syncedLyrics) {
-          const parsed = parseLRC(data.syncedLyrics);
-          if (parsed.length > 0) {
-            setLyricsLines(parsed);
-            setIsSynced(true);
-          } else {
-            throw new Error('Formato LRC inválido');
-          }
-        } else if (data.plainLyrics) {
-          const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const results = await res.json();
+        if (!isMounted) return;
+        if (!results || results.length === 0) throw new Error('Letras no encontradas');
+        
+        // Filter out "tour", "en vivo", "live" versions
+        const cleanResults = results.filter(t => {
+          const lowerName = (t.trackName || '').toLowerCase();
+          const lowerAlbum = (t.albumName || '').toLowerCase();
+          const isLive = lowerName.includes('vivo') || lowerName.includes('tour') || lowerName.includes('live') ||
+                         lowerAlbum.includes('vivo') || lowerAlbum.includes('tour') || lowerAlbum.includes('live');
+          return !isLive;
+        });
+
+        const bestMatch = cleanResults.length > 0 ? cleanResults[0] : results[0];
+        
+        // Use plainLyrics ALWAYS, avoiding spotify sync as requested
+        const lyricsText = bestMatch.plainLyrics || bestMatch.syncedLyrics?.replace(/\[.*?\]/g, '');
+        
+        if (lyricsText) {
+          const lines = lyricsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
-          setIsSynced(false);
+          setIsSynced(false); // No se sincroniza, solo muestra el texto plano
         } else {
           throw new Error('Letras no encontradas');
         }
       } catch (err) {
+        if (!isMounted) return;
         setLyricsError(err.message);
         setLyricsLines([]);
         setIsSynced(false);
       } finally {
-        setLyricsLoading(false);
+        if (isMounted) setLyricsLoading(false);
       }
     };
 
-    fetchLyrics();
-  }, [currentTrack]);
+    const timerId = setTimeout(() => {
+      fetchLyrics();
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timerId);
+    };
+  }, [currentTrack?.id, karaokeOpen]);
 
   // Autoscroll logic & sync
   useEffect(() => {
