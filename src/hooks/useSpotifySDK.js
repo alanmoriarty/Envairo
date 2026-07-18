@@ -194,9 +194,12 @@ export function useSpotifySDK() {
       clearInterval(progressInterval);
       if (!state.paused) {
         progressInterval = setInterval(() => {
-          const currentProg = usePlayerStore.getState().progress;
-          if (currentProg < state.duration) {
-            usePlayerStore.getState().setProgress(currentProg + 1000);
+          const store = usePlayerStore.getState();
+          const currentProg = store.progress;
+          const currentDur = store.duration;
+          // Increment progress if it's less than duration, OR if duration is 0 (loading state)
+          if (currentDur === 0 || currentProg < currentDur) {
+            store.setProgress(currentProg + 1000);
           }
         }, 1000);
       }

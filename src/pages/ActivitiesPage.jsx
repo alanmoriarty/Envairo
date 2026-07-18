@@ -375,6 +375,14 @@ export default function ActivitiesPage() {
                         );
                       })
                     )}
+                    
+                    {/* Visual indicator for instrumental intros */}
+                    {isSynced && activeLineIndex === -1 && lyricsLines.length > 0 && progress < lyricsLines[0].time && (
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center animate-pulse">
+                        <Mic2 size={48} className="text-accent/50 mx-auto mb-4" />
+                        <p className="text-2xl font-bold text-white/50">Intro musical...</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
