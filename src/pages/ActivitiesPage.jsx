@@ -66,22 +66,30 @@ export default function ActivitiesPage() {
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
-        // Use LRCLIB API
-        const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
+        
+        // Use LRCLIB API search to prioritize synced lyrics
+        const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
         
         if (!res.ok) throw new Error('Letras no encontradas');
-        const data = await res.json();
+        const results = await res.json();
         
-        if (data.syncedLyrics) {
-          const parsed = parseLRC(data.syncedLyrics);
+        if (!results || results.length === 0) throw new Error('Letras no encontradas');
+        
+        // Find best match: prefer synced lyrics, then plain lyrics
+        const bestMatch = results.find(t => t.syncedLyrics) || results.find(t => t.plainLyrics);
+        
+        if (!bestMatch) throw new Error('Letras no encontradas');
+        
+        if (bestMatch.syncedLyrics) {
+          const parsed = parseLRC(bestMatch.syncedLyrics);
           if (parsed.length > 0) {
             setLyricsLines(parsed);
             setIsSynced(true);
           } else {
             throw new Error('Formato LRC inválido');
           }
-        } else if (data.plainLyrics) {
-          const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        } else if (bestMatch.plainLyrics) {
+          const lines = bestMatch.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
           setIsSynced(false);
         } else {
