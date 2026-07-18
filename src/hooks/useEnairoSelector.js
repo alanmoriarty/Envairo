@@ -3,7 +3,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { searchTracks } from '../lib/spotifyApi';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function useEnairoSelector() {
   const { 
