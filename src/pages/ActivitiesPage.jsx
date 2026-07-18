@@ -105,7 +105,7 @@ export default function ActivitiesPage() {
     };
 
     fetchLyrics();
-  }, [currentTrack]);
+  }, [currentTrack?.id]);
 
   // Autoscroll logic & sync
   useEffect(() => {
