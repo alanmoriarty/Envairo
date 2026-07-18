@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward
+  SkipBack, Pause, Play, SkipForward, Plus
 } from 'lucide-react';
 import {
   DndContext,
@@ -28,6 +28,7 @@ import { useSpotifySDK } from '../hooks/useSpotifySDK';
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
+import { AddSongModal } from '../components/dashboard/AddSongModal';
 import { supabase } from '../lib/supabase';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
@@ -127,6 +128,7 @@ export default function DashboardPage() {
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
   const { enairoIsThinking } = useSettingsStore();
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -401,6 +403,13 @@ export default function DashboardPage() {
                     Playlist Activa
                   </h2>
                   <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
+                  <button 
+                    onClick={() => setShowAddModal(true)}
+                    className="ml-1 p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors"
+                    title="Añadir Canción"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -459,6 +468,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      
+      {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
     </div>
   );
 }

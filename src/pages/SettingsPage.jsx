@@ -216,13 +216,13 @@ export default function SettingsPage() {
           <select
             value={repeatCooldown}
             onChange={(e) => setRepeatCooldown(Number(e.target.value))}
-            className="bg-bg-base border border-white/10 rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
+            className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
           >
-            <option value="-1">Permitir siempre</option>
-            <option value="30">Bloquear 30 min</option>
-            <option value="60">Bloquear 1 hora</option>
-            <option value="120">Bloquear 2 horas</option>
-            <option value="0">Bloquear toda la sesión</option>
+            <option value="-1" className="bg-bg-root text-white">Permitir siempre</option>
+            <option value="30" className="bg-bg-root text-white">Bloquear 30 min</option>
+            <option value="60" className="bg-bg-root text-white">Bloquear 1 hora</option>
+            <option value="120" className="bg-bg-root text-white">Bloquear 2 horas</option>
+            <option value="0" className="bg-bg-root text-white">Bloquear toda la sesión</option>
           </select>
         </div>
 
