@@ -26,6 +26,7 @@ export default function ActivitiesPage() {
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState('');
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
+  const lastScrolledIndex = useRef(-1);
 
   // Parse LRC format
   const parseLRC = (lrcString) => {
@@ -76,6 +77,7 @@ export default function ActivitiesPage() {
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
+      lastScrolledIndex.current = -1;
       
       // Reset scroll position for new song
       if (lyricsContainerRef.current) {
@@ -111,7 +113,7 @@ export default function ActivitiesPage() {
             throw new Error('Formato LRC inválido');
           }
         } else if (bestMatch.plainLyrics) {
-          const lines = bestMatch.plainLyrics.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+          const lines = bestMatch.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
           setIsSynced(false); // No se sincroniza, solo muestra el texto plano
         } else {
@@ -154,15 +156,18 @@ export default function ActivitiesPage() {
       }
       setActiveLineIndex(newActiveIndex);
 
-      // Auto-scroll to the active element
-      if (newActiveIndex !== -1 && lyricsContainerRef.current) {
-        const activeElem = document.getElementById(`lyric-line-${newActiveIndex}`);
-        if (activeElem) {
-          activeElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Auto-scroll to the active element only if it changed
+      if (newActiveIndex !== lastScrolledIndex.current) {
+        lastScrolledIndex.current = newActiveIndex;
+        if (newActiveIndex !== -1 && lyricsContainerRef.current) {
+          const activeElem = document.getElementById(`lyric-line-${newActiveIndex}`);
+          if (activeElem) {
+            activeElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if (newActiveIndex === -1 && lyricsContainerRef.current) {
+          // If progress is before the first line, ensure we stay at the top
+          lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
         }
-      } else if (newActiveIndex === -1 && lyricsContainerRef.current) {
-        // If progress is before the first line, ensure we stay at the top
-        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
       // Fallback naive scrolling for plain text
@@ -373,7 +378,7 @@ export default function ActivitiesPage() {
 
                 <div 
                   ref={lyricsContainerRef}
-                  className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 scroll-smooth no-scrollbar"
+                  className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 no-scrollbar"
                 >
                   <div className="space-y-8 pt-32 pb-64 text-center">
                     {lyricsLoading ? (
