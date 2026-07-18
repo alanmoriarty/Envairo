@@ -25,6 +25,10 @@ export const useSettingsStore = create(
       sessionId: `session-${Date.now()}`,
       setSessionId: (id) => set({ sessionId: id }),
 
+      // Host Security Secret (to bypass RLS for remote control)
+      hostSecret: crypto.randomUUID(),
+      setHostSecret: (secret) => set({ hostSecret: secret }),
+
       // Dashboard UI State
       showRequests: true,
       showQR: true,

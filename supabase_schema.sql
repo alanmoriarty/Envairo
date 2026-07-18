@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS sessions;
 -- Crear tabla de Sesiones
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
+  host_secret UUID, -- Secreto de administración para el host
   active BOOLEAN DEFAULT true,
   mode TEXT DEFAULT 'party',
   blacklist_genres JSONB DEFAULT '[]',
@@ -14,7 +15,13 @@ CREATE TABLE sessions (
   cooldown_enabled BOOLEAN DEFAULT true,
   cooldown_minutes INTEGER DEFAULT 10,
   table_count INTEGER DEFAULT 0,
+  requests_per_hour INTEGER DEFAULT 15,
   requests_per_guest INTEGER DEFAULT 0,
+  queue JSONB DEFAULT '[]',
+  current_queue_index INTEGER DEFAULT -1,
+  current_track JSONB,
+  active_device_id TEXT,
+  volume INTEGER DEFAULT 70,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -35,12 +42,56 @@ ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 -- Políticas de Seguridad (Restringidas para Producción)
 CREATE POLICY "Public profiles are viewable by everyone." ON sessions FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert a session." ON sessions FOR INSERT WITH CHECK (true);
--- Eliminada la política pública de UPDATE en sessions. Solo el Host debe empujar actualizaciones.
--- (En un entorno con Auth completo, aquí iría: ON sessions FOR UPDATE USING (auth.uid() = host_id))
+-- Eliminada la política pública de UPDATE en sessions. Solo el Host actualizará mediante RPC.
 
 CREATE POLICY "Public requests are viewable by everyone." ON requests FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (true);
--- Eliminadas las políticas públicas de UPDATE y DELETE en requests para evitar manipulación por parte de invitados maliciosos.
+-- Eliminadas las políticas públicas de UPDATE y DELETE en requests.
+
+-- Funciones RPC Seguras para el Host (Bypass RLS si conocen el host_secret)
+
+-- 1. Actualizar estado de la sesión
+CREATE OR REPLACE FUNCTION update_session_state(p_session_id TEXT, p_secret UUID, p_updates JSONB)
+RETURNS VOID AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM sessions WHERE id = p_session_id AND (host_secret IS NULL OR host_secret = p_secret)) THEN
+    UPDATE sessions
+    SET
+      active = COALESCE((p_updates->>'active')::BOOLEAN, active),
+      mode = COALESCE(p_updates->>'mode', mode),
+      blacklist_genres = COALESCE(p_updates->'blacklist_genres', blacklist_genres),
+      blacklist_songs = COALESCE(p_updates->'blacklist_songs', blacklist_songs),
+      blacklist_artists = COALESCE(p_updates->'blacklist_artists', blacklist_artists),
+      allow_repeats = COALESCE((p_updates->>'allow_repeats')::BOOLEAN, allow_repeats),
+      cooldown_enabled = COALESCE((p_updates->>'cooldown_enabled')::BOOLEAN, cooldown_enabled),
+      cooldown_minutes = COALESCE((p_updates->>'cooldown_minutes')::INTEGER, cooldown_minutes),
+      table_count = COALESCE((p_updates->>'table_count')::INTEGER, table_count),
+      requests_per_hour = COALESCE((p_updates->>'requests_per_hour')::INTEGER, requests_per_hour),
+      requests_per_guest = COALESCE((p_updates->>'requests_per_guest')::INTEGER, requests_per_guest),
+      queue = COALESCE(p_updates->'queue', queue),
+      current_queue_index = COALESCE((p_updates->>'current_queue_index')::INTEGER, current_queue_index),
+      current_track = COALESCE(p_updates->'current_track', current_track),
+      active_device_id = COALESCE(p_updates->>'active_device_id', active_device_id),
+      volume = COALESCE((p_updates->>'volume')::INTEGER, volume),
+      updated_at = timezone('utc'::text, now())
+    WHERE id = p_session_id;
+  ELSE
+    RAISE EXCEPTION 'Unauthorized: Invalid host secret';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Manejar peticiones (Aprobar/Rechazar)
+CREATE OR REPLACE FUNCTION manage_request(p_request_id UUID, p_session_id TEXT, p_secret UUID, p_new_status TEXT)
+RETURNS VOID AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM sessions WHERE id = p_session_id AND (host_secret IS NULL OR host_secret = p_secret)) THEN
+    UPDATE requests SET status = p_new_status WHERE id = p_request_id AND session_id = p_session_id;
+  ELSE
+    RAISE EXCEPTION 'Unauthorized: Invalid host secret';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Habilitar REALTIME para que la app se actualice instantáneamente sin recargar la página
 BEGIN;

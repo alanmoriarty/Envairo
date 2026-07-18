@@ -151,7 +151,8 @@ export default function DashboardPage() {
   const handleApprove = async (reqId, trackName) => {
     approveRequest(reqId);
     toast.success(`"${trackName}" añadida a la playlist`);
-    await supabase.from('requests').update({ status: 'approved' }).eq('id', reqId);
+    const secret = useSettingsStore.getState().hostSecret;
+    await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'approved' });
     
     // Auto-play if nothing is currently playing
     const state = usePlayerStore.getState();
@@ -167,7 +168,8 @@ export default function DashboardPage() {
   const handleReject = async (reqId, trackName) => {
     rejectRequest(reqId);
     toast.error(`"${trackName}" rechazada`);
-    await supabase.from('requests').update({ status: 'rejected' }).eq('id', reqId);
+    const secret = useSettingsStore.getState().hostSecret;
+    await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'rejected' });
   };
 
   const handlePlayNow = async (track) => {

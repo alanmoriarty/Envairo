@@ -1,12 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Maximize2, RefreshCw, QrCode } from 'lucide-react';
+import { Maximize2, RefreshCw, QrCode, SmartphoneNfc } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
 export function QRCard() {
-  const { sessionId, regenerateSession } = useSettingsStore();
+  const { sessionId, regenerateSession, hostSecret } = useSettingsStore();
   const containerRef = useRef(null);
+  const [showAdminQR, setShowAdminQR] = useState(false);
   const guestUrl = `${window.location.origin}/guest/${sessionId}`;
+  const adminUrl = `${window.location.origin}/?session=${sessionId}&admin=${hostSecret}`;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -32,15 +34,23 @@ export function QRCard() {
   };
 
   const qrSize = isFullscreen ? Math.min(windowSize.w, windowSize.h) * 0.7 : 160;
+  const currentUrl = showAdminQR ? adminUrl : guestUrl;
 
   return (
     <div className="card p-5 flex flex-col items-center gap-4">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <QrCode size={18} className="text-accent" />
-          <h3 className="font-semibold text-text-primary">Código QR</h3>
+          <QrCode size={18} className={showAdminQR ? "text-danger" : "text-accent"} />
+          <h3 className="font-semibold text-text-primary">{showAdminQR ? 'QR de Control Remoto' : 'Código QR de Invitados'}</h3>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowAdminQR(!showAdminQR)}
+            className={`btn-ghost p-2 ${showAdminQR ? 'text-danger hover:bg-danger/10' : ''}`}
+            title="Vincular Dispositivo Host"
+          >
+            <SmartphoneNfc size={14} />
+          </button>
           <button
             onClick={regenerateSession}
             className="btn-ghost p-2"
@@ -58,41 +68,60 @@ export function QRCard() {
         </div>
       </div>
 
-      <div
+      <div 
         ref={containerRef}
-        className={`bg-white rounded-xl flex flex-col items-center cursor-pointer transition-all ${
-          isFullscreen ? 'justify-center w-full h-full gap-8' : 'p-4 gap-3'
-        }`}
-        onDoubleClick={openFullscreen}
-        style={{ background: 'white' }}
+        className={`bg-white p-4 rounded-xl transition-all ${isFullscreen ? 'flex flex-col items-center justify-center bg-black' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
       >
         <QRCodeSVG
-          value={guestUrl}
+          value={currentUrl}
           size={qrSize}
-          bgColor="#ffffff"
-          fgColor="#0D0B14"
           level="H"
-          includeMargin={false}
-        />
-        <p
-          className="font-bold text-center"
-          style={{ 
-            color: '#0D0B14', 
-            maxWidth: isFullscreen ? '90%' : 160, 
-            fontSize: isFullscreen ? '3rem' : '0.75rem',
-            wordBreak: 'break-all' 
+          includeMargin={true}
+          imageSettings={{
+            src: "https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg",
+            x: undefined,
+            y: undefined,
+            height: 24,
+            width: 24,
+            excavate: true,
           }}
-        >
-          Envairo
-        </p>
+        />
+        {isFullscreen && (
+          <div className="mt-8 text-center">
+            <h2 className={`text-4xl font-bold mb-4 ${showAdminQR ? 'text-danger' : 'text-white'}`}>
+              {showAdminQR ? 'QR DE CONTROL REMOTO (SECRETO)' : '¡Escanea para pedir tu canción!'}
+            </h2>
+            <p className="text-xl text-white/70">
+              {showAdminQR ? 'No muestres este QR a los invitados.' : 'Apunta con la cámara de tu celular'}
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="w-full mt-2">
-        <p className="text-xs text-text-muted text-center mb-1">URL de invitados:</p>
-        <p className="text-xs text-accent text-center break-all bg-bg-elevated rounded-lg px-3 py-2">
-          {guestUrl}
-        </p>
-      </div>
+      {!isFullscreen && (
+        <div className="w-full">
+          <p className="text-sm text-center text-text-muted mb-2 font-medium">
+            O comparte este enlace:
+          </p>
+          <div className={`p-3 rounded-lg flex items-center justify-between gap-2 border ${showAdminQR ? 'bg-danger/10 border-danger/20' : 'bg-bg-elevated border-white/5'}`}>
+            <span className={`text-xs truncate ${showAdminQR ? 'text-danger/80' : 'text-text-subtle'}`}>{currentUrl}</span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(currentUrl);
+                import('sonner').then(({ toast }) => toast.success('Enlace copiado'));
+              }}
+              className="text-accent hover:text-accent-light text-xs font-semibold px-2 py-1 rounded hover:bg-accent/10 transition-colors whitespace-nowrap"
+            >
+              Copiar
+            </button>
+          </div>
+          {showAdminQR && (
+            <p className="text-xs text-danger mt-2 text-center animate-pulse">
+              ⚠️ Este QR da control total sobre la música. Solo para anfitriones.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

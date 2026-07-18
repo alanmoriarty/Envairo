@@ -38,26 +38,30 @@ export function useQueueSync() {
 
       // Debounce the Supabase push by 500ms to avoid race conditions with rapid synchronous state updates (like setQueue + shiftQueue)
       syncTimeoutRef.current = setTimeout(() => {
+        const secret = useSettingsStore.getState().hostSecret;
+        if (!authStore.user && !secret) return; // Si no hay usuario ni secreto admin, no intentar empujar estado (solo invitados)
+
         supabase
-          .from('sessions')
-          .update({
-            queue: state.queue,
-            current_queue_index: state.currentQueueIndex,
-            current_track: state.currentTrack,
-            active_device_id: state.activeDeviceId,
-            volume: state.volume,
-            updated_at: new Date().toISOString(),
+          .rpc('update_session_state', {
+            p_session_id: sessionId,
+            p_secret: secret,
+            p_updates: {
+              queue: state.queue,
+              current_queue_index: state.currentQueueIndex,
+              current_track: state.currentTrack,
+              active_device_id: state.activeDeviceId,
+              volume: state.volume
+            }
           })
-          .eq('id', sessionId)
           .then(({ error }) => {
             if (error) {
               console.error('Error syncing queue to Supabase:', error);
-              import('sonner').then(({ toast }) => toast.error('Error guardando en la nube: ' + error.message));
+              import('sonner').then(({ toast }) => toast.error('Error guardando en la nube (RPC): ' + error.message));
             }
           })
           .catch(err => {
             console.error('Catch error syncing:', err);
-            import('sonner').then(({ toast }) => toast.error('Fallo crítico al sincronizar: ' + err.message));
+            import('sonner').then(({ toast }) => toast.error('Fallo crítico al sincronizar (RPC): ' + err.message));
           });
       }, 500);
     });
@@ -72,13 +76,6 @@ export function useQueueSync() {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
           let updates = {};
-
-          // SEGURIDAD CRÍTICA: Si este cliente es el Host autenticado (quien maneja la música), 
-          // NUNCA debe absorber actualizaciones de la base de datos para la cola o el reproductor.
-          // El Host es la "Fuente de la Verdad". Esto previene el "Queue Hijacking" (Secuestro de Cola)
-          // por parte de invitados maliciosos usando la llave pública de Supabase.
-          const isHost = !!authStore.user;
-          if (isHost) return;
 
           // FIX: PostgreSQL TOAST issue. If a JSONB column is large (>8KB), and an UPDATE doesn't modify it,
           // Postgres omits it from the WAL to save space. Supabase Realtime then delivers it as `null` or `undefined`.
@@ -113,30 +110,24 @@ export function useQueueSync() {
       .subscribe();
 
     // 3. Initial pull
-    const isHost = !!authStore.user;
-    
-    if (isHost) {
-      usePlayerStore.getState().setInitialSyncDone(true);
-    } else {
-      supabase
-        .from('sessions')
-        .select('queue, current_queue_index, current_track, active_device_id, volume')
-        .eq('id', sessionId)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            isRemoteUpdate.current = true;
-            usePlayerStore.setState({
-              queue: data.queue || [],
-              currentQueueIndex: data.current_queue_index ?? -1,
-              currentTrack: data.current_track || null,
-              activeDeviceId: data.active_device_id || null,
-              ...(data.volume !== null ? { volume: data.volume } : {})
-            });
-          }
-          usePlayerStore.getState().setInitialSyncDone(true);
-        });
-    }
+    supabase
+      .from('sessions')
+      .select('queue, current_queue_index, current_track, active_device_id, volume')
+      .eq('id', sessionId)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          isRemoteUpdate.current = true;
+          usePlayerStore.setState({
+            queue: data.queue || [],
+            currentQueueIndex: data.current_queue_index ?? -1,
+            currentTrack: data.current_track || null,
+            activeDeviceId: data.active_device_id || null,
+            ...(data.volume !== null ? { volume: data.volume } : {})
+          });
+        }
+        usePlayerStore.getState().setInitialSyncDone(true);
+      });
 
     return () => {
       unsubscribe();
@@ -152,25 +143,33 @@ export function useQueueSync() {
       const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
 
+      const secret = useSettingsStore.getState().hostSecret;
       const { data } = await supabase.from('sessions').select('id').eq('id', sessionId).single();
+      
       if (data) {
-        await supabase.from('sessions').update({
-          active: true,
-          mode,
-          blacklist_genres: blacklistGenres,
-          blacklist_songs: blacklistSongs,
-          blacklist_artists: blacklistArtists,
-          allow_repeats: allowRepeats,
-          cooldown_enabled: cooldownEnabled,
-          cooldown_minutes: cooldownMinutes,
-          table_count: tableCount,
-          requests_per_hour: requestsPerHour,
-          requests_per_guest: requestsPerGuest,
-          updated_at: new Date().toISOString()
-        }).eq('id', sessionId);
+        if (authStore.user || secret) {
+          await supabase.rpc('update_session_state', {
+            p_session_id: sessionId,
+            p_secret: secret,
+            p_updates: {
+              active: true,
+              mode,
+              blacklist_genres: blacklistGenres,
+              blacklist_songs: blacklistSongs,
+              blacklist_artists: blacklistArtists,
+              allow_repeats: allowRepeats,
+              cooldown_enabled: cooldownEnabled,
+              cooldown_minutes: cooldownMinutes,
+              table_count: tableCount,
+              requests_per_hour: requestsPerHour,
+              requests_per_guest: requestsPerGuest
+            }
+          });
+        }
       } else {
         await supabase.from('sessions').insert({
           id: sessionId,
+          host_secret: secret, // Guardar el secreto admin inicial
           active: true,
           mode,
           blacklist_genres: blacklistGenres,
@@ -217,11 +216,11 @@ export function useQueueSync() {
             if (result.approved === true) {
               store.approveRequest(newReq.id);
               toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
-              await supabase.from('requests').update({ status: 'approved' }).eq('id', newReq.id);
+              await supabase.rpc('manage_request', { p_request_id: newReq.id, p_session_id: sessionId, p_secret: useSettingsStore.getState().hostSecret, p_new_status: 'approved' });
             } else if (result.approved === false) {
               store.rejectRequest(newReq.id);
               toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
-              await supabase.from('requests').update({ status: 'rejected' }).eq('id', newReq.id);
+              await supabase.rpc('manage_request', { p_request_id: newReq.id, p_session_id: sessionId, p_secret: useSettingsStore.getState().hostSecret, p_new_status: 'rejected' });
             } else {
               toast.info(`Auto DJ requiere revisión manual para la petición de ${newReq.requester} (${result.reason || 'Sin etiquetas claras'})`);
             }
@@ -236,7 +235,10 @@ export function useQueueSync() {
 
     return () => {
       supabase.removeChannel(channel);
-      supabase.from('sessions').update({ active: false }).eq('id', sessionId);
+      const secret = useSettingsStore.getState().hostSecret;
+      if (secret) {
+        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).catch(() => {});
+      }
     };
   }, [sessionId]);
 }

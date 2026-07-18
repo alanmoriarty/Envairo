@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Music2, AlertCircle } from 'lucide-react';
 import { redirectToSpotifyAuth } from '../lib/spotifyAuth';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export default function LoginPage() {
+  useEffect(() => {
+    // Interceptar parámetros de "QR de Administrador" para control remoto
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get('session');
+    const admin = params.get('admin');
+
+    if (session && admin) {
+      const { setSessionId, setHostSecret } = useSettingsStore.getState();
+      setSessionId(session);
+      setHostSecret(admin);
+      import('sonner').then(({ toast }) => toast.success('Vinculando dispositivo como control remoto...'));
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background radial glows */}
