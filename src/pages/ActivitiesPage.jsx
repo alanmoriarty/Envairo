@@ -152,6 +152,9 @@ export default function ActivitiesPage() {
         if (activeElem) {
           activeElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+      } else if (newActiveIndex === -1 && lyricsContainerRef.current) {
+        // If progress is before the first line, ensure we stay at the top
+        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
       // Fallback naive scrolling for plain text
