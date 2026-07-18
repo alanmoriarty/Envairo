@@ -371,9 +371,28 @@ export function useQueueSync() {
         const api = await import('../lib/spotifyApi');
         const state = await api.getPlaybackState();
         if (state && state.item) {
-          usePlayerStore.getState().setProgress(state.progress_ms);
-          usePlayerStore.getState().setDuration(state.item.duration_ms);
-          usePlayerStore.getState().setIsPlaying(state.is_playing);
+          const store = usePlayerStore.getState();
+          store.setProgress(state.progress_ms);
+          store.setDuration(state.item.duration_ms);
+          store.setIsPlaying(state.is_playing);
+          
+          // Fallback sync for currentTrack just in case Realtime missed it
+          if (store.currentTrack?.id !== state.item.id) {
+            const apiTrack = {
+              id: state.item.id,
+              uri: state.item.uri,
+              name: state.item.name,
+              artists: state.item.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+              album: state.item.album?.name,
+              image: state.item.album?.images?.[0]?.url,
+              duration_ms: state.item.duration_ms
+            };
+            store.setCurrentTrack(apiTrack);
+            
+            // Also update queue index if found
+            const qIdx = store.queue.findIndex(t => t.id === state.item.id);
+            if (qIdx !== -1) store.setCurrentQueueIndex(qIdx);
+          }
         }
       } catch (e) {}
     }, 5000);
