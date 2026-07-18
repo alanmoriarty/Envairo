@@ -61,5 +61,5 @@ export function useInactivityTimeout() {
       if (timerRef.current) clearTimeout(timerRef.current);
       events.forEach(event => window.removeEventListener(event, handleActivity));
     };
-  }, [user, isPlaying, signOut]);
+  }, [user, isPlaying, logout]);
 }
