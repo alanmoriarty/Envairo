@@ -27,6 +27,8 @@ Las configuraciones del administrador son:
 - Instrucciones especiales: ${settings?.enairoPrompt || 'Ninguna'}
 - Géneros permitidos: ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Todos'}
 - Géneros bloqueados: ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}
+- Artistas PROHIBIDOS: ${settings?.blacklistArtists?.length ? settings.blacklistArtists.join(', ') : 'Ninguno'}
+- Canciones PROHIBIDAS: ${settings?.blacklistSongs?.length ? settings.blacklistSongs.join(', ') : 'Ninguna'}
 
 El usuario quiere mantener el ambiente perfecto. 
 Analiza el history para entender la vibra actual.

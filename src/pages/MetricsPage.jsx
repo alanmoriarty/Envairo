@@ -27,9 +27,9 @@ function getLocalDateString(date) {
 export default function MetricsPage() {
   const { playHistory, queue, pendingRequests, requestHistory = [] } = usePlayerStore();
 
-  const last15Days = useMemo(() => {
+  const last7Days = useMemo(() => {
     const days = [];
-    for (let i = 0; i <= 15; i++) {
+    for (let i = 0; i <= 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       days.push(getLocalDateString(d));
@@ -37,7 +37,7 @@ export default function MetricsPage() {
     return days;
   }, []);
 
-  const [selectedDate, setSelectedDate] = useState(last15Days[0]);
+  const [selectedDate, setSelectedDate] = useState(last7Days[0]);
 
   const metrics = useMemo(() => {
     const allRequests = requestHistory.filter(req => {
@@ -53,6 +53,9 @@ export default function MetricsPage() {
     const hourCounts = {};
 
     allRequests.forEach(req => {
+      // Excluir canciones rechazadas de las estadísticas visuales
+      if (req.status === 'rejected') return;
+
       const track = req.track;
       const mainArtistName = track.artists?.split(',')[0]?.trim() || 'Desconocido';
       const mainArtistId = track.artistIds?.[0];
@@ -119,7 +122,7 @@ export default function MetricsPage() {
           className="input-field max-w-[200px]"
         >
           <option value="all">Todo el historial</option>
-          {last15Days.map((date, index) => (
+          {last7Days.map((date, index) => (
             <option key={date} value={date}>
               {index === 0 ? 'Hoy' : index === 1 ? 'Ayer' : date}
             </option>

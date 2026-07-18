@@ -15,7 +15,9 @@ export function useEnairoSelector() {
     enairoPrompt,
     enairoTestMode,
     whitelistGenres, 
-    blacklistGenres 
+    blacklistGenres,
+    blacklistSongs,
+    blacklistArtists
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
   
@@ -61,7 +63,9 @@ export function useEnairoSelector() {
             settings: {
               enairoPrompt,
               whitelistGenres,
-              blacklistGenres
+              blacklistGenres,
+              blacklistSongs,
+              blacklistArtists
             }
           }
         });

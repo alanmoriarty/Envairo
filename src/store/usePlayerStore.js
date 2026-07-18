@@ -50,17 +50,26 @@ export const usePlayerStore = create(
       }),
 
       addToQueue: (track) =>
-        set((state) => ({
-          queue: [...state.queue, { ...track, queueId: `${track.id}-${Date.now()}` }],
-        })),
+        set((state) => {
+          const newTrack = { ...track, queueId: `${track.id}-${Date.now()}` };
+          const reqEntry = {
+            reqId: `req-auto-${Date.now()}-${Math.random()}`,
+            timestamp: new Date().toISOString(),
+            status: 'approved',
+            track: track,
+            requester: track.addedBy || 'Dashboard'
+          };
+          return {
+            queue: [...state.queue, newTrack],
+            requestHistory: [reqEntry, ...(state.requestHistory || [])].slice(0, 500)
+          };
+        }),
 
       removeFromQueue: (queueId) =>
         set((state) => {
           const index = state.queue.findIndex((t) => t.queueId === queueId);
           if (index === -1) return state;
           
-          const trackToRemove = state.queue[index];
-
           let updatedIndex = state.currentQueueIndex;
           if (index < state.currentQueueIndex) {
             updatedIndex--;
@@ -70,22 +79,15 @@ export const usePlayerStore = create(
           
           return {
             queue: state.queue.filter((t) => t.queueId !== queueId),
-            currentQueueIndex: updatedIndex,
-            // Remove from requestHistory if it was a user request
-            requestHistory: trackToRemove.reqId 
-              ? state.requestHistory.filter(r => r.reqId !== trackToRemove.reqId)
-              : state.requestHistory
+            currentQueueIndex: updatedIndex
           };
         }),
         
       clearQueue: () =>
-        set((state) => {
-          // Si eliminamos la cola completa, también deberíamos borrar las peticiones asociadas que estaban en cola
-          const reqIdsToRemove = state.queue.map(t => t.reqId).filter(Boolean);
+        set(() => {
           return {
             queue: [],
-            currentQueueIndex: -1,
-            requestHistory: state.requestHistory.filter(r => !reqIdsToRemove.includes(r.reqId))
+            currentQueueIndex: -1
           };
         }),
 
