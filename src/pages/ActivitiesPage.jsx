@@ -60,85 +60,56 @@ export default function ActivitiesPage() {
     return result;
   };
 
-  // Fetch lyrics when track changes or karaoke opens
+  // Fetch real lyrics
   useEffect(() => {
-    // Si no hay canción o el karaoke está cerrado, no hacer nada y limpiar
-    if (!currentTrack || !karaokeOpen) {
-      setLyricsLines([]);
-      setLyricsError('');
-      setIsSynced(false);
-      return;
+    if (!currentTrack) {
+       setLyricsLines([]);
+       setIsSynced(false);
+       return;
     }
 
-    let isMounted = true;
-    
     const fetchLyrics = async () => {
-      if (!isMounted) return;
       setLyricsLoading(true);
       setLyricsError('');
       setActiveLineIndex(-1);
       lastScrolledIndex.current = -1;
       
-      // Reset scroll position for new song
-      if (lyricsContainerRef.current) {
-        lyricsContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
-      }
-
       try {
         const artist = currentTrack.artists.split(',')[0].trim();
         const title = currentTrack.name.replace(/\(.*\)|\[.*\]/g, '').trim();
         
-        // Use LRCLIB API search to prioritize synced lyrics
+        // Use LRCLIB API GET endpoint (matches original ab6686c behavior exactly)
+        const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
         
-        // Search API
-        const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
         if (!res.ok) throw new Error('Letras no encontradas');
-        const results = await res.json();
+        const data = await res.json();
         
-        if (!isMounted) return;
-        
-        if (!results || results.length === 0) throw new Error('Letras no encontradas');
-        
-        // Find best match: prefer synced lyrics, then plain lyrics
-        const bestMatch = results.find(t => t.syncedLyrics) || results.find(t => t.plainLyrics);
-        
-        if (!bestMatch) throw new Error('Letras no encontradas');
-        
-        if (bestMatch.syncedLyrics) {
-          const parsed = parseLRC(bestMatch.syncedLyrics);
+        if (data.syncedLyrics) {
+          const parsed = parseLRC(data.syncedLyrics);
           if (parsed.length > 0) {
             setLyricsLines(parsed);
             setIsSynced(true);
           } else {
             throw new Error('Formato LRC inválido');
           }
-        } else if (bestMatch.plainLyrics) {
-          const lines = bestMatch.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        } else if (data.plainLyrics) {
+          const lines = data.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
-          setIsSynced(false); // No se sincroniza, solo muestra el texto plano
+          setIsSynced(false);
         } else {
           throw new Error('Letras no encontradas');
         }
       } catch (err) {
-        if (!isMounted) return;
         setLyricsError(err.message);
         setLyricsLines([]);
         setIsSynced(false);
       } finally {
-        if (isMounted) setLyricsLoading(false);
+        setLyricsLoading(false);
       }
     };
 
-    // Darle 1 segundo para que la posición (progress) se estabilice
-    const timerId = setTimeout(() => {
-      fetchLyrics();
-    }, 1000);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timerId);
-    };
-  }, [currentTrack?.id, karaokeOpen]);
+    fetchLyrics();
+  }, [currentTrack]);
 
   // Autoscroll logic & sync
   useEffect(() => {
@@ -329,30 +300,6 @@ export default function ActivitiesPage() {
           ref={karaokeRef}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
-          {/* Static Background */}
-          <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-bg-root">
-            {currentTrack?.image ? (
-              <img 
-                src={currentTrack.image} 
-                alt="" 
-                className="absolute inset-0 w-full h-full object-cover opacity-40"
-                style={{ 
-                  filter: 'blur(80px) saturate(200%)',
-                  transform: 'scale(1.2)'
-                }}
-              />
-            ) : (
-              <div 
-                className="absolute inset-0 w-full h-full opacity-40" 
-                style={{ 
-                  background: 'radial-gradient(ellipse at center, #9D4EDD 0%, #1E1830 100%)', 
-                  filter: 'blur(60px)',
-                  transform: 'scale(1.2)'
-                }}
-              ></div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
-          </div>
 
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
             <button
