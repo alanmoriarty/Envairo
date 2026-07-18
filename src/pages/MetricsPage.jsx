@@ -41,6 +41,8 @@ export default function MetricsPage() {
 
   const metrics = useMemo(() => {
     const allRequests = requestHistory.filter(req => {
+      if (req.requester === 'EnvAIro Selector' || req.requester === 'Dashboard') return false;
+      
       if (selectedDate === 'all') return true;
       const dateToUse = new Date(req.timestamp);
       return getLocalDateString(dateToUse) === selectedDate;

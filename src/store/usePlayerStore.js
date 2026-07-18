@@ -52,13 +52,6 @@ export const usePlayerStore = create(
       addToQueue: (track) =>
         set((state) => {
           const newTrack = { ...track, queueId: `${track.id}-${Date.now()}` };
-          const reqEntry = {
-            reqId: `req-auto-${Date.now()}-${Math.random()}`,
-            timestamp: new Date().toISOString(),
-            status: 'approved',
-            track: track,
-            requester: track.addedBy || 'Dashboard'
-          };
           
           const newQueue = [...state.queue];
           let insertIndex = newQueue.length;
@@ -70,8 +63,7 @@ export const usePlayerStore = create(
           newQueue.splice(insertIndex, 0, newTrack);
           
           return {
-            queue: newQueue,
-            requestHistory: [reqEntry, ...(state.requestHistory || [])].slice(0, 500)
+            queue: newQueue
           };
         }),
 
