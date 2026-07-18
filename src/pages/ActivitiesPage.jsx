@@ -133,8 +133,7 @@ export default function ActivitiesPage() {
             throw new Error('Formato LRC inválido');
           }
         } else if (bestMatch.plainLyrics) {
-          const lines = bestMatch.plainLyrics.split('
-').map(l => l.trim()).filter(l => l.length > 0);
+          const lines = bestMatch.plainLyrics.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
           setLyricsLines(lines);
           setIsSynced(false); // No se sincroniza, solo muestra el texto plano
         } else {
