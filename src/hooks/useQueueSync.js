@@ -72,7 +72,7 @@ export function useQueueSync() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
-        (payload) => {
+        async (payload) => {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
           const { activeInstanceId, user, logout } = useAuthStore.getState();
