@@ -8,9 +8,11 @@ CREATE TABLE sessions (
   active BOOLEAN DEFAULT true,
   mode TEXT DEFAULT 'party',
   blacklist_genres JSONB DEFAULT '[]',
-  whitelist_artists JSONB DEFAULT '[]',
+  blacklist_songs JSONB DEFAULT '[]',
   blacklist_artists JSONB DEFAULT '[]',
   allow_repeats BOOLEAN DEFAULT true,
+  cooldown_enabled BOOLEAN DEFAULT true,
+  cooldown_minutes INTEGER DEFAULT 10,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

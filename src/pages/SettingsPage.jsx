@@ -11,11 +11,13 @@ export default function SettingsPage() {
     startTime, setStartTime,
     endTime, setEndTime,
     allowRepeats, setAllowRepeats,
+    cooldownEnabled, setCooldownEnabled,
+    cooldownMinutes, setCooldownMinutes,
     explicitFilter, setExplicitFilter,
     requestsPerHour, setRequestsPerHour,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre,
-    whitelistArtists, addWhitelistArtist, removeWhitelistArtist,
+    blacklistSongs, addBlacklistSong, removeBlacklistSong,
     blacklistArtists, addBlacklistArtist, removeBlacklistArtist,
   } = useSettingsStore();
 
@@ -88,6 +90,30 @@ export default function SettingsPage() {
 
         <div className="border-t border-white/5 pt-4">
           <Toggle
+            checked={cooldownEnabled}
+            onChange={setCooldownEnabled}
+            label="Tiempo de espera"
+            description="Requerir que los invitados esperen antes de poder pedir otra canción"
+          />
+          {cooldownEnabled && (
+            <div className="mt-3 flex items-center justify-between gap-3 animate-slide-up pl-12">
+              <div>
+                <label className="text-sm font-medium text-text-primary">Minutos de espera</label>
+              </div>
+              <input
+                type="number"
+                min="1"
+                max="120"
+                value={cooldownMinutes}
+                onChange={(e) => setCooldownMinutes(parseInt(e.target.value) || 10)}
+                className="input-field w-24 text-center"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <Toggle
             checked={explicitFilter}
             onChange={setExplicitFilter}
             label="Filtro de contenido explícito"
@@ -155,21 +181,19 @@ export default function SettingsPage() {
           <h2 className="font-bold text-text-primary">Filtros Avanzados de Artistas</h2>
         </div>
 
-        <div>
+        <div className="border-t border-white/5 pt-4">
           <div className="flex items-center gap-2 mb-2">
-            <List size={14} className="text-success" />
-            <label className="text-sm font-semibold text-success">Lista Blanca de Artistas</label>
+            <Ban size={14} className="text-danger" />
+            <label className="text-sm font-semibold text-danger">Lista Negra de Canciones</label>
           </div>
-          <p className="text-xs text-text-muted mb-2">Solo se permitirán canciones de estos artistas (deja vacío para no filtrar)</p>
-          <ArtistTagInput
-            tags={whitelistArtists}
-            onAdd={addWhitelistArtist}
-            onRemove={removeWhitelistArtist}
-            placeholder="Ej: Bad Bunny, Dua Lipa, Feid..."
+          <p className="text-xs text-text-muted mb-2">Las canciones con estos nombres serán bloqueadas automáticamente</p>
+          <TagInput
+            tags={blacklistSongs}
+            onAdd={addBlacklistSong}
+            onRemove={removeBlacklistSong}
+            placeholder="Ej: Despacito, Tusa, Baby..."
           />
         </div>
-
-        <div className="border-t border-white/5 pt-4">
           <div className="flex items-center gap-2 mb-2">
             <Ban size={14} className="text-danger" />
             <label className="text-sm font-semibold text-danger">Lista Negra de Artistas</label>

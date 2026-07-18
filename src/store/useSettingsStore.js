@@ -10,10 +10,12 @@ export const useSettingsStore = create(
       startTime: '19:00',
       endTime: '03:00',
       allowRepeats: true,
+      cooldownEnabled: true,
+      cooldownMinutes: 10,
       explicitFilter: false,
       whitelistGenres: [],
       blacklistGenres: [],
-      whitelistArtists: [],
+      blacklistSongs: [],
       blacklistArtists: [],
       requestsPerHour: 15,
 
@@ -27,6 +29,8 @@ export const useSettingsStore = create(
       setStartTime: (t) => set({ startTime: t }),
       setEndTime: (t) => set({ endTime: t }),
       setAllowRepeats: (v) => set({ allowRepeats: v }),
+      setCooldownEnabled: (v) => set({ cooldownEnabled: v }),
+      setCooldownMinutes: (v) => set({ cooldownMinutes: v }),
       setExplicitFilter: (v) => set({ explicitFilter: v }),
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       addWhitelistGenre: (g) =>
@@ -37,10 +41,10 @@ export const useSettingsStore = create(
         set((s) => ({ blacklistGenres: [...new Set([...s.blacklistGenres, g])] })),
       removeBlacklistGenre: (g) =>
         set((s) => ({ blacklistGenres: s.blacklistGenres.filter((x) => x !== g) })),
-      addWhitelistArtist: (a) =>
-        set((s) => ({ whitelistArtists: [...new Set([...s.whitelistArtists, a])] })),
-      removeWhitelistArtist: (a) =>
-        set((s) => ({ whitelistArtists: s.whitelistArtists.filter((x) => x !== a) })),
+      addBlacklistSong: (song) =>
+        set((s) => ({ blacklistSongs: [...new Set([...s.blacklistSongs, song])] })),
+      removeBlacklistSong: (song) =>
+        set((s) => ({ blacklistSongs: s.blacklistSongs.filter((x) => x !== song) })),
       addBlacklistArtist: (a) =>
         set((s) => ({ blacklistArtists: [...new Set([...s.blacklistArtists, a])] })),
       removeBlacklistArtist: (a) =>

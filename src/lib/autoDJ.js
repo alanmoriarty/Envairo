@@ -39,7 +39,7 @@ async function getArtistGenres(artistId) {
 export async function evaluateTrack(track, settings) {
   const { 
     blacklistGenres = [], 
-    whitelistArtists = [], 
+    blacklistSongs = [], 
     blacklistArtists = [], 
     allowRepeats = false 
   } = settings;
@@ -54,18 +54,13 @@ export async function evaluateTrack(track, settings) {
     }
   }
 
-  // 2. Whitelist Artists (Si hay whitelist, SOLO se permiten esos artistas)
-  if (whitelistArtists.length > 0) {
-    const allowedArtists = whitelistArtists.map(a => normalizeString(a.name || a));
-    let isAllowed = false;
-    for (const name of trackArtistNames) {
-      if (allowedArtists.includes(name)) {
-        isAllowed = true;
-        break;
-      }
-    }
-    if (!isAllowed) {
-      return { approved: false, reason: `Ninguno de los artistas está en la lista blanca permitida.` };
+  // 2. Blacklist Songs
+  if (blacklistSongs && blacklistSongs.length > 0) {
+    const blocked = blacklistSongs.some(s => 
+      normalizeString(track.name).includes(normalizeString(s))
+    );
+    if (blocked) {
+      return { approved: false, reason: 'Canción en lista negra' };
     }
   }
 

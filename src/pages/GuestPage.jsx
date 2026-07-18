@@ -39,7 +39,7 @@ export default function GuestPage() {
   const isAvailable = sessionConfig?.active ?? true;
   const isCommercial = sessionConfig?.mode === 'commercial';
   const blacklistGenres = sessionConfig?.blacklist_genres || [];
-  const whitelistArtists = sessionConfig?.whitelist_artists || [];
+  const blacklistSongs = sessionConfig?.blacklist_songs || [];
   const blacklistArtists = sessionConfig?.blacklist_artists || [];
   const allowRepeats = sessionConfig?.allow_repeats ?? true;
 
@@ -89,13 +89,20 @@ export default function GuestPage() {
         if (reqs.length > 0) {
           const lastReq = reqs[reqs.length - 1];
           const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
-          if (secondsSinceLast < COOLDOWN_SECONDS) {
-            setCooldown(COOLDOWN_SECONDS - secondsSinceLast);
+          
+          const cooldownEnabled = sessionConfig?.cooldown_enabled ?? true;
+          const cooldownMinutes = sessionConfig?.cooldown_minutes ?? 10;
+          const cooldownSeconds = cooldownMinutes * 60;
+          
+          if (cooldownEnabled && secondsSinceLast < cooldownSeconds) {
+            setCooldown(cooldownSeconds - secondsSinceLast);
+          } else if (!cooldownEnabled) {
+            setCooldown(0);
           }
         }
       }
     } catch (e) {}
-  }, [sessionId]);
+  }, [sessionId, sessionConfig?.cooldown_enabled, sessionConfig?.cooldown_minutes]);
 
   // Cooldown countdown
   useEffect(() => {
@@ -151,13 +158,13 @@ export default function GuestPage() {
       }
     }
 
-    // Artist Whitelist check
-    if (whitelistArtists?.length > 0) {
-      const allowed = whitelistArtists.some((a) =>
-        selected.artists.toLowerCase().includes(a.toLowerCase())
+    // Song Blacklist check
+    if (blacklistSongs?.length > 0) {
+      const blocked = blacklistSongs.some((s) =>
+        selected.name.toLowerCase().includes(s.toLowerCase())
       );
-      if (!allowed) {
-        toast.error('El artista de esta canción no está permitido en esta sesión');
+      if (blocked) {
+        toast.error('Esta canción no está permitida en esta sesión');
         return;
       }
     }
@@ -223,7 +230,12 @@ export default function GuestPage() {
       setSelected(null);
       setQuery('');
       setResults([]);
-      setCooldown(COOLDOWN_SECONDS);
+      
+      const cooldownEnabled = sessionConfig?.cooldown_enabled ?? true;
+      const cooldownMinutes = sessionConfig?.cooldown_minutes ?? 10;
+      if (cooldownEnabled) {
+        setCooldown(cooldownMinutes * 60);
+      }
     };
 
     await sendRequest();
