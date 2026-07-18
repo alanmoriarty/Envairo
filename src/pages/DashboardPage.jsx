@@ -208,6 +208,7 @@ export default function DashboardPage() {
             if (result.approved) {
               store.approveRequest(newReq.id);
               toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
+              await supabase.from('requests').update({ status: 'approved' }).eq('id', newReq.id);
             } else {
               store.rejectRequest(newReq.id);
               toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
@@ -236,6 +237,7 @@ export default function DashboardPage() {
   const handleApprove = async (reqId, trackName) => {
     approveRequest(reqId);
     toast.success(`"${trackName}" añadida a la playlist`);
+    await supabase.from('requests').update({ status: 'approved' }).eq('id', reqId);
     
     // Auto-play if nothing is currently playing
     const state = usePlayerStore.getState();
@@ -248,9 +250,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleReject = (reqId, trackName) => {
+  const handleReject = async (reqId, trackName) => {
     rejectRequest(reqId);
     toast.error(`"${trackName}" rechazada`);
+    await supabase.from('requests').update({ status: 'rejected' }).eq('id', reqId);
   };
 
   const handlePlayNow = async (track) => {
