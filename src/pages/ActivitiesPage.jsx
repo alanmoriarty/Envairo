@@ -254,7 +254,7 @@ export default function ActivitiesPage() {
             ) : lyricsError ? (
               <p className="text-text-muted text-sm">{lyricsError}</p>
             ) : lyricsLines.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-1 w-full min-w-0 overflow-hidden">
                 <p className="text-lg font-bold text-text-primary leading-relaxed truncate px-4">
                   {isSynced ? lyricsLines[Math.max(0, activeLineIndex)]?.text : lyricsLines[0]}
                 </p>
@@ -280,56 +280,80 @@ export default function ActivitiesPage() {
       {karaokeOpen && (
         <div
           ref={karaokeRef}
-          className="fixed inset-0 z-[100] bg-bg-root flex flex-col items-center justify-center text-center p-8"
-          style={{ background: 'radial-gradient(ellipse at center, #1E1830 0%, #0D0B14 100%)' }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
-          <button
-            onClick={() => setKaraokeOpen(false)}
-            className="absolute top-6 right-6 btn-ghost"
-          >
-            <X size={24} />
-          </button>
-
-          {currentTrack && (
-            <div className="mb-8">
-              <p className="text-text-muted text-sm mb-1">Reproduciendo</p>
-              <p className="text-xl font-bold text-text-primary">{currentTrack.name}</p>
-              <p className="text-text-muted">{currentTrack.artists}</p>
+          {/* Animated Background */}
+          {currentTrack?.image && (
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+              <img 
+                src={currentTrack.image} 
+                alt="" 
+                className="absolute inset-0 w-full h-full object-cover opacity-40 animate-pulse-slow"
+                style={{ 
+                  filter: 'blur(80px) saturate(200%)',
+                  transform: 'scale(1.2)'
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
             </div>
           )}
 
-          <div 
-            ref={lyricsContainerRef}
-            className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 scroll-smooth no-scrollbar"
-          >
-            <div className="space-y-8 pt-32 pb-64 text-center">
-              {lyricsLoading ? (
-                <p className="text-2xl text-text-muted animate-pulse">Cargando letras...</p>
-              ) : lyricsError ? (
-                <p className="text-2xl text-text-muted">{lyricsError}</p>
-              ) : (
-                lyricsLines.map((line, i) => {
-                  const isActive = isSynced ? i === activeLineIndex : false;
-                  const isPast = isSynced ? i < activeLineIndex : false;
-                  const lineText = isSynced ? line.text : line;
-                  
-                  return (
-                    <p
-                      key={i}
-                      id={`lyric-line-${i}`}
-                      className={`font-bold text-3xl md:text-5xl transition-all duration-300 ${
-                        isSynced 
-                          ? (isActive ? 'text-accent scale-105' : isPast ? 'text-white/40' : 'text-white/80')
-                          : 'text-white/90 hover:text-accent'
-                      }`}
-                      style={{ textShadow: isActive ? '0 0 20px rgba(157, 78, 221, 0.5)' : '0 4px 20px rgba(0,0,0,0.5)' }}
-                    >
-                      {lineText}
-                    </p>
-                  );
-                })
-              )}
-            </div>
+          <div className="relative z-10 w-full flex-1 flex flex-col">
+            <button
+              onClick={() => setKaraokeOpen(false)}
+              className="absolute top-6 right-6 btn-ghost z-20"
+            >
+              <X size={24} />
+            </button>
+
+            {!currentTrack ? (
+              <div className="flex-1 flex flex-col items-center justify-center w-full h-full">
+                <Mic2 size={64} className="text-accent/30 mb-6 animate-bounce" />
+                <p className="text-4xl font-bold text-white/50 animate-pulse">Preparando pista...</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-8 mt-4">
+                  <p className="text-text-muted text-sm mb-1">Reproduciendo</p>
+                  <p className="text-xl font-bold text-text-primary">{currentTrack.name}</p>
+                  <p className="text-text-muted">{currentTrack.artists}</p>
+                </div>
+
+                <div 
+                  ref={lyricsContainerRef}
+                  className="flex-1 w-full max-w-4xl overflow-y-auto mt-4 px-4 pb-32 scroll-smooth no-scrollbar"
+                >
+                  <div className="space-y-8 pt-32 pb-64 text-center">
+                    {lyricsLoading ? (
+                      <p className="text-2xl text-text-muted animate-pulse">Cargando letras...</p>
+                    ) : lyricsError ? (
+                      <p className="text-2xl text-text-muted">{lyricsError}</p>
+                    ) : (
+                      lyricsLines.map((line, i) => {
+                        const isActive = isSynced ? i === activeLineIndex : false;
+                        const isPast = isSynced ? i < activeLineIndex : false;
+                        const lineText = isSynced ? line.text : line;
+                        
+                        return (
+                          <p
+                            key={i}
+                            id={`lyric-line-${i}`}
+                            className={`font-bold text-3xl md:text-5xl transition-all duration-300 ${
+                              isSynced 
+                                ? (isActive ? 'text-accent scale-105' : isPast ? 'text-white/40' : 'text-white/80')
+                                : 'text-white/90 hover:text-accent'
+                            }`}
+                            style={{ textShadow: isActive ? '0 0 20px rgba(157, 78, 221, 0.5)' : '0 4px 20px rgba(0,0,0,0.5)' }}
+                          >
+                            {lineText}
+                          </p>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
