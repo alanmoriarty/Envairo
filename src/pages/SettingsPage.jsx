@@ -83,7 +83,7 @@ export default function SettingsPage() {
     alwaysAvailable, setAlwaysAvailable,
     startTime, setStartTime,
     endTime, setEndTime,
-    allowRepeats, setAllowRepeats,
+    repeatCooldown, setRepeatCooldown,
     cooldownEnabled, setCooldownEnabled,
     cooldownMinutes, setCooldownMinutes,
     explicitFilter, setExplicitFilter,
@@ -208,12 +208,23 @@ export default function SettingsPage() {
           <h2 className="font-bold text-text-primary">Filtros Generales</h2>
         </div>
 
-        <Toggle
-          checked={allowRepeats}
-          onChange={setAllowRepeats}
-          label="Permitir repeticiones"
-          description="Los invitados pueden pedir canciones que ya estuvieron en cola"
-        />
+        <div className="flex items-center justify-between p-1">
+          <div>
+            <p className="font-semibold text-text-primary text-sm">Filtro de Repeticiones</p>
+            <p className="text-xs text-text-muted mt-0.5">Tiempo antes de poder pedir una canción ya sonada</p>
+          </div>
+          <select
+            value={repeatCooldown}
+            onChange={(e) => setRepeatCooldown(Number(e.target.value))}
+            className="bg-bg-base border border-white/10 rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
+          >
+            <option value="-1">Permitir siempre</option>
+            <option value="30">Bloquear 30 min</option>
+            <option value="60">Bloquear 1 hora</option>
+            <option value="120">Bloquear 2 horas</option>
+            <option value="0">Bloquear toda la sesión</option>
+          </select>
+        </div>
 
         <div className="border-t border-white/5 pt-4">
           <Toggle

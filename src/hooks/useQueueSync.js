@@ -226,7 +226,7 @@ export function useQueueSync() {
     if (!sessionId) return;
 
     const syncSession = async () => {
-      const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
+      const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
 
       const secret = useSettingsStore.getState().hostSecret;
@@ -266,6 +266,8 @@ export function useQueueSync() {
               blacklist_songs: blacklistSongs,
               blacklist_artists: blacklistArtists,
               allow_repeats: allowRepeats,
+              repeat_cooldown: state.repeatCooldown,
+              repeat_cooldown: repeatCooldown,
               cooldown_enabled: cooldownEnabled,
               cooldown_minutes: cooldownMinutes,
               table_count: tableCount,
@@ -286,6 +288,7 @@ export function useQueueSync() {
           blacklist_songs: blacklistSongs,
           blacklist_artists: blacklistArtists,
           allow_repeats: allowRepeats,
+          repeat_cooldown: repeatCooldown,
           cooldown_enabled: cooldownEnabled,
           cooldown_minutes: cooldownMinutes,
           table_count: tableCount,

@@ -189,23 +189,31 @@ export default function GuestPage() {
       }
     }
 
-    // Allow Repeats check
-    if (!allowRepeats) {
+    // Check if recently played (repeat cooldown logic)
+    const repeatCooldown = sessionConfig?.repeat_cooldown ?? -1;
+    if (repeatCooldown !== -1) {
       const alreadyInQueue = queue.some(t => t.id === selected.id);
       const alreadyPending = pendingRequests.some(r => r.track.id === selected.id);
-      
-      const threeHoursMs = 3 * 60 * 60 * 1000;
-      const now = Date.now();
-      const alreadyInHistory = playHistory.some(t => {
-        if (t.id !== selected.id) return false;
-        if (!t.playedAt) return true; // Si no tiene fecha, asumimos que fue reciente
-        const playedTime = new Date(t.playedAt).getTime();
-        return (now - playedTime) < threeHoursMs;
-      });
-
-      if (alreadyInQueue || alreadyInHistory || alreadyPending) {
-        toast.error('Esta canción ya fue pedida o reproducida hace poco tiempo');
+      if (alreadyInQueue || alreadyPending) {
+        toast.error('Esta canción ya está en la cola o en espera');
         return;
+      }
+
+      const historyTrack = playHistory.find(t => t.id === selected.id);
+      if (historyTrack && historyTrack.playedAt) {
+        const playedTime = new Date(historyTrack.playedAt).getTime();
+        const now = Date.now();
+        const diffMinutes = (now - playedTime) / (1000 * 60);
+
+        if (repeatCooldown === 0 || diffMinutes < repeatCooldown) {
+          if (repeatCooldown === 0) {
+            toast.error('Esta canción ya fue reproducida en esta sesión');
+          } else {
+            const remaining = Math.ceil(repeatCooldown - diffMinutes);
+            toast.error(`Esta canción sonó hace poco. Disponible en ${remaining} min.`);
+          }
+          return;
+        }
       }
     }
 

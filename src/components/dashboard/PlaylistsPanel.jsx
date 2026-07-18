@@ -6,17 +6,54 @@ import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
+// Función auxiliar para formatear la fecha como "Hoy", "Ayer", o "DD/MM/YYYY"
+function formatDateLabel(dateString) {
+  if (!dateString) return 'Desconocido';
+  
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (date.toDateString() === today.toDateString()) return 'Hoy';
+  if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+  
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
 export function PlaylistsPanel() {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [playlistLink, setPlaylistLink] = useState('');
+  
   const { controls } = useSpotifySDK();
   const sdkReady = usePlayerStore((s) => s.sdkReady);
   const setQueue = usePlayerStore((s) => s.setQueue);
   const shiftQueue = usePlayerStore((s) => s.shiftQueue);
+  const playHistory = usePlayerStore((s) => s.playHistory || []);
   const sessionId = useSettingsStore(s => s.sessionId);
+
+  // Agrupar historial por días
+  const historyByDay = React.useMemo(() => {
+    const groups = {};
+    playHistory.forEach(track => {
+      const label = formatDateLabel(track.playedAt);
+      if (!groups[label]) groups[label] = [];
+      // Evitar duplicados exactos en el mismo día
+      if (!groups[label].some(t => t.id === track.id)) {
+        groups[label].push(track);
+      }
+    });
+    return Object.entries(groups).map(([label, tracks]) => ({
+      id: `history-${label}`,
+      name: `Historial: ${label}`,
+      isHistory: true,
+      tracks,
+      images: tracks.length > 0 && tracks[0].image ? [{ url: tracks[0].image }] : []
+    }));
+  }, [playHistory]);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,8 +104,14 @@ export function PlaylistsPanel() {
     const toastId = toast.loading(`Importando "${playlist.name}"...`);
 
     try {
-      const res = await getPlaylistTracks(playlist.id, 100);
-      const items = res?.items || [];
+      let items = [];
+      if (playlist.isHistory) {
+        // La playlist del historial ya tiene las pistas cargadas
+        items = playlist.tracks.map(t => ({ track: { ...t, is_local: false, album: { images: [{ url: t.image }] }, artists: [{ name: t.artists }] } }));
+      } else {
+        const res = await getPlaylistTracks(playlist.id, 100);
+        items = res?.items || [];
+      }
       
       const tracksToQueue = items
         .filter(item => item.track && !item.track.is_local)
@@ -79,7 +122,7 @@ export function PlaylistsPanel() {
           artists: item.track.artists.map((a) => a.name).join(', '),
           image: item.track.album.images[0]?.url,
           duration_ms: item.track.duration_ms,
-          requestedBy: 'Host (Playlist)',
+          requestedBy: playlist.isHistory ? 'Host (Historial)' : 'Host (Playlist)',
           queueId: crypto.randomUUID()
         }));
 
@@ -216,6 +259,58 @@ export function PlaylistsPanel() {
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="font-bold text-text-primary flex items-center gap-2">
+          Historial de Sesiones Anteriores
+          <span className="badge bg-bg-elevated text-text-muted">{historyByDay.length}</span>
+        </h2>
+      </div>
+
+      <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-48 mb-6">
+        {historyByDay.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-text-muted text-sm">Aún no hay canciones en tu historial</p>
+          </div>
+        ) : (
+          historyByDay.map((pl) => (
+            <div
+              key={pl.id}
+              className={`group p-3 rounded-xl bg-bg-elevated border border-white/5 hover:border-accent/30 transition-all flex items-center gap-3 cursor-pointer ${importing ? 'opacity-50 pointer-events-none' : ''}`}
+              onClick={() => handleSelectPlaylist(pl)}
+            >
+              {pl.images && pl.images.length > 0 ? (
+                <img
+                  src={pl.images[0].url}
+                  alt={pl.name}
+                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0 shadow-md"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-bg-card flex items-center justify-center flex-shrink-0">
+                  <ListMusic size={16} className="text-text-muted" />
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
+                <p className="text-xs text-text-muted truncate mt-0.5">
+                  {pl.tracks.length} canciones
+                </p>
+              </div>
+
+              <button 
+                className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectPlaylist(pl);
+                }}
+              >
+                <Play size={14} fill="currentColor" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+        <h2 className="font-bold text-text-primary flex items-center gap-2">
           Tus Playlists
           <span className="badge bg-bg-elevated text-text-muted">{playlists.length}</span>
         </h2>
@@ -248,11 +343,20 @@ export function PlaylistsPanel() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
+                <p className="text-xs text-text-muted truncate mt-0.5">
+                  {pl.tracks?.total || 0} canciones
+                </p>
               </div>
 
-              <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:scale-110 shadow-glow-sm">
-                <Play size={14} className="ml-0.5" />
-              </div>
+              <button 
+                className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectPlaylist(pl);
+                }}
+              >
+                <Play size={14} fill="currentColor" />
+              </button>
             </div>
           ))
         )}

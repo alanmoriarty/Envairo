@@ -9,7 +9,8 @@ export const useSettingsStore = create(
       alwaysAvailable: true,
       startTime: '19:00',
       endTime: '03:00',
-      allowRepeats: true,
+      allowRepeats: true, // DEPRECATED: use repeatCooldown instead
+      repeatCooldown: -1, // -1 = always allow, 0 = block forever, >0 = minutes
       cooldownEnabled: true,
       cooldownMinutes: 10,
       explicitFilter: false,
@@ -46,7 +47,8 @@ export const useSettingsStore = create(
       setAlwaysAvailable: (v) => set({ alwaysAvailable: v }),
       setStartTime: (t) => set({ startTime: t }),
       setEndTime: (t) => set({ endTime: t }),
-      setAllowRepeats: (v) => set({ allowRepeats: v }),
+      setAllowRepeats: (v) => set({ allowRepeats: v }), // DEPRECATED
+      setRepeatCooldown: (v) => set({ repeatCooldown: v }),
       setCooldownEnabled: (v) => set({ cooldownEnabled: v }),
       setCooldownMinutes: (v) => set({ cooldownMinutes: v }),
       setExplicitFilter: (v) => set({ explicitFilter: v }),
