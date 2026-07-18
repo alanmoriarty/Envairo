@@ -282,34 +282,29 @@ export default function ActivitiesPage() {
           ref={karaokeRef}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-8 overflow-hidden bg-bg-root"
         >
-          {/* Animated Background */}
-          <style>{`
-            @keyframes bg-pulse {
-              0%, 100% { opacity: 0.2; transform: scale(1.1); }
-              50% { opacity: 0.5; transform: scale(1.3); }
-            }
-            .animate-bg-pulse {
-              animation: bg-pulse 8s ease-in-out infinite;
-            }
-          `}</style>
-          <div className="fixed inset-0 z-0 pointer-events-none bg-bg-root">
+          {/* Static Background */}
+          <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-bg-root">
             {currentTrack?.image ? (
               <img 
                 src={currentTrack.image} 
                 alt="" 
-                className="absolute inset-0 w-full h-full object-cover animate-bg-pulse"
-                style={{ filter: 'blur(80px) saturate(200%)' }}
+                className="absolute inset-0 w-full h-full object-cover opacity-40"
+                style={{ 
+                  filter: 'blur(80px) saturate(200%)',
+                  transform: 'scale(1.2)'
+                }}
               />
             ) : (
               <div 
-                className="absolute inset-0 w-full h-full animate-bg-pulse" 
+                className="absolute inset-0 w-full h-full opacity-40" 
                 style={{ 
                   background: 'radial-gradient(ellipse at center, #9D4EDD 0%, #1E1830 100%)', 
-                  filter: 'blur(60px)'
+                  filter: 'blur(60px)',
+                  transform: 'scale(1.2)'
                 }}
               ></div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/80 to-black"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90"></div>
           </div>
 
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
