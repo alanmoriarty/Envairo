@@ -191,10 +191,19 @@ export default function GuestPage() {
     // Allow Repeats check
     if (!allowRepeats) {
       const alreadyInQueue = queue.some(t => t.id === selected.id);
-      const alreadyInHistory = playHistory.some(t => t.id === selected.id);
       const alreadyPending = pendingRequests.some(r => r.track.id === selected.id);
+      
+      const threeHoursMs = 3 * 60 * 60 * 1000;
+      const now = Date.now();
+      const alreadyInHistory = playHistory.some(t => {
+        if (t.id !== selected.id) return false;
+        if (!t.playedAt) return true; // Si no tiene fecha, asumimos que fue reciente
+        const playedTime = new Date(t.playedAt).getTime();
+        return (now - playedTime) < threeHoursMs;
+      });
+
       if (alreadyInQueue || alreadyInHistory || alreadyPending) {
-        toast.error('Esta canción ya fue pedida o reproducida y no se admiten repeticiones');
+        toast.error('Esta canción ya fue pedida o reproducida hace poco tiempo');
         return;
       }
     }
