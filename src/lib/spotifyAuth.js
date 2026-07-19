@@ -65,7 +65,7 @@ export async function getValidToken() {
     try {
       await refreshSpotifyToken();
     } catch {
-      localStorage.clear();
+      clearSpotifyTokens();
       return null;
     }
   }

@@ -157,27 +157,20 @@ function shuffle(arr) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function ActivityCard({ icon, title, color, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
+function ActivityCard({ icon, title, color, children }) {
   return (
     <div className="card overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors shrink-0"
-      >
+      <div className="w-full flex items-center justify-between p-5 text-left shrink-0">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
             {icon}
           </div>
           <h2 className="font-bold text-text-primary">{title}</h2>
         </div>
-        {open ? <ChevronUp size={18} className="text-text-muted" /> : <ChevronDown size={18} className="text-text-muted" />}
-      </button>
-      {open && (
-        <div className="px-5 pb-5 border-t border-white/5 pt-4 animate-slide-up">
-          {children}
-        </div>
-      )}
+      </div>
+      <div className="px-5 pb-5 border-t border-white/5 pt-4">
+        {children}
+      </div>
     </div>
   );
 }
@@ -805,7 +798,6 @@ export default function ActivitiesPage() {
             icon={<PartyPopper size={18} className="text-yellow-300" />}
             title={t('activities.challenge_title')}
             color="bg-yellow-500/15"
-            defaultOpen
           >
             <ChallengeCard currentTrack={currentTrack} />
           </ActivityCard>
