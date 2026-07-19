@@ -81,14 +81,20 @@ export default function GuestPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
         try {
-          const { data, error } = await supabase.functions.invoke('search-spotify', {
-            body: { query, limit: 6 }
-          });
-          if (error) throw error;
-          const items = data?.tracks?.items || [];
-          setResults(items.map(normalizeApiTrack));
+          if (sessionConfig?.playback_engine === 'youtube') {
+            const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+            const results = await searchYouTubeVideos(query, 6);
+            setResults(results.map(normalizeApiTrack));
+          } else {
+            const { data, error } = await supabase.functions.invoke('search-spotify', {
+              body: { query, limit: 6 }
+            });
+            if (error) throw error;
+            const items = data?.tracks?.items || [];
+            setResults(items.map(normalizeApiTrack));
+          }
         } catch (err) {
-          setResults(getMockResults(query));
+          setResults([]);
         } finally {
           setSearching(false);
         }
@@ -241,9 +247,18 @@ export default function GuestPage() {
         return;
       }
 
+      let finalTrack = selected;
+      if (selected.source === 'youtube' && selected.duration_ms === 0) {
+        try {
+          const { getYouTubeVideoDetails } = await import('../lib/youtubeApi');
+          const details = await getYouTubeVideoDetails(selected.id);
+          if (details) finalTrack = details;
+        } catch (e) { console.error('Failed to get youtube details', e); }
+      }
+
       const { data, error } = await supabase.from('requests').insert({
         session_id: sessionId,
-        track: selected,
+        track: finalTrack,
         requester: identifier.trim() || 'Anónimo',
         status: 'pending'
       }).select().single();

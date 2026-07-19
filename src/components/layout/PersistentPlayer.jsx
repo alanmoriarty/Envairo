@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
+import { useYouTubeSDK } from '../../hooks/useYouTubeSDK';
 import {
   Play, Pause, SkipForward, SkipBack,
   Volume2, VolumeX, Music2, Wifi, WifiOff
@@ -11,9 +12,14 @@ export function PersistentPlayer() {
   const {
     currentTrack, isPlaying, progress, duration, volume,
     sdkReady, queue, pendingResume, setPendingResume,
-    setVolume, activeDeviceId, deviceId
+    setVolume, activeDeviceId, deviceId, playbackEngine
   } = usePlayerStore();
-  const { controls } = useSpotifySDK();
+  
+  const { controls: spotifyControls } = useSpotifySDK();
+  const { controls: youtubeControls, ytReady } = useYouTubeSDK();
+  
+  const controls = playbackEngine === 'spotify' ? spotifyControls : youtubeControls;
+  const isReady = playbackEngine === 'spotify' ? sdkReady : ytReady;
   const progressRef = useRef(null);
 
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
@@ -21,7 +27,8 @@ export function PersistentPlayer() {
   const { user } = useAuthStore.getState();
   const isPremium = user?.product === 'premium';
 
-  if (!isPremium) return null;
+  // Solo requerimos Premium si estamos usando Spotify
+  if (playbackEngine === 'spotify' && !isPremium) return null;
 
   const formatTime = (ms) => {
     const s = Math.floor(ms / 1000);
@@ -34,11 +41,19 @@ export function PersistentPlayer() {
     const pct = (e.clientX - rect.left) / rect.width;
     const posMs = Math.round(pct * duration);
     const state = usePlayerStore.getState();
-    const targetDevice = state.activeDeviceId || state.deviceId;
-    if (targetDevice) {
-      import('../../lib/spotifyApi').then(({ seekToPosition }) =>
-        seekToPosition(posMs, targetDevice)
-      );
+    
+    if (state.playbackEngine === 'youtube') {
+      if (state.youtubePlayer) {
+        state.youtubePlayer.seekTo(posMs / 1000, true);
+        usePlayerStore.getState().setProgress(posMs);
+      }
+    } else {
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      if (targetDevice) {
+        import('../../lib/spotifyApi').then(({ seekToPosition }) =>
+          seekToPosition(posMs, targetDevice)
+        );
+      }
     }
   };
 
@@ -51,11 +66,15 @@ export function PersistentPlayer() {
     clearTimeout(volumeDebounce.current);
     volumeDebounce.current = setTimeout(() => {
       const state = usePlayerStore.getState();
-      const targetDevice = state.activeDeviceId || state.deviceId;
-      if (targetDevice) {
-        import('../../lib/spotifyApi')
-          .then(({ setVolume: apiSetVolume }) => apiSetVolume(vol, targetDevice))
-          .catch((err) => console.error('Error setting volume:', err));
+      if (state.playbackEngine === 'youtube') {
+        if (state.youtubePlayer) state.youtubePlayer.setVolume(vol);
+      } else {
+        const targetDevice = state.activeDeviceId || state.deviceId;
+        if (targetDevice) {
+          import('../../lib/spotifyApi').then(({ setVolume: apiSetVolume }) =>
+            apiSetVolume(vol, targetDevice)
+          ).catch(console.error);
+        }
       }
     }, 300);
   };

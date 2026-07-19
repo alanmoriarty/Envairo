@@ -26,6 +26,7 @@ CREATE TABLE sessions (
   active_remote_id UUID, -- ID del control remoto activo (para kickout de remotos)
   playback_command JSONB, -- Comandos del control remoto: { action: 'play'|'pause'|'next'|'prev', ts: 1234 }
   volume INTEGER DEFAULT 70,
+  playback_engine TEXT DEFAULT 'spotify', -- Motor activo: 'spotify' o 'youtube'
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -78,6 +79,7 @@ BEGIN
       active_remote_id = COALESCE((p_updates->>'active_remote_id')::UUID, active_remote_id),
       playback_command = COALESCE(p_updates->'playback_command', playback_command),
       volume = COALESCE((p_updates->>'volume')::INTEGER, volume),
+      playback_engine = COALESCE((p_updates->>'playback_engine')::TEXT, playback_engine),
       updated_at = COALESCE((p_updates->>'updated_at')::TIMESTAMP WITH TIME ZONE, updated_at)
     WHERE id = p_session_id;
   ELSE

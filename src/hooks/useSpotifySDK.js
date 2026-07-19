@@ -31,10 +31,12 @@ export function useSpotifySDK() {
     deviceId,
     volume,
     queue,
+    playbackEngine,
   } = usePlayerStore();
   const isAdminMode = useSettingsStore(state => state.isAdminMode);
 
   useEffect(() => {
+    if (playbackEngine !== 'spotify') return;
     if (sdkInitialized || isAdminMode) return;
     sdkInitialized = true;
 

@@ -97,21 +97,36 @@ export function useEnairoSelector() {
         
         // Agregar nuevas canciones
         if (tracksToAdd.length > 0) {
-          // Ejecutar todas las búsquedas de Spotify en paralelo para ahorrar tiempo
+          // Ejecutar todas las búsquedas de Spotify/YouTube en paralelo para ahorrar tiempo
           const searchPromises = tracksToAdd.map(async (query) => {
             try {
-              const results = await searchTracks(query, 1);
-              if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
-                const spotifyTrack = results.tracks.items[0];
-                return {
-                  id: spotifyTrack.id,
-                  name: spotifyTrack.name,
-                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
-                  image: spotifyTrack.album?.images?.[0]?.url || '',
-                  duration_ms: spotifyTrack.duration_ms,
-                  uri: spotifyTrack.uri,
-                  addedBy: 'EnvAIro Selector'
-                };
+              const engine = usePlayerStore.getState().playbackEngine;
+              if (engine === 'youtube') {
+                const { searchYouTubeVideos, getYouTubeVideoDetails } = await import('../lib/youtubeApi');
+                const results = await searchYouTubeVideos(query, 1);
+                if (results && results.length > 0) {
+                  let track = results[0];
+                  if (track.duration_ms === 0) {
+                     const details = await getYouTubeVideoDetails(track.id);
+                     if (details) track = details;
+                  }
+                  track.addedBy = 'EnvAIro Selector';
+                  return track;
+                }
+              } else {
+                const results = await searchTracks(query, 1);
+                if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
+                  const spotifyTrack = results.tracks.items[0];
+                  return {
+                    id: spotifyTrack.id,
+                    name: spotifyTrack.name,
+                    artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                    image: spotifyTrack.album?.images?.[0]?.url || '',
+                    duration_ms: spotifyTrack.duration_ms,
+                    uri: spotifyTrack.uri,
+                    addedBy: 'EnvAIro Selector'
+                  };
+                }
               }
             } catch (err) {
               console.error("Error buscando canción recomendada por EnvAIro:", query, err);
@@ -131,12 +146,7 @@ export function useEnairoSelector() {
           if (!state.currentTrack && foundTracks.length > 0) {
             const nextTrack = state.shiftQueue();
             if (nextTrack) {
-              const targetDevice = state.activeDeviceId || state.deviceId;
-              if (targetDevice) {
-                import('../lib/spotifyApi').then(({ playTrack }) => {
-                  playTrack(nextTrack.uri, targetDevice).catch(console.error);
-                });
-              }
+              usePlayerStore.getState().playEngineTrack(nextTrack);
             }
           }
         }

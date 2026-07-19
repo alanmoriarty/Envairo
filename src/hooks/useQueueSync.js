@@ -142,19 +142,19 @@ export function useQueueSync() {
                   } else if (cmd.action === 'next') {
                     const nextTrack = usePlayerStore.getState().shiftQueue();
                     if (nextTrack) {
-                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [nextTrack.uri])).catch(()=>{});
+                      usePlayerStore.getState().playEngineTrack(nextTrack);
                     } else {
                       api.skipToNext(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'play_specific') {
                     const track = usePlayerStore.getState().playTrackFromQueue(cmd.queueId);
                     if (track) {
-                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [track.uri])).catch(()=>{});
+                      usePlayerStore.getState().playEngineTrack(track);
                     }
                   } else if (cmd.action === 'prev') {
                     const prevTrack = usePlayerStore.getState().prevQueue();
                     if (prevTrack) {
-                      import('../lib/spotifyApi').then(m => m.playTrack(targetDevice, [prevTrack.uri])).catch(()=>{});
+                      usePlayerStore.getState().playEngineTrack(prevTrack);
                     } else {
                       api.skipToPrevious(targetDevice).catch(() => {});
                     }

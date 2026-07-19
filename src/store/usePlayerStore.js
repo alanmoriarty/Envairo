@@ -11,6 +11,10 @@ export const usePlayerStore = create(
       sdkReady: false,
       initialSyncDone: false,
 
+      // YouTube Player
+      youtubePlayer: null,
+      playbackEngine: 'spotify', // 'spotify' | 'youtube'
+
       // Playback state
       currentTrack: null,
       isPlaying: false,
@@ -30,6 +34,8 @@ export const usePlayerStore = create(
 
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
+      setYoutubePlayer: (youtubePlayer) => set({ youtubePlayer }),
+      setPlaybackEngine: (playbackEngine) => set({ playbackEngine }),
       setDeviceId: (deviceId) => set({ deviceId }),
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),
@@ -157,6 +163,25 @@ export const usePlayerStore = create(
           return newQueue[index];
         }
         return null;
+      },
+
+      playEngineTrack: (track, progressMs = 0) => {
+        if (!track) return;
+        const state = get();
+        if (state.playbackEngine === 'youtube') {
+          if (state.youtubePlayer && track.id) {
+            // YouTube player takes seconds
+            state.youtubePlayer.loadVideoById(track.id, progressMs / 1000);
+            set({ isPlaying: true });
+          }
+        } else {
+          const targetDevice = state.activeDeviceId || state.deviceId;
+          if (targetDevice) {
+            import('../lib/spotifyApi').then(({ playTrack }) =>
+              playTrack(targetDevice, [track.uri], progressMs)
+            ).catch(console.error);
+          }
+        }
       },
 
       // ── History ──────────────────────────────────────────────────────────

@@ -38,12 +38,19 @@ export function AddSongModal({ onClose }) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query, limit: 10 }
-        });
-        if (error) throw error;
-        const items = data?.tracks?.items || [];
-        setResults(items.map(normalizeApiTrack));
+        const engine = usePlayerStore.getState().playbackEngine;
+        if (engine === 'youtube') {
+          const { searchYouTubeVideos } = await import('../../lib/youtubeApi');
+          const results = await searchYouTubeVideos(query, 10);
+          setResults(results.map(normalizeApiTrack));
+        } else {
+          const { data, error } = await supabase.functions.invoke('search-spotify', {
+            body: { query, limit: 10 }
+          });
+          if (error) throw error;
+          const items = data?.tracks?.items || [];
+          setResults(items.map(normalizeApiTrack));
+        }
       } catch (err) {
         console.error('Error buscando:', err);
       } finally {
@@ -54,9 +61,16 @@ export function AddSongModal({ onClose }) {
   }, [query]);
 
   const handleAddTrack = async (track) => {
+    let finalTrack = track;
+    if (track.source === 'youtube' && track.duration_ms === 0) {
+      const { getYouTubeVideoDetails } = await import('../../lib/youtubeApi');
+      const details = await getYouTubeVideoDetails(track.id);
+      if (details) finalTrack = details;
+    }
+
     const isQueueEmpty = queue.length === 0;
     const newTrack = {
-      ...track,
+      ...finalTrack,
       queueId: crypto.randomUUID(),
       requestedBy: 'Host'
     };
