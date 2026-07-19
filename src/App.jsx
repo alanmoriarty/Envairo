@@ -4,6 +4,7 @@ import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
+import { supabase } from './lib/supabase';
 import { toast } from 'sonner';
 
 export default function App() {
@@ -22,20 +23,24 @@ export default function App() {
   // Handle Spotify 401 Unauthorized errors globally
   useEffect(() => {
     let reconnecting = false;
-    const handleAuthError = () => {
+    const handleAuthError = async () => {
       if (reconnecting) return;
       reconnecting = true;
       toast.error('Tu sesión de Spotify ha expirado. Reconectando automáticamente...', {
         duration: 3000,
         position: 'top-center'
       });
-      clearSpotifyTokens(); // Asegurar que la sesión vieja se borre para forzar token nuevo
-      setTimeout(() => {
-        redirectToSpotifyAuth(false).catch((err) => {
-          console.error('Failed to silent reconnect', err);
-          reconnecting = false;
-        });
-      }, 1000);
+      
+      try {
+        // Debemos ESPERAR a que se cierre la sesión de Supabase
+        // para que la siguiente llamada a OAuth traiga un token nuevo
+        await supabase.auth.signOut();
+        clearSpotifyTokens();
+        await redirectToSpotifyAuth(false);
+      } catch (err) {
+        console.error('Failed to silent reconnect', err);
+        reconnecting = false;
+      }
     };
 
     window.addEventListener('spotify_auth_error', handleAuthError);
