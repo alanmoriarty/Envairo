@@ -791,9 +791,9 @@ export default function ActivitiesPage() {
         <p className="text-text-muted text-sm mt-1">{t('activities.subtitle')}</p>
       </div>
 
-      <div className="columns-1 md:columns-2 xl:columns-3 gap-4 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
         {/* Retos */}
-        <div className="break-inside-avoid">
+        <div className="w-full">
           <ActivityCard
             icon={<PartyPopper size={18} className="text-yellow-300" />}
             title={t('activities.challenge_title')}
@@ -804,7 +804,7 @@ export default function ActivitiesPage() {
         </div>
 
         {/* ¿Quién la pidió? */}
-        <div className="break-inside-avoid">
+        <div className="w-full">
           <ActivityCard
             icon={<Users size={18} className="text-blue-300" />}
             title={t('activities.guesswho_title')}
@@ -815,7 +815,7 @@ export default function ActivitiesPage() {
         </div>
 
         {/* Trivia Musical */}
-        <div className="break-inside-avoid">
+        <div className="w-full">
           <ActivityCard
             icon={<HelpCircle size={18} className="text-green-300" />}
             title={t('activities.trivia_title')}
@@ -826,7 +826,7 @@ export default function ActivitiesPage() {
         </div>
 
         {/* Juego de la Silla */}
-        <div className="break-inside-avoid">
+        <div className="w-full">
           <ActivityCard
             icon={<Timer size={18} className="text-red-300" />}
             title={t('activities.chair_title')}
@@ -837,7 +837,7 @@ export default function ActivitiesPage() {
         </div>
 
         {/* Karaoke */}
-        <div className="break-inside-avoid">
+        <div className="w-full">
           <ActivityCard
             icon={<Mic2 size={18} className="text-accent" />}
             title={t('activities.karaoke_title')}

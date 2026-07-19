@@ -159,10 +159,13 @@ export default function GuestPage() {
 
 
 
+    const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+
     // Blacklist genre check
     if (blacklistGenres.length > 0 && selected.genre) {
+      const normalizedTrackGenre = normalize(selected.genre);
       const blocked = blacklistGenres.some((g) =>
-        selected.genre?.toLowerCase().includes(g.toLowerCase())
+        normalizedTrackGenre.includes(normalize(g)) || normalize(g).includes(normalizedTrackGenre)
       );
       if (blocked) {
         toast.error(t('guest.error_genre'));
@@ -172,8 +175,9 @@ export default function GuestPage() {
 
     // Song Blacklist check
     if (blacklistSongs?.length > 0) {
+      const normalizedTrackName = normalize(selected.name);
       const blocked = blacklistSongs.some((s) =>
-        selected.name.toLowerCase().includes(s.toLowerCase())
+        normalizedTrackName.includes(normalize(s)) || normalize(s).includes(normalizedTrackName)
       );
       if (blocked) {
         toast.error(t('guest.error_song'));
@@ -183,8 +187,9 @@ export default function GuestPage() {
 
     // Artist Blacklist check
     if (blacklistArtists?.length > 0) {
+      const normalizedTrackArtist = normalize(selected.artists);
       const blocked = blacklistArtists.some((a) =>
-        selected.artists.toLowerCase().includes(a.toLowerCase())
+        normalizedTrackArtist.includes(normalize(a)) || normalize(a).includes(normalizedTrackArtist)
       );
       if (blocked) {
         toast.error(t('guest.error_artist'));
