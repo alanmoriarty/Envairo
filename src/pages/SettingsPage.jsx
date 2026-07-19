@@ -8,18 +8,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
 
 const COMMON_GENRES = [
-  "Acústico", "Afrobeats", "Alternativo", "Ambient", "Anime", "Bachata", 
-  "Banda", "Blues", "Bolero", "Cantautor", "Clásica", "Corridos", 
-  "Corridos Tumbados", "Country", "Cumbia", "Dance", "Dancehall", 
-  "Dubstep", "Electrónica", "Folk", "Funk", "Gospel", "Heavy Metal", 
-  "Hip-Hop", "House", "Indie", "Indie Pop", "Indie Rock", "J-Pop", 
-  "Jazz", "K-Pop", "Latino", "Lofi", "Mariachi", "Merengue", "Metal", 
-  "Música Cristiana", "Música Infantil", "Música Mexicana", "Norteño", 
-  "Pop", "Pop Latino", "Punk", "R&B", "Ranchera", "Rap", "Reggae", 
-  "Reggaeton", "Regional Mexicano", "Rock", "Rock Latino", "Salsa", 
-  "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Trap Latino", 
-  "Tropical", "Urbano latino", "Vallenato"
-];
+// Se cargan los géneros comunes desde el useLanguageStore
 
 // Mapeo de géneros relacionados para agregarlos en grupo
 const GENRE_ALIASES = {
@@ -44,7 +33,23 @@ const GENRE_ALIASES = {
   "dance": ["dance", "electrónica", "edm", "club"],
   "house": ["house", "electrónica", "dance"],
   "techno": ["techno", "electrónica", "dance"],
-  "lofi": ["lofi", "lo-fi", "chill", "ambient", "electrónica"],
+  "lofi": ["lofi", "ambient", "chill", "instrumental hip-hop"],
+
+  // English aliases to map translated genres to the same groups
+  "latin urban": ["urbano latino", "reggaeton", "música latina", "latin urban", "trap latino"],
+  "latin trap": ["trap latino", "trap", "urbano latino", "reggaeton", "música latina"],
+  "latin pop": ["pop latino", "pop", "latino", "latin pop"],
+  "latin rock": ["rock latino", "rock", "latino", "latin rock", "rock en español"],
+  "alternative": ["alternativo", "alternative", "indie", "rock alternativo"],
+  "electronic": ["electrónica", "electronic", "dance", "house", "techno", "edm", "trance", "dubstep"],
+  "regional mexican": ["regional mexicano", "banda", "norteño", "mariachi", "corridos", "corridos tumbados", "ranchera"],
+  "mexican music": ["música mexicana", "regional mexicano", "banda", "norteño"],
+  "acoustic": ["acústico", "acoustic", "cantautor", "folk", "unplugged"],
+  "singer-songwriter": ["cantautor", "acústico", "folk", "singer-songwriter"],
+  "classical": ["clásica", "classical", "instrumental"],
+  "christian music": ["música cristiana", "christian", "gospel", "worship"],
+  "children's music": ["música infantil", "children's music", "kids", "disney"],
+  "latin": ["latino", "latin pop", "latin rock", "latin urban"],
   
   // Hip-Hop, R&B y Soul
   "hip-hop": ["hip-hop", "rap", "hip hop", "r&b", "trap"],
@@ -100,6 +105,8 @@ export default function SettingsPage() {
     enairoTestMode, setEnairoTestMode,
   } = useSettingsStore();
   const { t } = useTranslation();
+  
+  const COMMON_GENRES = t('settings.common_genres') || [];
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
 

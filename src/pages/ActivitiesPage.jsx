@@ -798,7 +798,7 @@ export default function ActivitiesPage() {
         <p className="text-text-muted text-sm mt-1">{t('activities.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Retos */}
         <ActivityCard
           icon={<PartyPopper size={18} className="text-yellow-300" />}

@@ -37,8 +37,10 @@ export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...', su
     inputRef.current?.focus();
   };
 
+  const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const filteredSuggestions = suggestions.filter(
-    s => s.toLowerCase().includes(input.toLowerCase()) && !tags.includes(s.toLowerCase())
+    s => normalize(s).includes(normalize(input)) && !tags.includes(s.toLowerCase())
   );
 
   return (

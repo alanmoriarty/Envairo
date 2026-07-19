@@ -45,6 +45,26 @@ export default function CallbackPage() {
         const user = await getCurrentUser();
         setUser(user);
         
+        // Restore previous session to keep QR codes working across devices
+        if (session?.user?.id) {
+          const { data: latestSession } = await supabase
+            .from('sessions')
+            .select('id, host_secret')
+            .eq('supabase_user_id', session.user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestSession) {
+            const { useSettingsStore } = await import('../store/useSettingsStore');
+            const store = useSettingsStore.getState();
+            store.setSessionId(latestSession.id);
+            if (latestSession.host_secret) {
+              store.setHostSecret(latestSession.host_secret);
+            }
+          }
+        }
+
         import('../store/useSettingsStore').then(m => m.useSettingsStore.getState().setIsAdminMode(false));
         
         if (user.product === 'premium') {

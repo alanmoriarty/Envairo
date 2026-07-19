@@ -2,8 +2,10 @@ import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Maximize2, RefreshCw, QrCode, SmartphoneNfc } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useTranslation } from '../../store/useLanguageStore';
 
 export function QRCard() {
+  const { t } = useTranslation();
   const { sessionId, regenerateSession, hostSecret } = useSettingsStore();
   const containerRef = useRef(null);
   const [showAdminQR, setShowAdminQR] = useState(false);
@@ -41,7 +43,7 @@ export function QRCard() {
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
           <QrCode size={18} className={showAdminQR ? "text-danger" : "text-accent"} />
-          <h3 className="font-semibold text-text-primary">{showAdminQR ? 'QR de Control Remoto' : 'Código QR de Invitados'}</h3>
+          <h3 className="font-semibold text-text-primary">{showAdminQR ? t('dashboard.qr_admin') : t('dashboard.qr_guest')}</h3>
         </div>
         <div className="flex gap-2">
           <button
@@ -117,16 +119,16 @@ export function QRCard() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(currentUrl);
-                import('sonner').then(({ toast }) => toast.success('Enlace copiado'));
+                import('sonner').then(({ toast }) => toast.success(t('common.copied')));
               }}
               className="text-accent hover:text-accent-light text-xs font-semibold px-2 py-1 rounded hover:bg-accent/10 transition-colors whitespace-nowrap"
             >
-              Copiar
+              {t('common.copy')}
             </button>
           </div>
           {showAdminQR && (
             <p className="text-xs text-danger mt-2 text-center animate-pulse">
-              ⚠️ Este QR da control total sobre la música. Solo para anfitriones.
+              ⚠️ {t('dashboard.admin_warning')}
             </p>
           )}
         </div>

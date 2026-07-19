@@ -140,6 +140,13 @@ const ES = {
     toast_pl_importing: 'Importando "{{name}}"...',
     toast_pl_fetching: 'Obteniendo información...',
     toast_player_not_ready: 'Reproductor no listo. Espera un momento.',
+    drag_reorder: 'Arrastra para reordenar',
+    qr_admin: 'QR de Control Remoto',
+    qr_guest: 'Código QR de Invitados',
+    admin_warning: 'Este QR da control total sobre la música. Solo para anfitriones.',
+    toggle_requests: 'Peticiones',
+    toggle_qr: 'QR',
+    toggle_playlists: 'Playlists',
   },
   metrics: {
     title: 'Métricas',
@@ -176,6 +183,33 @@ const ES = {
     cooldown_desc: 'Requerir que los invitados esperen antes de poder pedir otra canción',
     cooldown_minutes: 'Minutos de espera',
     subtitle: 'Personaliza las reglas de tu sesión',
+    advanced_title: 'Filtros Avanzados',
+    whitelist_label: 'Géneros Permitidos',
+    whitelist_desc: 'Si agregas géneros aquí, el Auto-DJ SOLO reproducirá música de estos géneros.',
+    blacklist_genre_label: 'Géneros Bloqueados',
+    blacklist_genre_desc: 'El Auto-DJ NUNCA reproducirá estos géneros.',
+    blacklist_artist_label: 'Artistas Bloqueados',
+    blacklist_artist_desc: 'Envairo bloqueará automáticamente canciones de estos artistas.',
+    blacklist_song_label: 'Canciones Bloqueadas',
+    blacklist_song_desc: 'Envairo bloqueará estas canciones exactas.',
+    ai_title: 'EnvAIro Selector Inteligente',
+    ai_desc: 'Analiza las peticiones de los invitados usando Inteligencia Artificial para decidir si la canción encaja con el ambiente (vibe) de tu evento actual.',
+    ai_test_mode: 'Modo Pruebas (Solo etiqueta, no rechaza)',
+    ai_prompt_label: 'Describe el ambiente de tu evento:',
+    ai_prompt_placeholder: 'Ej: Es una cena romántica en un restaurante italiano de lujo...',
+    common_genres: [
+      "Acústico", "Afrobeats", "Alternativo", "Ambient", "Anime", "Bachata", 
+      "Banda", "Blues", "Bolero", "Cantautor", "Clásica", "Corridos", 
+      "Corridos Tumbados", "Country", "Cumbia", "Dance", "Dancehall", 
+      "Dubstep", "Electrónica", "Folk", "Funk", "Gospel", "Heavy Metal", 
+      "Hip-Hop", "House", "Indie", "Indie Pop", "Indie Rock", "J-Pop", 
+      "Jazz", "K-Pop", "Latino", "Lofi", "Mariachi", "Merengue", "Metal", 
+      "Música Cristiana", "Música Infantil", "Música Mexicana", "Norteño", 
+      "Pop", "Pop Latino", "Punk", "R&B", "Ranchera", "Rap", "Reggae", 
+      "Reggaeton", "Regional Mexicano", "Rock", "Rock Latino", "Salsa", 
+      "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Trap Latino", 
+      "Tropical", "Urbano latino", "Vallenato"
+    ],
     envairo_title: 'EnvAIro Selector (Configuración IA)',
     envairo_desc: 'EnvAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."',
     envairo_prompt_label: 'Contexto Especial / Vibra (Opcional)',
@@ -312,6 +346,10 @@ const ES = {
       {
         question: '¿Necesito Spotify Premium para utilizar la aplicación?',
         answer: 'Sí, debido a las políticas de reproducción de Spotify, se requiere una cuenta Premium activa para que Envairo pueda controlar la música y reproducir las peticiones. Sin embargo, aún sin una cuenta Premium, puedes visualizar las métricas de los eventos pasados.'
+      },
+      {
+        question: '¿Cómo funciona el Control Remoto?',
+        answer: 'Puedes acceder al control remoto desde la pestaña correspondiente o escaneando el QR especial como administrador. Te permite gestionar la música, aprobar peticiones y activar las dinámicas interactivas desde tu teléfono móvil mientras te mueves por el evento.'
       }
     ]
   },
@@ -423,6 +461,13 @@ const EN = {
     toast_pl_importing: 'Importing "{{name}}"...',
     toast_pl_fetching: 'Fetching information...',
     toast_player_not_ready: 'Player not ready. Please wait.',
+    drag_reorder: 'Drag to reorder',
+    qr_admin: 'Remote Control QR',
+    qr_guest: 'Guest QR Code',
+    admin_warning: 'This QR gives full control over the music. Only for hosts.',
+    toggle_requests: 'Requests',
+    toggle_qr: 'QR',
+    toggle_playlists: 'Playlists',
   },
   metrics: {
     title: 'Metrics',
@@ -500,6 +545,19 @@ const EN = {
     guide_modal_regional: 'Regional Mexican',
     guide_modal_other: 'Other',
     guide_modal_tip: 'Tip: If the system adds several sibling genres and there is one you specifically DO NOT want, simply click the X on its tag to remove it individually.',
+    common_genres: [
+      "Acoustic", "Afrobeats", "Alternative", "Ambient", "Anime", "Bachata", 
+      "Banda", "Blues", "Bolero", "Singer-Songwriter", "Classical", "Corridos", 
+      "Corridos Tumbados", "Country", "Cumbia", "Dance", "Dancehall", 
+      "Dubstep", "Electronic", "Folk", "Funk", "Gospel", "Heavy Metal", 
+      "Hip-Hop", "House", "Indie", "Indie Pop", "Indie Rock", "J-Pop", 
+      "Jazz", "K-Pop", "Latin", "Lofi", "Mariachi", "Merengue", "Metal", 
+      "Christian Music", "Children's Music", "Mexican Music", "Norteño", 
+      "Pop", "Latin Pop", "Punk", "R&B", "Ranchera", "Rap", "Reggae", 
+      "Reggaeton", "Regional Mexican", "Rock", "Latin Rock", "Salsa", 
+      "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Latin Trap", 
+      "Tropical", "Latin Urban", "Vallenato"
+    ]
   },
   activities: {
     title: 'Activities',
@@ -595,6 +653,10 @@ const EN = {
       {
         question: 'Do I need Spotify Premium to use the application?',
         answer: 'Yes, due to Spotify\'s playback policies, an active Premium account is required for Envairo to control the music and play requests. However, even without a Premium account, you can still view the metrics from past events.'
+      },
+      {
+        question: 'How does the Remote Control work?',
+        answer: 'You can access the remote control from the corresponding tab or by scanning the special admin QR code. It allows you to manage the music, approve requests, and activate interactive dynamics from your mobile phone while moving around the event.'
       }
     ]
   },
