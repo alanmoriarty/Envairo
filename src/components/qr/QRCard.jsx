@@ -100,10 +100,10 @@ export function QRCard() {
         {isFullscreen && (
           <div className="mt-8 text-center px-6">
             <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${showAdminQR ? 'text-danger' : 'text-white'}`}>
-              {showAdminQR ? 'QR DE CONTROL REMOTO' : '¡Escanea para pedir tu canción!'}
+              {showAdminQR ? t('dashboard.qr_admin_title') : t('dashboard.qr_guest_title')}
             </h2>
             <p className="text-lg sm:text-xl text-white/70">
-              {showAdminQR ? 'No muestres este QR a los invitados.' : 'Apunta con la cámara de tu celular'}
+              {showAdminQR ? t('dashboard.qr_admin_sub') : t('dashboard.qr_guest_sub')}
             </p>
           </div>
         )}
@@ -112,7 +112,7 @@ export function QRCard() {
       {!isFullscreen && (
         <div className="w-full">
           <p className="text-sm text-center text-text-muted mb-2 font-medium">
-            O comparte este enlace:
+            {t('dashboard.qr_share_link')}
           </p>
           <div className={`p-3 rounded-lg flex items-center justify-between gap-2 border ${showAdminQR ? 'bg-danger/10 border-danger/20' : 'bg-bg-elevated border-white/5'}`}>
             <span className={`text-xs truncate ${showAdminQR ? 'text-danger/80' : 'text-text-subtle'}`}>{currentUrl}</span>

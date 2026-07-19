@@ -49,6 +49,10 @@ export function useTranslation() {
 
 // ─── Spanish ─────────────────────────────────────────────────────────────────
 const ES = {
+  common: {
+    copy: 'Copiar enlace',
+    copied: 'Enlace copiado',
+  },
   lang: {
     es: 'Español',
     en: 'English',
@@ -147,6 +151,11 @@ const ES = {
     toggle_requests: 'Peticiones',
     toggle_qr: 'QR',
     toggle_playlists: 'Playlists',
+    qr_share_link: 'O comparte este enlace:',
+    qr_admin_title: 'QR DE CONTROL REMOTO',
+    qr_guest_title: '¡Escanea para pedir tu canción!',
+    qr_admin_sub: 'No muestres este QR a los invitados.',
+    qr_guest_sub: 'Apunta con la cámara de tu celular',
   },
   metrics: {
     title: 'Métricas',
@@ -370,6 +379,10 @@ const ES = {
 
 // ─── English ──────────────────────────────────────────────────────────────────
 const EN = {
+  common: {
+    copy: 'Copy link',
+    copied: 'Link copied',
+  },
   lang: {
     es: 'Español',
     en: 'English',
@@ -468,6 +481,11 @@ const EN = {
     toggle_requests: 'Requests',
     toggle_qr: 'QR',
     toggle_playlists: 'Playlists',
+    qr_share_link: 'Or share this link:',
+    qr_admin_title: 'REMOTE CONTROL QR',
+    qr_guest_title: 'Scan to request a song!',
+    qr_admin_sub: 'Do not show this QR to guests.',
+    qr_guest_sub: 'Point your phone camera here',
   },
   metrics: {
     title: 'Metrics',
