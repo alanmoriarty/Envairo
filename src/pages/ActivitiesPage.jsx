@@ -160,7 +160,7 @@ function shuffle(arr) {
 function ActivityCard({ icon, title, color, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="card overflow-hidden h-full flex flex-col">
+    <div className="card overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors shrink-0"
@@ -174,7 +174,7 @@ function ActivityCard({ icon, title, color, children, defaultOpen = false }) {
         {open ? <ChevronUp size={18} className="text-text-muted" /> : <ChevronDown size={18} className="text-text-muted" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 border-t border-white/5 pt-4 animate-slide-up flex-1">
+        <div className="px-5 pb-5 border-t border-white/5 pt-4 animate-slide-up">
           {children}
         </div>
       )}
@@ -798,52 +798,62 @@ export default function ActivitiesPage() {
         <p className="text-text-muted text-sm mt-1">{t('activities.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="columns-1 md:columns-2 xl:columns-3 gap-4 space-y-4">
         {/* Retos */}
-        <ActivityCard
-          icon={<PartyPopper size={18} className="text-yellow-300" />}
-          title={t('activities.challenge_title')}
-          color="bg-yellow-500/15"
-          defaultOpen
-        >
-          <ChallengeCard currentTrack={currentTrack} />
-        </ActivityCard>
+        <div className="break-inside-avoid">
+          <ActivityCard
+            icon={<PartyPopper size={18} className="text-yellow-300" />}
+            title={t('activities.challenge_title')}
+            color="bg-yellow-500/15"
+            defaultOpen
+          >
+            <ChallengeCard currentTrack={currentTrack} />
+          </ActivityCard>
+        </div>
 
         {/* ¿Quién la pidió? */}
-        <ActivityCard
-          icon={<Users size={18} className="text-blue-300" />}
-          title={t('activities.guesswho_title')}
-          color="bg-blue-500/15"
-        >
-          <GuessWhoCard currentTrack={currentTrack} requestHistory={requestHistory} />
-        </ActivityCard>
+        <div className="break-inside-avoid">
+          <ActivityCard
+            icon={<Users size={18} className="text-blue-300" />}
+            title={t('activities.guesswho_title')}
+            color="bg-blue-500/15"
+          >
+            <GuessWhoCard currentTrack={currentTrack} requestHistory={requestHistory} />
+          </ActivityCard>
+        </div>
 
         {/* Trivia Musical */}
-        <ActivityCard
-          icon={<HelpCircle size={18} className="text-green-300" />}
-          title={t('activities.trivia_title')}
-          color="bg-green-500/15"
-        >
-          <TriviaCard />
-        </ActivityCard>
+        <div className="break-inside-avoid">
+          <ActivityCard
+            icon={<HelpCircle size={18} className="text-green-300" />}
+            title={t('activities.trivia_title')}
+            color="bg-green-500/15"
+          >
+            <TriviaCard />
+          </ActivityCard>
+        </div>
 
         {/* Juego de la Silla */}
-        <ActivityCard
-          icon={<Timer size={18} className="text-red-300" />}
-          title={t('activities.chair_title')}
-          color="bg-red-500/15"
-        >
-          <ChairGameCard />
-        </ActivityCard>
+        <div className="break-inside-avoid">
+          <ActivityCard
+            icon={<Timer size={18} className="text-red-300" />}
+            title={t('activities.chair_title')}
+            color="bg-red-500/15"
+          >
+            <ChairGameCard />
+          </ActivityCard>
+        </div>
 
         {/* Karaoke */}
-        <ActivityCard
-          icon={<Mic2 size={18} className="text-accent" />}
-          title={t('activities.karaoke_title')}
-          color="bg-accent/15"
-        >
-          <KaraokeCard currentTrack={currentTrack} progress={progress} duration={duration} />
-        </ActivityCard>
+        <div className="break-inside-avoid">
+          <ActivityCard
+            icon={<Mic2 size={18} className="text-accent" />}
+            title={t('activities.karaoke_title')}
+            color="bg-accent/15"
+          >
+            <KaraokeCard currentTrack={currentTrack} progress={progress} duration={duration} />
+          </ActivityCard>
+        </div>
       </div>
     </div>
   );
