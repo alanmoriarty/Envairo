@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
@@ -6,8 +6,12 @@ import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { supabase } from './lib/supabase';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 export default function App() {
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  
   useInactivityTimeout();
   // Sincronizar el estado entre pestañas (Host vs Guest local)
   useEffect(() => {
@@ -22,34 +26,52 @@ export default function App() {
 
   // Handle Spotify 401 Unauthorized errors globally
   useEffect(() => {
-    let reconnecting = false;
-    const handleAuthError = async () => {
-      if (reconnecting) return;
-      reconnecting = true;
-      toast.error('Tu sesión de Spotify ha expirado. Reconectando automáticamente...', {
-        duration: 3000,
-        position: 'top-center'
-      });
-      
-      try {
-        // Debemos ESPERAR a que se cierre la sesión de Supabase
-        // para que la siguiente llamada a OAuth traiga un token nuevo
-        await supabase.auth.signOut();
-        clearSpotifyTokens();
-        await redirectToSpotifyAuth(false);
-      } catch (err) {
-        console.error('Failed to silent reconnect', err);
-        reconnecting = false;
-      }
+    const handleAuthError = () => {
+      setSessionExpired(true);
     };
 
     window.addEventListener('spotify_auth_error', handleAuthError);
     return () => window.removeEventListener('spotify_auth_error', handleAuthError);
   }, []);
 
+  const handleReconnect = async () => {
+    setIsReconnecting(true);
+    try {
+      await supabase.auth.signOut();
+      clearSpotifyTokens();
+      await redirectToSpotifyAuth(false);
+    } catch (err) {
+      console.error('Failed to silent reconnect', err);
+      setIsReconnecting(false);
+    }
+  };
+
   return (
     <>
       <AppRouter />
+      
+      {/* Modal de Sesión Expirada */}
+      {sessionExpired && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mb-2">
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-text-primary">Sesión Expirada</h2>
+            <p className="text-text-muted text-sm mb-4">
+              Por seguridad, Spotify cierra tu sesión cada hora. Haz clic abajo para reconectar y seguir la fiesta sin interrupciones.
+            </p>
+            <button
+              onClick={handleReconnect}
+              disabled={isReconnecting}
+              className="btn-primary w-full py-3"
+            >
+              {isReconnecting ? 'Reconectando...' : 'Reconectar Spotify'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <Toaster
         position="top-right"
         toastOptions={{
