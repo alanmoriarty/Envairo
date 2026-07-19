@@ -102,12 +102,54 @@ export default function SettingsPage() {
     enairoEnabled, setEnairoEnabled,
     enairoPrompt, setEnairoPrompt,
     enairoTestMode, setEnairoTestMode,
+    enairoLastRunAt, enairoStartedAt
   } = useSettingsStore();
   const { t } = useTranslation();
   
   const COMMON_GENRES = t('settings.common_genres') || [];
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
+  const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!enairoEnabled) {
+      setEnairoTimeLeft('');
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const runCooldown = enairoTestMode ? 30000 : 7200000; // 2 horas
+      const nextRun = enairoLastRunAt ? enairoLastRunAt + runCooldown : now;
+      const activeUntil = enairoStartedAt ? enairoStartedAt + 14400000 : now; // 4 horas
+      
+      let text = '';
+      if (now < nextRun) {
+        const diff = nextRun - now;
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        text += `Próxima selección en: ${h > 0 ? h + 'h ' : ''}${m}m ${s}s`;
+      } else {
+        text += `Próxima selección: Lista (esperando cola)`;
+      }
+      
+      text += ' • ';
+      
+      if (now < activeUntil) {
+        const diff = activeUntil - now;
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        text += `Se apagará en: ${h}h ${m}m`;
+      } else {
+        text += `Apagado inminente`;
+      }
+      
+      setEnairoTimeLeft(text);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [enairoEnabled, enairoLastRunAt, enairoStartedAt, enairoTestMode]);
 
   const handleAddWhitelistGenre = (genre) => {
     const aliases = GENRE_ALIASES[genre.toLowerCase()];
@@ -141,6 +183,11 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 mb-1">
           <Sparkles size={16} className="text-accent" />
           <h2 className="font-bold text-text-primary">{t('settings.envairo_title')}</h2>
+          {enairoEnabled && enairoTimeLeft && (
+            <span className="ml-auto text-xs font-semibold bg-accent/20 text-accent px-2 py-1 rounded-md animate-fade-in">
+              {enairoTimeLeft}
+            </span>
+          )}
         </div>
         
         <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
