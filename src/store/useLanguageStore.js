@@ -38,6 +38,7 @@ export function useTranslation() {
       }
       value = fallback;
     }
+    if (Array.isArray(value)) return value;
     if (typeof value !== 'string') return path;
     // Replace {{var}} placeholders
     return value.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? `{{${k}}}`);
