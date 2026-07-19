@@ -125,6 +125,20 @@ export function useEnairoSelector() {
           foundTracks.forEach(track => addToQueue(track));
           
           toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
+          
+          // Auto-play si el reproductor está inactivo
+          const state = usePlayerStore.getState();
+          if (!state.currentTrack && foundTracks.length > 0) {
+            const nextTrack = state.shiftQueue();
+            if (nextTrack) {
+              const targetDevice = state.activeDeviceId || state.deviceId;
+              if (targetDevice) {
+                import('../lib/spotifyApi').then(({ playTrack }) => {
+                  playTrack(nextTrack.uri, targetDevice).catch(console.error);
+                });
+              }
+            }
+          }
         }
         
         // Exito total, actualizar timestamp

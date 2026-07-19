@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
