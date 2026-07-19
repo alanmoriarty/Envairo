@@ -68,6 +68,10 @@ export default function LoginPage() {
             onClick={async () => {
               const { usePlayerStore } = await import('../store/usePlayerStore');
               const { supabase } = await import('../lib/supabase');
+              
+              // Clear any stale Supabase session before inserting anonymously
+              await supabase.auth.signOut().catch(() => {});
+              
               const newSessionId = crypto.randomUUID().slice(0, 6).toUpperCase();
               const newSecret = crypto.randomUUID();
               
@@ -76,11 +80,15 @@ export default function LoginPage() {
               useSettingsStore.getState().setIsAdminMode(true);
               usePlayerStore.getState().setPlaybackEngine('youtube');
               
-              await supabase.from('sessions').insert({
+              const { error } = await supabase.from('sessions').insert({
                 id: newSessionId,
                 host_secret: newSecret,
                 playback_engine: 'youtube'
               });
+
+              if (error) {
+                console.error('Error creating YouTube session:', error);
+              }
               
               navigate('/app/dashboard');
             }}

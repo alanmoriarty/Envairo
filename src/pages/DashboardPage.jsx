@@ -260,11 +260,16 @@ export default function DashboardPage() {
               <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><QrCode size={14} className="text-accent" /> {t('dashboard.toggle_qr')}</span>
               <Toggle checked={showQR} onChange={setShowQR} />
             </div>
-            <div className="hidden sm:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2">
-              <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> {t('dashboard.toggle_playlists')}</span>
-              <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
-            </div>
+            
+            {usePlayerStore.getState().playbackEngine !== 'youtube' && (
+              <>
+                <div className="hidden sm:block w-px h-4 bg-white/10" />
+                <div className="flex items-center gap-2">
+                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> {t('dashboard.toggle_playlists')}</span>
+                  <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -388,7 +393,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {showPlaylists && <PlaylistsPanel />}
+            {showPlaylists && usePlayerStore.getState().playbackEngine !== 'youtube' && <PlaylistsPanel />}
 
             {/* QR Card */}
             {showQR && <QRCard />}
