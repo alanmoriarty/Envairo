@@ -101,14 +101,26 @@ export function useSpotifySDK() {
               await new Promise(res => setTimeout(res, 600));
               const posMs = playbackState.progress_ms ?? 0;
               const uri = playbackState.item.uri;
-              await api.playTrack(device_id, [uri], posMs).catch(() => {});
-              usePlayerStore.getState().setIsPlaying(true);
-              usePlayerStore.getState().setProgress(posMs);
+              await api.playTrack(device_id, [uri], posMs).catch((err) => {
+                console.error('Auto-resume failed:', err);
+                usePlayerStore.getState().setPendingResume(true);
+                usePlayerStore.getState().setIsPlaying(false);
+              });
+              if (!usePlayerStore.getState().pendingResume) {
+                usePlayerStore.getState().setIsPlaying(true);
+                usePlayerStore.getState().setProgress(posMs);
+              }
             } else if (wasActuallyPlaying) {
               // Fallback sin estado de Spotify
               await new Promise(res => setTimeout(res, 600));
-              await api.resumePlayback(device_id).catch(() => {});
-              usePlayerStore.getState().setIsPlaying(true);
+              await api.resumePlayback(device_id).catch((err) => {
+                console.error('Auto-resume fallback failed:', err);
+                usePlayerStore.getState().setPendingResume(true);
+                usePlayerStore.getState().setIsPlaying(false);
+              });
+              if (!usePlayerStore.getState().pendingResume) {
+                usePlayerStore.getState().setIsPlaying(true);
+              }
             }
           }
         } catch (err) {

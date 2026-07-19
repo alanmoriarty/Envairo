@@ -3,7 +3,7 @@ import { Toaster } from 'sonner';
 import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
-import { redirectToSpotifyAuth } from './lib/spotifyAuth';
+import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { toast } from 'sonner';
 
 export default function App() {
@@ -29,12 +29,13 @@ export default function App() {
         duration: 3000,
         position: 'top-center'
       });
+      clearSpotifyTokens(); // Asegurar que la sesión vieja se borre para forzar token nuevo
       setTimeout(() => {
         redirectToSpotifyAuth(false).catch((err) => {
           console.error('Failed to silent reconnect', err);
           reconnecting = false;
         });
-      }, 2000);
+      }, 1000);
     };
 
     window.addEventListener('spotify_auth_error', handleAuthError);
