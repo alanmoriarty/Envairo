@@ -7,7 +7,6 @@ import { SongTagInput } from '../components/ui/SongTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
 
-const COMMON_GENRES = [
 // Se cargan los géneros comunes desde el useLanguageStore
 
 // Mapeo de géneros relacionados para agregarlos en grupo
