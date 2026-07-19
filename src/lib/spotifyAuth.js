@@ -40,16 +40,23 @@ export async function refreshSpotifyToken() {
   const { data, error } = await supabase.auth.refreshSession();
   if (error) throw error;
   
+  // NOTE: Supabase might not return a NEW provider_token on refreshSession 
+  // depending on provider settings. If it does, we save it.
   if (data?.session?.provider_token) {
     localStorage.setItem('spotify_access_token', data.session.provider_token);
+    localStorage.setItem('spotify_token_expires_at', (Date.now() + 3600 * 1000).toString());
     return data.session;
   }
+  
+  // If it doesn't return a new one, the token is dead. We must force re-auth.
   throw new Error('No provider token found in refreshed session');
 }
 
 export function isTokenExpired() {
-  // Con Supabase, la sesión se maneja automáticamente
-  return false; 
+  const expiresAt = localStorage.getItem('spotify_token_expires_at');
+  if (!expiresAt) return false;
+  // Margen de 3 minutos para renovar antes de que falle
+  return Date.now() > parseInt(expiresAt, 10) - 180000;
 }
 
 export async function logoutSpotify() {

@@ -264,7 +264,10 @@ export function useSpotifySDK() {
     });
 
     p.addListener('initialization_error', ({ message }) => console.error(message));
-    p.addListener('authentication_error', ({ message }) => console.error(message));
+    p.addListener('authentication_error', ({ message }) => {
+      console.error(message);
+      window.dispatchEvent(new CustomEvent('spotify_auth_error'));
+    });
     p.addListener('account_error', ({ message }) => console.error(message));
 
     await p.connect();

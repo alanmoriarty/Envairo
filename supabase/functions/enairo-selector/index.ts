@@ -34,6 +34,7 @@ El usuario quiere mantener el ambiente perfecto.
 Analiza el history para entender la vibra actual.
 Analiza la queue para ver qué viene.
 Genera una lista EXACTA de 50 sugerencias de canciones (formato "Nombre Canción - Artista") que encajen perfectamente.
+REGLA MUY IMPORTANTE: NO coloques canciones del mismo artista muy cerca una de la otra (asegura buena variedad y separación de artistas en tus 50 canciones sugeridas).
 Además, si en la queue hay alguna canción que rompa completamente la vibra, genera una acción de "remove".
 Si hay que reordenar, usa "reorder".
 

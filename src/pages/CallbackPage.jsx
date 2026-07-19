@@ -40,6 +40,8 @@ export default function CallbackPage() {
         // Save the Spotify access token for the Web Playback SDK
         if (session.provider_token) {
           localStorage.setItem('spotify_access_token', session.provider_token);
+          // Spotify tokens always expire in 3600 seconds (1 hour).
+          localStorage.setItem('spotify_token_expires_at', (Date.now() + 3600 * 1000).toString());
         }
 
         const user = await getCurrentUser();
