@@ -60,39 +60,58 @@ export function RootLayout() {
     return () => clearInterval(interval);
   }, [isPremium]);
 
-  // Sincronizar configuraciones en tiempo real hacia Supabase desde cualquier pantalla
+  // Sincronizar configuraciones en tiempo real hacia Supabase Auth Metadata y sessions table
   useEffect(() => {
-    const sessionId = useSettingsStore.getState().sessionId;
-    if (!sessionId) return;
-
+    let timeoutId;
     const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
-      const relevantKeys = ['mode', 'whitelistGenres', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
-      const changed = relevantKeys.some(k => state[k] !== prevState[k]);
+      const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+      const changed = allKeys.some(k => state[k] !== prevState[k]);
+      
       if (changed) {
-        // Removemos whitelist_genres porque no está en el schema de Supabase.
-        const hostSecret = useSettingsStore.getState().hostSecret;
-        if (!hostSecret) return; // Si no hay hostSecret, no podemos actualizar
+        // 1. Sync to user_metadata (for host persistence across devices)
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          const settingsObj = {};
+          allKeys.forEach(k => { settingsObj[k] = state[k]; });
+          
+          supabase.auth.updateUser({
+            data: { host_settings: JSON.stringify(settingsObj) }
+          }).catch(console.error);
+        }, 2000); // 2 second debounce
 
-        supabase.rpc('update_session_state', {
-          p_session_id: sessionId,
-          p_secret: hostSecret,
-          p_updates: {
-            mode: state.mode,
-            blacklist_genres: state.blacklistGenres,
-            blacklist_songs: state.blacklistSongs,
-            blacklist_artists: state.blacklistArtists,
-            allow_repeats: state.allowRepeats,
-            cooldown_enabled: state.cooldownEnabled,
-            cooldown_minutes: state.cooldownMinutes,
-            table_count: state.tableCount,
-            requests_per_hour: state.requestsPerHour,
-            requests_per_guest: state.requestsPerGuest,
-            updated_at: new Date().toISOString()
+        // 2. Sync to sessions table (for Guest page validation)
+        const dbKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
+        const dbChanged = dbKeys.some(k => state[k] !== prevState[k]);
+        
+        if (dbChanged) {
+          const sessionId = state.sessionId;
+          const hostSecret = state.hostSecret;
+          if (sessionId && hostSecret) {
+            supabase.rpc('update_session_state', {
+              p_session_id: sessionId,
+              p_secret: hostSecret,
+              p_updates: {
+                mode: state.mode,
+                blacklist_genres: state.blacklistGenres,
+                blacklist_songs: state.blacklistSongs,
+                blacklist_artists: state.blacklistArtists,
+                allow_repeats: state.allowRepeats,
+                cooldown_enabled: state.cooldownEnabled,
+                cooldown_minutes: state.cooldownMinutes,
+                table_count: state.tableCount,
+                requests_per_hour: state.requestsPerHour,
+                requests_per_guest: state.requestsPerGuest,
+                updated_at: new Date().toISOString()
+              }
+            }).catch(()=>{});
           }
-        }).then();
+        }
       }
     });
-    return () => unsubSettings();
+    return () => {
+      clearTimeout(timeoutId);
+      unsubSettings();
+    };
   }, []);
 
   return (

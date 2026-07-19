@@ -45,8 +45,28 @@ export default function CallbackPage() {
         const user = await getCurrentUser();
         setUser(user);
         
-        // Restore previous session to keep QR codes working across devices
+        // Restore previous session and settings
         if (session?.user?.id) {
+          // Hydrate Settings from user_metadata
+          const metadata = session.user.user_metadata || {};
+          if (metadata.host_settings) {
+            try {
+              const settingsObj = JSON.parse(metadata.host_settings);
+              const { useSettingsStore } = await import('../store/useSettingsStore');
+              // Extract only valid state keys to avoid overwriting methods
+              const currentState = useSettingsStore.getState();
+              const validSettings = {};
+              Object.keys(settingsObj).forEach(key => {
+                if (typeof currentState[key] !== 'function') {
+                  validSettings[key] = settingsObj[key];
+                }
+              });
+              useSettingsStore.setState(validSettings);
+            } catch(e) {
+              console.error('Failed to parse host_settings from metadata', e);
+            }
+          }
+
           const { data: latestSession } = await supabase
             .from('sessions')
             .select('id, host_secret')
