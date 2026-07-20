@@ -43,6 +43,20 @@ export function useYouTubeSDK() {
       playerContainer.style.filter = 'blur(4px) saturate(1.5)'; // Efecto moderno de fondo
       document.body.appendChild(playerContainer);
 
+      const handleFsChange = () => {
+        if (document.fullscreenElement === playerContainer) {
+          playerContainer.style.opacity = '1';
+          playerContainer.style.filter = 'none';
+        } else {
+          playerContainer.style.opacity = '0.5';
+          playerContainer.style.filter = 'blur(4px) saturate(1.5)';
+        }
+      };
+      document.addEventListener('fullscreenchange', handleFsChange);
+      
+      // Limpiar listener si alguna vez se desmonta
+      playerContainer._fsListener = handleFsChange;
+
       playerRef.current = new window.YT.Player('youtube-player-container', {
         height: '100%',
         width: '100%',
@@ -107,7 +121,12 @@ export function useYouTubeSDK() {
         playerRef.current = null;
       }
       const container = document.getElementById('youtube-player-container');
-      if (container) container.remove();
+      if (container) {
+        if (container._fsListener) {
+          document.removeEventListener('fullscreenchange', container._fsListener);
+        }
+        container.remove();
+      }
     };
   }, [playbackEngine]);
 

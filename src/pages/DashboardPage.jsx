@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2
 } from 'lucide-react';
 import {
   DndContext,
@@ -126,7 +126,7 @@ export default function DashboardPage() {
   const {
     queue, currentQueueIndex, pendingRequests,
     reorderQueue, removeFromQueue, approveRequest, rejectRequest,
-    currentTrack, sdkReady,
+    currentTrack, sdkReady, playbackEngine
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
   const { enairoIsThinking } = useSettingsStore();
@@ -208,7 +208,27 @@ export default function DashboardPage() {
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
+            {playbackEngine === 'youtube' && (
+              <button
+                onClick={() => {
+                  const container = document.getElementById('youtube-player-container');
+                  if (container) {
+                    if (!document.fullscreenElement) {
+                      container.requestFullscreen().catch(() => {});
+                    } else {
+                      document.exitFullscreen();
+                    }
+                  }
+                }}
+                className="p-1.5 text-text-muted hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                title="Video en pantalla completa"
+              >
+                <Maximize2 size={18} />
+              </button>
+            )}
+          </div>
           <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
               {isAdminMode ? (

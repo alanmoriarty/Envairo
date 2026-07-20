@@ -77,7 +77,7 @@ export function Sidebar({ isOpen, onClose }) {
         />
       )}
 
-      <aside className={`w-64 bg-bg-card border-r border-white/5 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`w-64 bg-bg-card/70 backdrop-blur-lg border-r border-white/5 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">

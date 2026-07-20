@@ -118,7 +118,7 @@ export function RootLayout() {
     <div className="flex flex-col h-[100dvh] bg-transparent overflow-hidden">
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Header */}
-        <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card border-b border-white/5 flex items-center justify-between px-4 z-30">
+        <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center shadow-glow-sm">
               <Music2 size={16} className="text-accent" />
