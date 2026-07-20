@@ -438,8 +438,9 @@ export default function GuestPage() {
             <button onClick={() => { setSelected(null); setQuery(''); }} className="text-text-muted hover:text-white">
               <X size={16} />
             </button>
-      </div>
+          </div>
         )}
+      </div>
 
       {/* Submit / Cooldown */}
       {(() => {
