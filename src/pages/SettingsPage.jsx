@@ -10,6 +10,24 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
 
+const filterMusicEmojis = (text) => {
+  if (!window.Intl || !Intl.Segmenter) return text;
+  const segmenter = new Intl.Segmenter('es', { granularity: 'grapheme' });
+  const allowedEmojis = ['🎸', '🎵', '🎶', '🎤', '🎧', '🎷', '🎺', '🎹', '🎻', '🥁', '📻', '🎙️', '🎚️', '🎛️', '🎼', '💿', '🪩', '🕺', '💃', '👨‍🎤', '👩‍🎤', '🧑‍🎤', '✨', '🔥', '🎉'];
+  
+  let result = '';
+  for (const { segment } of segmenter.segment(text)) {
+    if (/\p{Emoji_Presentation}/u.test(segment)) {
+      if (allowedEmojis.some(e => segment.includes(e.replace(/\uFE0F/g, '')))) {
+        result += segment;
+      }
+    } else {
+      result += segment;
+    }
+  }
+  return result;
+};
+
 // Se cargan los géneros comunes desde el useLanguageStore
 
 // Mapeo de géneros relacionados para agregarlos en grupo
@@ -260,7 +278,7 @@ export default function SettingsPage() {
           <input
             type="text"
             value={store.eventName}
-            onChange={(e) => store.setEventName(e.target.value)}
+            onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
             placeholder="Ej: La fiesta de Andres"
             maxLength={40}
             className="input-field w-full"

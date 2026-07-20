@@ -11,6 +11,24 @@ import { useTranslation } from '../store/useLanguageStore';
 const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
 
+const filterMusicEmojis = (text) => {
+  if (!window.Intl || !Intl.Segmenter) return text;
+  const segmenter = new Intl.Segmenter('es', { granularity: 'grapheme' });
+  const allowedEmojis = ['🎸', '🎵', '🎶', '🎤', '🎧', '🎷', '🎺', '🎹', '🎻', '🥁', '📻', '🎙️', '🎚️', '🎛️', '🎼', '💿', '🪩', '🕺', '💃', '👨‍🎤', '👩‍🎤', '🧑‍🎤', '✨', '🔥', '🎉'];
+  
+  let result = '';
+  for (const { segment } of segmenter.segment(text)) {
+    if (/\p{Emoji_Presentation}/u.test(segment)) {
+      if (allowedEmojis.some(e => segment.includes(e.replace(/\uFE0F/g, '')))) {
+        result += segment;
+      }
+    } else {
+      result += segment;
+    }
+  }
+  return result;
+};
+
 export default function GuestPage() {
   const { sessionId } = useParams();
   
@@ -368,7 +386,7 @@ export default function GuestPage() {
             className="input-field"
             placeholder={isCommercial ? t('guest.placeholder_table') : t('guest.placeholder_nickname')}
             value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
+            onChange={(e) => setIdentifier(filterMusicEmojis(e.target.value))}
             disabled={isInCooldown}
           />
         )}
