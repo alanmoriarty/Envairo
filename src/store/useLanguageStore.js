@@ -71,7 +71,8 @@ const ES = {
     title: 'La forma más elegante de gestionar las canciones de tu evento',
     access: 'Accede a tu panel',
     spotify: 'Ingresar con Spotify',
-    youtube: 'Modo YouTube (Gratis)',
+    youtube_login: 'Ingresar con YouTube',
+    youtube_anon: 'Modo YouTube (Anónimo)',
   },
   guest: {
     title: 'Pide tu canción',
@@ -407,7 +408,8 @@ const EN = {
     title: 'The most elegant way to manage your event\'s music',
     access: 'Access your dashboard',
     spotify: 'Log in with Spotify',
-    youtube: 'YouTube Mode (Free)',
+    youtube_login: 'Log in with YouTube',
+    youtube_anon: 'YouTube Mode (Anonymous)',
   },
   guest: {
     title: 'Request a Song',

@@ -261,15 +261,22 @@ export default function DashboardPage() {
               <Toggle checked={showQR} onChange={setShowQR} />
             </div>
             
-            {usePlayerStore.getState().playbackEngine !== 'youtube' && (
-              <>
-                <div className="hidden sm:block w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2">
-                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> {t('dashboard.toggle_playlists')}</span>
-                  <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
-                </div>
-              </>
-            )}
+            {(() => {
+              const engine = usePlayerStore.getState().playbackEngine;
+              const hasYoutubeToken = !!localStorage.getItem('youtube_access_token');
+              if (engine === 'spotify' || (engine === 'youtube' && hasYoutubeToken)) {
+                return (
+                  <>
+                    <div className="hidden sm:block w-px h-4 bg-white/10" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> {t('dashboard.toggle_playlists')}</span>
+                      <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       </div>
@@ -393,7 +400,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {showPlaylists && usePlayerStore.getState().playbackEngine !== 'youtube' && <PlaylistsPanel />}
+            {(() => {
+              const engine = usePlayerStore.getState().playbackEngine;
+              const hasYoutubeToken = !!localStorage.getItem('youtube_access_token');
+              const show = showPlaylists && (engine === 'spotify' || (engine === 'youtube' && hasYoutubeToken));
+              return show ? <PlaylistsPanel /> : null;
+            })()}
 
             {/* QR Card */}
             {showQR && <QRCard />}

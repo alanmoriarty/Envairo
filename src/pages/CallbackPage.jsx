@@ -37,14 +37,38 @@ export default function CallbackPage() {
           return;
         }
 
-        // Save the Spotify access token for the Web Playback SDK
+        // Save the access token depending on the provider
         if (session.provider_token) {
-          localStorage.setItem('spotify_access_token', session.provider_token);
-          // Spotify tokens always expire in 3600 seconds (1 hour).
-          localStorage.setItem('spotify_token_expires_at', (Date.now() + 3600 * 1000).toString());
+          // Detect provider from session provider field (google or spotify)
+          const provider = session.user?.app_metadata?.provider || 'spotify';
+          if (provider === 'google') {
+            localStorage.setItem('youtube_access_token', session.provider_token);
+            localStorage.setItem('youtube_token_expires_at', (Date.now() + 3600 * 1000).toString());
+            // Clear spotify token to avoid conflicts
+            localStorage.removeItem('spotify_access_token');
+            localStorage.removeItem('spotify_token_expires_at');
+          } else {
+            localStorage.setItem('spotify_access_token', session.provider_token);
+            // Spotify tokens always expire in 3600 seconds (1 hour).
+            localStorage.setItem('spotify_token_expires_at', (Date.now() + 3600 * 1000).toString());
+            // Clear google token
+            localStorage.removeItem('youtube_access_token');
+            localStorage.removeItem('youtube_token_expires_at');
+          }
         }
 
-        const user = await getCurrentUser();
+        let user = null;
+        const provider = session?.user?.app_metadata?.provider || 'spotify';
+        if (provider === 'google') {
+          user = {
+            id: session.user.id,
+            display_name: session.user.user_metadata?.full_name || 'YouTube User',
+            images: [{ url: session.user.user_metadata?.avatar_url }],
+            product: 'premium' // Mock premium for YouTube since it's free
+          };
+        } else {
+          user = await getCurrentUser();
+        }
         setUser(user);
         
         // Restore previous session and settings

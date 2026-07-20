@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ListMusic, Play, Loader2, Link as LinkIcon } from 'lucide-react';
 import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spotifyApi';
+import { getUserYouTubePlaylists, getYouTubePlaylistItems } from '../../lib/youtubeApi';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -63,21 +64,41 @@ export function PlaylistsPanel() {
     async function fetchPlaylists(showLoading = true) {
       if (showLoading) setLoading(true);
       try {
-        const [res, user] = await Promise.all([
-          getUserPlaylists(50),
-          import('../../lib/spotifyApi').then(m => m.getCurrentUser())
-        ]);
-        
-        if (!isMounted) return;
-
-        if (res && res.items && user && user.id) {
-          const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
+        const engine = usePlayerStore.getState().playbackEngine;
+        if (engine === 'youtube') {
+          const res = await getUserYouTubePlaylists(50);
+          if (!isMounted) return;
+          if (res && res.items) {
+             const myPlaylists = res.items.map(pl => ({
+               id: pl.id,
+               name: pl.snippet.title,
+               snapshot_id: pl.etag,
+               owner: { id: 'youtube' },
+               images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
+             }));
+             setPlaylists(prev => {
+                const prevSnaps = prev.map(p => p.snapshot_id).join(',');
+                const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
+                return prevSnaps === newSnaps ? prev : myPlaylists;
+             });
+          }
+        } else {
+          const [res, user] = await Promise.all([
+            getUserPlaylists(50),
+            import('../../lib/spotifyApi').then(m => m.getCurrentUser())
+          ]);
           
-          setPlaylists(prev => {
-            const prevSnaps = prev.map(p => p.snapshot_id).join(',');
-            const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
-            return prevSnaps === newSnaps ? prev : myPlaylists;
-          });
+          if (!isMounted) return;
+
+          if (res && res.items && user && user.id) {
+            const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
+            
+            setPlaylists(prev => {
+              const prevSnaps = prev.map(p => p.snapshot_id).join(',');
+              const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
+              return prevSnaps === newSnaps ? prev : myPlaylists;
+            });
+          }
         }
       } catch (err) {
         if (!isMounted) return;
@@ -107,9 +128,13 @@ export function PlaylistsPanel() {
 
     try {
       let items = [];
+      const engine = usePlayerStore.getState().playbackEngine;
       if (playlist.isHistory) {
         // La playlist del historial ya tiene las pistas cargadas
         items = playlist.tracks.map(t => ({ track: { ...t, is_local: false, album: { images: [{ url: t.image }] }, artists: [{ name: t.artists }] } }));
+      } else if (engine === 'youtube') {
+        const res = await getYouTubePlaylistItems(playlist.id, 100);
+        items = res?.items || [];
       } else {
         const res = await getPlaylistTracks(playlist.id, 100);
         items = res?.items || [];

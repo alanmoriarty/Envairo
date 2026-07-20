@@ -65,14 +65,7 @@ export async function getYouTubeVideoDetails(videoId) {
   // Convertir duración ISO 8601 (ej. PT3M2S) a milisegundos
   const durationStr = item.contentDetails.duration;
   let durationMs = 0;
-  
-  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (match) {
-    const hours = parseInt(match[1] || 0, 10);
-    const minutes = parseInt(match[2] || 0, 10);
-    const seconds = parseInt(match[3] || 0, 10);
-    durationMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
-  }
+  let durationMs = parseYouTubeDuration(durationStr);
 
   return {
     id: item.id,
@@ -87,4 +80,132 @@ export async function getYouTubeVideoDetails(videoId) {
     duration_ms: durationMs,
     source: 'youtube'
   };
+}
+
+function parseYouTubeDuration(durationStr) {
+  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (match) {
+    const hours = parseInt(match[1] || 0, 10);
+    const minutes = parseInt(match[2] || 0, 10);
+    const seconds = parseInt(match[3] || 0, 10);
+    return (hours * 3600 + minutes * 60 + seconds) * 1000;
+  }
+  return 0;
+}
+
+export function getMockYouTubeResults(query) {
+  return [
+    {
+      id: "dQw4w9WgXcQ",
+      uri: "youtube:dQw4w9WgXcQ",
+      name: "Never Gonna Give You Up (Mock)",
+      artists: "Rick Astley",
+      image: "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
+      duration_ms: 213000,
+      source: "youtube"
+    }
+  ];
+}
+
+/**
+ * Obtiene las playlists del usuario autenticado en YouTube.
+ */
+export async function getUserYouTubePlaylists(limit = 50) {
+  const token = localStorage.getItem('youtube_access_token');
+  if (!token) throw new Error('No YouTube access token found');
+
+  const url = new URL(`${BASE_URL}/playlists`);
+  url.searchParams.append('part', 'snippet,contentDetails');
+  url.searchParams.append('mine', 'true');
+  url.searchParams.append('maxResults', limit.toString());
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Error fetching YouTube playlists');
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+/**
+ * Obtiene los videos de una playlist de YouTube.
+ */
+export async function getYouTubePlaylistItems(playlistId, limit = 50) {
+  const token = localStorage.getItem('youtube_access_token');
+  const url = new URL(`${BASE_URL}/playlistItems`);
+  url.searchParams.append('part', 'snippet,contentDetails');
+  url.searchParams.append('playlistId', playlistId);
+  url.searchParams.append('maxResults', limit.toString());
+  // Si tenemos API KEY pública, la podemos usar como fallback, pero mejor usar token si existe.
+  if (token) {
+    url.searchParams.append('access_token', token);
+  } else if (API_KEY) {
+    url.searchParams.append('key', API_KEY);
+  } else {
+    throw new Error('No YouTube auth available for fetching playlist items');
+  }
+
+  const response = await fetch(url.toString());
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Error fetching YouTube playlist items');
+  }
+
+  const data = await response.json();
+  
+  // Try to pre-fetch durations for these items if possible
+  // YouTube Data API requires a separate call to /videos to get duration
+  const videoIds = data.items.map(item => item.contentDetails.videoId).filter(Boolean);
+  
+  let durations = {};
+  if (videoIds.length > 0) {
+    try {
+      const vidUrl = new URL(`${BASE_URL}/videos`);
+      vidUrl.searchParams.append('part', 'contentDetails');
+      vidUrl.searchParams.append('id', videoIds.join(','));
+      if (token) vidUrl.searchParams.append('access_token', token);
+      else vidUrl.searchParams.append('key', API_KEY);
+      
+      const vidRes = await fetch(vidUrl.toString());
+      if (vidRes.ok) {
+        const vidData = await vidRes.json();
+        vidData.items.forEach(v => {
+          durations[v.id] = parseYouTubeDuration(v.contentDetails.duration);
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching durations for playlist items', e);
+    }
+  }
+
+  // Mapear al formato esperado
+  const items = data.items.map(item => {
+    const snippet = item.snippet;
+    const videoId = item.contentDetails.videoId;
+    return {
+      track: {
+        id: videoId,
+        uri: `youtube:${videoId}`,
+        name: snippet.title,
+        artists: snippet.videoOwnerChannelTitle || snippet.channelTitle,
+        album: {
+          images: [{ url: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url }]
+        },
+        duration_ms: durations[videoId] || 0,
+        source: 'youtube',
+        is_local: false
+      }
+    };
+  });
+  
+  return { items };
 }
