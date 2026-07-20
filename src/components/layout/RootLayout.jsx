@@ -90,7 +90,8 @@ export function RootLayout() {
   // Sincronizar configuraciones en tiempo real hacia Supabase Auth Metadata y sessions table
   useEffect(() => {
     let timeoutId;
-    const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
+    let prevState = useSettingsStore.getState();
+    const unsubSettings = useSettingsStore.subscribe((state) => {
       // Auto-sync solo para opciones rápidas del Dashboard
       const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode'];
       const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
@@ -126,6 +127,7 @@ export function RootLayout() {
                 blacklist_songs: state.blacklistSongs,
                 blacklist_artists: state.blacklistArtists,
                 allow_repeats: state.allowRepeats,
+                repeat_cooldown: state.repeatCooldown,
                 cooldown_enabled: state.cooldownEnabled,
                 cooldown_minutes: state.cooldownMinutes,
                 table_count: state.tableCount,
@@ -137,6 +139,7 @@ export function RootLayout() {
           }
         }
       }
+      prevState = { ...state };
     });
     return () => {
       clearTimeout(timeoutId);

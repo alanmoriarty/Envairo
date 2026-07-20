@@ -324,12 +324,11 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Panel toggles */}
+          {/* View/Panel toggles */}
           <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
             <div className="flex items-center gap-2">
               <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ClipboardList size={14} className="text-accent" /> {t('dashboard.toggle_requests')}</span>
               <Toggle checked={showRequests} onChange={setShowRequests} />
-            </div>
             </div>
             
             {(() => {
@@ -348,29 +347,28 @@ export default function DashboardPage() {
               }
               return null;
             })()}
-
-            {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
-            {playbackEngine === 'youtube' && (
-              <>
-                <div className="hidden sm:block w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2">
-                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
-                    <Mic2 size={14} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
-                    Karaoke
-                  </span>
-                  <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
-                </div>
-                <div className="hidden sm:block w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2">
-                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
-                    <Mic2 size={14} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
-                    Lyrics
-                  </span>
-                  <Toggle checked={lyricsEnabled} onChange={setLyricsEnabled} />
-                </div>
-              </>
-            )}
           </div>
+
+          {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
+          {playbackEngine === 'youtube' && (
+            <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
+                  <Mic2 size={14} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
+                  Karaoke
+                </span>
+                <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
+              </div>
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
+                  <Mic2 size={14} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
+                  Lyrics
+                </span>
+                <Toggle checked={lyricsEnabled} onChange={setLyricsEnabled} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

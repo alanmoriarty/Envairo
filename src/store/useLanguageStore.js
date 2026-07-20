@@ -166,7 +166,7 @@ const ES = {
   },
   metrics: {
     title: 'Métricas',
-    subtitle: 'Estadísticas de reproducciones por fecha',
+    subtitle: 'Estadísticas de peticiones por fecha',
     all_history: 'Todo el historial',
     today: 'Hoy',
     yesterday: 'Ayer',
