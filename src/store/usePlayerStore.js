@@ -170,13 +170,37 @@ export const usePlayerStore = create(
         return null;
       },
 
-      playEngineTrack: (track, progressMs = 0) => {
+      playEngineTrack: async (track, progressMs = 0) => {
         if (!track) return;
         const state = get();
         if (state.playbackEngine === 'youtube') {
           if (state.youtubePlayer && track.id) {
+            let videoIdToPlay = track.id;
+
+            // Puente Dinámico: Si la pista es de Spotify, buscar el video en YouTube
+            if (track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'))) {
+              const cacheKey = `yt_bridge_${track.id}`;
+              const cachedId = localStorage.getItem(cacheKey);
+
+              if (cachedId) {
+                videoIdToPlay = cachedId;
+              } else {
+                try {
+                  const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+                  const query = `${track.artists} ${track.name} VIDEO OFICIAL`;
+                  const results = await searchYouTubeVideos(query, 1);
+                  if (results && results.length > 0) {
+                    videoIdToPlay = results[0].id;
+                    localStorage.setItem(cacheKey, videoIdToPlay); // Guardar en caché
+                  }
+                } catch (err) {
+                  console.error('Error in Spotify->YouTube bridge:', err);
+                }
+              }
+            }
+
             // YouTube player takes seconds
-            state.youtubePlayer.loadVideoById(track.id, progressMs / 1000);
+            state.youtubePlayer.loadVideoById(videoIdToPlay, progressMs / 1000);
             set({ isPlaying: true });
           }
         } else {

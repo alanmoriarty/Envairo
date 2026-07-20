@@ -44,18 +44,24 @@ export function useYouTubeSDK() {
       document.body.appendChild(playerContainer);
 
       const handleFsChange = () => {
-        if (document.fullscreenElement === playerContainer) {
+        const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (fsElement === playerContainer) {
           playerContainer.style.opacity = '1';
           playerContainer.style.filter = 'none';
+          playerContainer.style.pointerEvents = 'auto'; // Permitir controles si YT los mostrara
         } else {
           playerContainer.style.opacity = '0.5';
           playerContainer.style.filter = 'blur(4px) saturate(1.5)';
+          playerContainer.style.pointerEvents = 'none';
         }
       };
-      document.addEventListener('fullscreenchange', handleFsChange);
+      
+      const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+      events.forEach(event => document.addEventListener(event, handleFsChange));
       
       // Limpiar listener si alguna vez se desmonta
       playerContainer._fsListener = handleFsChange;
+      playerContainer._fsEvents = events;
 
       playerRef.current = new window.YT.Player('youtube-player-container', {
         height: '100%',
@@ -122,8 +128,10 @@ export function useYouTubeSDK() {
       }
       const container = document.getElementById('youtube-player-container');
       if (container) {
-        if (container._fsListener) {
-          document.removeEventListener('fullscreenchange', container._fsListener);
+        if (container._fsListener && container._fsEvents) {
+          container._fsEvents.forEach(event => 
+            document.removeEventListener(event, container._fsListener)
+          );
         }
         container.remove();
       }

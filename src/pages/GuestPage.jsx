@@ -80,20 +80,14 @@ export default function GuestPage() {
     }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
-        try {
-          if (sessionConfig?.playback_engine === 'youtube') {
-            const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-            const results = await searchYouTubeVideos(query, 6);
-            setResults(results.map(normalizeApiTrack));
-          } else {
-            const { data, error } = await supabase.functions.invoke('search-spotify', {
-              body: { query, limit: 6 }
-            });
-            if (error) throw error;
-            const items = data?.tracks?.items || [];
-            setResults(items.map(normalizeApiTrack));
-          }
-        } catch (err) {
+      try {
+        const { data, error } = await supabase.functions.invoke('search-spotify', {
+          body: { query, limit: 6 }
+        });
+        if (error) throw error;
+        const items = data?.tracks?.items || [];
+        setResults(items.map(normalizeApiTrack));
+      } catch (err) {
           setResults([]);
         } finally {
           setSearching(false);

@@ -38,19 +38,12 @@ export function AddSongModal({ onClose }) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const engine = usePlayerStore.getState().playbackEngine;
-        if (engine === 'youtube') {
-          const { searchYouTubeVideos } = await import('../../lib/youtubeApi');
-          const results = await searchYouTubeVideos(query, 10);
-          setResults(results.map(normalizeApiTrack));
-        } else {
-          const { data, error } = await supabase.functions.invoke('search-spotify', {
-            body: { query, limit: 10 }
-          });
-          if (error) throw error;
-          const items = data?.tracks?.items || [];
-          setResults(items.map(normalizeApiTrack));
-        }
+        const { data, error } = await supabase.functions.invoke('search-spotify', {
+          body: { query, limit: 10 }
+        });
+        if (error) throw error;
+        const items = data?.tracks?.items || [];
+        setResults(items.map(normalizeApiTrack));
       } catch (err) {
         console.error('Error buscando:', err);
       } finally {

@@ -11,15 +11,15 @@ import { useTranslation } from '../../store/useLanguageStore';
 // Función auxiliar para formatear la fecha como "Hoy", "Ayer", o "DD/MM/YYYY"
 function formatDateLabel(dateString) {
   if (!dateString) return 'Desconocido';
-  
+
   const date = new Date(dateString);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   if (date.toDateString() === today.toDateString()) return 'Hoy';
   if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
-  
+
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
@@ -30,7 +30,7 @@ export function PlaylistsPanel() {
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [playlistLink, setPlaylistLink] = useState('');
-  
+
   const { controls } = useSpotifySDK();
   const sdkReady = usePlayerStore((s) => s.sdkReady);
   const setQueue = usePlayerStore((s) => s.setQueue);
@@ -39,14 +39,14 @@ export function PlaylistsPanel() {
   const sessionId = useSettingsStore(s => s.sessionId);
 
   const playbackEngine = usePlayerStore(s => s.playbackEngine);
-  
+
   // Agrupar historial por días
   const historyByDay = React.useMemo(() => {
     const groups = {};
     playHistory.forEach(track => {
       const trackEngine = track.source === 'youtube' ? 'youtube' : 'spotify';
       if (trackEngine !== playbackEngine) return;
-      
+
       const label = formatDateLabel(track.playedAt);
       if (!groups[label]) groups[label] = [];
       // Evitar duplicados exactos en el mismo día
@@ -62,7 +62,7 @@ export function PlaylistsPanel() {
       images: tracks.length > 0 && tracks[0].image ? [{ url: tracks[0].image }] : []
     }));
   }, [playHistory, playbackEngine]);
-  
+
   useEffect(() => {
     let isMounted = true;
 
@@ -73,30 +73,30 @@ export function PlaylistsPanel() {
           const res = await getUserYouTubePlaylists(50);
           if (!isMounted) return;
           if (res && res.items) {
-             const myPlaylists = res.items.map(pl => ({
-               id: pl.id,
-               name: pl.snippet.title,
-               snapshot_id: pl.etag,
-               owner: { id: 'youtube' },
-               images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
-             }));
-             setPlaylists(prev => {
-                const prevSnaps = prev.map(p => p.snapshot_id).join(',');
-                const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
-                return prevSnaps === newSnaps ? prev : myPlaylists;
-             });
+            const myPlaylists = res.items.map(pl => ({
+              id: pl.id,
+              name: pl.snippet.title,
+              snapshot_id: pl.etag,
+              owner: { id: 'youtube' },
+              images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
+            }));
+            setPlaylists(prev => {
+              const prevSnaps = prev.map(p => p.snapshot_id).join(',');
+              const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
+              return prevSnaps === newSnaps ? prev : myPlaylists;
+            });
           }
         } else {
           const [res, user] = await Promise.all([
             getUserPlaylists(50),
             import('../../lib/spotifyApi').then(m => m.getCurrentUser())
           ]);
-          
+
           if (!isMounted) return;
 
           if (res && res.items && user && user.id) {
             const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
-            
+
             setPlaylists(prev => {
               const prevSnaps = prev.map(p => p.snapshot_id).join(',');
               const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
@@ -143,16 +143,18 @@ export function PlaylistsPanel() {
         const res = await getPlaylistTracks(playlist.id, 100);
         items = res?.items || [];
       }
-      
+
       const tracksToQueue = items
         .filter(item => item.track && !item.track.is_local)
         .map(item => ({
           id: item.track.id,
           uri: item.track.uri,
           name: item.track.name,
-          artists: item.track.artists.map((a) => a.name).join(', '),
-          image: item.track.album.images[0]?.url,
-          duration_ms: item.track.duration_ms,
+          artists: Array.isArray(item.track.artists) ? item.track.artists.map((a) => a.name).join(', ') : (item.track.artists || 'Desconocido'),
+          artistIds: Array.isArray(item.track.artists) ? item.track.artists.map(a => a.id) : [],
+          image: item.track.album?.images?.[0]?.url,
+          duration_ms: item.track.duration_ms || 0,
+          source: item.track.source || (item.track.uri?.startsWith('youtube') ? 'youtube' : 'spotify'),
           requestedBy: playlist.isHistory ? 'Host (Historial)' : 'Host (Playlist)',
           queueId: crypto.randomUUID()
         }));
@@ -170,13 +172,13 @@ export function PlaylistsPanel() {
       usePlayerStore.setState({ queue: [...currentQueue, ...tracksToQueue] });
 
       if (isAdminMode) {
-        import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
-          p_session_id: sessionId, 
-          p_secret: useSettingsStore.getState().hostSecret, 
-          p_updates: { 
+        import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', {
+          p_session_id: sessionId,
+          p_secret: useSettingsStore.getState().hostSecret,
+          p_updates: {
             queue: [...currentQueue, ...tracksToQueue],
             current_queue_index: currentState.currentQueueIndex
-          } 
+          }
         }).then());
       }
 
@@ -184,10 +186,10 @@ export function PlaylistsPanel() {
         const firstTrack = shiftQueue();
         if (firstTrack) {
           if (isAdminMode) {
-            import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
-              p_session_id: sessionId, 
-              p_secret: useSettingsStore.getState().hostSecret, 
-              p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 
+            import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', {
+              p_session_id: sessionId,
+              p_secret: useSettingsStore.getState().hostSecret,
+              p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } }
             }).then());
           } else {
             usePlayerStore.getState().playEngineTrack(firstTrack);
@@ -213,7 +215,7 @@ export function PlaylistsPanel() {
   const handleLinkImport = async (e) => {
     e.preventDefault();
     if (!playlistLink) return;
-    
+
     let playlistId = null;
     if (playbackEngine === 'youtube') {
       const match = playlistLink.match(/[?&]list=([a-zA-Z0-9_-]+)/);
@@ -230,10 +232,10 @@ export function PlaylistsPanel() {
       }
       playlistId = match[1];
     }
-    
+
     setImporting(true);
     const toastId = toast.loading(t('dashboard.toast_pl_fetching'));
-    
+
     try {
       let playlistData = null;
       if (playbackEngine === 'youtube') {
@@ -241,9 +243,9 @@ export function PlaylistsPanel() {
       } else {
         playlistData = await getPlaylist(playlistId);
       }
-      
+
       if (!playlistData) throw new Error('No se encontró la playlist');
-      
+
       toast.dismiss(toastId);
       await handleSelectPlaylist(playlistData);
       setPlaylistLink('');
@@ -288,15 +290,15 @@ export function PlaylistsPanel() {
             <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="https://open.spotify.com/playlist/..."
+              placeholder=""
               value={playlistLink}
               onChange={(e) => setPlaylistLink(e.target.value)}
               className="input-field w-full pl-9 py-2 text-sm"
             />
           </div>
-          <button 
-            type="submit" 
-            disabled={!playlistLink || importing} 
+          <button
+            type="submit"
+            disabled={!playlistLink || importing}
             className="btn-primary px-4 py-2 text-sm"
           >
             {importing ? <Loader2 size={16} className="animate-spin" /> : t('dashboard.playlists_import_btn')}
@@ -342,7 +344,7 @@ export function PlaylistsPanel() {
                 </p>
               </div>
 
-              <button 
+              <button
                 className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -395,7 +397,7 @@ export function PlaylistsPanel() {
                 </p>
               </div>
 
-              <button 
+              <button
                 className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
