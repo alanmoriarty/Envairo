@@ -6,9 +6,49 @@ const BASE_URL = 'https://www.googleapis.com/youtube/v3';
  * Retorna una lista formateada para ser compatible con el sistema de cola existente.
  */
 export async function searchYouTubeVideos(query, limit = 8) {
-  // 1. Intentar usar nuestro scraper gratuito alojado en Vercel Serverless Functions
+  // 1. Vía Descentralizada (Piped): Alta disponibilidad y sin consumir recursos propios
+  const pipedInstances = [
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.tokhmi.xyz',
+    'https://pipedapi.moomoo.me',
+    'https://pipedapi.syncpundit.io',
+    'https://api-piped.mha.fi'
+  ];
+
+  // Ordenar aleatoriamente para balancear carga globalmente
+  const shuffledInstances = pipedInstances.sort(() => 0.5 - Math.random());
+
+  for (const instance of shuffledInstances) {
+    try {
+      const res = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`);
+      if (res.ok) {
+        const data = await res.json();
+        const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
+        if (streams.length > 0) {
+          console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
+          return streams.map(item => {
+            const videoId = item.url.replace('/watch?v=', '');
+            return {
+              id: videoId,
+              uri: `youtube:${videoId}`,
+              name: item.title,
+              artists: [{ name: item.uploaderName }],
+              album: {
+                images: [{ url: item.thumbnail }]
+              },
+              duration_ms: item.duration * 1000, 
+              source: 'youtube'
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(`[YouTube API] Falló nodo descentralizado (${instance}), intentando el siguiente...`);
+    }
+  }
+
+  // 2. Vía Centralizada (Nuestro Vercel Scraper): Como primer nivel de respaldo
   try {
-    // Si estamos en Vercel o en un entorno que sirva /api, usará yt-search
     const proxyUrl = new URL(window.location.origin + '/api/youtube-search');
     proxyUrl.searchParams.append('q', query);
     proxyUrl.searchParams.append('limit', limit.toString());
