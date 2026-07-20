@@ -137,6 +137,7 @@ export default function SettingsPage() {
   const [showGenreGuide, setShowGenreGuide] = useState(false);
   const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('simple');
 
   const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
   const currentSettingsObj = {};
@@ -252,15 +253,32 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="mb-2">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
           <Settings size={22} className="text-accent" /> {t('settings.title')}
         </h1>
-        <p className="text-text-muted text-sm mt-1">{t('settings.subtitle')}</p>
+        <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
+        
+        {/* Tabs */}
+        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
+          <button
+            onClick={() => setActiveTab('simple')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+          >
+            Configuración Simple
+          </button>
+          <button
+            onClick={() => setActiveTab('custom')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+          >
+            Configuración Personalizada
+          </button>
+        </div>
       </div>
 
-      {/* General Settings */}
-      <section className="card p-5 space-y-4">
+      {activeTab === 'simple' && (
+        {/* General Settings */}
+        <section className="card p-5 space-y-4 animate-fade-in">
         <h2 className="font-bold text-text-primary">General</h2>
 
         <div>
@@ -277,19 +295,63 @@ export default function SettingsPage() {
             Se mostrará a tus invitados en la página web: "Pide tu canción para..."
           </p>
         </div>
-      </section>
+        <div className="border-t border-white/5 pt-4">
+          <Toggle
+            checked={alwaysAvailable}
+            onChange={setAlwaysAvailable}
+            label={t('settings.always_available')}
+            description={t('settings.always_available_desc')}
+          />
+        </div>
 
-      {/* EnvAIro Selector (IA) */}
-      <section className="card p-5 space-y-4 border border-accent/20">
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">{t('settings.envairo_title')}</h2>
-          {enairoEnabled && enairoTimeLeft && (
-            <span className="ml-auto text-xs font-semibold bg-accent/20 text-accent px-2 py-1 rounded-md animate-fade-in">
-              {enairoTimeLeft}
-            </span>
+        <div className="border-t border-white/5 pt-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <MonitorPlay size={16} className="text-text-muted" />
+            <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+          </div>
+
+          <p className="text-xs text-text-muted mb-2">
+            Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
+          </p>
+
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
+            <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
+          </div>
+
+          {visualizerEnabled && (
+            <div className="pt-2 animate-fade-in">
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
+              <input
+                type="text"
+                value={visualizerUrl}
+                onChange={(e) => setVisualizerUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... o &list=..."
+                className="input-field w-full text-sm font-mono placeholder:font-sans"
+              />
+              <p className="text-[10px] text-text-muted mt-1.5">
+                Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
+              </p>
+            </div>
           )}
         </div>
+      </section>
+
+      )}
+
+      {activeTab === 'custom' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* EnvAIro Selector (IA) */}
+          <section className="card p-5 space-y-4 border border-accent/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles size={16} className="text-accent" />
+              <h2 className="font-bold text-text-primary">{t('settings.envairo_title')}</h2>
+              {enairoEnabled && enairoTimeLeft && (
+                <span className="ml-auto text-xs font-semibold bg-accent/20 text-accent px-2 py-1 rounded-md animate-fade-in">
+                  {enairoTimeLeft}
+                </span>
+              )}
+            </div>
 
         <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
 
@@ -313,54 +375,9 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Visualizer Settings */}
-      <section className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <MonitorPlay size={16} className="text-text-muted" />
-          <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
-        </div>
 
-        <p className="text-xs text-text-muted mb-2">
-          Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
-        </p>
 
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
-          <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
-        </div>
 
-        {visualizerEnabled && (
-          <div className="pt-2 animate-fade-in">
-            <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
-            <input
-              type="text"
-              value={visualizerUrl}
-              onChange={(e) => setVisualizerUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=... o &list=..."
-              className="input-field w-full text-sm font-mono placeholder:font-sans"
-            />
-            <p className="text-[10px] text-text-muted mt-1.5">
-              Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Availability */}
-      <section className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Clock size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">{t('settings.availability_title')}</h2>
-        </div>
-
-        <Toggle
-          checked={alwaysAvailable}
-          onChange={setAlwaysAvailable}
-          label={t('settings.always_available')}
-          description={t('settings.always_available_desc')}
-        />
-
-      </section>
 
       {/* General filters */}
       <section className="card p-5 space-y-4">

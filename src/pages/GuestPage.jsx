@@ -68,12 +68,18 @@ export default function GuestPage() {
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
   const { t, lang } = useTranslation();
 
-  const isAvailable = sessionConfig?.active ?? true;
-  const isCommercial = sessionConfig?.mode === 'commercial';
-  const blacklistGenres = sessionConfig?.blacklist_genres || [];
-  const blacklistSongs = sessionConfig?.blacklist_songs || [];
-  const blacklistArtists = sessionConfig?.blacklist_artists || [];
-  const allowRepeats = sessionConfig?.allow_repeats ?? true;
+  const stateData = sessionConfig?.session_state || {};
+  
+  const isAvailable = stateData.active ?? sessionConfig?.active ?? true;
+  const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
+  const blacklistGenres = stateData.blacklist_genres || sessionConfig?.blacklist_genres || [];
+  const blacklistSongs = stateData.blacklist_songs || sessionConfig?.blacklist_songs || [];
+  const blacklistArtists = stateData.blacklist_artists || sessionConfig?.blacklist_artists || [];
+  const allowRepeats = stateData.allow_repeats ?? sessionConfig?.allow_repeats ?? true;
+  const eventName = stateData.event_name || sessionConfig?.event_name || '';
+  const cooldownEnabled = stateData.cooldown_enabled ?? sessionConfig?.cooldown_enabled ?? true;
+  const cooldownMinutes = stateData.cooldown_minutes ?? sessionConfig?.cooldown_minutes ?? 10;
+  const requestsPerHour = stateData.requests_per_hour ?? sessionConfig?.requests_per_hour ?? 15;
 
   const [identifier, setIdentifier] = useState('');
   const [query, setQuery] = useState('');
@@ -125,8 +131,6 @@ export default function GuestPage() {
           const lastReq = reqs[reqs.length - 1];
           const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
           
-          const cooldownEnabled = sessionConfig?.cooldown_enabled ?? true;
-          const cooldownMinutes = sessionConfig?.cooldown_minutes ?? 10;
           const cooldownSeconds = cooldownMinutes * 60;
           
           if (cooldownEnabled && secondsSinceLast < cooldownSeconds) {
@@ -137,7 +141,7 @@ export default function GuestPage() {
         }
       }
     } catch (e) {}
-  }, [sessionId, sessionConfig?.cooldown_enabled, sessionConfig?.cooldown_minutes]);
+  }, [sessionId, cooldownEnabled, cooldownMinutes]);
 
   // Cooldown countdown
   useEffect(() => {
@@ -252,7 +256,7 @@ export default function GuestPage() {
 
     const sendRequest = async () => {
       // Check global requests per hour limit against Supabase
-      const limit = sessionConfig?.requests_per_hour ?? 15;
+      const limit = requestsPerHour;
       const oneHourAgoTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       
       const { count: globalCount, error: countError } = await supabase
@@ -313,8 +317,6 @@ export default function GuestPage() {
       setQuery('');
       setResults([]);
       
-      const cooldownEnabled = sessionConfig?.cooldown_enabled ?? true;
-      const cooldownMinutes = sessionConfig?.cooldown_minutes ?? 10;
       if (cooldownEnabled) {
         setCooldown(cooldownMinutes * 60);
       }
@@ -342,8 +344,8 @@ export default function GuestPage() {
           <Music2 size={28} className="text-accent" />
         </div>
         <h1 className="text-2xl font-bold text-gradient">
-          {sessionConfig?.event_name 
-            ? `${t('guest.title')} ${t('guest.for_event') || (lang === 'EN' ? 'for' : 'para')} ${sessionConfig.event_name}`
+          {eventName 
+            ? `${t('guest.title')} ${t('guest.for_event') || (lang === 'EN' ? 'for' : 'para')} ${eventName}`
             : t('guest.title')}
         </h1>
         <p className="text-text-muted mt-1 text-sm">
