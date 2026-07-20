@@ -123,6 +123,7 @@ export default function DashboardPage() {
     themeColor, setThemeColor,
     visualizerEnabled,
     karaokeEnabled, setKaraokeEnabled,
+    lyricsEnabled, setLyricsEnabled,
     isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
@@ -183,14 +184,13 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [controls]);
 
-  // When karaoke mode toggles, immediately re-search and re-play the current track
+  // When karaoke/lyrics mode toggles, immediately re-search and re-play the current track
   useEffect(() => {
     const state = usePlayerStore.getState();
     if (state.playbackEngine !== 'youtube') return;
     if (!state.currentTrack) return;
-    // Re-play from scratch with the new query suffix (LYRICS or VIDEO OFICIAL)
     usePlayerStore.getState().playEngineTrack(state.currentTrack, 0);
-  }, [karaokeEnabled]);
+  }, [karaokeEnabled, lyricsEnabled]);
 
   // Listener y sync movidos globalmente a useQueueSync.js
 
@@ -344,7 +344,7 @@ export default function DashboardPage() {
               return null;
             })()}
 
-            {/* Karaoke toggle: solo con motor YouTube */}
+            {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
             {playbackEngine === 'youtube' && (
               <>
                 <div className="hidden sm:block w-px h-4 bg-white/10" />
@@ -354,6 +354,14 @@ export default function DashboardPage() {
                     Karaoke
                   </span>
                   <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
+                </div>
+                <div className="hidden sm:block w-px h-4 bg-white/10" />
+                <div className="flex items-center gap-2">
+                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
+                    <Mic2 size={14} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
+                    Lyrics
+                  </span>
+                  <Toggle checked={lyricsEnabled} onChange={setLyricsEnabled} />
                 </div>
               </>
             )}

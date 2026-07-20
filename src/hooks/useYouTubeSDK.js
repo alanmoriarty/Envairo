@@ -151,9 +151,12 @@ export function useYouTubeSDK() {
                 let videoIdToPlay = store.currentTrack.id;
 
                 if (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))) {
-                  const isKaraoke = useSettingsStore.getState().karaokeEnabled;
-                  const querySuffix = isKaraoke ? 'LYRICS' : 'VIDEO OFICIAL';
-                  const cacheKey = `yt_bridge_${store.currentTrack.id}_${isKaraoke ? 'karaoke' : 'normal'}`;
+                  const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+                  const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+                  const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
+                                    : mode === 'lyrics'  ? 'LYRICS'
+                                    :                     'VIDEO OFICIAL';
+                  const cacheKey = `yt_bridge_${store.currentTrack.id}_${mode}`;
                   const cachedId = localStorage.getItem(cacheKey);
                   if (cachedId) {
                     videoIdToPlay = cachedId;

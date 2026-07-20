@@ -40,14 +40,17 @@ export const useSettingsStore = create(
       showPlaylists: true,
       visualizerEnabled: false,
       visualizerUrl: '',
-      karaokeEnabled: false,
+      karaokeEnabled: false, // busca "[canción] KARAOKE ORIGINAL WITH LYRICS"
+      lyricsEnabled: false,  // busca "[canción] LYRICS"
       themeColor: 'default', // 'default', 'red', 'blue', 'green', 'amber'
       setShowRequests: (v) => set({ showRequests: v }),
       setShowQR: (v) => set({ showQR: v }),
       setShowPlaylists: (v) => set({ showPlaylists: v }),
       setVisualizerEnabled: (v) => set({ visualizerEnabled: v }),
       setVisualizerUrl: (v) => set({ visualizerUrl: v }),
-      setKaraokeEnabled: (v) => set({ karaokeEnabled: v }),
+      // Mutually exclusive: activating one disables the other
+      setKaraokeEnabled: (v) => set({ karaokeEnabled: v, lyricsEnabled: v ? false : get().lyricsEnabled }),
+      setLyricsEnabled: (v) => set({ lyricsEnabled: v, karaokeEnabled: v ? false : get().karaokeEnabled }),
       setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),

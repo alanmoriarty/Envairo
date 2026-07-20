@@ -180,9 +180,12 @@ export const usePlayerStore = create(
             // Puente Dinámico: Si la pista es de Spotify, buscar el video en YouTube
             if (track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'))) {
               const { useSettingsStore } = await import('./useSettingsStore');
-              const isKaraoke = useSettingsStore.getState().karaokeEnabled;
-              const querySuffix = isKaraoke ? 'LYRICS' : 'VIDEO OFICIAL';
-              const cacheKey = `yt_bridge_${track.id}_${isKaraoke ? 'karaoke' : 'normal'}`;
+              const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+              const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+              const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
+                                : mode === 'lyrics'  ? 'LYRICS'
+                                :                     'VIDEO OFICIAL';
+              const cacheKey = `yt_bridge_${track.id}_${mode}`;
               const cachedId = localStorage.getItem(cacheKey);
 
               if (cachedId) {
@@ -194,7 +197,7 @@ export const usePlayerStore = create(
                   const results = await searchYouTubeVideos(query, 1);
                   if (results && results.length > 0) {
                     videoIdToPlay = results[0].id;
-                    localStorage.setItem(cacheKey, videoIdToPlay); // Guardar en caché
+                    localStorage.setItem(cacheKey, videoIdToPlay);
                   }
                 } catch (err) {
                   console.error('Error in Spotify->YouTube bridge:', err);
