@@ -193,12 +193,26 @@ export function useYouTubeSDK() {
                           }
                           
                           if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                        } else {
+                          videoIdToPlay = null;
                         }
+                      } else {
+                        videoIdToPlay = null;
                       }
                     } catch (e) {
                       console.error('Bridge error on resume:', e);
+                      videoIdToPlay = null;
                     }
                   }
+                }
+
+                if (!videoIdToPlay || (videoIdToPlay === store.currentTrack.id && (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))))) {
+                  import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
+                  const nextTrack = store.shiftQueue();
+                  if (nextTrack) {
+                    store.playEngineTrack(nextTrack);
+                  }
+                  return;
                 }
 
                 if (store.isPlaying) {
@@ -261,8 +275,8 @@ export function useYouTubeSDK() {
                 import('sonner').then(({ toast }) => {
                   toast.error('El video fue bloqueado por derechos de autor. Buscando alternativa...', { id: 'yt-copyright' });
                 });
-                // Forzar reintento de puente
-                store.playEngineTrack(store.currentTrack, store.progress);
+                // Forzar reintento de puente, pasando retryCount = 1
+                store.playEngineTrack(store.currentTrack, store.progress, null, 1);
               }
             } else {
               console.error('YouTube Player Error:', event.data);
