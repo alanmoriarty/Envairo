@@ -365,7 +365,7 @@ export default function GuestPage() {
       {/* Search */}
       <div className="card p-4 mb-4">
         <label className="block text-sm text-text-muted mb-2 flex items-center gap-1.5">
-          <Search size={14} />{t('guest.search_label')}
+          <Search size={14} />{t('guest.search_label', { engine: sessionConfig?.playback_engine === 'youtube' ? 'YouTube' : 'Spotify' })}
         </label>
         <div className="relative">
           <input

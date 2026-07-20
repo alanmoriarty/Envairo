@@ -3,10 +3,12 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Maximize2, RefreshCw, QrCode, SmartphoneNfc } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
+import { usePlayerStore } from '../../store/usePlayerStore';
 
 export function QRCard() {
   const { t } = useTranslation();
   const { sessionId, regenerateSession, hostSecret } = useSettingsStore();
+  const playbackEngine = usePlayerStore(s => s.playbackEngine);
   const containerRef = useRef(null);
   const [showAdminQR, setShowAdminQR] = useState(false);
   const guestUrl = `${window.location.origin}/guest/${sessionId}`;
@@ -37,6 +39,10 @@ export function QRCard() {
 
   const qrSize = isFullscreen ? Math.min(windowSize.w, windowSize.h) * 0.7 : 160;
   const currentUrl = showAdminQR ? adminUrl : guestUrl;
+  
+  const qrImage = playbackEngine === 'youtube' 
+    ? "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg"
+    : "https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg";
 
   return (
     <div className="card p-5 flex flex-col items-center gap-4">
@@ -89,7 +95,7 @@ export function QRCard() {
           level="H"
           includeMargin={true}
           imageSettings={{
-            src: "https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg",
+            src: qrImage,
             x: undefined,
             y: undefined,
             height: 24,

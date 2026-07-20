@@ -115,7 +115,7 @@ export function RootLayout() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-bg-root overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-transparent overflow-hidden">
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card border-b border-white/5 flex items-center justify-between px-4 z-30">

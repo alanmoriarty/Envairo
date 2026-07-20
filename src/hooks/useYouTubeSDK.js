@@ -30,14 +30,17 @@ export function useYouTubeSDK() {
       const playerContainer = document.createElement('div');
       playerContainer.id = 'youtube-player-container';
       playerContainer.style.position = 'fixed';
-      playerContainer.style.top = '0';
-      playerContainer.style.left = '0';
+      playerContainer.style.top = '50%';
+      playerContainer.style.left = '50%';
       playerContainer.style.width = '100vw';
-      playerContainer.style.height = '100vh';
+      playerContainer.style.height = '56.25vw'; // 16:9
+      playerContainer.style.minHeight = '100vh';
+      playerContainer.style.minWidth = '177.77vh'; // 16:9
+      playerContainer.style.transform = 'translate(-50%, -50%)';
       playerContainer.style.zIndex = '-1';
       playerContainer.style.pointerEvents = 'none';
-      playerContainer.style.opacity = '0.3'; // Video de fondo sutil
-      playerContainer.style.objectFit = 'cover';
+      playerContainer.style.opacity = '0.5'; // Mayor opacidad para que se vea bien
+      playerContainer.style.filter = 'blur(4px) saturate(1.5)'; // Efecto moderno de fondo
       document.body.appendChild(playerContainer);
 
       playerRef.current = new window.YT.Player('youtube-player-container', {

@@ -135,6 +135,46 @@ export async function getUserYouTubePlaylists(limit = 50) {
 }
 
 /**
+ * Obtiene los detalles de una playlist específica de YouTube.
+ */
+export async function getYouTubePlaylist(playlistId) {
+  const token = localStorage.getItem('youtube_access_token');
+  const url = new URL(`${BASE_URL}/playlists`);
+  url.searchParams.append('part', 'snippet');
+  url.searchParams.append('id', playlistId);
+  
+  if (!token && API_KEY) {
+    url.searchParams.append('key', API_KEY);
+  } else if (!token && !API_KEY) {
+    throw new Error('No YouTube auth available');
+  }
+
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url.toString(), { headers });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Error fetching YouTube playlist');
+  }
+
+  const data = await response.json();
+  if (!data.items || data.items.length === 0) return null;
+  
+  const pl = data.items[0];
+  return {
+    id: pl.id,
+    name: pl.snippet.title,
+    snapshot_id: pl.etag,
+    owner: { id: pl.snippet.channelId },
+    images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
+  };
+}
+
+/**
  * Obtiene los videos de una playlist de YouTube.
  */
 export async function getYouTubePlaylistItems(playlistId, limit = 50) {

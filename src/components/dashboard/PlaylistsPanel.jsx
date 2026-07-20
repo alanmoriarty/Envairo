@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ListMusic, Play, Loader2, Link as LinkIcon } from 'lucide-react';
 import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spotifyApi';
-import { getUserYouTubePlaylists, getYouTubePlaylistItems } from '../../lib/youtubeApi';
+import { getUserYouTubePlaylists, getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeApi';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -214,18 +214,34 @@ export function PlaylistsPanel() {
     e.preventDefault();
     if (!playlistLink) return;
     
-    const match = playlistLink.match(/playlist\/([a-zA-Z0-9]+)/);
-    if (!match) {
-      toast.error(t('dashboard.toast_pl_link_error'));
-      return;
+    let playlistId = null;
+    if (playbackEngine === 'youtube') {
+      const match = playlistLink.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+      if (!match) {
+        toast.error(t('dashboard.toast_pl_link_error'));
+        return;
+      }
+      playlistId = match[1];
+    } else {
+      const match = playlistLink.match(/playlist\/([a-zA-Z0-9]+)/);
+      if (!match) {
+        toast.error(t('dashboard.toast_pl_link_error'));
+        return;
+      }
+      playlistId = match[1];
     }
     
-    const playlistId = match[1];
     setImporting(true);
     const toastId = toast.loading(t('dashboard.toast_pl_fetching'));
     
     try {
-      const playlistData = await getPlaylist(playlistId);
+      let playlistData = null;
+      if (playbackEngine === 'youtube') {
+        playlistData = await getYouTubePlaylist(playlistId);
+      } else {
+        playlistData = await getPlaylist(playlistId);
+      }
+      
       if (!playlistData) throw new Error('No se encontró la playlist');
       
       toast.dismiss(toastId);
