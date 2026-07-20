@@ -135,6 +135,9 @@ export function RootLayout() {
                 requests_per_guest: state.requestsPerGuest,
                 updated_at: new Date().toISOString()
               }
+            }).then(() => {
+              // Direct update fallback in case RPC doesn't support 'mode' column
+              return supabase.from('sessions').update({ mode: state.mode }).eq('id', sessionId);
             }).catch(()=>{});
           }
         }

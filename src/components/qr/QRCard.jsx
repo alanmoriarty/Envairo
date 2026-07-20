@@ -11,6 +11,7 @@ export function QRCard() {
   const playbackEngine = usePlayerStore(s => s.playbackEngine);
   const containerRef = useRef(null);
   const [showAdminQR, setShowAdminQR] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const guestUrl = `${window.location.origin}/guest/${sessionId}`;
   const adminUrl = `${window.location.origin}/?session=${sessionId}&admin=${hostSecret}`;
 
@@ -40,12 +41,17 @@ export function QRCard() {
   const qrSize = isFullscreen ? Math.min(windowSize.w, windowSize.h) * 0.7 : 160;
   const currentUrl = showAdminQR ? adminUrl : guestUrl;
   
+  const handleRegenerate = () => {
+    regenerateSession();
+    setShowConfirm(false);
+  };
+
   const qrImage = playbackEngine === 'youtube' 
     ? "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg"
     : "https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg";
 
   return (
-    <div className="card p-5 flex flex-col items-center gap-4">
+    <div className="card p-5 flex flex-col items-center gap-4 relative overflow-hidden">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
           <QrCode size={18} className={showAdminQR ? "text-danger" : "text-accent"} />
@@ -60,7 +66,7 @@ export function QRCard() {
             <SmartphoneNfc size={14} />
           </button>
           <button
-            onClick={regenerateSession}
+            onClick={() => setShowConfirm(true)}
             className="btn-ghost p-2"
             title="Regenerar sesión"
           >
@@ -137,6 +143,30 @@ export function QRCard() {
               ⚠️ {t('dashboard.admin_warning')}
             </p>
           )}
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="absolute inset-0 bg-bg-root/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+          <RefreshCw size={32} className="text-danger mb-3" />
+          <h4 className="font-bold text-text-primary mb-2">¿Regenerar QR?</h4>
+          <p className="text-xs text-text-muted mb-6 leading-relaxed">
+            El código actual dejará de funcionar y todas las sesiones activas (invitados y control remoto) se cerrarán.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button 
+              onClick={() => setShowConfirm(false)} 
+              className="px-4 py-2 flex-1 rounded-xl bg-bg-elevated text-text-primary hover:bg-white/10 transition-colors font-semibold"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleRegenerate} 
+              className="px-4 py-2 flex-1 rounded-xl bg-danger hover:bg-danger/80 text-white transition-colors font-semibold shadow-glow-sm"
+            >
+              Regenerar
+            </button>
+          </div>
         </div>
       )}
     </div>

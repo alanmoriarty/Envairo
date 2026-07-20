@@ -26,7 +26,7 @@ export default function GuestPage() {
 
     const channel = supabase.channel(`session-${sessionId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
-        setSessionConfig(payload.new);
+        setSessionConfig(prev => ({ ...prev, ...payload.new }));
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
         if (payload.new.status === 'approved') {
