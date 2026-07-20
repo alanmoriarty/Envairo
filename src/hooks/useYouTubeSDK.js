@@ -173,8 +173,11 @@ export function useYouTubeSDK() {
                       const query = `${queryBase} ${querySuffix}`;
                       const results = await searchYouTubeVideos(query, 5);
                       if (results && results.length > 0) {
-                        videoIdToPlay = results[0].id;
-                        if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                        const validResults = results.filter(r => !store.failedYouTubeIds.includes(r.id));
+                        if (validResults.length > 0) {
+                          videoIdToPlay = validResults[0].id;
+                          if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                        }
                       }
                     } catch (e) {
                       console.error('Bridge error on resume:', e);
@@ -212,6 +215,41 @@ export function useYouTubeSDK() {
               if (nextTrack) {
                 usePlayerStore.getState().playEngineTrack(nextTrack);
               }
+            }
+          },
+          onError: (event) => {
+            // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
+            if (event.data === 101 || event.data === 150) {
+              console.warn('YouTube SDK Error 101/150: Video embedding blocked. Finding alternative...');
+              const store = usePlayerStore.getState();
+              
+              if (playerRef.current) {
+                const url = playerRef.current.getVideoUrl();
+                const match = url?.match(/[?&]v=([^&]+)/);
+                const currentYtId = match ? match[1] : null;
+                
+                if (currentYtId) {
+                  store.addFailedYouTubeId(currentYtId);
+                  
+                  // Borrar de la caché local para evitar un loop infinito
+                  const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+                  const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+                  if (store.currentTrack) {
+                    localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
+                  }
+                }
+              }
+
+              // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
+              if (store.currentTrack) {
+                import('react-hot-toast').then(({ toast }) => {
+                  toast.error('El video fue bloqueado por derechos de autor. Buscando alternativa...', { id: 'yt-copyright' });
+                });
+                // Forzar reintento de puente
+                store.playEngineTrack(store.currentTrack, store.progress);
+              }
+            } else {
+              console.error('YouTube Player Error:', event.data);
             }
           }
         }

@@ -14,6 +14,7 @@ export const usePlayerStore = create(
       // YouTube Player
       youtubePlayer: null,
       playbackEngine: 'spotify', // 'spotify' | 'youtube'
+      failedYouTubeIds: [],
 
       // Playback state
       currentTrack: null,
@@ -37,9 +38,15 @@ export const usePlayerStore = create(
       setYoutubePlayer: (youtubePlayer) => set({ youtubePlayer }),
       setPlaybackEngine: (playbackEngine) => set((state) => {
         if (state.playbackEngine && state.playbackEngine !== playbackEngine) {
-          return { playbackEngine, queue: [], currentQueueIndex: -1, currentTrack: null, playHistory: [] };
+          return { playbackEngine, queue: [], currentQueueIndex: -1, currentTrack: null, playHistory: [], failedYouTubeIds: [] };
         }
         return { playbackEngine };
+      }),
+      addFailedYouTubeId: (id) => set((state) => {
+        if (!state.failedYouTubeIds.includes(id)) {
+          return { failedYouTubeIds: [...state.failedYouTubeIds, id] };
+        }
+        return state;
       }),
       setDeviceId: (deviceId) => set({ deviceId }),
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
@@ -218,10 +225,15 @@ export const usePlayerStore = create(
                   console.log(`[Mode:${mode}] Searching: "${query}"`);
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
-                    videoIdToPlay = results[0].id;
-                    // Guardar en caché siempre para ahorrar cuota
-                    if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
-                    console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
+                    const validResults = results.filter(r => !get().failedYouTubeIds.includes(r.id));
+                    if (validResults.length > 0) {
+                      videoIdToPlay = validResults[0].id;
+                      // Guardar en caché siempre para ahorrar cuota
+                      if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                      console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
+                    } else {
+                      console.error('All search results were in the failed list!');
+                    }
                   }
                 } catch (err) {
                   console.error('Error in YouTube bridge:', err);
