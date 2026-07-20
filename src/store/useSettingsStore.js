@@ -38,12 +38,10 @@ export const useSettingsStore = create(
       showRequests: true,
       showQR: true,
       showPlaylists: true,
-      videoFullscreen: false,
       themeColor: 'default', // 'default', 'red', 'blue', 'green', 'white', 'amber'
       setShowRequests: (v) => set({ showRequests: v }),
       setShowQR: (v) => set({ showQR: v }),
       setShowPlaylists: (v) => set({ showPlaylists: v }),
-      setVideoFullscreen: (v) => set({ videoFullscreen: v }),
       setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),
