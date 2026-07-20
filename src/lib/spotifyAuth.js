@@ -15,6 +15,7 @@ export const SPOTIFY_SCOPES = [
 ].join(' ');
 
 export async function redirectToSpotifyAuth(showDialog = true) {
+  localStorage.setItem('auth_intent', 'spotify');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'spotify',
     options: {

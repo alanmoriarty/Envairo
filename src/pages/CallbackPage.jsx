@@ -39,8 +39,10 @@ export default function CallbackPage() {
 
         // Save the access token depending on the provider
         if (session.provider_token) {
-          // Detect provider from session provider field (google or spotify)
-          const provider = session.user?.app_metadata?.provider || 'spotify';
+          // Detect provider from auth_intent explicitly set before login, fallback to app_metadata
+          const intent = localStorage.getItem('auth_intent');
+          const provider = intent === 'youtube' ? 'google' : (session.user?.app_metadata?.provider || 'spotify');
+          
           if (provider === 'google') {
             localStorage.setItem('youtube_access_token', session.provider_token);
             localStorage.setItem('youtube_token_expires_at', (Date.now() + 3600 * 1000).toString());
@@ -58,7 +60,9 @@ export default function CallbackPage() {
         }
 
         let user = null;
-        const provider = session?.user?.app_metadata?.provider || 'spotify';
+        const intent = localStorage.getItem('auth_intent');
+        const provider = intent === 'youtube' ? 'google' : (session?.user?.app_metadata?.provider || 'spotify');
+        
         if (provider === 'google') {
           user = {
             id: session.user.id,

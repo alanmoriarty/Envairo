@@ -31,7 +31,10 @@ export default function App() {
     const fixEngine = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.app_metadata?.provider === 'google') {
+        const intent = localStorage.getItem('auth_intent');
+        const provider = intent === 'youtube' ? 'google' : (session?.user?.app_metadata?.provider || 'spotify');
+        
+        if (provider === 'google') {
           usePlayerStore.getState().setPlaybackEngine('youtube');
         }
       } catch(e) {}

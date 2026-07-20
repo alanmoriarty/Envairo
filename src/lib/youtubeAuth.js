@@ -8,6 +8,7 @@ export const YOUTUBE_SCOPES = [
 ].join(' ');
 
 export async function redirectToYouTubeAuth() {
+  localStorage.setItem('auth_intent', 'youtube');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
