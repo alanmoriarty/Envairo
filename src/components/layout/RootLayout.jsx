@@ -86,14 +86,17 @@ export function RootLayout() {
   useEffect(() => {
     let timeoutId;
     const unsubSettings = useSettingsStore.subscribe((state, prevState) => {
-      const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
-      const changed = allKeys.some(k => state[k] !== prevState[k]);
+      // Auto-sync solo para opciones rápidas del Dashboard
+      const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode'];
+      const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
       
       if (changed) {
         // 1. Sync to user_metadata (for host persistence across devices)
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           const settingsObj = {};
+          // Guardar estado de todas las llaves en metadatos (aunque el auto-sync sea solo por los toggles)
+          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           allKeys.forEach(k => { settingsObj[k] = state[k]; });
           
           supabase.auth.updateUser({
@@ -102,7 +105,7 @@ export function RootLayout() {
         }, 2000); // 2 second debounce
 
         // 2. Sync to sessions table (for Guest page validation)
-        const dbKeys = ['mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest'];
+        const dbKeys = ['mode']; // Solo auto-sync mode
         const dbChanged = dbKeys.some(k => state[k] !== prevState[k]);
         
         if (dbChanged) {

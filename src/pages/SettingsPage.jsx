@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles, MonitorPlay } from 'lucide-react';
+import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles, MonitorPlay, Save } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
 import { SongTagInput } from '../components/ui/SongTagInput';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 // Se cargan los géneros comunes desde el useLanguageStore
 
@@ -113,6 +115,49 @@ export default function SettingsPage() {
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
   const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveSettingsToCloud = async () => {
+    setIsSaving(true);
+    try {
+      const state = useSettingsStore.getState();
+      const { sessionId, hostSecret } = state;
+      
+      const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+      const settingsObj = {};
+      allKeys.forEach(k => { settingsObj[k] = state[k]; });
+      
+      await supabase.auth.updateUser({
+        data: { host_settings: JSON.stringify(settingsObj) }
+      });
+
+      if (sessionId && hostSecret) {
+        await supabase.rpc('update_session_state', {
+          p_session_id: sessionId,
+          p_secret: hostSecret,
+          p_updates: {
+            mode: state.mode,
+            blacklist_genres: state.blacklistGenres,
+            blacklist_songs: state.blacklistSongs,
+            blacklist_artists: state.blacklistArtists,
+            allow_repeats: state.allowRepeats,
+            cooldown_enabled: state.cooldownEnabled,
+            cooldown_minutes: state.cooldownMinutes,
+            table_count: state.tableCount,
+            requests_per_hour: state.requestsPerHour,
+            requests_per_guest: state.requestsPerGuest,
+            updated_at: new Date().toISOString()
+          }
+        });
+      }
+      toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');
+    } catch (e) {
+      console.error(e);
+      toast.error(t('settings.save_error') || 'Error al guardar los cambios');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!enairoEnabled) {
@@ -407,6 +452,25 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Spacer to avoid sticky footer hiding content */}
+      <div className="h-24"></div>
+
+      {/* Sticky Save Footer */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-bg-base/80 backdrop-blur-xl border-t border-white/10 z-40 lg:ml-64 flex justify-end">
+        <button
+          onClick={saveSettingsToCloud}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-accent),0.3)] disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {isSaving ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save size={18} />
+          )}
+          {t('settings.save_btn') || 'Confirmar Cambios'}
+        </button>
+      </div>
+
       {/* Genre filters */}
       <section className="card p-5 space-y-4 relative z-20">
         <div className="flex items-center justify-between mb-1">
@@ -507,6 +571,26 @@ export default function SettingsPage() {
           />
         </div>
       </section>
+
+      {/* Spacer to avoid sticky footer hiding content */}
+      <div className="h-24"></div>
+
+      {/* Sticky Save Footer */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-bg-base/80 backdrop-blur-xl border-t border-white/10 z-40 lg:ml-64 flex justify-end">
+        <button
+          onClick={saveSettingsToCloud}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-accent),0.3)] disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {isSaving ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save size={18} />
+          )}
+          {t('settings.save_btn') || 'Confirmar Cambios'}
+        </button>
+      </div>
+
       {showGenreGuide && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
