@@ -73,8 +73,14 @@ export function RootLayout() {
     // Si el usuario no tiene Premium, forzamos que su sesión sea inactiva
     // para que nadie pueda escanear su QR ni enviarle peticiones.
     if (!isPremium) {
-      const sessionId = useSettingsStore.getState().sessionId;
-      supabase.from('sessions').upsert({ id: sessionId, active: false }).then();
+      const state = useSettingsStore.getState();
+      if (state.sessionId && state.hostSecret) {
+        supabase.rpc('update_session_state', {
+          p_session_id: state.sessionId,
+          p_secret: state.hostSecret,
+          p_updates: { active: false }
+        }).then();
+      }
     }
     
     // Limpiar peticiones antiguas y actualizar estado de disponibilidad cada minuto
@@ -88,7 +94,13 @@ export function RootLayout() {
 
       if (lastActiveState !== currentActive && isPremium) {
         lastActiveState = currentActive;
-        supabase.from('sessions').update({ active: currentActive }).eq('id', state.sessionId).then();
+        if (state.sessionId && state.hostSecret) {
+          supabase.rpc('update_session_state', {
+            p_session_id: state.sessionId,
+            p_secret: state.hostSecret,
+            p_updates: { active: currentActive }
+          }).then();
+        }
       }
     };
 
@@ -100,9 +112,13 @@ export function RootLayout() {
     return () => {
       clearInterval(interval);
       // Desactivar peticiones por defecto al cerrar la sesión/app
-      const sessionId = useSettingsStore.getState().sessionId;
-      if (sessionId) {
-        supabase.from('sessions').update({ active: false }).eq('id', sessionId).then();
+      const state = useSettingsStore.getState();
+      if (state.sessionId && state.hostSecret) {
+        supabase.rpc('update_session_state', {
+          p_session_id: state.sessionId,
+          p_secret: state.hostSecret,
+          p_updates: { active: false }
+        }).then();
       }
     };
   }, [isPremium]);

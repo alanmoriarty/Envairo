@@ -158,6 +158,9 @@ export default function SettingsPage() {
       });
 
       if (sessionId && hostSecret) {
+        // Calcular disponibilidad
+        let currentActive = state.alwaysAvailable;
+
         await supabase.rpc('update_session_state', {
           p_session_id: sessionId,
           p_secret: hostSecret,
@@ -174,14 +177,10 @@ export default function SettingsPage() {
             table_count: state.tableCount,
             requests_per_hour: state.requestsPerHour,
             requests_per_guest: state.requestsPerGuest,
+            active: currentActive,
             updated_at: new Date().toISOString()
           }
         });
-
-        // Calcular y enviar disponibilidad inmediatamente
-        let currentActive = state.alwaysAvailable;
-
-        await supabase.from('sessions').update({ mode: state.mode, event_name: state.eventName, active: currentActive }).eq('id', sessionId);
       }
       setLastSavedSignature(currentSignature);
       toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');

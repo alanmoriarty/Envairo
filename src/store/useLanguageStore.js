@@ -179,7 +179,7 @@ const ES = {
   },
   settings: {
     title: 'Configuración',
-    availability_title: 'Horario de Disponibilidad',
+    availability_title: 'Disponibilidad de peticiones',
     always_available: 'Aceptar peticiones',
     always_available_desc: 'Si está activado, los invitados podrán pedir canciones. Si lo apagas, verán un mensaje de "Cerrado".',
     start_time: 'Hora de inicio',
