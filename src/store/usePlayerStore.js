@@ -177,6 +177,10 @@ export const usePlayerStore = create(
           if (state.youtubePlayer && track.id) {
             let videoIdToPlay = track.id;
 
+            // Detener el video actual de inmediato para evitar reproducción simultánea
+            state.youtubePlayer.stopVideo();
+            set({ isPlaying: false });
+
             // Determinar modo activo
             const { useSettingsStore } = await import('./useSettingsStore');
             const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
@@ -211,7 +215,7 @@ export const usePlayerStore = create(
               }
             }
 
-            // YouTube player takes seconds
+            // Cargar el nuevo video
             state.youtubePlayer.loadVideoById(videoIdToPlay, progressMs / 1000);
             set({ isPlaying: true });
           }
