@@ -177,14 +177,20 @@ export const usePlayerStore = create(
           if (state.youtubePlayer && track.id) {
             let videoIdToPlay = track.id;
 
-            // Puente Dinámico: Si la pista es de Spotify, buscar el video en YouTube
-            if (track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'))) {
-              const { useSettingsStore } = await import('./useSettingsStore');
-              const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-              const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-              const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
-                                : mode === 'lyrics'  ? 'LYRICS'
-                                :                     'VIDEO OFICIAL';
+            // Determinar modo activo
+            const { useSettingsStore } = await import('./useSettingsStore');
+            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+            const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+            const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
+                              : mode === 'lyrics'  ? 'LYRICS'
+                              : null; // null = sin búsqueda, usar ID original
+
+            // Necesita búsqueda si: modo activo (karaoke/lyrics) O si el track es de Spotify
+            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'));
+            const needsSearch = querySuffix !== null || isSpotifyTrack;
+
+            if (needsSearch) {
+              const effectiveSuffix = querySuffix ?? 'VIDEO OFICIAL';
               const cacheKey = `yt_bridge_${track.id}_${mode}`;
               const cachedId = localStorage.getItem(cacheKey);
 
@@ -193,14 +199,14 @@ export const usePlayerStore = create(
               } else {
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                  const query = `${track.artists} ${track.name} ${querySuffix}`;
+                  const query = `${track.artists} ${track.name} ${effectiveSuffix}`;
                   const results = await searchYouTubeVideos(query, 1);
                   if (results && results.length > 0) {
                     videoIdToPlay = results[0].id;
                     localStorage.setItem(cacheKey, videoIdToPlay);
                   }
                 } catch (err) {
-                  console.error('Error in Spotify->YouTube bridge:', err);
+                  console.error('Error in YouTube bridge:', err);
                 }
               }
             }
