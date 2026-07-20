@@ -125,8 +125,9 @@ export function useQueueSync() {
                 // No llamamos al hook aquí directamente, usamos las funciones exportadas de spotifyApi
                 import('../lib/spotifyApi').then(api => {
                   const targetDevice = currentState.activeDeviceId || currentState.deviceId;
-                  if (!targetDevice) return;
                   
+                  // Si estamos en Spotify y no hay dispositivo, no podemos hacer mucho
+                  if (!targetDevice && currentState.playbackEngine !== 'youtube') return;
                   if (cmd.action === 'play') {
                     if (currentState.playbackEngine === 'youtube') {
                        if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();

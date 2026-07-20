@@ -266,11 +266,17 @@ export function useYouTubeSDK() {
         playerRef.current.pauseVideo();
       }
     },
-    next: () => {
-      // Manejado externamente por la cola de EnvAIro (QueueSync/AutoQueue)
+    skipNext: () => {
+      const nextTrack = usePlayerStore.getState().shiftQueue();
+      if (nextTrack) {
+        usePlayerStore.getState().playEngineTrack(nextTrack);
+      }
     },
-    prev: () => {
-      // Manejado externamente
+    skipPrev: () => {
+      const prevTrack = usePlayerStore.getState().prevQueue();
+      if (prevTrack) {
+        usePlayerStore.getState().playEngineTrack(prevTrack);
+      }
     }
   };
 
