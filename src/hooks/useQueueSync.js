@@ -326,7 +326,6 @@ export function useQueueSync() {
           blacklist_songs: blacklistSongs,
           blacklist_artists: blacklistArtists,
           allow_repeats: allowRepeats,
-          repeat_cooldown: repeatCooldown,
           cooldown_enabled: cooldownEnabled,
           cooldown_minutes: cooldownMinutes,
           table_count: tableCount,
