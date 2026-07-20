@@ -86,6 +86,42 @@
   .glass {
     @apply bg-bg-card/60 backdrop-blur-xl border border-white/10;
   }
+
+  /* Themes */
+  .theme-red .card { @apply bg-red-950/60 border-red-500/20; }
+  .theme-red .input-field { @apply bg-red-950/50 border-red-500/30 focus:border-red-500/60 focus:ring-red-500/30; }
+  .theme-red .glass { @apply bg-red-950/50 border-red-500/20; }
+  .theme-red .bg-bg-elevated { @apply bg-red-950/60; }
+  .theme-red .border-white\/5 { @apply border-red-500/20; }
+  .theme-red .hover\:bg-bg-elevated:hover { @apply hover:bg-red-900/50; }
+
+  .theme-blue .card { @apply bg-blue-950/60 border-blue-500/20; }
+  .theme-blue .input-field { @apply bg-blue-950/50 border-blue-500/30 focus:border-blue-500/60 focus:ring-blue-500/30; }
+  .theme-blue .glass { @apply bg-blue-950/50 border-blue-500/20; }
+  .theme-blue .bg-bg-elevated { @apply bg-blue-950/60; }
+  .theme-blue .border-white\/5 { @apply border-blue-500/20; }
+  .theme-blue .hover\:bg-bg-elevated:hover { @apply hover:bg-blue-900/50; }
+
+  .theme-green .card { @apply bg-emerald-950/60 border-emerald-500/20; }
+  .theme-green .input-field { @apply bg-emerald-950/50 border-emerald-500/30 focus:border-emerald-500/60 focus:ring-emerald-500/30; }
+  .theme-green .glass { @apply bg-emerald-950/50 border-emerald-500/20; }
+  .theme-green .bg-bg-elevated { @apply bg-emerald-950/60; }
+  .theme-green .border-white\/5 { @apply border-emerald-500/20; }
+  .theme-green .hover\:bg-bg-elevated:hover { @apply hover:bg-emerald-900/50; }
+
+  .theme-white .card { @apply bg-white/10 border-white/20; }
+  .theme-white .input-field { @apply bg-white/10 border-white/30 focus:border-white/60 focus:ring-white/30; }
+  .theme-white .glass { @apply bg-white/10 border-white/20; }
+  .theme-white .bg-bg-elevated { @apply bg-white/15; }
+  .theme-white .border-white\/5 { @apply border-white/20; }
+  .theme-white .hover\:bg-bg-elevated:hover { @apply hover:bg-white/20; }
+
+  .theme-amber .card { @apply bg-amber-950/60 border-amber-500/20; }
+  .theme-amber .input-field { @apply bg-amber-950/50 border-amber-500/30 focus:border-amber-500/60 focus:ring-amber-500/30; }
+  .theme-amber .glass { @apply bg-amber-950/50 border-amber-500/20; }
+  .theme-amber .bg-bg-elevated { @apply bg-amber-950/60; }
+  .theme-amber .border-white\/5 { @apply border-amber-500/20; }
+  .theme-amber .hover\:bg-bg-elevated:hover { @apply hover:bg-amber-900/50; }
 }
 
 @layer utilities {

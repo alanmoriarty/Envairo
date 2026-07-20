@@ -38,9 +38,11 @@ export const useSettingsStore = create(
       showRequests: true,
       showQR: true,
       showPlaylists: true,
+      themeColor: 'default', // 'default', 'red', 'blue', 'green', 'white', 'amber'
       setShowRequests: (v) => set({ showRequests: v }),
       setShowQR: (v) => set({ showQR: v }),
       setShowPlaylists: (v) => set({ showPlaylists: v }),
+      setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),
       setAutoDJ: (autoDJ) => set({ autoDJ }),

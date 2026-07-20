@@ -16,7 +16,7 @@ import { LanguageSelector } from '../ui/LanguageSelector';
 export function RootLayout() {
   const { controls } = useSpotifySDK();
   const { isAuthenticated, user } = useAuthStore();
-  const { isAdminMode } = useSettingsStore();
+  const { isAdminMode, themeColor } = useSettingsStore();
   const location = useLocation();
   
   useQueueSync();
@@ -115,7 +115,7 @@ export function RootLayout() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-transparent overflow-hidden">
+    <div className={`h-[100dvh] flex flex-col overflow-hidden bg-bg-root text-text-primary font-sans transition-colors duration-500 theme-${themeColor || 'default'}`}>
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">

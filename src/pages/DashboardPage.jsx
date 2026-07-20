@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus, Maximize2
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette
 } from 'lucide-react';
 import {
   DndContext,
@@ -120,6 +120,7 @@ export default function DashboardPage() {
     showRequests, setShowRequests,
     showQR, setShowQR,
     showPlaylists, setShowPlaylists,
+    themeColor, setThemeColor,
     isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
@@ -330,6 +331,28 @@ export default function DashboardPage() {
               }
               return null;
             })()}
+
+            <div className="hidden sm:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2">
+              <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><Palette size={14} className="text-accent" /> Tema</span>
+              <div className="flex items-center gap-1.5 ml-1">
+                {['default', 'red', 'blue', 'green', 'white', 'amber'].map(color => (
+                  <button 
+                    key={color}
+                    onClick={() => setThemeColor(color)}
+                    className={`w-5 h-5 rounded-full border-2 transition-all ${themeColor === color ? 'border-white scale-110 shadow-glow-sm' : 'border-transparent hover:scale-110 opacity-60 hover:opacity-100'}
+                      ${color === 'default' ? 'bg-bg-elevated border-white/20' : ''}
+                      ${color === 'red' ? 'bg-red-500' : ''}
+                      ${color === 'blue' ? 'bg-blue-500' : ''}
+                      ${color === 'green' ? 'bg-emerald-500' : ''}
+                      ${color === 'white' ? 'bg-white' : ''}
+                      ${color === 'amber' ? 'bg-amber-500' : ''}
+                    `}
+                    title={`Tema ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
