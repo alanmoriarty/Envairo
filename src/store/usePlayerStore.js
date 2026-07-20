@@ -205,7 +205,16 @@ export const usePlayerStore = create(
               } else {
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                  const query = `${track.artists} ${track.name} ${effectiveSuffix}`;
+                  // Limpiar el nombre del track: quitar "(Video Oficial)", "(Official Video)", etc.
+                  const cleanName = (track.name || '')
+                    .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k|ft\.?.*|feat\.?.*)\)?/gi, '')
+                    .replace(/[-–]\s*$/, '') // quitar guiones al final
+                    .trim();
+                  // Si el nombre ya empieza con el artista, no repetirlo
+                  const artistStr = (track.artists || '').split(',')[0].trim();
+                  const nameStartsWithArtist = cleanName.toLowerCase().startsWith(artistStr.toLowerCase());
+                  const queryBase = nameStartsWithArtist ? cleanName : `${artistStr} ${cleanName}`;
+                  const query = `${queryBase} ${effectiveSuffix}`;
                   console.log(`[Mode:${mode}] Searching: "${query}"`);
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
