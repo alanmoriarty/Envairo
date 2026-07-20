@@ -28,16 +28,17 @@ export function useYouTubeSDK() {
       wrapper.style.pointerEvents = 'auto';
     } else if (isVis) {
       wrapper.style.top = 'auto';
-      wrapper.style.left = '24px';
-      wrapper.style.bottom = '24px';
-      wrapper.style.width = '320px';
-      wrapper.style.height = '180px';
+      wrapper.style.left = 'auto';
+      wrapper.style.right = '16px';
+      wrapper.style.bottom = '80px'; // Above footer player
+      wrapper.style.width = '160px';
+      wrapper.style.height = '90px';
       wrapper.style.minHeight = '0';
       wrapper.style.minWidth = '0';
       wrapper.style.transform = 'none';
       wrapper.style.borderRadius = '12px';
       wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
-      wrapper.style.opacity = '0.8';
+      wrapper.style.opacity = '0.6';
       wrapper.style.zIndex = '40';
       wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'none';
