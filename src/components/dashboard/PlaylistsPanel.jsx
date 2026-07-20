@@ -58,14 +58,15 @@ export function PlaylistsPanel() {
     }));
   }, [playHistory]);
 
+  const playbackEngine = usePlayerStore(s => s.playbackEngine);
+  
   useEffect(() => {
     let isMounted = true;
 
     async function fetchPlaylists(showLoading = true) {
       if (showLoading) setLoading(true);
       try {
-        const engine = usePlayerStore.getState().playbackEngine;
-        if (engine === 'youtube') {
+        if (playbackEngine === 'youtube') {
           const res = await getUserYouTubePlaylists(50);
           if (!isMounted) return;
           if (res && res.items) {
@@ -114,7 +115,7 @@ export function PlaylistsPanel() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [playbackEngine]);
 
   const handleSelectPlaylist = async (playlist) => {
     const isAdminMode = useSettingsStore.getState().isAdminMode;

@@ -80,12 +80,21 @@ export function PersistentPlayer() {
   };
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      controls.pause();
-      usePlayerStore.getState().setIsPlaying(false);
+    const state = usePlayerStore.getState();
+    if (state.playbackEngine === 'youtube') {
+      if (state.youtubePlayer) {
+        if (isPlaying) {
+          state.youtubePlayer.pauseVideo();
+        } else {
+          state.youtubePlayer.playVideo();
+        }
+      }
     } else {
-      controls.resume();
-      usePlayerStore.getState().setIsPlaying(true);
+      if (isPlaying) {
+        controls.pause();
+      } else {
+        controls.resume();
+      }
     }
   };
 
