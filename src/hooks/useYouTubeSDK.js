@@ -242,7 +242,7 @@ export function useYouTubeSDK() {
 
               // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
               if (store.currentTrack) {
-                import('react-hot-toast').then(({ toast }) => {
+                import('sonner').then(({ toast }) => {
                   toast.error('El video fue bloqueado por derechos de autor. Buscando alternativa...', { id: 'yt-copyright' });
                 });
                 // Forzar reintento de puente
