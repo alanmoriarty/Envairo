@@ -42,6 +42,27 @@ export function RootLayout() {
     if (user?.id) {
       useSettingsStore.getState().setSessionId(user.id);
     }
+    
+    // Sincronizar configuraciones de la nube al montar
+    const hydrateSettings = async () => {
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        if (sbUser?.user_metadata?.host_settings) {
+          const settingsObj = JSON.parse(sbUser.user_metadata.host_settings);
+          const currentState = useSettingsStore.getState();
+          const validSettings = {};
+          Object.keys(settingsObj).forEach(key => {
+            if (typeof currentState[key] !== 'function') {
+              validSettings[key] = settingsObj[key];
+            }
+          });
+          useSettingsStore.setState(validSettings);
+        }
+      } catch(e) {
+        console.error('Error hydrating settings on mount:', e);
+      }
+    };
+    hydrateSettings();
 
     // Si el usuario no tiene Premium, forzamos que su sesión sea inactiva
     // para que nadie pueda escanear su QR ni enviarle peticiones.
