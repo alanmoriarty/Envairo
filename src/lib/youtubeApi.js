@@ -143,16 +143,19 @@ export async function getYouTubePlaylistItems(playlistId, limit = 50) {
   url.searchParams.append('part', 'snippet,contentDetails');
   url.searchParams.append('playlistId', playlistId);
   url.searchParams.append('maxResults', limit.toString());
-  // Si tenemos API KEY pública, la podemos usar como fallback, pero mejor usar token si existe.
-  if (token) {
-    url.searchParams.append('access_token', token);
-  } else if (API_KEY) {
+  
+  if (!token && API_KEY) {
     url.searchParams.append('key', API_KEY);
-  } else {
+  } else if (!token && !API_KEY) {
     throw new Error('No YouTube auth available for fetching playlist items');
   }
 
-  const response = await fetch(url.toString());
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url.toString(), { headers });
   
   if (!response.ok) {
     const error = await response.json();
@@ -171,10 +174,17 @@ export async function getYouTubePlaylistItems(playlistId, limit = 50) {
       const vidUrl = new URL(`${BASE_URL}/videos`);
       vidUrl.searchParams.append('part', 'contentDetails');
       vidUrl.searchParams.append('id', videoIds.join(','));
-      if (token) vidUrl.searchParams.append('access_token', token);
-      else vidUrl.searchParams.append('key', API_KEY);
       
-      const vidRes = await fetch(vidUrl.toString());
+      if (!token && API_KEY) {
+        vidUrl.searchParams.append('key', API_KEY);
+      }
+      
+      const vidHeaders = {};
+      if (token) {
+        vidHeaders['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const vidRes = await fetch(vidUrl.toString(), { headers: vidHeaders });
       if (vidRes.ok) {
         const vidData = await vidRes.json();
         vidData.items.forEach(v => {

@@ -59,9 +59,21 @@ export function useYouTubeSDK() {
           onReady: (event) => {
             setYtReady(true);
             setYoutubePlayer(event.target);
-            usePlayerStore.getState().setSdkReady(true);
-            usePlayerStore.getState().setDeviceId('youtube-device');
-            usePlayerStore.getState().setActiveDeviceId('youtube-device');
+            const store = usePlayerStore.getState();
+            store.setSdkReady(true);
+            store.setDeviceId('youtube-device');
+            store.setActiveDeviceId('youtube-device');
+            
+            // Auto-resume or cue after refresh
+            if (store.currentTrack && store.currentTrack.id) {
+              setTimeout(() => {
+                if (store.isPlaying) {
+                  event.target.loadVideoById(store.currentTrack.id, store.progress / 1000);
+                } else {
+                  event.target.cueVideoById(store.currentTrack.id, store.progress / 1000);
+                }
+              }, 500);
+            }
           },
           onStateChange: (event) => {
             const yt = window.YT;

@@ -38,10 +38,15 @@ export function PlaylistsPanel() {
   const playHistory = usePlayerStore((s) => s.playHistory || []);
   const sessionId = useSettingsStore(s => s.sessionId);
 
+  const playbackEngine = usePlayerStore(s => s.playbackEngine);
+  
   // Agrupar historial por días
   const historyByDay = React.useMemo(() => {
     const groups = {};
     playHistory.forEach(track => {
+      const trackEngine = track.source === 'youtube' ? 'youtube' : 'spotify';
+      if (trackEngine !== playbackEngine) return;
+      
       const label = formatDateLabel(track.playedAt);
       if (!groups[label]) groups[label] = [];
       // Evitar duplicados exactos en el mismo día
@@ -56,9 +61,7 @@ export function PlaylistsPanel() {
       tracks,
       images: tracks.length > 0 && tracks[0].image ? [{ url: tracks[0].image }] : []
     }));
-  }, [playHistory]);
-
-  const playbackEngine = usePlayerStore(s => s.playbackEngine);
+  }, [playHistory, playbackEngine]);
   
   useEffect(() => {
     let isMounted = true;
