@@ -64,8 +64,7 @@ export async function getYouTubeVideoDetails(videoId) {
   
   // Convertir duración ISO 8601 (ej. PT3M2S) a milisegundos
   const durationStr = item.contentDetails.duration;
-  let durationMs = 0;
-  let durationMs = parseYouTubeDuration(durationStr);
+  const durationMs = parseYouTubeDuration(durationStr);
 
   return {
     id: item.id,
