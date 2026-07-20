@@ -14,6 +14,8 @@ export default function App() {
   
   useInactivityTimeout();
   // Sincronizar el estado entre pestañas (Host vs Guest local)
+  const [engineChecked, setEngineChecked] = useState(false);
+
   useEffect(() => {
     const handleStorage = (e) => {
       if (e.key === 'bq-player') {
@@ -33,6 +35,7 @@ export default function App() {
           usePlayerStore.getState().setPlaybackEngine('youtube');
         }
       } catch(e) {}
+      setEngineChecked(true);
     };
     fixEngine();
   }, []);
@@ -47,6 +50,8 @@ export default function App() {
     window.addEventListener('spotify_auth_error', handleAuthError);
     return () => window.removeEventListener('spotify_auth_error', handleAuthError);
   }, []);
+
+  if (!engineChecked) return null;
 
   const handleReconnect = async () => {
     setIsReconnecting(true);
