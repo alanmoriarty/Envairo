@@ -197,8 +197,11 @@ export function useYouTubeSDK() {
             } else if (event.data === yt.PlayerState.ENDED) {
               setIsPlaying(false);
               stopProgressTimer();
-              // Si termina, debería saltar a la siguiente
-              usePlayerStore.getState().setPendingRequests((prev) => [...prev, { action: 'next', ts: Date.now() }]);
+              // Advance to next track in queue
+              const nextTrack = usePlayerStore.getState().shiftQueue();
+              if (nextTrack) {
+                usePlayerStore.getState().playEngineTrack(nextTrack);
+              }
             }
           }
         }
