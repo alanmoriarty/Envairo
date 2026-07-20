@@ -192,7 +192,7 @@ export default function DashboardPage() {
         }).then());
       } else {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
-        await controls.play([track.uri]);
+        usePlayerStore.getState().playEngineTrack(track);
       }
       toast.success(t('dashboard.toast_playing', { name: track.name }));
     }

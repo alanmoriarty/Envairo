@@ -187,7 +187,7 @@ export function PlaylistsPanel() {
               p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 
             }).then());
           } else {
-            await controls.play([firstTrack.uri]);
+            usePlayerStore.getState().playEngineTrack(firstTrack);
           }
           toast.success(t('dashboard.toast_pl_added', { name: playlist.name }), { id: toastId });
         }
