@@ -121,7 +121,7 @@ export default function DashboardPage() {
     showQR, setShowQR,
     showPlaylists, setShowPlaylists,
     themeColor, setThemeColor,
-    videoFullscreen, setVideoFullscreen,
+    visualizerEnabled,
     isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
@@ -245,10 +245,11 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
-            {playbackEngine === 'youtube' && (
+            {(playbackEngine === 'youtube' || visualizerEnabled) && (
               <button
                 onClick={() => {
-                  const wrapper = document.getElementById('youtube-wrapper');
+                  const targetId = visualizerEnabled ? 'visualizer-wrapper' : 'youtube-wrapper';
+                  const wrapper = document.getElementById(targetId);
                   if (wrapper) {
                     if (!document.fullscreenElement) {
                       wrapper.requestFullscreen().catch(() => {});
@@ -337,7 +338,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><Palette size={14} className="text-accent" /> Tema</span>
               <div className="flex items-center gap-1.5 ml-1">
-                {['default', 'red', 'blue', 'green', 'white', 'amber'].map(color => (
+                {['default', 'red', 'blue', 'green', 'amber'].map(color => (
                   <button 
                     key={color}
                     onClick={() => setThemeColor(color)}
@@ -346,7 +347,6 @@ export default function DashboardPage() {
                       ${color === 'red' ? 'bg-red-500' : ''}
                       ${color === 'blue' ? 'bg-blue-500' : ''}
                       ${color === 'green' ? 'bg-emerald-500' : ''}
-                      ${color === 'white' ? 'bg-white' : ''}
                       ${color === 'amber' ? 'bg-amber-500' : ''}
                     `}
                     title={`Tema ${color}`}

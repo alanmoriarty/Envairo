@@ -1,11 +1,68 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack } = usePlayerStore();
   const playerRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
+  const { visualizerEnabled } = useSettingsStore();
+
+  const applyStyles = (wrapper, isVis, isFs) => {
+    if (!wrapper) return;
+    
+    if (isFs) {
+      wrapper.style.top = '50%';
+      wrapper.style.left = '50%';
+      wrapper.style.width = '100vw';
+      wrapper.style.height = '56.25vw';
+      wrapper.style.minHeight = '100vh';
+      wrapper.style.minWidth = '177.77vh';
+      wrapper.style.transform = 'translate(-50%, -50%)';
+      wrapper.style.borderRadius = '0';
+      wrapper.style.boxShadow = 'none';
+      wrapper.style.opacity = '1';
+      wrapper.style.zIndex = '9999';
+      wrapper.style.filter = 'none';
+      wrapper.style.pointerEvents = 'auto';
+    } else if (isVis) {
+      wrapper.style.top = 'auto';
+      wrapper.style.left = '24px';
+      wrapper.style.bottom = '24px';
+      wrapper.style.width = '320px';
+      wrapper.style.height = '180px';
+      wrapper.style.minHeight = '0';
+      wrapper.style.minWidth = '0';
+      wrapper.style.transform = 'none';
+      wrapper.style.borderRadius = '12px';
+      wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+      wrapper.style.opacity = '0.8';
+      wrapper.style.zIndex = '40';
+      wrapper.style.filter = 'none';
+      wrapper.style.pointerEvents = 'none';
+    } else {
+      wrapper.style.top = '50%';
+      wrapper.style.left = '50%';
+      wrapper.style.width = '100vw';
+      wrapper.style.height = '56.25vw';
+      wrapper.style.minHeight = '100vh';
+      wrapper.style.minWidth = '177.77vh';
+      wrapper.style.transform = 'translate(-50%, -50%)';
+      wrapper.style.borderRadius = '0';
+      wrapper.style.boxShadow = 'none';
+      wrapper.style.opacity = '0.5';
+      wrapper.style.zIndex = '-1';
+      wrapper.style.filter = 'blur(4px) saturate(1.5)';
+      wrapper.style.pointerEvents = 'none';
+    }
+  };
+
+  useEffect(() => {
+    const wrapper = document.getElementById('youtube-wrapper');
+    const isFs = document.fullscreenElement === wrapper;
+    applyStyles(wrapper, visualizerEnabled, isFs);
+  }, [visualizerEnabled]);
 
   useEffect(() => {
     if (playbackEngine !== 'youtube') return;
@@ -30,17 +87,8 @@ export function useYouTubeSDK() {
       const wrapper = document.createElement('div');
       wrapper.id = 'youtube-wrapper';
       wrapper.style.position = 'fixed';
-      wrapper.style.top = '50%';
-      wrapper.style.left = '50%';
-      wrapper.style.width = '100vw';
-      wrapper.style.height = '56.25vw'; // 16:9
-      wrapper.style.minHeight = '100vh';
-      wrapper.style.minWidth = '177.77vh'; // 16:9
-      wrapper.style.transform = 'translate(-50%, -50%)';
-      wrapper.style.zIndex = '-1';
-      wrapper.style.pointerEvents = 'none'; // Prevenir interacciones por defecto
-      wrapper.style.opacity = '0.5'; 
-      wrapper.style.filter = 'blur(4px) saturate(1.5)';
+      wrapper.style.overflow = 'hidden';
+      applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
       document.body.appendChild(wrapper);
 
       const targetDiv = document.createElement('div');
@@ -61,15 +109,8 @@ export function useYouTubeSDK() {
 
       const handleFsChange = () => {
         const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        if (fsElement) {
-          wrapper.style.opacity = '1';
-          wrapper.style.filter = 'none';
-          wrapper.style.pointerEvents = 'auto'; // Permitir clicks para el overlay
-        } else {
-          wrapper.style.opacity = '0.5';
-          wrapper.style.filter = 'blur(4px) saturate(1.5)';
-          wrapper.style.pointerEvents = 'none'; // Bloquear clicks
-        }
+        const isVisualizerOn = useSettingsStore.getState().visualizerEnabled;
+        applyStyles(wrapper, isVisualizerOn, fsElement === wrapper);
       };
       
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];

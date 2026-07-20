@@ -38,10 +38,14 @@ export const useSettingsStore = create(
       showRequests: true,
       showQR: true,
       showPlaylists: true,
-      themeColor: 'default', // 'default', 'red', 'blue', 'green', 'white', 'amber'
+      visualizerEnabled: false,
+      visualizerUrl: '',
+      themeColor: 'default', // 'default', 'red', 'blue', 'green', 'amber'
       setShowRequests: (v) => set({ showRequests: v }),
       setShowQR: (v) => set({ showQR: v }),
       setShowPlaylists: (v) => set({ showPlaylists: v }),
+      setVisualizerEnabled: (v) => set({ visualizerEnabled: v }),
+      setVisualizerUrl: (v) => set({ visualizerUrl: v }),
       setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),

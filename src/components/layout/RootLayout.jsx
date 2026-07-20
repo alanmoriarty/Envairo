@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PersistentPlayer } from './PersistentPlayer';
+import { VisualizerBackground } from './VisualizerBackground';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -145,6 +146,9 @@ export function RootLayout() {
         </main>
       </div>
       
+      {/* Visualizer Background */}
+      <VisualizerBackground />
+
       {/* Footer Player */}
       {!isAdminMode && <PersistentPlayer />}
     </div>

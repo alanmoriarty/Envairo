@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles } from 'lucide-react';
+import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles, MonitorPlay } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
@@ -102,7 +102,9 @@ export default function SettingsPage() {
     enairoEnabled, setEnairoEnabled,
     enairoPrompt, setEnairoPrompt,
     enairoTestMode, setEnairoTestMode,
-    enairoLastRunAt, enairoStartedAt
+    enairoLastRunAt, enairoStartedAt,
+    visualizerEnabled, setVisualizerEnabled,
+    visualizerUrl, setVisualizerUrl
   } = useSettingsStore();
   const { t } = useTranslation();
   
@@ -210,6 +212,39 @@ export default function SettingsPage() {
             description={t('settings.envairo_test_desc')}
           />
         </div>
+      </section>
+
+      {/* Visualizer Settings */}
+      <section className="card p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <MonitorPlay size={16} className="text-text-muted" />
+          <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+        </div>
+        
+        <p className="text-xs text-text-muted mb-2">
+          Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
+        </p>
+
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
+          <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
+        </div>
+
+        {visualizerEnabled && (
+          <div className="pt-2 animate-fade-in">
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
+            <input
+              type="text"
+              value={visualizerUrl}
+              onChange={(e) => setVisualizerUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=... o &list=..."
+              className="input-field w-full text-sm font-mono placeholder:font-sans"
+            />
+            <p className="text-[10px] text-text-muted mt-1.5">
+              Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Availability */}
