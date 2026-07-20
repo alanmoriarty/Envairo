@@ -267,6 +267,7 @@ const ES = {
     guide_modal_regional: 'Regional Mexicano',
     guide_modal_other: 'Otros',
     guide_modal_tip: 'Tip: Si el sistema añade varios géneros hermanos y hay alguno que en específico NO deseas, simplemente haz clic en la X de su etiqueta para removerlo individualmente.',
+    save_btn: 'Guardar Cambios',
   },
   activities: {
     title: 'Actividades',
@@ -589,7 +590,8 @@ const EN = {
       "Reggaeton", "Regional Mexican", "Rock", "Latin Rock", "Salsa",
       "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Latin Trap",
       "Tropical", "Latin Urban", "Vallenato"
-    ]
+    ],
+    save_btn: 'Save Changes',
   },
   activities: {
     title: 'Activities',

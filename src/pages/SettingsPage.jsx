@@ -554,11 +554,11 @@ export default function SettingsPage() {
       </section>
 
       {/* Sticky Save Footer */}
-      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-4 bg-bg-base/90 backdrop-blur-xl border-t border-white/10 z-40 mt-8 flex justify-end shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+      <div className="sticky bottom-4 z-40 mt-8 flex justify-end pointer-events-none">
         <button
           onClick={saveSettingsToCloud}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-accent),0.3)] disabled:opacity-50 disabled:hover:scale-100"
+          className="pointer-events-auto flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_4px_20px_rgba(var(--color-accent),0.4)] disabled:opacity-50 disabled:hover:scale-100"
         >
           {isSaving ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
