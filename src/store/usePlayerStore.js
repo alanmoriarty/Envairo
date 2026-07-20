@@ -260,6 +260,7 @@ export const usePlayerStore = create(
     {
       name: 'bq-player',
       partialize: (state) => ({
+        playbackEngine: state.playbackEngine,
         queue: state.queue,
         currentQueueIndex: state.currentQueueIndex,
         volume: state.volume,

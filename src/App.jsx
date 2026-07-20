@@ -24,6 +24,19 @@ export default function App() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  // Self-heal playback engine if it was lost from local storage
+  useEffect(() => {
+    const fixEngine = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.app_metadata?.provider === 'google') {
+          usePlayerStore.getState().setPlaybackEngine('youtube');
+        }
+      } catch(e) {}
+    };
+    fixEngine();
+  }, []);
+
   // Handle Spotify 401 Unauthorized errors globally
   useEffect(() => {
     const handleAuthError = () => {
