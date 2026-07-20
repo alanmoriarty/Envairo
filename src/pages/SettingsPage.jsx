@@ -120,7 +120,7 @@ export default function SettingsPage() {
   const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
   const currentSettingsObj = {};
   allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
   const currentSignature = JSON.stringify(currentSettingsObj);
@@ -250,6 +250,26 @@ export default function SettingsPage() {
         </h1>
         <p className="text-text-muted text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
+
+      {/* General Settings */}
+      <section className="card p-5 space-y-4">
+        <h2 className="font-bold text-text-primary">General</h2>
+        
+        <div>
+          <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento (opcional)</label>
+          <input
+            type="text"
+            value={store.eventName}
+            onChange={(e) => store.setEventName(e.target.value)}
+            placeholder="Ej: La fiesta de Andres"
+            maxLength={40}
+            className="input-field w-full"
+          />
+          <p className="text-xs text-text-muted mt-1.5">
+            Se mostrará a tus invitados en la página web: "Pide tu canción para..."
+          </p>
+        </div>
+      </section>
 
       {/* EnvAIro Selector (IA) */}
       <section className="card p-5 space-y-4 border border-accent/20">

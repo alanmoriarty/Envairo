@@ -323,7 +323,11 @@ export default function GuestPage() {
         <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-4 shadow-glow">
           <Music2 size={28} className="text-accent" />
         </div>
-        <h1 className="text-2xl font-bold text-gradient">{t('guest.title')}</h1>
+        <h1 className="text-2xl font-bold text-gradient">
+          {sessionConfig?.event_name 
+            ? `${t('guest.title')} para ${sessionConfig.event_name}`
+            : t('guest.title')}
+        </h1>
         <p className="text-text-muted mt-1 text-sm">
           {isCommercial ? t('guest.subtitle_commercial') : t('guest.subtitle_party')}
         </p>

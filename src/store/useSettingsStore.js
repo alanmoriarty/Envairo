@@ -5,6 +5,7 @@ export const useSettingsStore = create(
   persist(
     (set) => ({
       mode: 'party',          // 'party' | 'commercial'
+      eventName: '',
       autoDJ: false,
       alwaysAvailable: true,
       startTime: '19:00',
@@ -57,6 +58,7 @@ export const useSettingsStore = create(
       setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),
+      setEventName: (name) => set({ eventName: name }),
       setAutoDJ: (autoDJ) => set({ autoDJ }),
       setAlwaysAvailable: (v) => set({ alwaysAvailable: v }),
       setStartTime: (t) => set({ startTime: t }),
