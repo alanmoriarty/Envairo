@@ -96,22 +96,66 @@ export function useYouTubeSDK() {
       targetDiv.id = 'youtube-player-target';
       wrapper.appendChild(targetDiv);
 
-      // Capa invisible para capturar el doble click en fullscreen sin darle eventos a YT
+      // Capa invisible para capturar eventos sobre el video
       const overlay = document.createElement('div');
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
+      
       overlay.addEventListener('dblclick', () => {
         if (document.fullscreenElement) {
           document.exitFullscreen().catch(() => {});
         }
       });
+      
+      overlay.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+          const state = usePlayerStore.getState();
+          const { sessionId, hostSecret } = useSettingsStore.getState();
+          if (state.isPlaying) {
+            state.setIsPlaying(false);
+            import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
+          } else {
+            state.setIsPlaying(true);
+            import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
+          }
+        }
+      });
       wrapper.appendChild(overlay);
+
+      // Botón flotante para salir de fullscreen (visible solo en fullscreen)
+      const closeBtn = document.createElement('button');
+      closeBtn.id = 'youtube-fs-close';
+      closeBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.top = '24px';
+      closeBtn.style.right = '24px';
+      closeBtn.style.zIndex = '20';
+      closeBtn.style.background = 'rgba(0,0,0,0.5)';
+      closeBtn.style.color = 'white';
+      closeBtn.style.border = 'none';
+      closeBtn.style.borderRadius = '50%';
+      closeBtn.style.width = '44px';
+      closeBtn.style.height = '44px';
+      closeBtn.style.display = 'none';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.alignItems = 'center';
+      closeBtn.style.justifyContent = 'center';
+      
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+      wrapper.appendChild(closeBtn);
 
       const handleFsChange = () => {
         const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
         const isVisualizerOn = useSettingsStore.getState().visualizerEnabled;
-        applyStyles(wrapper, isVisualizerOn, fsElement === wrapper);
+        const isFs = fsElement === wrapper;
+        applyStyles(wrapper, isVisualizerOn, isFs);
+        closeBtn.style.display = isFs ? 'flex' : 'none';
       };
       
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];

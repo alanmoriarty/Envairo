@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { usePlayerStore } from '../../store/usePlayerStore';
+import { X } from 'lucide-react';
 
 export function VisualizerBackground() {
   const { visualizerEnabled, visualizerUrl } = useSettingsStore();
@@ -60,7 +62,8 @@ export function VisualizerBackground() {
         allow="autoplay; encrypted-media"
         style={{ pointerEvents: 'none' }} // Siempre none para evitar interacciones de YT
       />
-      {/* Overlay para capturar doble clic */}
+      
+      {/* Overlay para interacciones en fullscreen */}
       <div 
         className="absolute inset-0 z-10" 
         onDoubleClick={() => {
@@ -68,7 +71,35 @@ export function VisualizerBackground() {
             document.exitFullscreen().catch(() => {});
           }
         }}
+        onClick={() => {
+          if (document.fullscreenElement) {
+            const state = usePlayerStore.getState();
+            const { sessionId, hostSecret } = useSettingsStore.getState();
+            if (state.isPlaying) {
+              state.setIsPlaying(false);
+              import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
+            } else {
+              state.setIsPlaying(true);
+              import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
+            }
+          }
+        }}
       />
+      
+      {/* Botón flotante para salir de fullscreen (visible solo en fullscreen) */}
+      {isFullscreen && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            }
+          }}
+          className="absolute top-6 right-6 z-20 w-11 h-11 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors border-none cursor-pointer"
+        >
+          <X size={24} />
+        </button>
+      )}
     </div>
   );
 }
