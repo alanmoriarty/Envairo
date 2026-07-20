@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles, MonitorPlay, Save } from 'lucide-react';
+import { Settings, Clock, Shield, Filter, List, Ban, Info, X, Sparkles, MonitorPlay, Save, Check } from 'lucide-react';
 import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
@@ -558,14 +558,14 @@ export default function SettingsPage() {
         <button
           onClick={saveSettingsToCloud}
           disabled={isSaving}
-          className="pointer-events-auto flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_4px_20px_rgba(var(--color-accent),0.4)] disabled:opacity-50 disabled:hover:scale-100"
+          className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white hover:scale-110 active:scale-95 transition-all shadow-[0_4px_20px_rgba(var(--color-accent),0.4)] disabled:opacity-50 disabled:hover:scale-100"
+          title={t('settings.save_btn') || 'Confirmar Cambios'}
         >
           {isSaving ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            <Save size={18} />
+            <Check size={28} strokeWidth={3} />
           )}
-          {t('settings.save_btn') || 'Confirmar Cambios'}
         </button>
       </div>
 
