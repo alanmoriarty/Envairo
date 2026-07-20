@@ -14,7 +14,7 @@ const filterMusicEmojis = (text) => {
   if (!window.Intl || !Intl.Segmenter) return text;
   const segmenter = new Intl.Segmenter('es', { granularity: 'grapheme' });
   const allowedEmojis = ['🎸', '🎵', '🎶', '🎤', '🎧', '🎷', '🎺', '🎹', '🎻', '🥁', '📻', '🎙️', '🎚️', '🎛️', '🎼', '💿', '🪩', '🕺', '💃', '👨‍🎤', '👩‍🎤', '🧑‍🎤', '✨', '🔥', '🎉'];
-  
+
   let result = '';
   for (const { segment } of segmenter.segment(text)) {
     if (/\p{Emoji_Presentation}/u.test(segment)) {
@@ -38,7 +38,7 @@ const GENRE_ALIASES = {
   "urbano latino": ["urbano latino", "urbano", "reggaeton", "música latina", "latin urban", "trap latino"],
   "trap latino": ["trap latino", "trap", "urbano", "urbano latino", "reggaeton", "música latina"],
   "trap": ["trap", "hip-hop", "rap", "trap latino"],
-  
+
   // Pop y Rock
   "pop latino": ["pop latino", "pop", "latino", "latin pop"],
   "pop": ["pop", "pop latino", "latin pop", "indie pop"],
@@ -48,7 +48,7 @@ const GENRE_ALIASES = {
   "punk": ["punk", "rock", "ska", "punk rock"],
   "indie": ["indie", "alternativo", "indie pop", "indie rock", "alternative"],
   "alternativo": ["alternativo", "alternative", "indie", "rock alternativo"],
-  
+
   // Música Electrónica
   "electrónica": ["electrónica", "dance", "house", "techno", "edm", "electronic", "trance", "dubstep"],
   "dance": ["dance", "electrónica", "edm", "club"],
@@ -71,13 +71,13 @@ const GENRE_ALIASES = {
   "christian music": ["música cristiana", "christian", "gospel", "worship"],
   "children's music": ["música infantil", "children's music", "kids", "disney"],
   "latin": ["latino", "latin pop", "latin rock", "latin urban"],
-  
+
   // Hip-Hop, R&B y Soul
   "hip-hop": ["hip-hop", "rap", "hip hop", "r&b", "trap"],
   "rap": ["rap", "hip-hop", "hip hop", "trap"],
   "r&b": ["r&b", "rnb", "soul", "hip-hop", "rhythm and blues"],
   "soul": ["soul", "r&b", "funk", "blues"],
-  
+
   // Tropical y Caribeño
   "salsa": ["salsa", "tropical", "latino"],
   "bachata": ["bachata", "tropical", "latino"],
@@ -85,7 +85,7 @@ const GENRE_ALIASES = {
   "merengue": ["merengue", "tropical", "latino"],
   "tropical": ["tropical", "salsa", "bachata", "merengue", "cumbia", "latino"],
   "reggae": ["reggae", "dancehall", "ska"],
-  
+
   // Regional Mexicano
   "regional mexicano": ["regional mexicano", "banda", "norteño", "mariachi", "corridos", "corridos tumbados", "ranchera", "música mexicana"],
   "banda": ["banda", "regional mexicano", "música mexicana"],
@@ -93,7 +93,7 @@ const GENRE_ALIASES = {
   "corridos": ["corridos", "regional mexicano", "música mexicana", "corridos tumbados"],
   "corridos tumbados": ["corridos tumbados", "regional mexicano", "corridos", "música mexicana", "sierreño"],
   "mariachi": ["mariachi", "ranchera", "regional mexicano", "música mexicana"],
-  
+
   // Otros géneros globales
   "clásica": ["clásica", "classical", "instrumental", "orquesta"],
   "country": ["country", "folk", "americana"],
@@ -131,7 +131,7 @@ export default function SettingsPage() {
   } = useSettingsStore();
   const store = useSettingsStore();
   const { t } = useTranslation();
-  
+
   const COMMON_GENRES = t('settings.common_genres') || [];
 
   const [showGenreGuide, setShowGenreGuide] = useState(false);
@@ -142,7 +142,7 @@ export default function SettingsPage() {
   const currentSettingsObj = {};
   allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
   const currentSignature = JSON.stringify(currentSettingsObj);
-  
+
   // Si no se ha cargado una firma aún (recién abierto sin red), consideramos que no hay cambios
   const hasChanges = lastSavedSignature ? currentSignature !== lastSavedSignature : false;
 
@@ -152,7 +152,7 @@ export default function SettingsPage() {
     try {
       const state = useSettingsStore.getState();
       const { sessionId, hostSecret } = state;
-      
+
       await supabase.auth.updateUser({
         data: { host_settings: currentSignature }
       });
@@ -163,6 +163,7 @@ export default function SettingsPage() {
           p_secret: hostSecret,
           p_updates: {
             mode: state.mode,
+            event_name: state.eventName,
             blacklist_genres: state.blacklistGenres,
             blacklist_songs: state.blacklistSongs,
             blacklist_artists: state.blacklistArtists,
@@ -182,15 +183,20 @@ export default function SettingsPage() {
         if (!state.alwaysAvailable && state.startTime && state.endTime) {
           const now = new Date();
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const start = parse(state.startTime, 'HH:mm', today);
+          let start = parse(state.startTime, 'HH:mm', today);
           let end = parse(state.endTime, 'HH:mm', today);
+        
           if (isBefore(end, start)) {
-            end = addDays(end, 1);
+            if (isBefore(now, end)) {
+              start = addDays(start, -1);
+            } else {
+              end = addDays(end, 1);
+            }
           }
           currentActive = isWithinInterval(now, { start, end });
         }
 
-        await supabase.from('sessions').update({ mode: state.mode, active: currentActive }).eq('id', sessionId);
+        await supabase.from('sessions').update({ mode: state.mode, event_name: state.eventName, active: currentActive }).eq('id', sessionId);
       }
       setLastSavedSignature(currentSignature);
       toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');
@@ -207,13 +213,13 @@ export default function SettingsPage() {
       setEnairoTimeLeft('');
       return;
     }
-    
+
     const interval = setInterval(() => {
       const now = Date.now();
       const runCooldown = enairoTestMode ? 30000 : 7200000; // 2 horas
       const nextRun = enairoLastRunAt ? enairoLastRunAt + runCooldown : now;
       const activeUntil = enairoStartedAt ? enairoStartedAt + 14400000 : now; // 4 horas
-      
+
       let text = '';
       if (now < nextRun) {
         const diff = nextRun - now;
@@ -224,9 +230,9 @@ export default function SettingsPage() {
       } else {
         text += `Próxima selección: Lista (esperando cola)`;
       }
-      
+
       text += ' • ';
-      
+
       if (now < activeUntil) {
         const diff = activeUntil - now;
         const h = Math.floor(diff / 3600000);
@@ -235,10 +241,10 @@ export default function SettingsPage() {
       } else {
         text += `Apagado inminente`;
       }
-      
+
       setEnairoTimeLeft(text);
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [enairoEnabled, enairoLastRunAt, enairoStartedAt, enairoTestMode]);
 
@@ -272,9 +278,9 @@ export default function SettingsPage() {
       {/* General Settings */}
       <section className="card p-5 space-y-4">
         <h2 className="font-bold text-text-primary">General</h2>
-        
+
         <div>
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento (opcional)</label>
+          <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
           <input
             type="text"
             value={store.eventName}
@@ -300,7 +306,7 @@ export default function SettingsPage() {
             </span>
           )}
         </div>
-        
+
         <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
 
         <div className="pt-2">
@@ -329,7 +335,7 @@ export default function SettingsPage() {
           <MonitorPlay size={16} className="text-text-muted" />
           <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
         </div>
-        
+
         <p className="text-xs text-text-muted mb-2">
           Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
         </p>
@@ -648,7 +654,7 @@ export default function SettingsPage() {
               <p>
                 {t('settings.guide_modal_intro')}
               </p>
-              
+
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_urbano')}</h4>

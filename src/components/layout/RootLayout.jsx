@@ -88,10 +88,15 @@ export function RootLayout() {
       if (!state.alwaysAvailable && state.startTime && state.endTime) {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const start = parse(state.startTime, 'HH:mm', today);
+        let start = parse(state.startTime, 'HH:mm', today);
         let end = parse(state.endTime, 'HH:mm', today);
+        
         if (isBefore(end, start)) {
-          end = addDays(end, 1);
+          if (isBefore(now, end)) {
+            start = addDays(start, -1);
+          } else {
+            end = addDays(end, 1);
+          }
         }
         currentActive = isWithinInterval(now, { start, end });
       }
@@ -125,7 +130,7 @@ export function RootLayout() {
         timeoutId = setTimeout(() => {
           const settingsObj = {};
           // Guardar estado de todas las llaves en metadatos (aunque el auto-sync sea solo por los toggles)
-          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           allKeys.forEach(k => { settingsObj[k] = state[k]; });
           
           supabase.auth.updateUser({
@@ -146,6 +151,7 @@ export function RootLayout() {
               p_secret: hostSecret,
               p_updates: {
                 mode: state.mode,
+                event_name: state.eventName,
                 blacklist_genres: state.blacklistGenres,
                 blacklist_songs: state.blacklistSongs,
                 blacklist_artists: state.blacklistArtists,
