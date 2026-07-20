@@ -142,6 +142,11 @@ export function useYouTubeSDK() {
               setIsPlaying(true);
               setDuration(Math.floor(event.target.getDuration() * 1000));
               startProgressTimer(event.target);
+              // Force disable captions
+              try {
+                event.target.unloadModule('captions');
+                event.target.unloadModule('cc');
+              } catch(e) {}
             } else if (event.data === yt.PlayerState.PAUSED) {
               setIsPlaying(false);
               stopProgressTimer();
