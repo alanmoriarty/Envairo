@@ -183,6 +183,15 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [controls]);
 
+  // When karaoke mode toggles, immediately re-search and re-play the current track
+  useEffect(() => {
+    const state = usePlayerStore.getState();
+    if (state.playbackEngine !== 'youtube') return;
+    if (!state.currentTrack) return;
+    // Re-play from scratch with the new query suffix (LYRICS or VIDEO OFICIAL)
+    usePlayerStore.getState().playEngineTrack(state.currentTrack, 0);
+  }, [karaokeEnabled]);
+
   // Listener y sync movidos globalmente a useQueueSync.js
 
   const handleDragEnd = ({ active, over }) => {
