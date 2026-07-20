@@ -141,6 +141,7 @@ export function useYouTubeSDK() {
             setYtReady(true);
             setYoutubePlayer(event.target);
             const store = usePlayerStore.getState();
+            event.target.setVolume(store.volume); // Sincronizar volumen inicial (70%) para evitar sustos
             store.setSdkReady(true);
             store.setDeviceId('youtube-device');
             store.setActiveDeviceId('youtube-device');

@@ -143,11 +143,18 @@ export default function GuestPage() {
       return;
     }
 
-    // Check individual user max requests limit
+    // Check individual user max CONCURRENT requests limit (Anti-Spam)
     const maxUserRequests = sessionConfig?.requests_per_guest || 0;
-    if (maxUserRequests > 0 && userRequests.length >= maxUserRequests) {
-      toast.error(`Has alcanzado el límite de ${maxUserRequests} peticiones por sesión`);
-      return;
+    if (maxUserRequests > 0) {
+      // Calculate how many of the user's requested tracks are currently pending or in the upcoming queue
+      const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
+      const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
+      const queueCount = queue.slice(currentQueueIndex + 1).filter(track => myActiveIds.includes(track.id)).length;
+      
+      if (pendingCount + queueCount >= maxUserRequests) {
+        toast.error(`Límite Anti-Spam: Solo puedes tener ${maxUserRequests} canciones en cola al mismo tiempo. Espera a que suene una de tus canciones para pedir otra.`);
+        return;
+      }
     }
 
     // Check song request count (same song)
@@ -275,6 +282,13 @@ export default function GuestPage() {
       const newReqs = [...userRequests, Date.now()];
       setUserRequests(newReqs);
       localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify(newReqs));
+
+      // Track this song ID for Anti-Spam concurrent limit
+      const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
+      if (!myActiveIds.includes(selected.id)) {
+        myActiveIds.push(selected.id);
+        localStorage.setItem(`my_tracks_${sessionId}`, JSON.stringify(myActiveIds));
+      }
 
       toast.success(t('guest.sent_success', { name: selected.name }));
       setSelected(null);
@@ -424,20 +438,33 @@ export default function GuestPage() {
             <button onClick={() => { setSelected(null); setQuery(''); }} className="text-text-muted hover:text-white">
               <X size={16} />
             </button>
-          </div>
-        )}
       </div>
+        )}
 
       {/* Submit / Cooldown */}
-      {sessionConfig?.requests_per_guest > 0 && userRequests.length >= sessionConfig.requests_per_guest ? (
-        <div className="card p-5 text-center bg-danger/10 border border-danger/30">
-          <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center mx-auto mb-3">
-            <X size={24} className="text-danger" />
-          </div>
-          <p className="font-semibold text-danger">Límite alcanzado</p>
-          <p className="text-text-muted text-sm mt-1">Ya has pedido el máximo de {sessionConfig.requests_per_guest} canciones permitidas para esta sesión.</p>
-        </div>
-      ) : isInCooldown ? (
+      {(() => {
+        const maxUserRequests = sessionConfig?.requests_per_guest || 0;
+        if (maxUserRequests <= 0) return null;
+        
+        const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
+        const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
+        const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
+        
+        if (pendingCount + queueCount >= maxUserRequests) {
+          return (
+            <div className="card p-5 text-center bg-danger/10 border border-danger/30">
+              <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center mx-auto mb-3">
+                <X size={24} className="text-danger" />
+              </div>
+              <p className="font-semibold text-danger">Límite alcanzado</p>
+              <p className="text-text-muted text-sm mt-1">Ya tienes el máximo de {maxUserRequests} canciones en espera o en la cola.</p>
+            </div>
+          );
+        }
+        return null;
+      })()}
+      
+      {isInCooldown ? (
         <div className="card p-5 text-center">
           <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-3">
             <Clock size={24} className="text-accent" />
