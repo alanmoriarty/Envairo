@@ -126,8 +126,11 @@ export default function CallbackPage() {
           }
         }
 
-        import('../store/useSettingsStore').then(m => m.useSettingsStore.getState().setIsAdminMode(false));
-        import('../store/usePlayerStore').then(m => m.usePlayerStore.getState().setPlaybackEngine(provider === 'google' ? 'youtube' : 'spotify'));
+        const { useSettingsStore } = await import('../store/useSettingsStore');
+        useSettingsStore.getState().setIsAdminMode(false);
+        
+        const { usePlayerStore } = await import('../store/usePlayerStore');
+        usePlayerStore.getState().setPlaybackEngine(provider === 'google' ? 'youtube' : 'spotify');
         
         if (user.product === 'premium') {
           navigate('/app/dashboard');

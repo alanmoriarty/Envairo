@@ -107,11 +107,18 @@ export function PersistentPlayer() {
                 setPendingResume(false);
                 if (currentTrack) {
                   const state = usePlayerStore.getState();
-                  const targetDevice = state.activeDeviceId || state.deviceId;
-                  if (targetDevice) {
-                    import('../../lib/spotifyApi').then(({ playTrack }) => {
-                      playTrack(targetDevice, [currentTrack.uri], progress).catch(err => console.error(err));
-                    });
+                  if (state.playbackEngine === 'youtube') {
+                    if (state.youtubePlayer) {
+                      state.youtubePlayer.seekTo(progress / 1000, true);
+                      state.youtubePlayer.playVideo();
+                    }
+                  } else {
+                    const targetDevice = state.activeDeviceId || state.deviceId;
+                    if (targetDevice) {
+                      import('../../lib/spotifyApi').then(({ playTrack }) => {
+                        playTrack(targetDevice, [currentTrack.uri], progress).catch(err => console.error(err));
+                      });
+                    }
                   }
                 }
               }}
@@ -138,12 +145,15 @@ export function PersistentPlayer() {
             <div className="w-px h-3 bg-white/20" />
             <button 
               onClick={() => {
-                const { deviceId, setActiveDeviceId } = usePlayerStore.getState();
+                const state = usePlayerStore.getState();
+                const { deviceId, setActiveDeviceId } = state;
                 if (deviceId) {
                   setActiveDeviceId(deviceId); // Triggers Supabase sync via hook
-                  import('../../lib/spotifyApi').then(({ transferPlayback }) => {
-                    transferPlayback(deviceId, true).catch(console.error);
-                  });
+                  if (state.playbackEngine !== 'youtube') {
+                    import('../../lib/spotifyApi').then(({ transferPlayback }) => {
+                      transferPlayback(deviceId, true).catch(console.error);
+                    });
+                  }
                 }
               }}
               className="text-xs bg-accent/20 hover:bg-accent/40 text-accent px-2 py-1 rounded-md transition-colors font-semibold"
