@@ -195,8 +195,9 @@ export const usePlayerStore = create(
 
             if (needsSearch) {
               const effectiveSuffix = querySuffix ?? 'VIDEO OFICIAL';
-              const cacheKey = `yt_bridge_${track.id}_${mode}`;
-              const cachedId = localStorage.getItem(cacheKey);
+              // Solo cacheamos modo normal (karaoke/lyrics siempre busca fresco)
+              const cacheKey = mode === 'normal' ? `yt_bridge_${track.id}_normal` : null;
+              const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
 
               if (cachedId) {
                 videoIdToPlay = cachedId;
@@ -206,11 +207,11 @@ export const usePlayerStore = create(
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
                   const query = `${track.artists} ${track.name} ${effectiveSuffix}`;
                   console.log(`[Mode:${mode}] Searching: "${query}"`);
-                  // Pedimos 5 resultados para poder saltar los que no permiten embedding
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
                     videoIdToPlay = results[0].id;
-                    localStorage.setItem(cacheKey, videoIdToPlay);
+                    // Solo guardar en caché si es modo normal
+                    if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                     console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
                   }
                 } catch (err) {
