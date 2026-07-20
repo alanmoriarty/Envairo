@@ -58,7 +58,7 @@ export function RootLayout() {
           });
           useSettingsStore.setState(validSettings);
           
-          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
           useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
@@ -101,7 +101,7 @@ export function RootLayout() {
         timeoutId = setTimeout(() => {
           const settingsObj = {};
           // Guardar estado de todas las llaves en metadatos (aunque el auto-sync sea solo por los toggles)
-          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           allKeys.forEach(k => { settingsObj[k] = state[k]; });
           
           supabase.auth.updateUser({

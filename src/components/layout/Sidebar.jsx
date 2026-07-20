@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, BarChart2, Zap,
-  HelpCircle, LogOut, Music2, ChevronRight, XCircle
+  HelpCircle, LogOut, Music2, ChevronRight, XCircle, Palette
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
@@ -21,7 +21,7 @@ const NAV_KEYS = [
 
 export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
-  const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore();
+  const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode, themeColor, setThemeColor } = useSettingsStore();
   const navigate = useNavigate();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const isPremium = user?.product === 'premium';
@@ -77,7 +77,7 @@ export function Sidebar({ isOpen, onClose }) {
         />
       )}
 
-      <aside className={`w-64 bg-bg-card/70 backdrop-blur-lg border-r border-white/5 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`w-64 glass rounded-none border-y-0 border-l-0 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -170,6 +170,33 @@ export function Sidebar({ isOpen, onClose }) {
             <LogOut size={18} />
             <span className="flex-1 text-left">{t('nav.logout')}</span>
           </button>
+
+          <div className="pt-2 pb-2">
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-xs text-text-muted font-semibold uppercase tracking-wider flex items-center gap-1">
+                <Palette size={12} /> {t('nav.theme') || 'Tema'}
+              </span>
+            </div>
+            <div className="flex justify-between px-2">
+              {[
+                { id: 'default', label: 'Default', hex: 'bg-bg-elevated border-white/20' },
+                { id: 'red', label: 'Crimson', hex: 'bg-red-500' },
+                { id: 'blue', label: 'Ocean', hex: 'bg-blue-500' },
+                { id: 'green', label: 'Emerald', hex: 'bg-emerald-500' },
+                { id: 'amber', label: 'Sunset', hex: 'bg-amber-500' }
+              ].map(color => (
+                <div key={color.id} className="relative group flex justify-center">
+                  <button 
+                    onClick={() => setThemeColor(color.id)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${themeColor === color.id ? 'border-white scale-110 shadow-glow-sm' : 'border-transparent hover:scale-110 opacity-60 hover:opacity-100'} ${color.hex}`}
+                  />
+                  <span className="absolute -top-8 bg-bg-elevated text-text-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10 shadow-xl">
+                    {color.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </nav>
     </aside>

@@ -119,7 +119,7 @@ export default function SettingsPage() {
   const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
   const currentSettingsObj = {};
   allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
   const currentSignature = JSON.stringify(currentSettingsObj);
@@ -148,6 +148,7 @@ export default function SettingsPage() {
             blacklist_songs: state.blacklistSongs,
             blacklist_artists: state.blacklistArtists,
             allow_repeats: state.allowRepeats,
+            repeat_cooldown: state.repeatCooldown,
             cooldown_enabled: state.cooldownEnabled,
             cooldown_minutes: state.cooldownMinutes,
             table_count: state.tableCount,
