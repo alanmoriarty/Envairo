@@ -1,11 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack } = usePlayerStore();
   const playerRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
+  const { videoFullscreen } = useSettingsStore();
+
+  useEffect(() => {
+    const container = document.getElementById('youtube-player-container');
+    if (container) {
+      if (videoFullscreen) {
+        container.style.opacity = '1';
+        container.style.filter = 'none';
+        container.style.pointerEvents = 'auto';
+        container.style.zIndex = '9999';
+      } else {
+        container.style.opacity = '0.5';
+        container.style.filter = 'blur(4px) saturate(1.5)';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '-1';
+      }
+    }
+  }, [videoFullscreen]);
 
   useEffect(() => {
     if (playbackEngine !== 'youtube') return;
@@ -37,31 +56,11 @@ export function useYouTubeSDK() {
       playerContainer.style.minHeight = '100vh';
       playerContainer.style.minWidth = '177.77vh'; // 16:9
       playerContainer.style.transform = 'translate(-50%, -50%)';
-      playerContainer.style.zIndex = '-1';
-      playerContainer.style.pointerEvents = 'none';
-      playerContainer.style.opacity = '0.5'; // Mayor opacidad para que se vea bien
-      playerContainer.style.filter = 'blur(4px) saturate(1.5)'; // Efecto moderno de fondo
+      playerContainer.style.zIndex = videoFullscreen ? '9999' : '-1';
+      playerContainer.style.pointerEvents = videoFullscreen ? 'auto' : 'none';
+      playerContainer.style.opacity = videoFullscreen ? '1' : '0.5'; 
+      playerContainer.style.filter = videoFullscreen ? 'none' : 'blur(4px) saturate(1.5)';
       document.body.appendChild(playerContainer);
-
-      const handleFsChange = () => {
-        const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        if (fsElement) {
-          playerContainer.style.opacity = '1';
-          playerContainer.style.filter = 'none';
-          playerContainer.style.pointerEvents = 'auto'; // Permitir controles si YT los mostrara
-        } else {
-          playerContainer.style.opacity = '0.5';
-          playerContainer.style.filter = 'blur(4px) saturate(1.5)';
-          playerContainer.style.pointerEvents = 'none';
-        }
-      };
-      
-      const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
-      events.forEach(event => document.addEventListener(event, handleFsChange));
-      
-      // Limpiar listener si alguna vez se desmonta
-      playerContainer._fsListener = handleFsChange;
-      playerContainer._fsEvents = events;
 
       playerRef.current = new window.YT.Player('youtube-player-container', {
         height: '100%',
@@ -151,11 +150,6 @@ export function useYouTubeSDK() {
       }
       const container = document.getElementById('youtube-player-container');
       if (container) {
-        if (container._fsListener && container._fsEvents) {
-          container._fsEvents.forEach(event => 
-            document.removeEventListener(event, container._fsListener)
-          );
-        }
         container.remove();
       }
     };

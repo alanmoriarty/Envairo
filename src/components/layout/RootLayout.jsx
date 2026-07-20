@@ -115,8 +115,8 @@ export function RootLayout() {
   }, []);
 
   return (
-    <div className={`h-[100dvh] flex flex-col overflow-hidden bg-bg-root text-text-primary font-sans transition-colors duration-500 theme-${themeColor || 'default'}`}>
-      <div className="flex flex-1 overflow-hidden relative">
+    <div className={`h-[100dvh] flex flex-col overflow-hidden bg-transparent text-text-primary font-sans transition-colors duration-500 theme-${themeColor || 'default'}`}>
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">
           <div className="flex items-center gap-2">

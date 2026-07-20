@@ -121,6 +121,7 @@ export default function DashboardPage() {
     showQR, setShowQR,
     showPlaylists, setShowPlaylists,
     themeColor, setThemeColor,
+    videoFullscreen, setVideoFullscreen,
     isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
@@ -246,17 +247,8 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
             {playbackEngine === 'youtube' && (
               <button
-                onClick={() => {
-                  const container = document.getElementById('youtube-player-container');
-                  if (container) {
-                    if (!document.fullscreenElement) {
-                      container.requestFullscreen().catch(() => {});
-                    } else {
-                      document.exitFullscreen();
-                    }
-                  }
-                }}
-                className="p-1.5 text-text-muted hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => setVideoFullscreen(!videoFullscreen)}
+                className={`p-1.5 rounded-lg transition-colors ${videoFullscreen ? 'text-accent bg-accent/20 hover:bg-accent/30' : 'text-text-muted hover:text-white bg-white/5 hover:bg-white/10'}`}
                 title="Video en pantalla completa"
               >
                 <Maximize2 size={18} />
