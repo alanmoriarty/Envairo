@@ -200,14 +200,18 @@ export const usePlayerStore = create(
 
               if (cachedId) {
                 videoIdToPlay = cachedId;
+                console.log(`[Mode:${mode}] Using cached video: ${cachedId}`);
               } else {
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
                   const query = `${track.artists} ${track.name} ${effectiveSuffix}`;
-                  const results = await searchYouTubeVideos(query, 1);
+                  console.log(`[Mode:${mode}] Searching: "${query}"`);
+                  // Pedimos 5 resultados para poder saltar los que no permiten embedding
+                  const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
                     videoIdToPlay = results[0].id;
                     localStorage.setItem(cacheKey, videoIdToPlay);
+                    console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
                   }
                 } catch (err) {
                   console.error('Error in YouTube bridge:', err);
@@ -216,6 +220,7 @@ export const usePlayerStore = create(
             }
 
             // Cargar el nuevo video
+            console.log(`[Mode:${mode ?? 'n/a'}] Loading video: ${videoIdToPlay}`);
             state.youtubePlayer.loadVideoById(videoIdToPlay, progressMs / 1000);
             set({ isPlaying: true });
           }

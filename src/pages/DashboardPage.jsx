@@ -151,6 +151,9 @@ export default function DashboardPage() {
     })
   );
 
+  // Guard to skip karaoke/lyrics effect on initial mount
+  const karaokeEffectMounted = React.useRef(false);
+
   // Global Spacebar listener for Play/Pause
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -186,11 +189,17 @@ export default function DashboardPage() {
 
   // When karaoke/lyrics mode toggles, immediately re-search and re-play the current track
   useEffect(() => {
+    // Skip the initial mount fire
+    if (!karaokeEffectMounted.current) {
+      karaokeEffectMounted.current = true;
+      return;
+    }
     const state = usePlayerStore.getState();
     if (state.playbackEngine !== 'youtube') return;
     if (!state.currentTrack) return;
-    // Derive new mode from latest React state (store may not be flushed yet)
+    // Derive new mode from latest React state
     const newMode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+    console.log('[KaraokeEffect] triggered, newMode:', newMode, 'karaokeEnabled:', karaokeEnabled, 'lyricsEnabled:', lyricsEnabled);
     usePlayerStore.getState().playEngineTrack(state.currentTrack, 0, newMode);
   }, [karaokeEnabled, lyricsEnabled]);
 
