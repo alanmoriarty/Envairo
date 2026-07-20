@@ -260,16 +260,16 @@ export default function SettingsPage() {
         <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
         
         {/* Tabs */}
-        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
+        <div className="flex flex-col sm:flex-row gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:w-fit">
           <button
             onClick={() => setActiveTab('simple')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
             Configuración Simple
           </button>
           <button
             onClick={() => setActiveTab('custom')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
             Configuración Personalizada
           </button>
