@@ -35,7 +35,12 @@ export const usePlayerStore = create(
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
       setYoutubePlayer: (youtubePlayer) => set({ youtubePlayer }),
-      setPlaybackEngine: (playbackEngine) => set({ playbackEngine }),
+      setPlaybackEngine: (playbackEngine) => set((state) => {
+        if (state.playbackEngine && state.playbackEngine !== playbackEngine) {
+          return { playbackEngine, queue: [], currentQueueIndex: -1, currentTrack: null, playHistory: [] };
+        }
+        return { playbackEngine };
+      }),
       setDeviceId: (deviceId) => set({ deviceId }),
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),

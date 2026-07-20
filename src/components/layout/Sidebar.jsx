@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { usePlayerStore } from '../../store/usePlayerStore';
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { useTranslation } from '../../store/useLanguageStore';
 
