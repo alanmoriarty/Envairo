@@ -57,13 +57,15 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
     if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
       e.preventDefault();
       if (results.length > 0) {
-        onAdd(results[0].name);
+        const trackName = results[0].name;
         setInput('');
         setResults([]);
         setShowDropdown(false);
+        setTimeout(() => onAdd(trackName), 0);
       } else {
-        onAdd(input.trim());
+        const val = input.trim();
         setInput('');
+        setTimeout(() => onAdd(val), 0);
       }
     }
     if (e.key === 'Backspace' && !input && tags.length) {
@@ -72,10 +74,10 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
   };
 
   const selectTrack = (track) => {
-    onAdd(track.name);
     setInput('');
     setResults([]);
     setShowDropdown(false);
+    setTimeout(() => onAdd(track.name), 0);
   };
 
   return (

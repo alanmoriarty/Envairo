@@ -12,9 +12,10 @@ import { useTranslation } from '../store/useLanguageStore';
 // Mapeo de géneros relacionados para agregarlos en grupo
 const GENRE_ALIASES = {
   // Urbano y Reggaeton
-  "reggaeton": ["reggaeton", "urbano latino", "música latina", "latin urban", "perreo"],
-  "urbano latino": ["urbano latino", "reggaeton", "música latina", "latin urban", "trap latino"],
-  "trap latino": ["trap latino", "trap", "urbano latino", "reggaeton", "música latina"],
+  "reggaeton": ["reggaeton", "urbano", "urbano latino", "música latina", "latin urban", "perreo"],
+  "urbano": ["urbano", "urbano latino", "reggaeton", "música latina", "latin urban", "trap latino"],
+  "urbano latino": ["urbano latino", "urbano", "reggaeton", "música latina", "latin urban", "trap latino"],
+  "trap latino": ["trap latino", "trap", "urbano", "urbano latino", "reggaeton", "música latina"],
   "trap": ["trap", "hip-hop", "rap", "trap latino"],
   
   // Pop y Rock

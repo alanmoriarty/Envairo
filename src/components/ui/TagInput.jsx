@@ -21,9 +21,10 @@ export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...', su
   const handleKeyDown = (e) => {
     if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
       e.preventDefault();
-      onAdd(input.trim().toLowerCase());
+      const val = input.trim().toLowerCase();
       setInput('');
       setShowDropdown(false);
+      setTimeout(() => onAdd(val), 0);
     }
     if (e.key === 'Backspace' && !input && tags.length) {
       onRemove(tags[tags.length - 1]);
@@ -31,10 +32,9 @@ export function TagInput({ tags, onAdd, onRemove, placeholder = 'Añadir...', su
   };
 
   const selectSuggestion = (suggestion) => {
-    onAdd(suggestion.toLowerCase());
     setInput('');
     setShowDropdown(false);
-    inputRef.current?.focus();
+    setTimeout(() => onAdd(suggestion.toLowerCase()), 0);
   };
 
   const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

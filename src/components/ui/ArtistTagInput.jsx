@@ -57,13 +57,15 @@ export function ArtistTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar ar
     if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
       e.preventDefault();
       if (results.length > 0) {
-        onAdd(results[0].name);
+        const artistName = results[0].name;
         setInput('');
         setResults([]);
         setShowDropdown(false);
+        setTimeout(() => onAdd(artistName), 0);
       } else {
-        onAdd(input.trim());
+        const val = input.trim();
         setInput('');
+        setTimeout(() => onAdd(val), 0);
       }
     }
     if (e.key === 'Backspace' && !input && tags.length) {
@@ -72,10 +74,10 @@ export function ArtistTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar ar
   };
 
   const selectArtist = (artistName) => {
-    onAdd(artistName);
     setInput('');
     setResults([]);
     setShowDropdown(false);
+    setTimeout(() => onAdd(artistName), 0);
   };
 
   return (
