@@ -1,6 +1,18 @@
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
 
+async function ensureYouTubeToken() {
+  const { isYouTubeTokenExpired, refreshYouTubeToken } = await import('./youtubeAuth');
+  if (isYouTubeTokenExpired()) {
+    try {
+      await refreshYouTubeToken();
+    } catch (e) {
+      console.warn('Failed to refresh YouTube token:', e);
+    }
+  }
+  return localStorage.getItem('youtube_access_token');
+}
+
 /**
  * Busca videos en YouTube por término de búsqueda.
  * Retorna una lista formateada para ser compatible con el sistema de cola existente.
@@ -179,7 +191,7 @@ export function getMockYouTubeResults(query) {
  * Obtiene las playlists del usuario autenticado en YouTube.
  */
 export async function getUserYouTubePlaylists(limit = 50) {
-  const token = localStorage.getItem('youtube_access_token');
+  const token = await ensureYouTubeToken();
   if (!token) throw new Error('No YouTube access token found');
 
   const url = new URL(`${BASE_URL}/playlists`);
@@ -207,7 +219,7 @@ export async function getUserYouTubePlaylists(limit = 50) {
  * Obtiene los detalles de una playlist específica de YouTube.
  */
 export async function getYouTubePlaylist(playlistId) {
-  const token = localStorage.getItem('youtube_access_token');
+  const token = await ensureYouTubeToken();
   const url = new URL(`${BASE_URL}/playlists`);
   url.searchParams.append('part', 'snippet');
   url.searchParams.append('id', playlistId);
@@ -247,7 +259,7 @@ export async function getYouTubePlaylist(playlistId) {
  * Obtiene los videos de una playlist de YouTube.
  */
 export async function getYouTubePlaylistItems(playlistId, limit = 50) {
-  const token = localStorage.getItem('youtube_access_token');
+  const token = await ensureYouTubeToken();
   const url = new URL(`${BASE_URL}/playlistItems`);
   url.searchParams.append('part', 'snippet,contentDetails');
   url.searchParams.append('playlistId', playlistId);

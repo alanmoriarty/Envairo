@@ -118,7 +118,6 @@ export default function DashboardPage() {
     mode, setMode, autoDJ, setAutoDJ,
     enairoEnabled, setEnairoEnabled,
     showRequests, setShowRequests,
-    showQR, setShowQR,
     showPlaylists, setShowPlaylists,
     visualizerEnabled,
     karaokeEnabled, setKaraokeEnabled,
@@ -331,10 +330,6 @@ export default function DashboardPage() {
               <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ClipboardList size={14} className="text-accent" /> {t('dashboard.toggle_requests')}</span>
               <Toggle checked={showRequests} onChange={setShowRequests} />
             </div>
-            <div className="hidden sm:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2">
-              <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><QrCode size={14} className="text-accent" /> {t('dashboard.toggle_qr')}</span>
-              <Toggle checked={showQR} onChange={setShowQR} />
             </div>
             
             {(() => {
@@ -432,9 +427,9 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showQR && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} lg:min-h-0`}>
+      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} lg:min-h-0`}>
         {/* Left Column: Modules */}
-        {(showRequests || showQR || showPlaylists) && (
+        {(showRequests || showPlaylists) && (
           <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto pr-2 custom-scrollbar lg:min-h-0">
             
             {showRequests && (
@@ -498,20 +493,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {(() => {
-              const engine = usePlayerStore.getState().playbackEngine;
-              const hasYoutubeToken = !!localStorage.getItem('youtube_access_token');
-              const show = showPlaylists && (engine === 'spotify' || (engine === 'youtube' && hasYoutubeToken));
-              return show ? <PlaylistsPanel /> : null;
-            })()}
-
-            {/* QR Card */}
-            {showQR && <QRCard />}
+            {showPlaylists && <PlaylistsPanel />}
           </div>
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col h-[500px] lg:h-full lg:min-h-0 ${(!showRequests && !showQR && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+        <div className={`flex flex-col h-[500px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
           <div className="card p-5 flex flex-col h-full overflow-hidden lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">

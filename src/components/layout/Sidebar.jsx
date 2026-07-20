@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, BarChart2, Zap,
-  HelpCircle, LogOut, Music2, ChevronRight, XCircle, Palette
+  HelpCircle, LogOut, Music2, ChevronRight, XCircle, Palette, QrCode
 } from 'lucide-react';
+import { QRCard } from '../qr/QRCard';
 import { useAuthStore } from '../../store/useAuthStore';
 import { clearSpotifyTokens } from '../../lib/spotifyAuth';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -24,6 +25,7 @@ export function Sidebar({ isOpen, onClose }) {
   const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode, themeColor, setThemeColor } = useSettingsStore();
   const navigate = useNavigate();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const isPremium = user?.product === 'premium';
   const { t } = useTranslation();
 
@@ -80,14 +82,24 @@ export function Sidebar({ isOpen, onClose }) {
       <aside className={`w-64 glass rounded-none border-y-0 border-l-0 flex flex-col h-full fixed left-0 top-0 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shadow-glow-sm">
-            <Music2 size={20} className="text-accent" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shadow-glow-sm">
+              <Music2 size={20} className="text-accent" />
+            </div>
+            <div>
+              <h1 className="font-bold text-text-primary leading-none">Envairo</h1>
+              <p className="text-xs text-accent font-semibold">QR</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-text-primary leading-none">Envairo</h1>
-            <p className="text-xs text-accent font-semibold">QR</p>
-          </div>
+          
+          <button 
+            onClick={() => setShowQRModal(true)}
+            className="w-10 h-10 rounded-xl bg-bg-elevated border border-white/10 hover:border-accent/50 hover:bg-accent/10 transition-all flex items-center justify-center shadow-sm"
+            title="Mostrar Código QR"
+          >
+            <QrCode size={20} className="text-accent" />
+          </button>
         </div>
       </div>
 
@@ -235,6 +247,20 @@ export function Sidebar({ isOpen, onClose }) {
               Cerrar
             </button>
           </div>
+        </div>
+      </div>
+    )}
+
+    {showQRModal && (
+      <div className="fixed inset-0 bg-bg-base/90 backdrop-blur-md flex flex-col items-center justify-center z-[110] p-4">
+        <div className="relative w-full max-w-sm animate-in zoom-in-95 fade-in">
+          <button 
+            onClick={() => setShowQRModal(false)}
+            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
+          >
+            <XCircle size={32} />
+          </button>
+          <QRCard />
         </div>
       </div>
     )}
