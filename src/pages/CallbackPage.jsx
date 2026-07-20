@@ -108,10 +108,26 @@ export default function CallbackPage() {
             if (latestSession.host_secret) {
               store.setHostSecret(latestSession.host_secret);
             }
+          } else {
+            // Si no hay sesión previa, creamos una nueva
+            const { useSettingsStore } = await import('../store/useSettingsStore');
+            const newSessionId = crypto.randomUUID().slice(0, 6).toUpperCase();
+            const newSecret = crypto.randomUUID();
+            
+            useSettingsStore.getState().setSessionId(newSessionId);
+            useSettingsStore.getState().setHostSecret(newSecret);
+
+            await supabase.from('sessions').insert({
+              id: newSessionId,
+              host_secret: newSecret,
+              playback_engine: provider === 'google' ? 'youtube' : 'spotify',
+              supabase_user_id: session.user.id
+            }).catch(console.error);
           }
         }
 
         import('../store/useSettingsStore').then(m => m.useSettingsStore.getState().setIsAdminMode(false));
+        import('../store/usePlayerStore').then(m => m.usePlayerStore.getState().setPlaybackEngine(provider === 'google' ? 'youtube' : 'spotify'));
         
         if (user.product === 'premium') {
           navigate('/app/dashboard');

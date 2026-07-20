@@ -86,47 +86,6 @@ export default function LoginPage() {
             </svg>
             {t('login.youtube_login')}
           </button>
-
-          {/* YouTube Login */}
-          <button
-            onClick={async () => {
-              const { usePlayerStore } = await import('../store/usePlayerStore');
-              const { supabase } = await import('../lib/supabase');
-              
-              // Clear any stale Supabase session before inserting anonymously
-              await supabase.auth.signOut().catch(() => {});
-              
-              const newSessionId = crypto.randomUUID().slice(0, 6).toUpperCase();
-              const newSecret = crypto.randomUUID();
-              
-              useSettingsStore.getState().setSessionId(newSessionId);
-              useSettingsStore.getState().setHostSecret(newSecret);
-              useSettingsStore.getState().setIsAdminMode(false); // We are the Host!
-              usePlayerStore.getState().setPlaybackEngine('youtube');
-              
-              const { error } = await supabase.from('sessions').insert({
-                id: newSessionId,
-                host_secret: newSecret,
-                playback_engine: 'youtube'
-              });
-
-              if (error) {
-                console.error('Error creating YouTube session:', error);
-              }
-              
-              navigate('/app/dashboard');
-            }}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #FF0000, #cc0000)',
-              boxShadow: '0 4px 20px rgba(255,0,0,0.3)',
-            }}
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-            </svg>
-            {t('login.youtube_anon')}
-          </button>
         </div>
 
         {/* Alert */}

@@ -308,6 +308,7 @@ export function useSpotifySDK() {
     let pollInterval;
     const syncRemoteState = async () => {
       const state = usePlayerStore.getState();
+      if (state.playbackEngine === 'youtube') return;
       const targetDevice = state.activeDeviceId || state.deviceId;
       
       // If we are definitely a remote control (not the active device playing locally)
