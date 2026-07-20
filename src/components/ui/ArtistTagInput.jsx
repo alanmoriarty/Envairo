@@ -76,7 +76,6 @@ export function ArtistTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar ar
     setInput('');
     setResults([]);
     setShowDropdown(false);
-    inputRef.current?.focus();
   };
 
   return (
@@ -120,7 +119,7 @@ export function ArtistTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar ar
               {results.map((artist) => (
                 <li
                   key={artist.id}
-                  onClick={() => selectArtist(artist.name)}
+                  onMouseDown={(e) => { e.preventDefault(); selectArtist(artist.name); }}
                   className="px-4 py-2 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors"
                 >
                   {artist.images && artist.images.length > 0 ? (

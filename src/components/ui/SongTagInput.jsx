@@ -76,7 +76,6 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
     setInput('');
     setResults([]);
     setShowDropdown(false);
-    inputRef.current?.focus();
   };
 
   return (
@@ -123,7 +122,7 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
                 <div
                   key={track.id}
                   className="flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition-colors"
-                  onClick={() => selectTrack(track)}
+                  onMouseDown={(e) => { e.preventDefault(); selectTrack(track); }}
                 >
                   {imageUrl ? (
                     <img src={imageUrl} alt={track.name} className="w-10 h-10 rounded-md object-cover" />
