@@ -325,11 +325,16 @@ export default function DashboardPage() {
           </div>
 
           {/* View/Panel toggles */}
-          <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title={t('dashboard.toggle_requests')}><ClipboardList size={16} className="text-accent" /> <span className="hidden sm:inline">{t('dashboard.toggle_requests')}</span></span>
-              <Toggle checked={showRequests} onChange={setShowRequests} />
-            </div>
+          <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowRequests(!showRequests)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                showRequests ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+              }`}
+              title={t('dashboard.toggle_requests')}
+            >
+              <ClipboardList size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_requests')}</span>
+            </button>
             
             {(() => {
               const engine = usePlayerStore.getState().playbackEngine;
@@ -338,10 +343,15 @@ export default function DashboardPage() {
                 return (
                   <>
                     <div className="w-px h-4 bg-white/10" />
-                    <div className="flex items-center gap-2">
-                      <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title={t('dashboard.toggle_playlists')}><ListMusic size={16} className="text-accent" /> <span className="hidden sm:inline">{t('dashboard.toggle_playlists')}</span></span>
-                      <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
-                    </div>
+                    <button
+                      onClick={() => setShowPlaylists(!showPlaylists)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        showPlaylists ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                      }`}
+                      title={t('dashboard.toggle_playlists')}
+                    >
+                      <ListMusic size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_playlists')}</span>
+                    </button>
                   </>
                 );
               }
@@ -351,22 +361,30 @@ export default function DashboardPage() {
 
           {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
           {playbackEngine === 'youtube' && (
-            <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
-              <div className="flex items-center gap-2">
-                <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title="Karaoke">
-                  <Mic2 size={16} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
-                  <span className="hidden sm:inline">Karaoke</span>
-                </span>
-                <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
-              </div>
+            <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setKaraokeEnabled(!karaokeEnabled)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
+                title="Karaoke"
+              >
+                <Mic2 size={14} />
+                <span className="hidden sm:inline">Karaoke</span>
+              </button>
+              
               <div className="w-px h-4 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title="Lyrics">
-                  <Type size={16} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
-                  <span className="hidden sm:inline">Lyrics</span>
-                </span>
-                <Toggle checked={lyricsEnabled} onChange={setLyricsEnabled} />
-              </div>
+              
+              <button
+                onClick={() => setLyricsEnabled(!lyricsEnabled)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
+                title="Lyrics"
+              >
+                <Type size={14} />
+                <span className="hidden sm:inline">Lyrics</span>
+              </button>
             </div>
           )}
         </div>
