@@ -195,8 +195,8 @@ export const usePlayerStore = create(
 
             if (needsSearch) {
               const effectiveSuffix = querySuffix ?? 'VIDEO OFICIAL';
-              // Solo cacheamos modo normal (karaoke/lyrics siempre busca fresco)
-              const cacheKey = mode === 'normal' ? `yt_bridge_${track.id}_normal` : null;
+              // Re-habilitar caché para todos los modos ahora que las queries están corregidas
+              const cacheKey = mode ? `yt_bridge_${track.id}_${mode}` : null;
               const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
 
               if (cachedId) {
@@ -219,7 +219,7 @@ export const usePlayerStore = create(
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
                     videoIdToPlay = results[0].id;
-                    // Solo guardar en caché si es modo normal
+                    // Guardar en caché siempre para ahorrar cuota
                     if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                     console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
                   }

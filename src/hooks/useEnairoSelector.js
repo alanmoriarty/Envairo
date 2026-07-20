@@ -102,6 +102,14 @@ export function useEnairoSelector() {
             try {
               const engine = usePlayerStore.getState().playbackEngine;
               if (engine === 'youtube') {
+                const cacheKey = `yt_ai_${query}`;
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                  const track = JSON.parse(cached);
+                  track.addedBy = 'EnvAIro Selector';
+                  return track;
+                }
+
                 const { searchYouTubeVideos, getYouTubeVideoDetails } = await import('../lib/youtubeApi');
                 const results = await searchYouTubeVideos(query, 1);
                 if (results && results.length > 0) {
@@ -110,6 +118,7 @@ export function useEnairoSelector() {
                      const details = await getYouTubeVideoDetails(track.id);
                      if (details) track = details;
                   }
+                  localStorage.setItem(cacheKey, JSON.stringify(track));
                   track.addedBy = 'EnvAIro Selector';
                   return track;
                 }

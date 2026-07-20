@@ -156,18 +156,25 @@ export function useYouTubeSDK() {
                   const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
                                     : mode === 'lyrics'  ? 'LYRICS'
                                     :                     'VIDEO OFICIAL';
-                  const cacheKey = `yt_bridge_${store.currentTrack.id}_${mode}`;
-                  const cachedId = localStorage.getItem(cacheKey);
+                  const cacheKey = mode ? `yt_bridge_${store.currentTrack.id}_${mode}` : null;
+                  const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
                   if (cachedId) {
                     videoIdToPlay = cachedId;
                   } else {
                     try {
                       const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                      const query = `${store.currentTrack.artists} ${store.currentTrack.name} ${querySuffix}`;
-                      const results = await searchYouTubeVideos(query, 1);
+                      const cleanName = (store.currentTrack.name || '')
+                        .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k|ft\.?.*|feat\.?.*)\)?/gi, '')
+                        .replace(/[-–]\s*$/, '')
+                        .trim();
+                      const artistStr = (store.currentTrack.artists || '').split(',')[0].trim();
+                      const nameStartsWithArtist = cleanName.toLowerCase().startsWith(artistStr.toLowerCase());
+                      const queryBase = nameStartsWithArtist ? cleanName : `${artistStr} ${cleanName}`;
+                      const query = `${queryBase} ${querySuffix}`;
+                      const results = await searchYouTubeVideos(query, 5);
                       if (results && results.length > 0) {
                         videoIdToPlay = results[0].id;
-                        localStorage.setItem(cacheKey, videoIdToPlay);
+                        if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                       }
                     } catch (e) {
                       console.error('Bridge error on resume:', e);

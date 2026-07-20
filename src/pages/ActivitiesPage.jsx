@@ -836,16 +836,6 @@ export default function ActivitiesPage() {
           </ActivityCard>
         </div>
 
-        {/* Karaoke */}
-        <div className="w-full">
-          <ActivityCard
-            icon={<Mic2 size={18} className="text-accent" />}
-            title={t('activities.karaoke_title')}
-            color="bg-accent/15"
-          >
-            <KaraokeCard currentTrack={currentTrack} progress={progress} duration={duration} />
-          </ActivityCard>
-        </div>
       </div>
     </div>
   );

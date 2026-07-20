@@ -6,8 +6,37 @@ const BASE_URL = 'https://www.googleapis.com/youtube/v3';
  * Retorna una lista formateada para ser compatible con el sistema de cola existente.
  */
 export async function searchYouTubeVideos(query, limit = 8) {
+  // 1. Intentar usar nuestro scraper gratuito alojado en Vercel Serverless Functions
+  try {
+    // Si estamos en Vercel o en un entorno que sirva /api, usará yt-search
+    const proxyUrl = new URL(window.location.origin + '/api/youtube-search');
+    proxyUrl.searchParams.append('q', query);
+    proxyUrl.searchParams.append('limit', limit.toString());
+    
+    const res = await fetch(proxyUrl.toString());
+    if (res.ok) {
+      const data = await res.json();
+      return data.items.map(item => ({
+        id: item.id.videoId,
+        uri: `youtube:${item.id.videoId}`,
+        name: item.snippet.title,
+        artists: [{ name: item.snippet.channelTitle }],
+        album: {
+          images: [
+            { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
+          ]
+        },
+        duration_ms: 0, 
+        source: 'youtube'
+      }));
+    }
+  } catch (err) {
+    console.warn('Vercel serverless scraper falló, usando API oficial como respaldo:', err);
+  }
+
+  // 2. Fallback: API oficial de YouTube (Consume 100 unidades de cuota)
   if (!API_KEY) {
-    throw new Error('No YouTube API Key found');
+    throw new Error('No YouTube API Key found and Serverless function failed');
   }
 
   const url = new URL(`${BASE_URL}/search`);
@@ -27,10 +56,10 @@ export async function searchYouTubeVideos(query, limit = 8) {
 
   const data = await response.json();
 
-  // Transformar los resultados para que coincidan con el formato de las pistas en EnvAIro
+  // Transformar los resultados
   return data.items.map(item => ({
     id: item.id.videoId,
-    uri: `youtube:${item.id.videoId}`, // URI personalizada para identificar que es de YouTube
+    uri: `youtube:${item.id.videoId}`, 
     name: item.snippet.title,
     artists: [{ name: item.snippet.channelTitle }],
     album: {
@@ -38,7 +67,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
         { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
       ]
     },
-    duration_ms: 0, // YouTube Search API no devuelve la duración. Requeriría otra llamada a /videos. Se deja en 0 por ahora.
+    duration_ms: 0,
     source: 'youtube'
   }));
 }
