@@ -277,7 +277,6 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === 'simple' && (
-        {/* General Settings */}
         <section className="card p-5 space-y-4 animate-fade-in">
         <h2 className="font-bold text-text-primary">General</h2>
 
