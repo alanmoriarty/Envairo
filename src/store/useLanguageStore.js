@@ -421,7 +421,7 @@ const EN = {
     placeholder_nickname: 'e.g. DJ Carlos 🎧',
     select_table: '-- Select table --',
     no_table: 'No table',
-    search_label: 'Search a song on {{engine}}',
+    search_label: 'Search your song',
     search_placeholder: 'Search by title, artist or album...',
     submit: 'Send request',
     submit_cooldown: 'Wait {{time}}',

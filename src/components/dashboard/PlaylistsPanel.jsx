@@ -340,7 +340,7 @@ export function PlaylistsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
                 <p className="text-xs text-text-muted truncate mt-0.5">
-                  {pl.tracks.length} {t('dashboard.playlists_songs')}
+                  {/* Canciones count removed */}
                 </p>
               </div>
 
@@ -393,7 +393,7 @@ export function PlaylistsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
                 <p className="text-xs text-text-muted truncate mt-0.5">
-                  {pl.tracks?.total || 0} {t('dashboard.playlists_songs')}
+                  {/* Canciones count removed */}
                 </p>
               </div>
 

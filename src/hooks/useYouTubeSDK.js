@@ -45,7 +45,7 @@ export function useYouTubeSDK() {
 
       const handleFsChange = () => {
         const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        if (fsElement === playerContainer) {
+        if (fsElement) {
           playerContainer.style.opacity = '1';
           playerContainer.style.filter = 'none';
           playerContainer.style.pointerEvents = 'auto'; // Permitir controles si YT los mostrara
@@ -76,6 +76,7 @@ export function useYouTubeSDK() {
           rel: 0,
           showinfo: 0,
           iv_load_policy: 3,
+          cc_load_policy: 0, // Desactivar subtítulos por defecto
           mute: 0 // Importante para que suene
         },
         events: {
