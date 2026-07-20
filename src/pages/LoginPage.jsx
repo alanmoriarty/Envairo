@@ -77,7 +77,7 @@ export default function LoginPage() {
               
               useSettingsStore.getState().setSessionId(newSessionId);
               useSettingsStore.getState().setHostSecret(newSecret);
-              useSettingsStore.getState().setIsAdminMode(true);
+              useSettingsStore.getState().setIsAdminMode(false); // We are the Host!
               usePlayerStore.getState().setPlaybackEngine('youtube');
               
               const { error } = await supabase.from('sessions').insert({

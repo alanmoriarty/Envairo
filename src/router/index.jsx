@@ -16,7 +16,17 @@ import { useSettingsStore } from '../store/useSettingsStore';
 function RequireAuth({ children }) {
   const { isAuthenticated } = useAuthStore();
   const { isAdminMode } = useSettingsStore();
-  if (!isAuthenticated && !isAdminMode) return <Navigate to="/" replace />;
+  // Allow access if authenticated with Spotify, OR if in remote control mode, OR if hosting via YouTube
+  const isYoutubeHost = (() => {
+    try {
+      const store = JSON.parse(localStorage.getItem('player-storage'));
+      return store?.state?.playbackEngine === 'youtube';
+    } catch {
+      return false;
+    }
+  })();
+  
+  if (!isAuthenticated && !isAdminMode && !isYoutubeHost) return <Navigate to="/" replace />;
   return children;
 }
 
