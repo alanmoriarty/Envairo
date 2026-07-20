@@ -225,9 +225,28 @@ export const usePlayerStore = create(
                   console.log(`[Mode:${mode}] Searching: "${query}"`);
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
-                    const validResults = results.filter(r => !get().failedYouTubeIds.includes(r.id));
-                    if (validResults.length > 0) {
-                      videoIdToPlay = validResults[0].id;
+                    const unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
+                    
+                    if (unblocked.length > 0) {
+                      // Filtrado estricto por palabras clave si hay un modo activo
+                      let validResults = unblocked;
+                      if (mode === 'karaoke' || mode === 'lyrics') {
+                        validResults = unblocked.filter(r => {
+                          const t = (r.name || '').toLowerCase();
+                          if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
+                          if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
+                          return true;
+                        });
+                      }
+
+                      if (validResults.length > 0) {
+                        videoIdToPlay = validResults[0].id;
+                      } else {
+                        // Respaldo: si ningún resultado cumple el filtro estricto, usar el primero no bloqueado (video oficial)
+                        import('sonner').then(({ toast }) => toast.info(`No se encontró versión ${mode} válida, usando respaldo.`, { id: 'yt-fallback' }));
+                        videoIdToPlay = unblocked[0].id;
+                      }
+
                       // Guardar en caché siempre para ahorrar cuota
                       if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                       console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);

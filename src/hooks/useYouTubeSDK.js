@@ -173,9 +173,25 @@ export function useYouTubeSDK() {
                       const query = `${queryBase} ${querySuffix}`;
                       const results = await searchYouTubeVideos(query, 5);
                       if (results && results.length > 0) {
-                        const validResults = results.filter(r => !store.failedYouTubeIds.includes(r.id));
-                        if (validResults.length > 0) {
-                          videoIdToPlay = validResults[0].id;
+                        const unblocked = results.filter(r => !store.failedYouTubeIds.includes(r.id));
+                        if (unblocked.length > 0) {
+                          let validResults = unblocked;
+                          if (mode === 'karaoke' || mode === 'lyrics') {
+                            validResults = unblocked.filter(r => {
+                              const t = (r.name || '').toLowerCase();
+                              if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
+                              if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
+                              return true;
+                            });
+                          }
+
+                          if (validResults.length > 0) {
+                            videoIdToPlay = validResults[0].id;
+                          } else {
+                            import('sonner').then(({ toast }) => toast.info(`No se encontró versión ${mode} válida, usando respaldo.`, { id: 'yt-fallback' }));
+                            videoIdToPlay = unblocked[0].id;
+                          }
+                          
                           if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                         }
                       }
