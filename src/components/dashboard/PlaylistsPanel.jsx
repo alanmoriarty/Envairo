@@ -44,8 +44,9 @@ export function PlaylistsPanel() {
   const historyByDay = React.useMemo(() => {
     const groups = {};
     playHistory.forEach(track => {
-      const trackEngine = track.source === 'youtube' ? 'youtube' : 'spotify';
-      if (trackEngine !== playbackEngine) return;
+      // En el motor de YouTube, podemos reproducir tanto YouTube como Spotify (con el bridge).
+      // En el motor de Spotify, solo podemos reproducir Spotify.
+      if (playbackEngine === 'spotify' && track.source === 'youtube') return;
 
       const label = formatDateLabel(track.playedAt);
       if (!groups[label]) groups[label] = [];
