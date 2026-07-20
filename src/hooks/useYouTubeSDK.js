@@ -151,14 +151,16 @@ export function useYouTubeSDK() {
                 let videoIdToPlay = store.currentTrack.id;
 
                 if (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))) {
-                  const cacheKey = `yt_bridge_${store.currentTrack.id}`;
+                  const isKaraoke = useSettingsStore.getState().karaokeEnabled;
+                  const querySuffix = isKaraoke ? 'LYRICS' : 'VIDEO OFICIAL';
+                  const cacheKey = `yt_bridge_${store.currentTrack.id}_${isKaraoke ? 'karaoke' : 'normal'}`;
                   const cachedId = localStorage.getItem(cacheKey);
                   if (cachedId) {
                     videoIdToPlay = cachedId;
                   } else {
                     try {
                       const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                      const query = `${store.currentTrack.artists} ${store.currentTrack.name} VIDEO OFICIAL`;
+                      const query = `${store.currentTrack.artists} ${store.currentTrack.name} ${querySuffix}`;
                       const results = await searchYouTubeVideos(query, 1);
                       if (results && results.length > 0) {
                         videoIdToPlay = results[0].id;

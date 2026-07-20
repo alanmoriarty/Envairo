@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2
 } from 'lucide-react';
 import {
   DndContext,
@@ -122,6 +122,7 @@ export default function DashboardPage() {
     showPlaylists, setShowPlaylists,
     themeColor, setThemeColor,
     visualizerEnabled,
+    karaokeEnabled, setKaraokeEnabled,
     isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
@@ -333,6 +334,20 @@ export default function DashboardPage() {
               }
               return null;
             })()}
+
+            {/* Karaoke toggle: solo con motor YouTube */}
+            {playbackEngine === 'youtube' && (
+              <>
+                <div className="hidden sm:block w-px h-4 bg-white/10" />
+                <div className="flex items-center gap-2">
+                  <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
+                    <Mic2 size={14} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
+                    Karaoke
+                  </span>
+                  <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
+                </div>
+              </>
+            )}
 
             <div className="hidden sm:block w-px h-4 bg-white/10" />
             <div className="flex items-center gap-2">
