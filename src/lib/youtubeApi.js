@@ -98,6 +98,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
   url.searchParams.append('maxResults', limit.toString());
   url.searchParams.append('key', API_KEY);
   url.searchParams.append('videoCategoryId', '10'); // 10 = Music category
+  url.searchParams.append('videoEmbeddable', 'true'); // Solo videos que permitan reproducción externa
 
   const response = await fetch(url.toString());
   

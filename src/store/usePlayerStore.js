@@ -212,15 +212,18 @@ export const usePlayerStore = create(
               } else {
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                  // Limpiar el nombre del track: quitar "(Video Oficial)", "(Official Video)", etc.
+                  // Limpiar el nombre del track: quitar cosas como "(Video Oficial)" pero MANTENER los feats
                   const cleanName = (track.name || '')
-                    .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k|ft\.?.*|feat\.?.*)\)?/gi, '')
+                    .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k)\)?/gi, '')
                     .replace(/[-–]\s*$/, '') // quitar guiones al final
                     .trim();
-                  // Si el nombre ya empieza con el artista, no repetirlo
-                  const artistStr = (track.artists || '').split(',')[0].trim();
-                  const nameStartsWithArtist = cleanName.toLowerCase().startsWith(artistStr.toLowerCase());
-                  const queryBase = nameStartsWithArtist ? cleanName : `${artistStr} ${cleanName}`;
+                  // Usar todos los artistas para la búsqueda, sin comas
+                  const allArtists = (track.artists || '').replace(/,/g, '');
+                  const firstArtist = (track.artists || '').split(',')[0].trim();
+                  
+                  // Si el nombre ya empieza con el primer artista, evitamos duplicarlo
+                  const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
+                  const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
                   const query = `${queryBase} ${effectiveSuffix}`;
                   console.log(`[Mode:${mode}] Searching: "${query}"`);
                   const results = await searchYouTubeVideos(query, 5);

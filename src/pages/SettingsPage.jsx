@@ -8,6 +8,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
 
 // Se cargan los géneros comunes desde el useLanguageStore
 
@@ -157,6 +158,21 @@ export default function SettingsPage() {
             updated_at: new Date().toISOString()
           }
         });
+
+        // Calcular y enviar disponibilidad inmediatamente
+        let currentActive = true;
+        if (!state.alwaysAvailable && state.startTime && state.endTime) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const start = parse(state.startTime, 'HH:mm', today);
+          let end = parse(state.endTime, 'HH:mm', today);
+          if (isBefore(end, start)) {
+            end = addDays(end, 1);
+          }
+          currentActive = isWithinInterval(now, { start, end });
+        }
+
+        await supabase.from('sessions').update({ mode: state.mode, active: currentActive }).eq('id', sessionId);
       }
       setLastSavedSignature(currentSignature);
       toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');

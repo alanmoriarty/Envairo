@@ -13,6 +13,7 @@ import { Menu, Music2 } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 import { useAutoQueue } from '../../hooks/useAutoQueue';
 import { LanguageSelector } from '../ui/LanguageSelector';
+import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
 
 export function RootLayout() {
   const { controls } = useSpotifySDK();
@@ -76,13 +77,35 @@ export function RootLayout() {
       supabase.from('sessions').upsert({ id: sessionId, active: false }).then();
     }
     
-    // Limpiar peticiones más antiguas a 3 horas cada minuto
-    const interval = setInterval(() => {
-      usePlayerStore.getState().cleanupOldRequests();
-    }, 60000);
+    // Limpiar peticiones antiguas y actualizar estado de disponibilidad cada minuto
+    let lastActiveState = null;
+    
+    const checkAndUpdateStatus = () => {
+      const state = useSettingsStore.getState();
+      usePlayerStore.getState().cleanupOldRequests?.();
+      
+      let currentActive = true;
+      if (!state.alwaysAvailable && state.startTime && state.endTime) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const start = parse(state.startTime, 'HH:mm', today);
+        let end = parse(state.endTime, 'HH:mm', today);
+        if (isBefore(end, start)) {
+          end = addDays(end, 1);
+        }
+        currentActive = isWithinInterval(now, { start, end });
+      }
+
+      if (lastActiveState !== currentActive && isPremium) {
+        lastActiveState = currentActive;
+        supabase.from('sessions').update({ active: currentActive }).eq('id', state.sessionId).then();
+      }
+    };
+
+    const interval = setInterval(checkAndUpdateStatus, 60000);
     
     // Ejecutar una vez al montar
-    usePlayerStore.getState().cleanupOldRequests();
+    checkAndUpdateStatus();
     
     return () => clearInterval(interval);
   }, [isPremium]);

@@ -49,10 +49,6 @@ export function useTranslation() {
 
 // ─── Spanish ─────────────────────────────────────────────────────────────────
 const ES = {
-  common: {
-    copy: 'Copiar enlace',
-    copied: 'Enlace copiado',
-  },
   lang: {
     es: 'Español',
     en: 'English',
@@ -373,6 +369,8 @@ const ES = {
     ]
   },
   common: {
+    copy: 'Copiar enlace',
+    copied: 'Enlace copiado',
     loading: 'Cargando...',
     error: 'Error',
     retry: 'Reintentar',
@@ -389,10 +387,6 @@ const ES = {
 
 // ─── English ──────────────────────────────────────────────────────────────────
 const EN = {
-  common: {
-    copy: 'Copy link',
-    copied: 'Link copied',
-  },
   lang: {
     es: 'Español',
     en: 'English',
@@ -699,6 +693,8 @@ const EN = {
     ]
   },
   common: {
+    copy: 'Copy link',
+    copied: 'Link copied',
     loading: 'Loading...',
     error: 'Error',
     retry: 'Retry',
