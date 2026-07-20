@@ -58,14 +58,20 @@ const ES = {
     en: 'English',
   },
   nav: {
-    dashboard: 'Dashboard',
+    dashboard: 'Panel Principal',
     metrics: 'Métricas',
     activities: 'Actividades',
     settings: 'Configuración',
     support: 'Soporte',
-    logout: 'Cerrar sesión',
+    logout: 'Cerrar Sesión',
     remote: 'Control Remoto',
     remoteMode: 'Modo Admin',
+  },
+  login: {
+    title: 'La forma más elegante de gestionar las canciones de tu evento',
+    access: 'Accede a tu panel',
+    spotify: 'Ingresar con Spotify',
+    youtube: 'Modo YouTube (Gratis)',
   },
   guest: {
     title: 'Pide tu canción',
@@ -396,6 +402,12 @@ const EN = {
     logout: 'Log out',
     remote: 'Remote Control',
     remoteMode: 'Admin Mode',
+  },
+  login: {
+    title: 'The most elegant way to manage your event\'s music',
+    access: 'Access your dashboard',
+    spotify: 'Log in with Spotify',
+    youtube: 'YouTube Mode (Free)',
   },
   guest: {
     title: 'Request a Song',
