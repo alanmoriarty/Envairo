@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query, limit = 6 } = await req.json()
+    const { query, limit = 6, type = 'track' } = await req.json()
 
     if (!query) {
       return new Response(JSON.stringify({ error: 'Query is required' }), {
@@ -43,7 +43,7 @@ serve(async (req) => {
     // 2. Search Spotify
     const searchParams = new URLSearchParams({
       q: query,
-      type: 'track',
+      type: type,
       limit: limit.toString()
     })
 

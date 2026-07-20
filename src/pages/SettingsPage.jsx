@@ -407,7 +407,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Genre filters */}
-      <section className="card p-5 space-y-4">
+      <section className="card p-5 space-y-4 relative z-20">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Filter size={16} className="text-accent" />
@@ -462,7 +462,7 @@ export default function SettingsPage() {
         </div>
       </section>
       {/* Artist filters */}
-      <section className="card p-5 space-y-5">
+      <section className="card p-5 space-y-5 relative z-10">
         <div className="flex items-center gap-2 mb-1">
           <Filter size={16} className="text-accent" />
           <h2 className="font-bold text-text-primary">{t('settings.adv_artist_title')}</h2>

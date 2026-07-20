@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Search, Music } from 'lucide-react';
-import { searchTracks } from '../../lib/spotifyApi';
+import { supabase } from '../../lib/supabase';
 
 export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canción...' }) {
   const [input, setInput] = useState('');
@@ -38,12 +38,15 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
       setIsSearching(true);
       setShowDropdown(true);
       try {
-        const data = await searchTracks(val, 5);
+        const { data, error } = await supabase.functions.invoke('search-spotify', {
+          body: { query: val, limit: 5, type: 'track' }
+        });
+        if (error) throw error;
         if (data && data.tracks && data.tracks.items) {
           setResults(data.tracks.items);
         }
       } catch (err) {
-        console.error('Error searching artists:', err);
+        console.error('Error searching tracks:', err);
       } finally {
         setIsSearching(false);
       }
