@@ -27,7 +27,7 @@ export function RootLayout() {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  const isPremium = user?.product === 'premium';
+  const isPremium = user?.product === 'premium' || isAdminMode;
 
   if (!isAuthenticated && !isAdminMode) {
     return <Navigate to="/" replace />;

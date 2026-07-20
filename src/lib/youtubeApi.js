@@ -37,7 +37,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
         const data = await res.json();
         const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
         if (streams.length > 0) {
-          console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
+          // console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
           return streams.map(item => {
             const videoId = item.url.replace('/watch?v=', '');
             return {
@@ -55,7 +55,8 @@ export async function searchYouTubeVideos(query, limit = 8) {
         }
       }
     } catch (err) {
-      console.warn(`[YouTube API] Falló nodo descentralizado (${instance}), intentando el siguiente...`);
+      // Silenciar el log para mantener la consola limpia
+      // console.warn(`[YouTube API] Falló nodo descentralizado (${instance}), intentando el siguiente...`);
     }
   }
 
@@ -83,7 +84,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
       }));
     }
   } catch (err) {
-    console.warn('Vercel serverless scraper falló, usando API oficial como respaldo:', err);
+    // console.warn('Vercel serverless scraper falló, usando API oficial como respaldo:', err);
   }
 
   // 2. Fallback: API oficial de YouTube (Consume 100 unidades de cuota)
