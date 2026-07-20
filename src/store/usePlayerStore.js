@@ -192,8 +192,8 @@ export const usePlayerStore = create(
             const { useSettingsStore } = await import('./useSettingsStore');
             const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
             const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-            const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
-                              : mode === 'lyrics'  ? 'LYRICS'
+            const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
+                              : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
                               : null; // null = sin búsqueda, usar ID original
 
             // Necesita búsqueda si: modo activo (karaoke/lyrics) O si el track es de Spotify

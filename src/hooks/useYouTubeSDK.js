@@ -153,8 +153,8 @@ export function useYouTubeSDK() {
                 if (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))) {
                   const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
                   const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-                  const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
-                                    : mode === 'lyrics'  ? 'LYRICS'
+                  const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
+                                    : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
                                     :                     'VIDEO OFICIAL';
                   const cacheKey = mode ? `yt_bridge_${store.currentTrack.id}_${mode}` : null;
                   const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
