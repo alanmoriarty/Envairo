@@ -588,8 +588,10 @@ export default function SettingsPage() {
           />
         </div>
       </section>
+    </div>
+  )}
 
-      {/* Sticky Save Footer */}
+  {/* Sticky Save Footer */}
       <div className={`sticky bottom-4 z-40 mt-8 flex justify-end pointer-events-none transition-all duration-300 ${hasChanges ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <button
           onClick={saveSettingsToCloud}
