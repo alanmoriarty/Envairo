@@ -170,7 +170,7 @@ export const usePlayerStore = create(
         return null;
       },
 
-      playEngineTrack: async (track, progressMs = 0) => {
+      playEngineTrack: async (track, progressMs = 0, forceMode = null) => {
         if (!track) return;
         const state = get();
         if (state.playbackEngine === 'youtube') {
@@ -181,7 +181,7 @@ export const usePlayerStore = create(
             if (track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'))) {
               const { useSettingsStore } = await import('./useSettingsStore');
               const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-              const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+              const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
               const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS'
                                 : mode === 'lyrics'  ? 'LYRICS'
                                 :                     'VIDEO OFICIAL';

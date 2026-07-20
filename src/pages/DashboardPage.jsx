@@ -189,7 +189,9 @@ export default function DashboardPage() {
     const state = usePlayerStore.getState();
     if (state.playbackEngine !== 'youtube') return;
     if (!state.currentTrack) return;
-    usePlayerStore.getState().playEngineTrack(state.currentTrack, 0);
+    // Derive new mode from latest React state (store may not be flushed yet)
+    const newMode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+    usePlayerStore.getState().playEngineTrack(state.currentTrack, 0, newMode);
   }, [karaokeEnabled, lyricsEnabled]);
 
   // Listener y sync movidos globalmente a useQueueSync.js

@@ -49,8 +49,8 @@ export const useSettingsStore = create(
       setVisualizerEnabled: (v) => set({ visualizerEnabled: v }),
       setVisualizerUrl: (v) => set({ visualizerUrl: v }),
       // Mutually exclusive: activating one disables the other
-      setKaraokeEnabled: (v) => set({ karaokeEnabled: v, lyricsEnabled: v ? false : get().lyricsEnabled }),
-      setLyricsEnabled: (v) => set({ lyricsEnabled: v, karaokeEnabled: v ? false : get().karaokeEnabled }),
+      setKaraokeEnabled: (v) => set(v ? { karaokeEnabled: true, lyricsEnabled: false } : { karaokeEnabled: false }),
+      setLyricsEnabled: (v) => set(v ? { lyricsEnabled: true, karaokeEnabled: false } : { lyricsEnabled: false }),
       setThemeColor: (v) => set({ themeColor: v }),
 
       setMode: (mode) => set({ mode }),
