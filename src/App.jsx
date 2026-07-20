@@ -27,6 +27,7 @@ export default function App() {
   // Handle Spotify 401 Unauthorized errors globally
   useEffect(() => {
     const handleAuthError = () => {
+      if (usePlayerStore.getState().playbackEngine === 'youtube') return;
       setSessionExpired(true);
     };
 
@@ -51,9 +52,15 @@ export default function App() {
       <AppRouter />
       
       {/* Modal de Sesión Expirada */}
-      {sessionExpired && (
+      {sessionExpired && usePlayerStore.getState().playbackEngine !== 'youtube' && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in">
+          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in relative">
+            <button 
+              onClick={() => setSessionExpired(false)}
+              className="absolute top-2 right-2 text-text-muted hover:text-white"
+            >
+              ×
+            </button>
             <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mb-2">
               <AlertCircle size={32} />
             </div>
