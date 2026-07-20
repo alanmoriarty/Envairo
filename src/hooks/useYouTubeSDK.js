@@ -90,11 +90,33 @@ export function useYouTubeSDK() {
             
             // Auto-resume or cue after refresh
             if (store.currentTrack && store.currentTrack.id) {
-              setTimeout(() => {
+              setTimeout(async () => {
+                let videoIdToPlay = store.currentTrack.id;
+
+                if (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))) {
+                  const cacheKey = `yt_bridge_${store.currentTrack.id}`;
+                  const cachedId = localStorage.getItem(cacheKey);
+                  if (cachedId) {
+                    videoIdToPlay = cachedId;
+                  } else {
+                    try {
+                      const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+                      const query = `${store.currentTrack.artists} ${store.currentTrack.name} VIDEO OFICIAL`;
+                      const results = await searchYouTubeVideos(query, 1);
+                      if (results && results.length > 0) {
+                        videoIdToPlay = results[0].id;
+                        localStorage.setItem(cacheKey, videoIdToPlay);
+                      }
+                    } catch (e) {
+                      console.error('Bridge error on resume:', e);
+                    }
+                  }
+                }
+
                 if (store.isPlaying) {
-                  event.target.loadVideoById(store.currentTrack.id, store.progress / 1000);
+                  event.target.loadVideoById(videoIdToPlay, store.progress / 1000);
                 } else {
-                  event.target.cueVideoById(store.currentTrack.id, store.progress / 1000);
+                  event.target.cueVideoById(videoIdToPlay, store.progress / 1000);
                 }
               }, 500);
             }

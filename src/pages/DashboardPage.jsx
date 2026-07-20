@@ -147,6 +147,39 @@ export default function DashboardPage() {
     })
   );
 
+  // Global Spacebar listener for Play/Pause
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Prevent if user is typing
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const state = usePlayerStore.getState();
+        if (state.playbackEngine === 'youtube') {
+          if (state.youtubePlayer && typeof state.youtubePlayer.getPlayerState === 'function') {
+            const playerState = state.youtubePlayer.getPlayerState();
+            if (playerState === 1) { // 1 = Playing
+              state.youtubePlayer.pauseVideo();
+              usePlayerStore.setState({ isPlaying: false });
+            } else {
+              state.youtubePlayer.playVideo();
+              usePlayerStore.setState({ isPlaying: true });
+            }
+          }
+        } else {
+          if (controls) {
+            controls.togglePlay().catch(console.error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [controls]);
+
   // Listener y sync movidos globalmente a useQueueSync.js
 
   const handleDragEnd = ({ active, over }) => {
