@@ -8,6 +8,8 @@ import SettingsPage from '../pages/SettingsPage';
 import MetricsPage from '../pages/MetricsPage';
 import ActivitiesPage from '../pages/ActivitiesPage';
 import SupportPage from '../pages/SupportPage';
+import PrivacyPage from '../pages/PrivacyPage';
+import TermsPage from '../pages/TermsPage';
 import { RootLayout } from '../components/layout/RootLayout';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -32,6 +34,8 @@ function RequireAuth({ children }) {
 
 const router = createBrowserRouter([
   { path: '/', element: <LoginPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/terms', element: <TermsPage /> },
   { path: '/callback', element: <CallbackPage /> },
   { path: '/guest/:sessionId', element: <GuestPage /> },
   {

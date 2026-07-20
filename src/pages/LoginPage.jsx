@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Music2, AlertCircle } from 'lucide-react';
 import { redirectToSpotifyAuth } from '../lib/spotifyAuth';
 import { redirectToYouTubeAuth } from '../lib/youtubeAuth';
@@ -95,6 +95,13 @@ export default function LoginPage() {
             <strong>Importante:</strong> Para usar el reproductor en vivo se requiere
             una cuenta de <strong>Spotify Premium</strong> activa.
           </p>
+        </div>
+
+        {/* Footer with Legal Links */}
+        <div className="mt-8 text-center text-sm text-text-secondary/70 flex justify-center gap-4">
+          <Link to="/privacy" className="hover:text-primary transition-colors">Política de Privacidad</Link>
+          <span>&bull;</span>
+          <Link to="/terms" className="hover:text-primary transition-colors">Términos y Condiciones</Link>
         </div>
       </div>
     </div>
