@@ -440,9 +440,9 @@ export default function DashboardPage() {
                       <span className="badge bg-accent text-white">{pendingRequests.length}</span>
                     )}
                   </h2>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" title="Auto-DJ">
                     <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-                    <span className="text-xs font-medium text-text-muted">Auto-DJ</span>
+                    <span className="text-xs font-medium text-text-muted hidden sm:inline">Auto-DJ</span>
                     <Toggle checked={autoDJ} onChange={setAutoDJ} />
                   </div>
                 </div>
