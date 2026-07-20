@@ -171,30 +171,35 @@ export function Sidebar({ isOpen, onClose }) {
             <span className="flex-1 text-left">{t('nav.logout')}</span>
           </button>
 
-          <div className="pt-2 pb-2">
-            <div className="flex items-center justify-between px-1 mb-2">
-              <span className="text-xs text-text-muted font-semibold uppercase tracking-wider flex items-center gap-1">
-                <Palette size={12} /> {t('nav.theme') || 'Tema'}
-              </span>
-            </div>
-            <div className="flex justify-between px-2">
-              {[
-                { id: 'default', label: 'Default', hex: 'bg-bg-elevated border-white/20' },
-                { id: 'red', label: 'Crimson', hex: 'bg-red-500' },
-                { id: 'blue', label: 'Ocean', hex: 'bg-blue-500' },
-                { id: 'green', label: 'Emerald', hex: 'bg-emerald-500' },
-                { id: 'amber', label: 'Sunset', hex: 'bg-amber-500' }
-              ].map(color => (
-                <div key={color.id} className="relative group flex justify-center">
-                  <button 
-                    onClick={() => setThemeColor(color.id)}
-                    className={`w-6 h-6 rounded-full border-2 transition-all ${themeColor === color.id ? 'border-white scale-110 shadow-glow-sm' : 'border-transparent hover:scale-110 opacity-60 hover:opacity-100'} ${color.hex}`}
-                  />
-                  <span className="absolute -top-8 bg-bg-elevated text-text-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10 shadow-xl">
-                    {color.label}
-                  </span>
-                </div>
-              ))}
+          <div className="pt-2 pb-2 flex justify-center">
+            <div className="relative group">
+              <button 
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-bg-elevated border border-white/10 hover:border-white/30 transition-all shadow-sm relative overflow-hidden"
+                title={t('nav.theme') || 'Tema'}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-red-500/20 via-emerald-500/20 to-blue-500/20 opacity-40 group-hover:opacity-100 transition-opacity" />
+                <Palette size={18} className="text-white relative z-10" />
+              </button>
+              
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 p-2 rounded-2xl bg-bg-card/95 backdrop-blur-xl border border-white/10 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 flex gap-2">
+                {[
+                  { id: 'default', label: 'Default', hex: 'bg-bg-elevated border-white/20' },
+                  { id: 'red', label: 'Crimson', hex: 'bg-red-500' },
+                  { id: 'blue', label: 'Ocean', hex: 'bg-blue-500' },
+                  { id: 'green', label: 'Emerald', hex: 'bg-emerald-500' },
+                  { id: 'amber', label: 'Sunset', hex: 'bg-amber-500' }
+                ].map(color => (
+                  <div key={color.id} className="relative group/tooltip flex justify-center">
+                    <button 
+                      onClick={() => setThemeColor(color.id)}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${themeColor === color.id ? 'border-white scale-110 shadow-glow-sm' : 'border-transparent hover:scale-110 opacity-60 hover:opacity-100'} ${color.hex}`}
+                    />
+                    <span className="absolute -top-8 bg-bg-elevated text-text-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10 shadow-xl">
+                      {color.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
