@@ -179,22 +179,7 @@ export default function SettingsPage() {
         });
 
         // Calcular y enviar disponibilidad inmediatamente
-        let currentActive = true;
-        if (!state.alwaysAvailable && state.startTime && state.endTime) {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          let start = parse(state.startTime, 'HH:mm', today);
-          let end = parse(state.endTime, 'HH:mm', today);
-        
-          if (isBefore(end, start)) {
-            if (isBefore(now, end)) {
-              start = addDays(start, -1);
-            } else {
-              end = addDays(end, 1);
-            }
-          }
-          currentActive = isWithinInterval(now, { start, end });
-        }
+        let currentActive = state.alwaysAvailable;
 
         await supabase.from('sessions').update({ mode: state.mode, event_name: state.eventName, active: currentActive }).eq('id', sessionId);
       }
@@ -376,39 +361,6 @@ export default function SettingsPage() {
           description={t('settings.always_available_desc')}
         />
 
-        {!alwaysAvailable && (
-          <div className="grid grid-cols-2 gap-4 pt-2 animate-slide-up">
-            <div>
-              <label className="block text-sm text-text-muted mb-1.5">{t('settings.start_time')}</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="input-field"
-                style={{ colorScheme: 'dark' }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-text-muted mb-1.5">{t('settings.end_time')}</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="input-field"
-                style={{ colorScheme: 'dark' }}
-              />
-            </div>
-            <p className="col-span-2 text-xs text-text-subtle bg-bg-elevated rounded-lg px-3 py-2">
-              {t('settings.time_config', { start: `<span class="text-accent font-semibold">${startTime}</span>`, end: `<span class="text-accent font-semibold">${endTime}</span>` }).split('<span').map((part, i) => {
-                if (i === 0) return part;
-                const match = part.match(/class="([^"]+)">([^<]+)<\/span>(.*)/);
-                if (match) return <React.Fragment key={i}><span className={match[1]}>{match[2]}</span>{match[3]}</React.Fragment>;
-                return part;
-              })}
-              {endTime < startTime && t('settings.time_cross')}
-            </p>
-          </div>
-        )}
       </section>
 
       {/* General filters */}

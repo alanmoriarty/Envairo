@@ -4,6 +4,7 @@ import { Maximize2, RefreshCw, QrCode, SmartphoneNfc } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { supabase } from '../../lib/supabase';
 
 export function QRCard() {
   const { t } = useTranslation();
@@ -41,7 +42,10 @@ export function QRCard() {
   const qrSize = isFullscreen ? Math.min(windowSize.w, windowSize.h) * 0.7 : 160;
   const currentUrl = showAdminQR ? adminUrl : guestUrl;
   
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
+    // Cerrar la sesión actual para que el QR anterior deje de funcionar
+    await supabase.from('sessions').update({ active: false }).eq('id', sessionId);
+    // Generar nueva sesión
     regenerateSession();
     setShowConfirm(false);
   };
@@ -84,7 +88,13 @@ export function QRCard() {
 
       <div 
         ref={containerRef}
-        className={`bg-white p-4 rounded-xl transition-all relative ${isFullscreen ? 'flex flex-col items-center justify-center bg-bg-root' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''}`}
+        className={`bg-white p-4 rounded-xl transition-all relative ${isFullscreen ? 'flex flex-col items-center justify-center bg-bg-root' : ''} ${showAdminQR ? 'ring-2 ring-danger/50' : ''} ${!showAdminQR ? 'cursor-pointer hover:opacity-90' : ''}`}
+        onClick={() => {
+          if (!showAdminQR) {
+            window.open(guestUrl, '_blank');
+          }
+        }}
+        title={!showAdminQR ? "Abrir vista de invitados" : ""}
       >
         {isFullscreen && (
           <button

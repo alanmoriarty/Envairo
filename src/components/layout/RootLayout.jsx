@@ -84,22 +84,7 @@ export function RootLayout() {
       const state = useSettingsStore.getState();
       usePlayerStore.getState().cleanupOldRequests?.();
       
-      let currentActive = true;
-      if (!state.alwaysAvailable && state.startTime && state.endTime) {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        let start = parse(state.startTime, 'HH:mm', today);
-        let end = parse(state.endTime, 'HH:mm', today);
-        
-        if (isBefore(end, start)) {
-          if (isBefore(now, end)) {
-            start = addDays(start, -1);
-          } else {
-            end = addDays(end, 1);
-          }
-        }
-        currentActive = isWithinInterval(now, { start, end });
-      }
+      let currentActive = state.alwaysAvailable;
 
       if (lastActiveState !== currentActive && isPremium) {
         lastActiveState = currentActive;
@@ -112,7 +97,14 @@ export function RootLayout() {
     // Ejecutar una vez al montar
     checkAndUpdateStatus();
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // Desactivar peticiones por defecto al cerrar la sesión/app
+      const sessionId = useSettingsStore.getState().sessionId;
+      if (sessionId) {
+        supabase.from('sessions').update({ active: false }).eq('id', sessionId).then();
+      }
+    };
   }, [isPremium]);
 
   // Sincronizar configuraciones en tiempo real hacia Supabase Auth Metadata y sessions table
