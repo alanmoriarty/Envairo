@@ -128,22 +128,30 @@ export function useQueueSync() {
                   if (!targetDevice) return;
                   
                   if (cmd.action === 'play') {
-                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                      currentState.player.resume().catch(() => {});
+                    if (currentState.playbackEngine === 'youtube') {
+                       if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();
                     } else {
-                      api.resumePlayback(targetDevice).catch(() => {});
+                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                        currentState.player.resume().catch(() => {});
+                      } else {
+                        api.resumePlayback(targetDevice).catch(() => {});
+                      }
                     }
                   } else if (cmd.action === 'pause') {
-                    if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                      currentState.player.pause().catch(() => {});
+                    if (currentState.playbackEngine === 'youtube') {
+                       if (currentState.youtubePlayer) currentState.youtubePlayer.pauseVideo();
                     } else {
-                      api.pausePlayback(targetDevice).catch(() => {});
+                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                        currentState.player.pause().catch(() => {});
+                      } else {
+                        api.pausePlayback(targetDevice).catch(() => {});
+                      }
                     }
                   } else if (cmd.action === 'next') {
                     const nextTrack = usePlayerStore.getState().shiftQueue();
                     if (nextTrack) {
                       usePlayerStore.getState().playEngineTrack(nextTrack);
-                    } else {
+                    } else if (currentState.playbackEngine !== 'youtube') {
                       api.skipToNext(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'play_specific') {
@@ -155,7 +163,7 @@ export function useQueueSync() {
                     const prevTrack = usePlayerStore.getState().prevQueue();
                     if (prevTrack) {
                       usePlayerStore.getState().playEngineTrack(prevTrack);
-                    } else {
+                    } else if (currentState.playbackEngine !== 'youtube') {
                       api.skipToPrevious(targetDevice).catch(() => {});
                     }
                   }
@@ -196,7 +204,8 @@ export function useQueueSync() {
       )
       .on('broadcast', { event: 'playback_sync' }, (payload) => {
         const user = useAuthStore.getState().user;
-        if (!user) {
+        const isAdminMode = useSettingsStore.getState().isAdminMode;
+        if (!user || isAdminMode) {
           const store = usePlayerStore.getState();
           if (store.isPlaying !== payload.payload.isPlaying) {
              store.setIsPlaying(payload.payload.isPlaying);
@@ -400,6 +409,9 @@ export function useQueueSync() {
     
     let remoteSyncInterval = setInterval(async () => {
       try {
+        const engine = usePlayerStore.getState().playbackEngine;
+        if (engine === 'youtube') return; // En youtube el progreso llega vía realtime broadcast
+
         const api = await import('../lib/spotifyApi');
         const state = await api.getPlaybackState();
         if (state && state.item) {

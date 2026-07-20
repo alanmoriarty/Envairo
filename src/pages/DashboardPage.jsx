@@ -167,7 +167,7 @@ export default function DashboardPage() {
     if (!state.currentTrack && state.queue.length > 0 && sdkReady) {
       const nextTrack = usePlayerStore.getState().shiftQueue();
       if (nextTrack) {
-        await controls.play([nextTrack.uri]);
+        usePlayerStore.getState().playEngineTrack(nextTrack);
         toast.success(t('dashboard.toast_playing_auto', { name: nextTrack.name }));
       }
     }
