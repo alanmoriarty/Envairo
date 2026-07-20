@@ -72,6 +72,7 @@ const ES = {
   },
   guest: {
     title: 'Pide tu canción',
+    for_event: 'para',
     subtitle_party: 'Modo Fiesta 🎉',
     subtitle_commercial: 'Bar / Restaurante',
     label_table: 'Mesa (obligatorio)',
@@ -410,6 +411,7 @@ const EN = {
   },
   guest: {
     title: 'Request a Song',
+    for_event: 'for',
     subtitle_party: 'Party Mode 🎉',
     subtitle_commercial: 'Bar / Restaurant',
     label_table: 'Table (required)',

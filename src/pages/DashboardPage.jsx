@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type
 } from 'lucide-react';
 import {
   DndContext,
@@ -311,7 +311,7 @@ export default function DashboardPage() {
                 mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
               }`}
             >
-              <Users size={14} /> {t('dashboard.mode_party')}
+              <Users size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_party')}</span>
             </button>
             <div className="w-px h-4 bg-white/10" />
             <button
@@ -320,14 +320,14 @@ export default function DashboardPage() {
                 mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
               }`}
             >
-              <Store size={14} /> {t('dashboard.mode_commercial')}
+              <Store size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_commercial')}</span>
             </button>
           </div>
 
           {/* View/Panel toggles */}
           <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
             <div className="flex items-center gap-2">
-              <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ClipboardList size={14} className="text-accent" /> {t('dashboard.toggle_requests')}</span>
+              <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title={t('dashboard.toggle_requests')}><ClipboardList size={16} className="text-accent" /> <span className="hidden sm:inline">{t('dashboard.toggle_requests')}</span></span>
               <Toggle checked={showRequests} onChange={setShowRequests} />
             </div>
             
@@ -337,9 +337,9 @@ export default function DashboardPage() {
               if (engine === 'spotify' || (engine === 'youtube' && hasYoutubeToken)) {
                 return (
                   <>
-                    <div className="hidden sm:block w-px h-4 bg-white/10" />
+                    <div className="w-px h-4 bg-white/10" />
                     <div className="flex items-center gap-2">
-                      <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1"><ListMusic size={14} className="text-accent" /> {t('dashboard.toggle_playlists')}</span>
+                      <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title={t('dashboard.toggle_playlists')}><ListMusic size={16} className="text-accent" /> <span className="hidden sm:inline">{t('dashboard.toggle_playlists')}</span></span>
                       <Toggle checked={showPlaylists} onChange={setShowPlaylists} />
                     </div>
                   </>
@@ -353,17 +353,17 @@ export default function DashboardPage() {
           {playbackEngine === 'youtube' && (
             <div className="card px-4 py-3 flex flex-wrap items-center gap-y-4 gap-x-3 lg:gap-4">
               <div className="flex items-center gap-2">
-                <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
-                  <Mic2 size={14} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
-                  Karaoke
+                <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title="Karaoke">
+                  <Mic2 size={16} className={karaokeEnabled ? 'text-pink-400' : 'text-text-muted'} />
+                  <span className="hidden sm:inline">Karaoke</span>
                 </span>
                 <Toggle checked={karaokeEnabled} onChange={setKaraokeEnabled} />
               </div>
-              <div className="hidden sm:block w-px h-4 bg-white/10" />
+              <div className="w-px h-4 bg-white/10" />
               <div className="flex items-center gap-2">
-                <span className="w-24 sm:w-auto text-sm font-medium text-text-primary flex items-center gap-1">
-                  <Mic2 size={14} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
-                  Lyrics
+                <span className="w-10 sm:w-auto text-sm font-medium text-text-primary flex items-center justify-center sm:justify-start gap-1" title="Lyrics">
+                  <Type size={16} className={lyricsEnabled ? 'text-sky-400' : 'text-text-muted'} />
+                  <span className="hidden sm:inline">Lyrics</span>
                 </span>
                 <Toggle checked={lyricsEnabled} onChange={setLyricsEnabled} />
               </div>

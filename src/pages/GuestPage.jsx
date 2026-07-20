@@ -343,7 +343,7 @@ export default function GuestPage() {
         </div>
         <h1 className="text-2xl font-bold text-gradient">
           {sessionConfig?.event_name 
-            ? `${t('guest.title')} para ${sessionConfig.event_name}`
+            ? `${t('guest.title')} ${t('guest.for_event') || (lang === 'EN' ? 'for' : 'para')} ${sessionConfig.event_name}`
             : t('guest.title')}
         </h1>
         <p className="text-text-muted mt-1 text-sm">
