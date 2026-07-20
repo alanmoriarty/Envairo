@@ -57,6 +57,11 @@ export function RootLayout() {
             }
           });
           useSettingsStore.setState(validSettings);
+          
+          const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+          const newSettingsObj = {};
+          allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
+          useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
         }
       } catch(e) {
         console.error('Error hydrating settings on mount:', e);

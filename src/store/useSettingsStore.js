@@ -22,6 +22,9 @@ export const useSettingsStore = create(
       requestsPerGuest: 0,
       tableCount: 0,
       
+      lastSavedSignature: '',
+      setLastSavedSignature: (sig) => set({ lastSavedSignature: sig }),
+      
       enairoEnabled: true,
 
       // Session QR ID

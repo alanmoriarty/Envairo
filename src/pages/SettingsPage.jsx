@@ -107,8 +107,10 @@ export default function SettingsPage() {
     enairoTestMode, setEnairoTestMode,
     enairoLastRunAt, enairoStartedAt,
     visualizerEnabled, setVisualizerEnabled,
-    visualizerUrl, setVisualizerUrl
+    visualizerUrl, setVisualizerUrl,
+    lastSavedSignature, setLastSavedSignature
   } = useSettingsStore();
+  const store = useSettingsStore();
   const { t } = useTranslation();
   
   const COMMON_GENRES = t('settings.common_genres') || [];
@@ -117,18 +119,23 @@ export default function SettingsPage() {
   const [enairoTimeLeft, setEnairoTimeLeft] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+  const currentSettingsObj = {};
+  allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
+  const currentSignature = JSON.stringify(currentSettingsObj);
+  
+  // Si no se ha cargado una firma aún (recién abierto sin red), consideramos que no hay cambios
+  const hasChanges = lastSavedSignature ? currentSignature !== lastSavedSignature : false;
+
   const saveSettingsToCloud = async () => {
+    if (!hasChanges) return;
     setIsSaving(true);
     try {
       const state = useSettingsStore.getState();
       const { sessionId, hostSecret } = state;
       
-      const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
-      const settingsObj = {};
-      allKeys.forEach(k => { settingsObj[k] = state[k]; });
-      
       await supabase.auth.updateUser({
-        data: { host_settings: JSON.stringify(settingsObj) }
+        data: { host_settings: currentSignature }
       });
 
       if (sessionId && hostSecret) {
@@ -150,6 +157,7 @@ export default function SettingsPage() {
           }
         });
       }
+      setLastSavedSignature(currentSignature);
       toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');
     } catch (e) {
       console.error(e);
@@ -554,10 +562,10 @@ export default function SettingsPage() {
       </section>
 
       {/* Sticky Save Footer */}
-      <div className="sticky bottom-4 z-40 mt-8 flex justify-end pointer-events-none">
+      <div className={`sticky bottom-4 z-40 mt-8 flex justify-end pointer-events-none transition-all duration-300 ${hasChanges ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <button
           onClick={saveSettingsToCloud}
-          disabled={isSaving}
+          disabled={isSaving || !hasChanges}
           className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white hover:scale-110 active:scale-95 transition-all shadow-[0_4px_20px_rgba(var(--color-accent),0.4)] disabled:opacity-50 disabled:hover:scale-100"
           title={t('settings.save_btn') || 'Confirmar Cambios'}
         >

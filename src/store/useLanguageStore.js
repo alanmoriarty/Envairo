@@ -268,6 +268,8 @@ const ES = {
     guide_modal_other: 'Otros',
     guide_modal_tip: 'Tip: Si el sistema añade varios géneros hermanos y hay alguno que en específico NO deseas, simplemente haz clic en la X de su etiqueta para removerlo individualmente.',
     save_btn: 'Guardar Cambios',
+    save_success: 'Cambios guardados exitosamente',
+    save_error: 'Error al guardar los cambios',
   },
   activities: {
     title: 'Actividades',
@@ -592,6 +594,8 @@ const EN = {
       "Tropical", "Latin Urban", "Vallenato"
     ],
     save_btn: 'Save Changes',
+    save_success: 'Changes saved successfully',
+    save_error: 'Failed to save changes',
   },
   activities: {
     title: 'Activities',
