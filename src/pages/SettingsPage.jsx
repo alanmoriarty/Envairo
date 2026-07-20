@@ -452,25 +452,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Spacer to avoid sticky footer hiding content */}
-      <div className="h-24"></div>
-
-      {/* Sticky Save Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-bg-base/80 backdrop-blur-xl border-t border-white/10 z-40 lg:ml-64 flex justify-end">
-        <button
-          onClick={saveSettingsToCloud}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-accent),0.3)] disabled:opacity-50 disabled:hover:scale-100"
-        >
-          {isSaving ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Save size={18} />
-          )}
-          {t('settings.save_btn') || 'Confirmar Cambios'}
-        </button>
-      </div>
-
       {/* Genre filters */}
       <section className="card p-5 space-y-4 relative z-20">
         <div className="flex items-center justify-between mb-1">
@@ -572,11 +553,8 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Spacer to avoid sticky footer hiding content */}
-      <div className="h-24"></div>
-
       {/* Sticky Save Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-bg-base/80 backdrop-blur-xl border-t border-white/10 z-40 lg:ml-64 flex justify-end">
+      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-4 bg-bg-base/90 backdrop-blur-xl border-t border-white/10 z-40 mt-8 flex justify-end shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <button
           onClick={saveSettingsToCloud}
           disabled={isSaving}
