@@ -115,7 +115,7 @@ export default function CallbackPage() {
           } else {
             // Si no hay sesión previa, creamos una nueva
             const { useSettingsStore } = await import('../store/useSettingsStore');
-            const newSessionId = crypto.randomUUID().slice(0, 6).toUpperCase();
+            const newSessionId = crypto.randomUUID();
             const newSecret = crypto.randomUUID();
             
             useSettingsStore.getState().setSessionId(newSessionId);
