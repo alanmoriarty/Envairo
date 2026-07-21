@@ -64,6 +64,22 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast.error('Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.', { duration: 6000 });
+    } catch (err) {
+      toast.error(err.message || 'Error al solicitar el restablecimiento');
+    }
+  };
+
   useEffect(() => {
     // Interceptar parámetros de "QR de Administrador" para control remoto
     const params = new URLSearchParams(window.location.search);
@@ -118,18 +134,25 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-bg-surface border border-accent/20 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
                 placeholder="tu@correo.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Contraseña</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-text-secondary">Contraseña</label>
+                {!isRegistering && (
+                  <button type="button" onClick={handleResetPassword} className="text-xs text-accent hover:text-primary transition-colors">
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+              </div>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-bg-surface border border-accent/20 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
                 placeholder="••••••••"
               />
             </div>
