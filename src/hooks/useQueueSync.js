@@ -235,13 +235,12 @@ export function useQueueSync() {
                       usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
                     }
                   }
-                    }
-                  });
                 });
-              }
+              });
             }
           }
-          // Procesar las actualizaciones de la cola y la pista actual
+        }
+        // Procesar las actualizaciones de la cola y la pista actual
           processStateUpdates(newSession);
         }
       )
