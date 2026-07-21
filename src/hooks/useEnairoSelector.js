@@ -102,47 +102,28 @@ export function useEnairoSelector() {
       if (tracksToAdd.length > 0) {
         const searchPromises = tracksToAdd.map(async (query) => {
           try {
-            const engine = usePlayerStore.getState().playbackEngine;
-            if (engine === 'youtube') {
-              const cacheKey = `yt_ai_${query}`;
-              const cached = localStorage.getItem(cacheKey);
-              if (cached) {
-                const track = JSON.parse(cached);
-                track.addedBy = 'EnvAIro Selector';
-                if (Array.isArray(track.artists)) {
-                   track.artists = track.artists.map(a => a.name || a).join(', ');
-                } else if (typeof track.artists === 'object' && track.artists !== null && track.artists.name) {
-                   track.artists = track.artists.name;
-                }
-                return track;
-              }
-
-              const { searchYouTubeVideos, getYouTubeVideoDetails } = await import('../lib/youtubeApi');
-              const results = await searchYouTubeVideos(query, 1);
-              if (results && results.length > 0) {
-                let track = results[0];
-                if (track.duration_ms === 0) {
-                   const details = await getYouTubeVideoDetails(track.id);
-                   if (details) track = details;
-                }
-                localStorage.setItem(cacheKey, JSON.stringify(track));
-                track.addedBy = 'EnvAIro Selector';
-                return track;
-              }
-            } else {
-              const results = await searchTracks(query, 1);
-              if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
-                const spotifyTrack = results.tracks.items[0];
-                return {
-                  id: spotifyTrack.id,
-                  name: spotifyTrack.name,
-                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
-                  image: spotifyTrack.album?.images?.[0]?.url || '',
-                  duration_ms: spotifyTrack.duration_ms,
-                  uri: spotifyTrack.uri,
-                  addedBy: 'EnvAIro Selector'
-                };
-              }
+            // Siempre usamos el Edge Function de Spotify para obtener metadatos limpios,
+            // sin importar el motor. Esto asegura que la UI se vea bien y que el 
+            // reproductor de YouTube use la búsqueda dinámica (que tiene fallbacks automáticos)
+            // en lugar de anclarse a un ID fijo que podría estar bloqueado.
+            const { data, error } = await supabase.functions.invoke('search-spotify', {
+              body: { query: query, type: 'track', limit: 1 }
+            });
+            
+            if (error) throw error;
+            
+            if (data && data.tracks && data.tracks.items && data.tracks.items.length > 0) {
+              const spotifyTrack = data.tracks.items[0];
+              return {
+                id: spotifyTrack.id,
+                name: spotifyTrack.name,
+                artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                image: spotifyTrack.album?.images?.[0]?.url || '',
+                duration_ms: spotifyTrack.duration_ms,
+                uri: spotifyTrack.uri,
+                source: 'spotify', // Forzar origen spotify para que el engine lo busque
+                addedBy: 'EnvAIro Selector'
+              };
             }
           } catch (err) {
             console.error("Error buscando canción recomendada por EnvAIro:", query, err);
