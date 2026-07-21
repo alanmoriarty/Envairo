@@ -331,6 +331,8 @@ export const usePlayerStore = create(
                 set({ currentTrack: null, isPlaying: false });
               }
               return; // Abortar
+            }
+
             // Cargar el nuevo video
             const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
             console.log('Final YouTube ID to play:', videoIdToPlay);
