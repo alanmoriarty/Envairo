@@ -23,7 +23,7 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'translate(-50%, -50%)';
       wrapper.style.borderRadius = '0';
       wrapper.style.boxShadow = 'none';
-      wrapper.style.opacity = '1';
+      wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
       wrapper.style.zIndex = '9999';
       wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'auto';
@@ -53,7 +53,7 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'translate(-50%, -50%)';
       wrapper.style.borderRadius = '0';
       wrapper.style.boxShadow = 'none';
-      wrapper.style.opacity = currentTrack ? '0.5' : '0';
+      wrapper.style.opacity = (currentTrack && wrapper.dataset.errorHidden !== 'true') ? '0.5' : '0';
       wrapper.style.zIndex = '-1';
       wrapper.style.filter = 'blur(4px) saturate(1.5)';
       wrapper.style.pointerEvents = 'none';
@@ -277,7 +277,10 @@ export function useYouTubeSDK() {
             const yt = window.YT;
             if (event.data === yt.PlayerState.PLAYING) {
               const wrapper = document.getElementById('youtube-wrapper');
-              if (wrapper) wrapper.style.opacity = '1';
+              if (wrapper) {
+                wrapper.dataset.errorHidden = 'false';
+                wrapper.style.opacity = '1';
+              }
               setIsPlaying(true);
               setDuration(Math.floor(event.target.getDuration() * 1000));
               startProgressTimer(event.target);
@@ -301,7 +304,10 @@ export function useYouTubeSDK() {
           },
           onError: (event) => {
             const wrapper = document.getElementById('youtube-wrapper');
-            if (wrapper) wrapper.style.opacity = '0';
+            if (wrapper) {
+              wrapper.dataset.errorHidden = 'true';
+              wrapper.style.opacity = '0';
+            }
             
             // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
             if (event.data === 150 || event.data === 101) {
