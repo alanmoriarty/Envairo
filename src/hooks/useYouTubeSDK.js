@@ -302,11 +302,8 @@ export function useYouTubeSDK() {
     };
   }, [playbackEngine]);
 
-  const preloadedTrackIdRef = useRef(null);
-
   const startProgressTimer = (player) => {
     stopProgressTimer();
-    preloadedTrackIdRef.current = null; // Reset preloaded track for new song
     
     progressInterval.current = setInterval(() => {
       if (player && player.getCurrentTime) {
@@ -314,19 +311,6 @@ export function useYouTubeSDK() {
         const duration = player.getDuration ? player.getDuration() : 0;
         
         usePlayerStore.getState().setProgress(Math.floor(currentTime * 1000));
-        
-        // Pre-carga agresiva para transiciones suaves (gapless)
-        if (duration > 0 && (duration - currentTime <= 15)) {
-          const store = usePlayerStore.getState();
-          const nextIndex = store.currentQueueIndex + 1;
-          const nextTrack = store.queue[nextIndex];
-          
-          if (nextTrack && nextTrack.id !== preloadedTrackIdRef.current) {
-            preloadedTrackIdRef.current = nextTrack.id;
-            // Disparar pre-búsqueda en segundo plano
-            store.preloadNextTrack().catch(err => console.error('Failed to preload next track:', err));
-          }
-        }
       }
     }, 1000);
   };

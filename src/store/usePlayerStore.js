@@ -17,6 +17,7 @@ export const usePlayerStore = create(
       playbackEngine: 'spotify', // 'spotify' | 'youtube'
       failedYouTubeIds: [],
       currentYtId: null,
+      preloadWorkerRunning: false,
 
       // Playback state
       currentTrack: null,
@@ -103,12 +104,15 @@ export const usePlayerStore = create(
       setVolume: (volume) => set({ volume }),
 
       // ── Queue ─────────────────────────────────────────────────────────────
-      setQueue: (tracks) => set({ 
-        queue: tracks.map((t, i) => ({ ...t, queueId: `${t.id}-${Date.now()}-${i}` })), 
-        currentQueueIndex: -1 
-      }),
+      setQueue: (tracks) => {
+        set({ 
+          queue: tracks.map((t, i) => ({ ...t, queueId: `${t.id}-${Date.now()}-${i}` })), 
+          currentQueueIndex: -1 
+        });
+        get().startQueuePreloadWorker();
+      },
 
-      addToQueue: (track) =>
+      addToQueue: (track) => {
         set((state) => {
           const newTrack = { ...track, queueId: `${track.id}-${Date.now()}` };
           
@@ -124,9 +128,11 @@ export const usePlayerStore = create(
           return {
             queue: newQueue
           };
-        }),
+        });
+        get().startQueuePreloadWorker();
+      },
 
-      removeFromQueue: (queueId) =>
+      removeFromQueue: (queueId) => {
         set((state) => {
           const index = state.queue.findIndex((t) => t.queueId === queueId);
           if (index === -1) return state;
@@ -142,7 +148,9 @@ export const usePlayerStore = create(
             queue: state.queue.filter((t) => t.queueId !== queueId),
             currentQueueIndex: updatedIndex
           };
-        }),
+        });
+        get().startQueuePreloadWorker();
+      },
         
       clearQueue: () =>
         set(() => {
@@ -152,7 +160,7 @@ export const usePlayerStore = create(
           };
         }),
 
-      reorderQueue: (oldIndex, newIndex) =>
+      reorderQueue: (oldIndex, newIndex) => {
         set((state) => {
           const q = [...state.queue];
           const [removed] = q.splice(oldIndex, 1);
@@ -168,7 +176,9 @@ export const usePlayerStore = create(
           }
           
           return { queue: q, currentQueueIndex: updatedIndex };
-        }),
+        });
+        get().startQueuePreloadWorker();
+      },
 
       shiftQueue: () => {
         const state = get();
@@ -317,14 +327,43 @@ export const usePlayerStore = create(
         return { videoIdToPlay, isSpotifyTrack };
       },
 
-      // Precarga el siguiente video en segundo plano para evitar demoras
-      preloadNextTrack: async () => {
+      // Worker en segundo plano para precargar IDs de toda la cola
+      startQueuePreloadWorker: async () => {
          const state = get();
-         const nextIndex = state.currentQueueIndex + 1;
-         if (nextIndex < state.queue.length && state.playbackEngine === 'youtube') {
-            const nextTrack = state.queue[nextIndex];
-            // Resuelve y guarda en caché en segundo plano
-            await state.resolveYouTubeVideoId(nextTrack);
+         // Si ya está corriendo o no estamos en YouTube, abortar
+         if (state.preloadWorkerRunning || state.playbackEngine !== 'youtube') return;
+         
+         set({ preloadWorkerRunning: true });
+         
+         try {
+           const { useSettingsStore } = await import('./useSettingsStore');
+           const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+           const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+
+           // Recorrer la cola desde la canción siguiente
+           for (let i = get().currentQueueIndex + 1; i < get().queue.length; i++) {
+             // Es posible que el motor cambie o la cola se limpie durante el proceso
+             if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
+             
+             const track = get().queue[i];
+             const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
+             
+             if (isSpotifyTrack) {
+               const cacheKey = `yt_bridge_${track.id}_${mode}`;
+               const cachedId = localStorage.getItem(cacheKey);
+               
+               // Si no está en caché o falló, resolverlo
+               if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
+                 await get().resolveYouTubeVideoId(track);
+                 // Esperar 1 segundo entre búsquedas para no saturar la red o ser bloqueados por YouTube (429)
+                 await new Promise(resolve => setTimeout(resolve, 1000));
+               }
+             }
+           }
+         } catch (error) {
+           console.error("Error in queue preload worker:", error);
+         } finally {
+           set({ preloadWorkerRunning: false });
          }
       },
 
