@@ -130,9 +130,9 @@ export function useQueueSync() {
               if (targetDevice) {
                 import('../lib/spotifyApi').then(m => m.pausePlayback(targetDevice)).catch(()=>{});
               }
+              state.setIsKickedOut(true);
             } catch (err) {}
 
-            logout();
             return;
           }
 

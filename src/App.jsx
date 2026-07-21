@@ -13,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 export default function App() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const isKickedOut = usePlayerStore((state) => state.isKickedOut);
   
   useInactivityTimeout();
   // Sincronizar el estado entre pestañas (Host vs Guest local)
@@ -115,6 +116,31 @@ export default function App() {
               className="btn-primary w-full py-3"
             >
               {isReconnecting ? 'Reconectando...' : 'Reconectar Spotify'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Kickout (Reemplazado) */}
+      {isKickedOut && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in relative">
+            <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center text-warning mb-2">
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-text-primary">Sesión en otro dispositivo</h2>
+            <p className="text-text-muted text-sm mb-4">
+              Has abierto EnvAIro en otra pestaña, ventana o dispositivo (como la App PWA). 
+              Esta ventana ha sido pausada para evitar que la música se duplique.
+            </p>
+            <button
+              onClick={() => {
+                usePlayerStore.getState().setIsKickedOut(false);
+                window.location.href = '/';
+              }}
+              className="btn-secondary w-full py-3"
+            >
+              Volver al Inicio
             </button>
           </div>
         </div>

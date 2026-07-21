@@ -35,8 +35,10 @@ export const usePlayerStore = create(
       playHistory: [],
       requestHistory: [],
       lastCommandTs: 0,
+      isKickedOut: false,
 
       // ── SDK ──────────────────────────────────────────────────────────────
+      setIsKickedOut: (isKickedOut) => set({ isKickedOut }),
       setPlayer: (player) => set({ player }),
       setYoutubePlayer: (youtubePlayer) => set({ youtubePlayer }),
       setPlaybackEngine: (playbackEngine) => set((state) => {
