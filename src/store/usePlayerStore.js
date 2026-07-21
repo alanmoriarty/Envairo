@@ -375,9 +375,8 @@ export const usePlayerStore = create(
         const state = get();
         if (state.playbackEngine === 'youtube') {
           if (state.youtubePlayer && track.id) {
-            // Detener el video actual de inmediato para evitar reproducción simultánea
-            state.youtubePlayer.stopVideo();
-            set({ isPlaying: false });
+            // (No llamamos stopVideo() aquí para permitir que useYouTubeSDK haga el crossfade de doble búfer)
+            // Solo pausamos el estado si no estamos reproduciendo, pero la transición maneja esto internamente.
 
             const { videoIdToPlay, isSpotifyTrack } = await get().resolveYouTubeVideoId(track, forceMode);
 
@@ -403,6 +402,20 @@ export const usePlayerStore = create(
               state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
             } else {
               state.youtubePlayer.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+            }
+
+            // Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
+            try {
+              const { useSettingsStore } = await import('./useSettingsStore');
+              const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+              const currentMode = forceMode || (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+              
+              const modesToCache = ['normal', 'karaoke', 'lyrics'].filter(m => m !== currentMode);
+              modesToCache.forEach(m => {
+                get().resolveYouTubeVideoId(track, m).catch(() => {});
+              });
+            } catch (e) {
+              console.error('Error starting preload for alternate modes:', e);
             }
           }
         } else {
