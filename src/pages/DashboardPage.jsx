@@ -280,6 +280,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
             {(playbackEngine === 'youtube' || visualizerEnabled) && (
               <button
+                disabled={!currentTrack}
                 onClick={() => {
                   const targetId = visualizerEnabled ? 'visualizer-wrapper' : 'youtube-wrapper';
                   const wrapper = document.getElementById(targetId);
@@ -291,7 +292,7 @@ export default function DashboardPage() {
                     }
                   }
                 }}
-                className="p-1.5 text-text-muted hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 text-text-muted hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:text-text-muted"
                 title="Video en pantalla completa"
               >
                 <Maximize2 size={18} />
