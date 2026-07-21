@@ -41,7 +41,14 @@ export async function searchYouTubeVideos(query, limit = 8) {
 
   for (const instance of instancesToTry) {
     try {
-      const res = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5 segundos máximo
+      
+      const res = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (res.ok) {
         activePipedInstance = instance; // Recordar la instancia exitosa para la próxima vez
         const data = await res.json();

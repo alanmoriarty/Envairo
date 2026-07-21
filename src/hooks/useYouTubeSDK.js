@@ -13,6 +13,8 @@ export function useYouTubeSDK() {
   const applyStyles = (wrapper, isVis, isFs) => {
     if (!wrapper) return;
     
+    const currentTrack = usePlayerStore.getState().currentTrack;
+    
     if (isFs) {
       wrapper.style.top = '50%';
       wrapper.style.left = '50%';
