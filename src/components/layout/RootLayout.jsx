@@ -29,14 +29,7 @@ export function RootLayout() {
   
   const isPremium = user?.product === 'premium' || isAdminMode;
 
-  if (!isAuthenticated && !isAdminMode) {
-    return <Navigate to="/" replace />;
-  }
 
-  // Si no es premium y no es admin, forzar vista a métricas
-  if (user && user.product !== 'premium' && location.pathname !== '/app/metrics') {
-    return <Navigate to="/app/metrics" replace />;
-  }
 
   useEffect(() => {
     // Unificar el sessionId en todos los dispositivos usando el ID de Spotify
@@ -237,6 +230,15 @@ export function RootLayout() {
       unsubPlayer();
     };
   }, []);
+
+  if (!isAuthenticated && !isAdminMode) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Si no es premium y no es admin, forzar vista a métricas
+  if (user && user.product !== 'premium' && location.pathname !== '/app/metrics') {
+    return <Navigate to="/app/metrics" replace />;
+  }
 
   return (
     <div className={`h-[100dvh] flex flex-col overflow-hidden bg-transparent text-text-primary font-sans transition-colors duration-500 theme-${themeColor || 'default'}`}>
