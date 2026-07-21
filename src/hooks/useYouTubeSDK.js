@@ -223,6 +223,7 @@ export function useYouTubeSDK() {
               stopProgressTimer();
 
               // Evitar saltos si el video terminó instantáneamente por culpa de un progressMs incorrecto
+              const player = event.target;
               const currentTime = player && player.getCurrentTime ? player.getCurrentTime() : 0;
               const duration = player && player.getDuration ? player.getDuration() : 0;
               const store = usePlayerStore.getState();
