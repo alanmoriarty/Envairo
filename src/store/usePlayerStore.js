@@ -262,9 +262,24 @@ export const usePlayerStore = create(
                   const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
                   const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
                   const query = `${queryBase} ${effectiveSuffix}`;
-                  const results = await searchYouTubeVideos(query, 5);
+                  let results = await searchYouTubeVideos(query, 5);
+                  
                   if (results && results.length > 0) {
-                    const unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
+                    let unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
+                    const blockedCount = results.length - unblocked.length;
+                    
+                    // Si ya fallaron 3 o más intentos con la búsqueda normal,
+                    // intentamos hacer una búsqueda alternativa más estricta
+                    if (blockedCount >= 3 && mode === 'normal') {
+                       const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
+                       const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
+                       if (fallbackResults && fallbackResults.length > 0) {
+                           const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
+                           if (fallbackUnblocked.length > 0) {
+                               unblocked = fallbackUnblocked;
+                           }
+                       }
+                    }
                     
                     if (unblocked.length > 0) {
                       // Filtrado estricto por palabras clave si hay un modo activo
