@@ -35,6 +35,7 @@ export const usePlayerStore = create(
       playHistory: [],
       requestHistory: [],
       lastCommandTs: 0,
+      historyTimer: null,
       
       clearPlayerState: () => set({
         queue: [],
@@ -385,7 +386,7 @@ export const usePlayerStore = create(
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
-        get().addToHistory(track);
+        get().queueAddToHistory(track);
         const state = get();
         if (state.playbackEngine === 'youtube') {
           if (state.youtubePlayer && track.id) {
@@ -443,6 +444,18 @@ export const usePlayerStore = create(
       },
 
       // ── History ──────────────────────────────────────────────────────────
+      queueAddToHistory: (track) => {
+        if (get().historyTimer) clearTimeout(get().historyTimer);
+        const timer = setTimeout(() => {
+          const currentState = get();
+          // Solo agregar al historial si después de 10s la canción sigue siendo la misma
+          if (currentState.currentTrack?.id === track.id) {
+            currentState.addToHistory(track);
+          }
+        }, 10000); // Esperar 10 segundos antes de guardar
+        set({ historyTimer: timer });
+      },
+
       addToHistory: (track) => set((state) => {
         const lastTrack = state.playHistory[0];
         // Evitar duplicados consecutivos

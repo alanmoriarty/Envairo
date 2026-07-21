@@ -32,6 +32,15 @@ export function useAutoQueue() {
               requestedBy: 'Auto DJ'
             });
             toast.success(`Auto DJ añadió: ${recommendedTrack.name}`);
+            
+            // Si el reproductor estaba vacío y no estaba sonando nada, iniciar reproducción
+            const stateAfter = usePlayerStore.getState();
+            if (!stateAfter.currentTrack && stateAfter.queue.length > 0) {
+              const nextTrack = stateAfter.shiftQueue();
+              if (nextTrack) {
+                stateAfter.playEngineTrack(nextTrack);
+              }
+            }
           }
         } catch (err) {
           console.error('Auto DJ failed to fetch recommendations:', err);

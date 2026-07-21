@@ -453,6 +453,10 @@ export function useQueueSync() {
       .subscribe();
 
     return () => {
+      unsubscribe();
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
       supabase.removeChannel(channel);
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {

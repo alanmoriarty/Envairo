@@ -219,7 +219,7 @@ export default function SettingsPage() {
           <Settings size={22} className="text-accent" /> {t('settings.title')}
         </h1>
         <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
-        
+
         {/* Tabs */}
         <div className="flex flex-col sm:flex-row gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:w-fit">
           <button
@@ -239,67 +239,67 @@ export default function SettingsPage() {
 
       {activeTab === 'simple' && (
         <section className="card p-5 space-y-4 animate-fade-in">
-        <h2 className="font-bold text-text-primary">General</h2>
+          <h2 className="font-bold text-text-primary">General</h2>
 
-        <div className="mb-4">
-          <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descargar App (PWA)" />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
-          <input
-            type="text"
-            value={store.eventName}
-            onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
-            placeholder="Ej: La fiesta de Andres"
-            maxLength={40}
-            className="input-field w-full"
-          />
-          <p className="text-xs text-text-muted mt-1.5">
-            Se mostrará a tus invitados en la página web: "Pide tu canción para..."
-          </p>
-        </div>
-        <div className="border-t border-white/5 pt-4">
-          <Toggle
-            checked={alwaysAvailable}
-            onChange={setAlwaysAvailable}
-            label={t('settings.always_available')}
-            description={t('settings.always_available_desc')}
-          />
-        </div>
-
-        <div className="border-t border-white/5 pt-4 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <MonitorPlay size={16} className="text-text-muted" />
-            <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+          <div className="mb-4">
+            <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descargar App (PWA)" />
           </div>
 
-          <p className="text-xs text-text-muted mb-2">
-            Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
-          </p>
-
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
-            <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
+            <input
+              type="text"
+              value={store.eventName}
+              onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
+              placeholder="Ej: La fiesta de Don Julian"
+              maxLength={40}
+              className="input-field w-full"
+            />
+            <p className="text-xs text-text-muted mt-1.5">
+              Se mostrará a tus invitados en la página web: "Pide tu canción para..."
+            </p>
+          </div>
+          <div className="border-t border-white/5 pt-4">
+            <Toggle
+              checked={alwaysAvailable}
+              onChange={setAlwaysAvailable}
+              label={t('settings.always_available')}
+              description={t('settings.always_available_desc')}
+            />
           </div>
 
-          {visualizerEnabled && (
-            <div className="pt-2 animate-fade-in">
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
-              <input
-                type="text"
-                value={visualizerUrl}
-                onChange={(e) => setVisualizerUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=... o &list=..."
-                className="input-field w-full text-sm font-mono placeholder:font-sans"
-              />
-              <p className="text-[10px] text-text-muted mt-1.5">
-                Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
-              </p>
+          <div className="border-t border-white/5 pt-4 space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <MonitorPlay size={16} className="text-text-muted" />
+              <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
             </div>
-          )}
-        </div>
-      </section>
+
+            <p className="text-xs text-text-muted mb-2">
+              Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
+              <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
+            </div>
+
+            {visualizerEnabled && (
+              <div className="pt-2 animate-fade-in">
+                <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
+                <input
+                  type="text"
+                  value={visualizerUrl}
+                  onChange={(e) => setVisualizerUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=... o &list=..."
+                  className="input-field w-full text-sm font-mono placeholder:font-sans"
+                />
+                <p className="text-[10px] text-text-muted mt-1.5">
+                  Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
 
       )}
 
@@ -312,246 +312,246 @@ export default function SettingsPage() {
               <h2 className="font-bold text-text-primary shrink-0">{t('settings.envairo_title')}</h2>
             </div>
 
-        <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
+            <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
 
-        <div className="pt-2">
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
-          <textarea
-            value={enairoPrompt}
-            onChange={(e) => setEnairoPrompt(e.target.value)}
-            placeholder={t('settings.envairo_prompt_placeholder')}
-            className="input-field w-full h-24 resize-none"
-          />
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <Toggle
-            checked={enairoTestMode}
-            onChange={setEnairoTestMode}
-            label={t('settings.envairo_test_label')}
-            description={t('settings.envairo_test_desc')}
-          />
-        </div>
-      </section>
-
-
-
-
-
-      {/* General filters */}
-      <section className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
-          <div>
-            <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
-            <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
-          </div>
-          <select
-            value={repeatCooldown}
-            onChange={(e) => setRepeatCooldown(Number(e.target.value))}
-            className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
-          >
-            <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
-            <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
-            <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
-            <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
-            <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
-          </select>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <Toggle
-            checked={cooldownEnabled}
-            onChange={setCooldownEnabled}
-            label={t('settings.cooldown_title')}
-            description={t('settings.cooldown_desc')}
-          />
-          {cooldownEnabled && (
-            <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
-              <div>
-                <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
-              </div>
-              <input
-                type="number"
-                min="1"
-                max="120"
-                value={cooldownMinutes}
-                onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
-                className="input-field w-24 text-center"
+            <div className="pt-2">
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
+              <textarea
+                value={enairoPrompt}
+                onChange={(e) => setEnairoPrompt(e.target.value)}
+                placeholder={t('settings.envairo_prompt_placeholder')}
+                className="input-field w-full h-24 resize-none"
               />
             </div>
-          )}
-        </div>
 
-        <div className="border-t border-white/5 pt-4">
-          <Toggle
-            checked={explicitFilter}
-            onChange={setExplicitFilter}
-            label={t('settings.explicit_filter_title')}
-            description={t('settings.explicit_filter_desc')}
-          />
-        </div>
+            <div className="border-t border-white/5 pt-4">
+              <Toggle
+                checked={enairoTestMode}
+                onChange={setEnairoTestMode}
+                label={t('settings.envairo_test_label')}
+                description={t('settings.envairo_test_desc')}
+              />
+            </div>
+          </section>
 
-        <div className="border-t border-white/5 pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
+
+
+
+          {/* General filters */}
+          <section className="card p-5 space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield size={16} className="text-accent" />
+              <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
+              <div>
+                <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
+                <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
+              </div>
+              <select
+                value={repeatCooldown}
+                onChange={(e) => setRepeatCooldown(Number(e.target.value))}
+                className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+              >
+                <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
+                <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
+                <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
+                <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
+                <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
+              </select>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <Toggle
+                checked={cooldownEnabled}
+                onChange={setCooldownEnabled}
+                label={t('settings.cooldown_title')}
+                description={t('settings.cooldown_desc')}
+              />
+              {cooldownEnabled && (
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
+                  <div>
+                    <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={cooldownMinutes}
+                    onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
+                    className="input-field w-24 text-center"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <Toggle
+                checked={explicitFilter}
+                onChange={setExplicitFilter}
+                label={t('settings.explicit_filter_title')}
+                description={t('settings.explicit_filter_desc')}
+              />
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={requestsPerHour}
+                  onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
+                  className="input-field w-full sm:w-24 text-center"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={requestsPerGuest}
+                  onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className="input-field w-full sm:w-24 text-center"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={tableCount}
+                  onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className="input-field w-full sm:w-24 text-center"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Genre filters */}
+          <section className="card p-5 space-y-4 relative z-20">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-accent" />
+                <h2 className="font-bold text-text-primary">{t('settings.adv_genre_title')}</h2>
+              </div>
+              <button
+                onClick={() => setShowGenreGuide(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+              >
+                <Info size={14} /> {t('settings.guide_btn')}
+              </button>
+            </div>
+
             <div>
-              <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
-              <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
+              <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <List size={14} className="text-success shrink-0" />
+                  <label className="text-sm font-semibold text-success">{t('settings.whitelist_genre_title')}</label>
+                </div>
+                {whitelistGenres.length > 0 && (
+                  <button onClick={clearWhitelistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mb-2">{t('settings.whitelist_genre_desc')}</p>
+              <TagInput
+                tags={whitelistGenres}
+                onAdd={handleAddWhitelistGenre}
+                onRemove={removeWhitelistGenre}
+                placeholder={t('settings.whitelist_placeholder')}
+                suggestions={COMMON_GENRES}
+              />
             </div>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={requestsPerHour}
-              onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
-              className="input-field w-full sm:w-24 text-center"
-            />
-          </div>
-        </div>
 
-        <div className="border-t border-white/5 pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <Ban size={14} className="text-danger shrink-0" />
+                  <label className="text-sm font-semibold text-danger">{t('settings.blacklist_genre_title')}</label>
+                </div>
+                {blacklistGenres.length > 0 && (
+                  <button onClick={clearBlacklistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_genre_desc')}</p>
+              <TagInput
+                tags={blacklistGenres}
+                onAdd={handleAddBlacklistGenre}
+                onRemove={removeBlacklistGenre}
+                placeholder={t('settings.blacklist_genre_placeholder')}
+                suggestions={COMMON_GENRES}
+              />
+            </div>
+          </section>
+          {/* Artist filters */}
+          <section className="card p-5 space-y-5 relative z-10">
+            <div className="flex items-center gap-2 mb-1">
+              <Filter size={16} className="text-accent" />
+              <h2 className="font-bold text-text-primary">{t('settings.adv_artist_title')}</h2>
+            </div>
+
             <div>
-              <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
-              <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
+              <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <Ban size={14} className="text-danger" />
+                  <label className="text-sm font-semibold text-danger">{t('settings.blacklist_song_title')}</label>
+                </div>
+                {blacklistSongs.length > 0 && (
+                  <button onClick={clearBlacklistSongs} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_song_desc')}</p>
+              <SongTagInput
+                tags={blacklistSongs}
+                onAdd={addBlacklistSong}
+                onRemove={removeBlacklistSong}
+                placeholder={t('settings.blacklist_song_placeholder')}
+              />
             </div>
-            <input
-              type="number"
-              min="0"
-              max="20"
-              value={requestsPerGuest}
-              onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
-              className="input-field w-full sm:w-24 text-center"
-            />
-          </div>
-        </div>
 
-        <div className="border-t border-white/5 pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
-              <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <Ban size={14} className="text-danger" />
+                  <label className="text-sm font-semibold text-danger">{t('settings.blacklist_artist_title')}</label>
+                </div>
+                {blacklistArtists.length > 0 && (
+                  <button onClick={clearBlacklistArtists} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_artist_desc')}</p>
+              <ArtistTagInput
+                tags={blacklistArtists}
+                onAdd={addBlacklistArtist}
+                onRemove={removeBlacklistArtist}
+                placeholder={t('settings.blacklist_artist_placeholder')}
+              />
             </div>
-            <input
-              type="number"
-              min="0"
-              max="50"
-              value={tableCount}
-              onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
-              className="input-field w-full sm:w-24 text-center"
-            />
-          </div>
+          </section>
         </div>
-      </section>
+      )}
 
-      {/* Genre filters */}
-      <section className="card p-5 space-y-4 relative z-20">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-accent" />
-            <h2 className="font-bold text-text-primary">{t('settings.adv_genre_title')}</h2>
-          </div>
-          <button
-            onClick={() => setShowGenreGuide(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
-          >
-            <Info size={14} /> {t('settings.guide_btn')}
-          </button>
-        </div>
-
-        <div>
-          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-            <div className="flex items-center gap-2">
-              <List size={14} className="text-success shrink-0" />
-              <label className="text-sm font-semibold text-success">{t('settings.whitelist_genre_title')}</label>
-            </div>
-            {whitelistGenres.length > 0 && (
-              <button onClick={clearWhitelistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
-            )}
-          </div>
-          <p className="text-xs text-text-muted mb-2">{t('settings.whitelist_genre_desc')}</p>
-          <TagInput
-            tags={whitelistGenres}
-            onAdd={handleAddWhitelistGenre}
-            onRemove={removeWhitelistGenre}
-            placeholder={t('settings.whitelist_placeholder')}
-            suggestions={COMMON_GENRES}
-          />
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-            <div className="flex items-center gap-2">
-              <Ban size={14} className="text-danger shrink-0" />
-              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_genre_title')}</label>
-            </div>
-            {blacklistGenres.length > 0 && (
-              <button onClick={clearBlacklistGenres} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
-            )}
-          </div>
-          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_genre_desc')}</p>
-          <TagInput
-            tags={blacklistGenres}
-            onAdd={handleAddBlacklistGenre}
-            onRemove={removeBlacklistGenre}
-            placeholder={t('settings.blacklist_genre_placeholder')}
-            suggestions={COMMON_GENRES}
-          />
-        </div>
-      </section>
-      {/* Artist filters */}
-      <section className="card p-5 space-y-5 relative z-10">
-        <div className="flex items-center gap-2 mb-1">
-          <Filter size={16} className="text-accent" />
-          <h2 className="font-bold text-text-primary">{t('settings.adv_artist_title')}</h2>
-        </div>
-
-        <div>
-          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-            <div className="flex items-center gap-2">
-              <Ban size={14} className="text-danger" />
-              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_song_title')}</label>
-            </div>
-            {blacklistSongs.length > 0 && (
-              <button onClick={clearBlacklistSongs} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
-            )}
-          </div>
-          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_song_desc')}</p>
-          <SongTagInput
-            tags={blacklistSongs}
-            onAdd={addBlacklistSong}
-            onRemove={removeBlacklistSong}
-            placeholder={t('settings.blacklist_song_placeholder')}
-          />
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-            <div className="flex items-center gap-2">
-              <Ban size={14} className="text-danger" />
-              <label className="text-sm font-semibold text-danger">{t('settings.blacklist_artist_title')}</label>
-            </div>
-            {blacklistArtists.length > 0 && (
-              <button onClick={clearBlacklistArtists} className="text-xs text-text-muted hover:text-danger transition-colors">{t('settings.empty_btn')}</button>
-            )}
-          </div>
-          <p className="text-xs text-text-muted mb-2">{t('settings.blacklist_artist_desc')}</p>
-          <ArtistTagInput
-            tags={blacklistArtists}
-            onAdd={addBlacklistArtist}
-            onRemove={removeBlacklistArtist}
-            placeholder={t('settings.blacklist_artist_placeholder')}
-          />
-        </div>
-      </section>
-    </div>
-  )}
-
-  {/* Sticky Save Footer */}
+      {/* Sticky Save Footer */}
       <div className={`sticky bottom-4 z-40 mt-8 flex justify-end pointer-events-none transition-all duration-300 ${hasChanges ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <button
           onClick={saveSettingsToCloud}

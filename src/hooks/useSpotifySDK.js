@@ -176,7 +176,7 @@ export function useSpotifySDK() {
       
       // Historial
       if (normalizedTrack) {
-        storeState.addToHistory(normalizedTrack);
+        storeState.queueAddToHistory(normalizedTrack);
         
         // Sincronizar el índice de la cola si cambió la canción (ej. por Spotify Connect)
         const queue = storeState.queue;

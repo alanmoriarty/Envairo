@@ -11,6 +11,7 @@ import { useQueueSync } from '../../hooks/useQueueSync';
 import { supabase } from '../../lib/supabase';
 import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
+import { useAutoQueue } from '../../hooks/useAutoQueue';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
@@ -23,6 +24,7 @@ export function RootLayout() {
   
   useQueueSync();
   useEnairoSelector();
+  useAutoQueue();
 
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
