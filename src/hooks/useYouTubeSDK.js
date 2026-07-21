@@ -221,10 +221,24 @@ export function useYouTubeSDK() {
             } else if (event.data === yt.PlayerState.ENDED) {
               setIsPlaying(false);
               stopProgressTimer();
+              
+              // Evitar saltos si el video terminó instantáneamente por culpa de un progressMs incorrecto
+              const currentTime = player && player.getCurrentTime ? player.getCurrentTime() : 0;
+              const duration = player && player.getDuration ? player.getDuration() : 0;
+              const store = usePlayerStore.getState();
+              
+              if (store.progress > 0 && currentTime >= duration && duration > 0) {
+                 // Si cargó cerca del final y terminó al instante, reiniciarlo desde 0
+                 store.setProgress(0);
+                 player.seekTo(0);
+                 player.playVideo();
+                 return;
+              }
+
               // Advance to next track in queue
-              const nextTrack = usePlayerStore.getState().shiftQueue();
+              const nextTrack = store.shiftQueue();
               if (nextTrack) {
-                usePlayerStore.getState().playEngineTrack(nextTrack);
+                store.playEngineTrack(nextTrack);
               }
             }
           },
@@ -236,8 +250,8 @@ export function useYouTubeSDK() {
             }
 
             // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
-            if (event.data === 150 || event.data === 101) {
-              console.warn('YouTube SDK Error 101/150: Video embedding blocked. Finding alternative...');
+            if (event.data === 150 || event.data === 101 || event.data === 2 || event.data === 100 || event.data === 5) {
+              console.warn(`YouTube SDK Error ${event.data}: Video playback failed or blocked. Finding alternative...`);
               const store = usePlayerStore.getState();
               const currentYtId = store.currentYtId || currentYtIdRef.current;
 
@@ -251,29 +265,13 @@ export function useYouTubeSDK() {
                 }
               }
 
-              // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
-              if (store.currentTrack) {
-                import('sonner').then(({ toast }) => {
-                  toast.error('El video no está disponible. Buscando alternativa...', { id: 'yt-copyright' });
-                });
-                // Forzar reintento de puente, pasando retryCount = 1
-                store.playEngineTrack(store.currentTrack, store.progress, null, 1);
-              }
+              // Forzar reintento de puente
+              store.playEngineTrack(store.currentTrack, store.progress, null, 1);
+              import('sonner').then(({ toast }) => {
+                toast.error('Error de reproducción. Buscando alternativa...', { id: 'yt-fatal-error' });
+              });
             } else {
               console.error('YouTube Player Error:', event.data);
-              // Auto-skip on fatal errors like 2 (invalid id), 5 (HTML5 error) or 100 (not found)
-              if (event.data === 2 || event.data === 100 || event.data === 5) {
-                const store = usePlayerStore.getState();
-                import('sonner').then(({ toast }) => toast.error('Error al reproducir el video. Saltando a la siguiente...', { id: 'yt-fatal-error' }));
-                const nextTrack = store.shiftQueue();
-                if (nextTrack) {
-                  store.playEngineTrack(nextTrack);
-                } else {
-                  // Si no hay más canciones, limpiar la actual para evitar loop de errores al refrescar
-                  store.setCurrentTrack(null);
-                  store.setIsPlaying(false);
-                }
-              }
             }
           }
         }
