@@ -221,18 +221,18 @@ export function useYouTubeSDK() {
             } else if (event.data === yt.PlayerState.ENDED) {
               setIsPlaying(false);
               stopProgressTimer();
-              
+
               // Evitar saltos si el video terminó instantáneamente por culpa de un progressMs incorrecto
               const currentTime = player && player.getCurrentTime ? player.getCurrentTime() : 0;
               const duration = player && player.getDuration ? player.getDuration() : 0;
               const store = usePlayerStore.getState();
-              
+
               if (store.progress > 0 && currentTime >= duration && duration > 0) {
-                 // Si cargó cerca del final y terminó al instante, reiniciarlo desde 0
-                 store.setProgress(0);
-                 player.seekTo(0);
-                 player.playVideo();
-                 return;
+                // Si cargó cerca del final y terminó al instante, reiniciarlo desde 0
+                store.setProgress(0);
+                player.seekTo(0);
+                player.playVideo();
+                return;
               }
 
               // Advance to next track in queue
@@ -249,15 +249,14 @@ export function useYouTubeSDK() {
               wrapper.style.opacity = '0';
             }
 
-            // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
-            if (event.data === 150 || event.data === 101 || event.data === 2 || event.data === 100 || event.data === 5) {
-              console.warn(`YouTube SDK Error ${event.data}: Video playback failed or blocked. Finding alternative...`);
+            // Errores permanentes: El video fue borrado o bloqueado (100, 101, 150)
+            if (event.data === 150 || event.data === 101 || event.data === 100) {
+              console.warn(`YouTube SDK Error ${event.data}: Video playback failed or blocked permanently. Finding alternative...`);
               const store = usePlayerStore.getState();
               const currentYtId = store.currentYtId || currentYtIdRef.current;
 
               if (currentYtId) {
                 store.addFailedYouTubeId(currentYtId);
-
                 const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
                 const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
                 if (store.currentTrack) {
@@ -265,11 +264,28 @@ export function useYouTubeSDK() {
                 }
               }
 
-              // Forzar reintento de puente
+              // Forzar reintento de puente para buscar otro video
               store.playEngineTrack(store.currentTrack, store.progress, null, 1);
               import('sonner').then(({ toast }) => {
-                toast.error('Error de reproducción. Buscando alternativa...', { id: 'yt-fatal-error' });
+                toast.error('Video bloqueado. Buscando alternativa...', { id: 'yt-fatal-error' });
               });
+            } 
+            // Errores transitorios de carga del reproductor (2, 5)
+            else if (event.data === 2 || event.data === 5) {
+              console.warn(`YouTube SDK Error ${event.data}: Transient player glitch. Retrying same video...`);
+              const store = usePlayerStore.getState();
+              const currentYtId = store.currentYtId || currentYtIdRef.current;
+              
+              if (currentYtId && player && player.loadVideoById) {
+                 setTimeout(() => {
+                   player.loadVideoById({ videoId: currentYtId, startSeconds: store.progress > 0 ? store.progress / 1000 : 0 });
+                 }, 1000);
+                 import('sonner').then(({ toast }) => {
+                   toast.info('Reanudando reproducción...', { id: 'yt-fatal-error' });
+                 });
+              } else {
+                 store.playEngineTrack(store.currentTrack, store.progress, null, 1);
+              }
             } else {
               console.error('YouTube Player Error:', event.data);
             }
