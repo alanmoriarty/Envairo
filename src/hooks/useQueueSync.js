@@ -169,8 +169,16 @@ export function useQueueSync() {
                     }
                   } else if (cmd.action === 'toggle_karaoke') {
                     useSettingsStore.getState().setKaraokeEnabled(cmd.value);
+                    if (currentState.playbackEngine === 'youtube' && currentState.currentTrack) {
+                      const newMode = cmd.value ? 'karaoke' : useSettingsStore.getState().lyricsEnabled ? 'lyrics' : 'normal';
+                      usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
+                    }
                   } else if (cmd.action === 'toggle_lyrics') {
                     useSettingsStore.getState().setLyricsEnabled(cmd.value);
+                    if (currentState.playbackEngine === 'youtube' && currentState.currentTrack) {
+                      const newMode = cmd.value ? 'lyrics' : useSettingsStore.getState().karaokeEnabled ? 'karaoke' : 'normal';
+                      usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
+                    }
                   }
                 });
               });

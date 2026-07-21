@@ -199,21 +199,7 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [controls]);
 
-  // When karaoke/lyrics mode toggles, immediately re-search and re-play the current track
-  useEffect(() => {
-    // Skip the initial mount fire
-    if (!karaokeEffectMounted.current) {
-      karaokeEffectMounted.current = true;
-      return;
-    }
-    const state = usePlayerStore.getState();
-    if (state.playbackEngine !== 'youtube') return;
-    if (!state.currentTrack) return;
-    // Derive new mode from latest React state
-    const newMode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-    console.log('[KaraokeEffect] triggered, newMode:', newMode, 'karaokeEnabled:', karaokeEnabled, 'lyricsEnabled:', lyricsEnabled);
-    usePlayerStore.getState().playEngineTrack(state.currentTrack, 0, newMode);
-  }, [karaokeEnabled, lyricsEnabled]);
+  // El listener de karaoke/lyrics ha sido movido globalmente a useQueueSync.js
 
   // Listener y sync movidos globalmente a useQueueSync.js
 
