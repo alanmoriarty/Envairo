@@ -259,6 +259,11 @@ export function useYouTubeSDK() {
 
       let readyCount = 0;
       const onReady = (event) => {
+        try {
+          event.target.unloadModule("captions");
+          event.target.unloadModule("cc");
+        } catch (e) {}
+        
         readyCount++;
         if (readyCount === 2) {
           setYtReady(true);
@@ -313,6 +318,14 @@ export function useYouTubeSDK() {
             
             setDuration(Math.floor(bufferP.getDuration() * 1000));
             startProgressTimer(bufferP);
+            try {
+              bufferP.unloadModule('captions');
+              bufferP.unloadModule('cc');
+              if (bufferP.setOption) {
+                bufferP.setOption('captions', 'track', {});
+                bufferP.setOption('cc', 'track', {});
+              }
+            } catch (e) { }
           }
           return; // Detener propagación de estado si es el búfer
         }
@@ -326,8 +339,12 @@ export function useYouTubeSDK() {
             setDuration(Math.floor(activeP.getDuration() * 1000));
             startProgressTimer(activeP);
             try {
-              event.target.unloadModule('captions');
-              event.target.unloadModule('cc');
+              activeP.unloadModule('captions');
+              activeP.unloadModule('cc');
+              if (activeP.setOption) {
+                activeP.setOption('captions', 'track', {});
+                activeP.setOption('cc', 'track', {});
+              }
             } catch (e) { }
           } else if (event.data === yt.PlayerState.PAUSED) {
             setIsPlaying(false);

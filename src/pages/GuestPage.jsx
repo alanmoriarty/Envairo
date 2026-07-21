@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X } from 'lucide-react';
+import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X, Download } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { supabase } from '../lib/supabase';
 import { AdSense } from '../components/ads/AdSense';
@@ -538,6 +538,17 @@ export default function GuestPage() {
           </div>
         </div>
       )}
+
+      {/* Botón de Instalar App */}
+      <div className="mt-6">
+        <a 
+          href="#"
+          className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
+        >
+          <Download size={18} />
+          {lang === 'es' ? 'Descarga Nuestra App' : 'Download Our App'}
+        </a>
+      </div>
 
       {/* Bottom Banner Ad */}
       <div className="mt-8">
