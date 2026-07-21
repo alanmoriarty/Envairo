@@ -133,9 +133,43 @@ async function _doSearchYouTubeVideos(query, limit = 8) {
     // console.warn('Vercel serverless scraper falló, usando API oficial como respaldo:', err);
   }
 
-  // 3. Fallback eliminado: API oficial de YouTube (Consumía mucha cuota)
-  // El usuario solicitó explícitamente no usar la API de YouTube oficial.
-  throw new Error('Todos los nodos de búsqueda descentralizados fallaron.');
+  // 3. Fallback: API oficial de YouTube (Consume 100 unidades de cuota)
+  if (!API_KEY) {
+    throw new Error('No YouTube API Key found and Serverless function failed');
+  }
+
+  const url = new URL(`${BASE_URL}/search`);
+  url.searchParams.append('part', 'snippet');
+  url.searchParams.append('q', query);
+  url.searchParams.append('type', 'video');
+  url.searchParams.append('maxResults', limit.toString());
+  url.searchParams.append('key', API_KEY);
+  url.searchParams.append('videoCategoryId', '10'); // 10 = Music category
+  url.searchParams.append('videoEmbeddable', 'true'); // Solo videos que permitan reproducción externa
+
+  const response = await fetch(url.toString());
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Error fetching from YouTube API');
+  }
+
+  const data = await response.json();
+
+  // Transformar los resultados
+  return data.items.map(item => ({
+    id: item.id.videoId,
+    uri: `youtube:${item.id.videoId}`, 
+    name: item.snippet.title,
+    artists: item.snippet.channelTitle || 'YouTube',
+    album: {
+      images: [
+        { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
+      ]
+    },
+    duration_ms: 0, 
+    source: 'youtube'
+  }));
 }
 
 /**
