@@ -117,7 +117,7 @@ export function useQueueSync() {
 
           if (!isAdminMode && newSession.playback_command) {
             const cmd = newSession.playback_command;
-            if (cmd.ts > currentState.lastCommandTs) {
+            if (cmd.ts !== currentState.lastCommandTs) {
               usePlayerStore.getState().setLastCommandTs(cmd.ts);
               
               import('../hooks/useSpotifySDK').then(({ useSpotifySDK }) => {
