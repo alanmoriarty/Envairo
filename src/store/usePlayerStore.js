@@ -216,126 +216,128 @@ export const usePlayerStore = create(
         return null;
       },
 
+      // Extrae la lógica de resolución/búsqueda de IDs de YouTube
+      resolveYouTubeVideoId: async (track, forceMode = null) => {
+        if (!track) return null;
+        let videoIdToPlay = track.id;
+        
+        const { useSettingsStore } = await import('./useSettingsStore');
+        const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+        const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+        const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
+                          : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
+                          : null; 
+        
+        const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
+        const needsSearch = querySuffix !== null || isSpotifyTrack;
+
+        if (needsSearch) {
+          const effectiveSuffix = querySuffix ?? 'VIDEO OFICIAL';
+          const cacheKey = mode ? `yt_bridge_${track.id}_${mode}` : null;
+          const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
+
+          if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11 && !get().failedYouTubeIds.includes(cachedId)) {
+            videoIdToPlay = cachedId;
+          } else {
+            if (cachedId && cacheKey && get().failedYouTubeIds.includes(cachedId)) {
+              localStorage.removeItem(cacheKey); 
+            }
+            try {
+              const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+              const cleanName = (track.name || '')
+                .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k)\)?/gi, '')
+                .replace(/[-–]\s*$/, '').trim();
+              const allArtists = (track.artists || '').replace(/,/g, '');
+              const firstArtist = (track.artists || '').split(',')[0].trim();
+              
+              const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
+              const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
+              const query = `${queryBase} ${effectiveSuffix}`;
+              let results = await searchYouTubeVideos(query, 5);
+              
+              if ((!results || results.length === 0) && querySuffix) {
+                const relaxedQuery = `${queryBase} AUDIO`;
+                results = await searchYouTubeVideos(relaxedQuery, 5);
+              }
+
+              if (results && results.length > 0) {
+                let unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
+                const blockedCount = results.length - unblocked.length;
+                
+                if (blockedCount >= 3 && mode === 'normal') {
+                   const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
+                   const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
+                   if (fallbackResults && fallbackResults.length > 0) {
+                       const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
+                       if (fallbackUnblocked.length > 0) {
+                           unblocked = fallbackUnblocked;
+                       }
+                   }
+                }
+                
+                if (unblocked.length > 0) {
+                  let validResults = unblocked;
+                  if (mode === 'karaoke' || mode === 'lyrics') {
+                    validResults = unblocked.filter(r => {
+                      const t = (r.name || '').toLowerCase();
+                      if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
+                      if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
+                      return true;
+                    });
+                  }
+
+                  if (validResults.length > 0) {
+                    videoIdToPlay = validResults[0].id;
+                  } else {
+                    videoIdToPlay = unblocked[0].id;
+                  }
+
+                  if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                } else {
+                  videoIdToPlay = null; 
+                }
+              } else {
+                if (track.id && track.id.length === 11 && track.source !== 'spotify') {
+                  videoIdToPlay = track.id;
+                } else {
+                  videoIdToPlay = null;
+                }
+              }
+            } catch (err) {
+              console.error('Error in YouTube bridge:', err);
+              if (track.id && track.id.length === 11 && track.source !== 'spotify') {
+                videoIdToPlay = track.id;
+              } else {
+                videoIdToPlay = null;
+              }
+            }
+          }
+        }
+        
+        return { videoIdToPlay, isSpotifyTrack };
+      },
+
+      // Precarga el siguiente video en segundo plano para evitar demoras
+      preloadNextTrack: async () => {
+         const state = get();
+         const nextIndex = state.currentQueueIndex + 1;
+         if (nextIndex < state.queue.length && state.playbackEngine === 'youtube') {
+            const nextTrack = state.queue[nextIndex];
+            // Resuelve y guarda en caché en segundo plano
+            await state.resolveYouTubeVideoId(nextTrack);
+         }
+      },
+
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
         const state = get();
         if (state.playbackEngine === 'youtube') {
           if (state.youtubePlayer && track.id) {
-            let videoIdToPlay = track.id;
-
             // Detener el video actual de inmediato para evitar reproducción simultánea
             state.youtubePlayer.stopVideo();
             set({ isPlaying: false });
 
-            // Determinar modo activo
-            const { useSettingsStore } = await import('./useSettingsStore');
-            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-            const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-            const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
-                              : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
-                              : null; // null = sin búsqueda, usar ID original
-
-            // Necesita búsqueda si: modo activo (karaoke/lyrics) O si el track es de Spotify (o el ID no es de 11 caracteres)
-            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
-            const needsSearch = querySuffix !== null || isSpotifyTrack;
-
-            if (needsSearch) {
-              const effectiveSuffix = querySuffix ?? 'VIDEO OFICIAL';
-              // Re-habilitar caché para todos los modos ahora que las queries están corregidas
-              const cacheKey = mode ? `yt_bridge_${track.id}_${mode}` : null;
-              const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
-
-              if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11 && !get().failedYouTubeIds.includes(cachedId)) {
-                videoIdToPlay = cachedId;
-              } else {
-                if (cachedId && cacheKey && get().failedYouTubeIds.includes(cachedId)) {
-                  localStorage.removeItem(cacheKey); // Limpiar caché si estaba bloqueado
-                }
-                try {
-                  const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                  // Limpiar el nombre del track: quitar cosas como "(Video Oficial)" pero MANTENER los feats
-                  const cleanName = (track.name || '')
-                    .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k)\)?/gi, '')
-                    .replace(/[-–]\s*$/, '') // quitar guiones al final
-                    .trim();
-                  // Usar todos los artistas para la búsqueda, sin comas
-                  const allArtists = (track.artists || '').replace(/,/g, '');
-                  const firstArtist = (track.artists || '').split(',')[0].trim();
-                  
-                  // Si el nombre ya empieza con el primer artista, evitamos duplicarlo
-                  const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
-                  const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
-                  const query = `${queryBase} ${effectiveSuffix}`;
-                  let results = await searchYouTubeVideos(query, 5);
-                  
-                  // Si no hay resultados iniciales y estamos en un modo estricto, relajar la búsqueda
-                  if ((!results || results.length === 0) && querySuffix) {
-                    import('sonner').then(({ toast }) => toast.info(`Búsqueda estricta sin resultados, relajando...`));
-                    const relaxedQuery = `${queryBase} AUDIO`;
-                    results = await searchYouTubeVideos(relaxedQuery, 5);
-                  }
-
-                  if (results && results.length > 0) {
-                    let unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
-                    const blockedCount = results.length - unblocked.length;
-                    
-                    // Si ya fallaron 3 o más intentos con la búsqueda normal,
-                    // intentamos hacer una búsqueda alternativa más estricta
-                    if (blockedCount >= 3 && mode === 'normal') {
-                       const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
-                       const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
-                       if (fallbackResults && fallbackResults.length > 0) {
-                           const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
-                           if (fallbackUnblocked.length > 0) {
-                               unblocked = fallbackUnblocked;
-                           }
-                       }
-                    }
-                    
-                    if (unblocked.length > 0) {
-                      // Filtrado estricto por palabras clave si hay un modo activo
-                      let validResults = unblocked;
-                      if (mode === 'karaoke' || mode === 'lyrics') {
-                        validResults = unblocked.filter(r => {
-                          const t = (r.name || '').toLowerCase();
-                          if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
-                          if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
-                          return true;
-                        });
-                      }
-
-                      if (validResults.length > 0) {
-                        videoIdToPlay = validResults[0].id;
-                      } else {
-                        // Respaldo: si ningún resultado cumple el filtro estricto, usar el primero no bloqueado (video oficial)
-                        import('sonner').then(({ toast }) => toast.info(`No se encontró versión ${mode} válida, usando respaldo.`, { id: 'yt-fallback' }));
-                        videoIdToPlay = unblocked[0].id;
-                      }
-
-                      // Guardar en caché siempre para ahorrar cuota
-                      if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
-                    } else {
-                      console.error('All search results were in the failed list!');
-                      videoIdToPlay = null; // Marcar como fallido
-                    }
-                  } else {
-                    if (track.id && track.id.length === 11 && track.source !== 'spotify') {
-                      import('sonner').then(({ toast }) => toast.info('Búsqueda fallida, usando el video original como respaldo.'));
-                      videoIdToPlay = track.id;
-                    } else {
-                      videoIdToPlay = null;
-                    }
-                  }
-                } catch (err) {
-                  console.error('Error in YouTube bridge:', err);
-                  if (track.id && track.id.length === 11 && track.source !== 'spotify') {
-                    videoIdToPlay = track.id;
-                  } else {
-                    videoIdToPlay = null;
-                  }
-                }
-              }
-            }
+            const { videoIdToPlay, isSpotifyTrack } = await get().resolveYouTubeVideoId(track, forceMode);
 
             // Validar estrictamente el ID antes de enviarlo al reproductor (YouTube requiere EXACTAMENTE 11 caracteres)
             if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack)) {
