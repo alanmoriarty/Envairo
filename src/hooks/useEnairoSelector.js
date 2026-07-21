@@ -109,6 +109,11 @@ export function useEnairoSelector() {
               if (cached) {
                 const track = JSON.parse(cached);
                 track.addedBy = 'EnvAIro Selector';
+                if (Array.isArray(track.artists)) {
+                   track.artists = track.artists.map(a => a.name || a).join(', ');
+                } else if (typeof track.artists === 'object' && track.artists !== null && track.artists.name) {
+                   track.artists = track.artists.name;
+                }
                 return track;
               }
 
