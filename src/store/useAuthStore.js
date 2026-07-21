@@ -10,26 +10,18 @@ function generateUUID() {
 
 export const useAuthStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       isAuthenticated: false,
-      activeInstanceId: generateUUID(), // Identificador único para esta pestaña/navegador
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
         set({ user: null, isAuthenticated: false });
       },
-      // Permite regenerar la instancia si se cierra sesión y se vuelve a entrar
-      resetInstanceId: () => set({ activeInstanceId: generateUUID() }),
     }),
     { 
       name: 'bq-auth',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...persistedState,
-        activeInstanceId: currentState.activeInstanceId, // Forzar uso de la nueva ID generada, ignorando caché viejo
-      })
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated })
     }
   )
 );

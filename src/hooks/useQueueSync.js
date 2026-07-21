@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
-
 import { useAuthStore } from '../store/useAuthStore';
+import { getInstanceId } from '../lib/instanceId';
 
 export function useQueueSync() {
   const authStore = useAuthStore((state) => state);
@@ -110,7 +110,8 @@ export function useQueueSync() {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
 
-          const { activeInstanceId, user, logout } = useAuthStore.getState();
+          const activeInstanceId = getInstanceId();
+          const { user, logout } = useAuthStore.getState();
           const { isAdminMode } = useSettingsStore.getState();
           let updates = {};
 
@@ -320,7 +321,8 @@ export function useQueueSync() {
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
 
       const secret = useSettingsStore.getState().hostSecret;
-      const { activeInstanceId, logout } = useAuthStore.getState();
+      const activeInstanceId = getInstanceId();
+      const authStore = useAuthStore.getState();
       const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).single();
       
       const { data: { user: sbUser } } = await supabase.auth.getUser();
