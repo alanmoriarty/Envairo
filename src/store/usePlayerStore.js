@@ -528,6 +528,7 @@ export const usePlayerStore = create(
         currentTrack: state.currentTrack,
         isPlaying: state.isPlaying,
         progress: state.progress,
+        lastCommandTs: state.lastCommandTs,
       }),
     }
   )

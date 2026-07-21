@@ -161,11 +161,12 @@ export function useQueueSync() {
             if (cmd.ts !== currentState.lastCommandTs) {
               usePlayerStore.getState().setLastCommandTs(cmd.ts);
               
-              import('../hooks/useSpotifySDK').then(({ useSpotifySDK }) => {
-                // Instanciar la lógica de controles temporalmente para ejecutar el comando
-                // No llamamos al hook aquí directamente, usamos las funciones exportadas de spotifyApi
-                import('../lib/spotifyApi').then(api => {
-                  const targetDevice = currentState.activeDeviceId || currentState.deviceId;
+              if (Date.now() - cmd.ts < 10000) {
+                import('../hooks/useSpotifySDK').then(({ useSpotifySDK }) => {
+                  // Instanciar la lógica de controles temporalmente para ejecutar el comando
+                  // No llamamos al hook aquí directamente, usamos las funciones exportadas de spotifyApi
+                  import('../lib/spotifyApi').then(api => {
+                    const targetDevice = currentState.activeDeviceId || currentState.deviceId;
                   
                   // Si estamos en Spotify y no hay dispositivo, no podemos hacer mucho
                   if (!targetDevice && currentState.playbackEngine !== 'youtube') return;
@@ -234,8 +235,10 @@ export function useQueueSync() {
                       usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
                     }
                   }
+                    }
+                  });
                 });
-              });
+              }
             }
           }
           // Procesar las actualizaciones de la cola y la pista actual
