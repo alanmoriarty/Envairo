@@ -39,7 +39,35 @@ export const useSettingsStore = create(
       hostSecret: crypto.randomUUID(),
       isAdminMode: false, // Flag to indicate if we are in restricted remote control mode
       setHostSecret: (secret) => set({ hostSecret: secret }),
-      setIsAdminMode: (isAdmin) => set({ isAdminMode: isAdmin }),
+      setIsAdminMode: (val) => set({ isAdminMode: val }),
+
+      clearSettingsState: () => set({
+        mode: 'party',
+        eventName: '',
+        autoDJ: false,
+        alwaysAvailable: true,
+        startTime: '19:00',
+        endTime: '03:00',
+        allowRepeats: true,
+        repeatCooldown: -1,
+        cooldownEnabled: true,
+        cooldownMinutes: 10,
+        explicitFilter: false,
+        whitelistGenres: [],
+        blacklistGenres: [],
+        blacklistSongs: [],
+        blacklistArtists: [],
+        requestsPerHour: 15,
+        requestsPerGuest: 0,
+        tableCount: 0,
+        lastSavedSignature: '',
+        enairoEnabled: true,
+        enairoPrompt: '',
+        enairoTestMode: false,
+        sessionId: `session-${Date.now()}`,
+        hostSecret: crypto.randomUUID(),
+        isAdminMode: false
+      }),
 
       // Dashboard UI State
       showRequests: true,

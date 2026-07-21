@@ -44,11 +44,14 @@ export function RootLayout() {
       useSettingsStore.getState().setSessionId(user.id);
     }
     
-    // Sincronizar configuraciones de la nube al montar
+    // Sincronizar configuraciones e historial de la nube al montar
     const hydrateSettings = async () => {
       try {
         const { data: { user: sbUser } } = await supabase.auth.getUser();
-        if (sbUser?.user_metadata?.host_settings) {
+        if (!sbUser) return;
+
+        // 1. Hidratar configuraciones
+        if (sbUser.user_metadata?.host_settings) {
           const settingsObj = JSON.parse(sbUser.user_metadata.host_settings);
           const currentState = useSettingsStore.getState();
           const validSettings = {};
@@ -63,6 +66,20 @@ export function RootLayout() {
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
           useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
+        }
+
+        // 2. Hidratar Cola e Historial (host_state)
+        const { data: hostState, error: hsError } = await supabase
+          .from('host_state')
+          .select('queue, play_history')
+          .eq('user_id', sbUser.id)
+          .single();
+          
+        if (!hsError && hostState) {
+          usePlayerStore.setState({
+            queue: hostState.queue || [],
+            playHistory: hostState.play_history || []
+          });
         }
         
         // Fetch global blocked YouTube IDs at startup
@@ -188,6 +205,36 @@ export function RootLayout() {
     return () => {
       clearTimeout(timeoutId);
       unsubSettings();
+    };
+  }, []);
+
+  // Sincronizar Cola e Historial a la base de datos host_state
+  useEffect(() => {
+    let playerTimeoutId;
+    let prevPlayerState = usePlayerStore.getState();
+    const unsubPlayer = usePlayerStore.subscribe((state) => {
+      const dbKeys = ['queue', 'playHistory'];
+      const changed = dbKeys.some(k => state[k] !== prevPlayerState[k]);
+      
+      if (changed) {
+        clearTimeout(playerTimeoutId);
+        playerTimeoutId = setTimeout(async () => {
+          const { data: { user: sbUser } } = await supabase.auth.getUser();
+          if (sbUser) {
+            await supabase.from('host_state').upsert({
+              user_id: sbUser.id,
+              queue: state.queue,
+              play_history: state.playHistory
+            }).catch(()=>{});
+          }
+        }, 3000); // 3 seconds debounce for queue/history
+      }
+      prevPlayerState = state;
+    });
+
+    return () => {
+      clearTimeout(playerTimeoutId);
+      unsubPlayer();
     };
   }, []);
 

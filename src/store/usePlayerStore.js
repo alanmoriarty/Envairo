@@ -35,6 +35,20 @@ export const usePlayerStore = create(
       playHistory: [],
       requestHistory: [],
       lastCommandTs: 0,
+      
+      clearPlayerState: () => set({
+        queue: [],
+        currentQueueIndex: -1,
+        playHistory: [],
+        pendingRequests: [],
+        requestHistory: [],
+        currentTrack: null,
+        isPlaying: false,
+        progress: 0,
+        failedYouTubeIds: [],
+        currentYtId: null
+      }),
+
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
       setYoutubePlayer: (youtubePlayer) => set({ youtubePlayer }),
