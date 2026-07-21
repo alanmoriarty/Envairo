@@ -301,7 +301,7 @@ export default function DashboardPage() {
                 <span className="text-warning">● Esperando reproductor...</span>
               )}
             </span>
-            {enairoIsThinking && (
+            {isThinking && (
               <span className="text-accent flex items-center gap-1 animate-pulse">
                 <Sparkles size={14} /> EnvAIro pensando...
               </span>
