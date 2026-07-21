@@ -24,9 +24,7 @@ export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
   const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode, themeColor, setThemeColor } = useSettingsStore();
   const navigate = useNavigate();
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const isPremium = user?.product === 'premium';
   const { t } = useTranslation();
 
   const visibleNavItems = isAdminMode
@@ -123,7 +121,7 @@ export function Sidebar({ isOpen, onClose }) {
                 {user.display_name}
               </p>
               <p className="text-xs text-text-muted truncate">
-                {user.email} {!isPremium && <span className="text-warning">(Free)</span>}
+                {user.email}
               </p>
             </div>
           </div>
@@ -153,11 +151,6 @@ export function Sidebar({ isOpen, onClose }) {
             key={to}
             to={to}
             onClick={(e) => {
-              if (!isPremium && !isAdminMode && ['/app/dashboard', '/app/activities', '/app/settings'].includes(to)) {
-                e.preventDefault();
-                setShowPremiumModal(true);
-                return;
-              }
               onClose();
             }}
             className={({ isActive }) =>
@@ -218,38 +211,7 @@ export function Sidebar({ isOpen, onClose }) {
       </nav>
     </aside>
 
-    {showPremiumModal && (
-      <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
-        <div className="card p-8 flex flex-col items-center text-center max-w-md w-full animate-in zoom-in-95 fade-in mx-4">
-          <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center text-warning mb-4">
-            <XCircle size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-text-primary mb-2">
-            Se requiere Spotify Premium
-          </h2>
-          <p className="text-text-muted text-sm mb-6">
-            El Dashboard, Actividades y Configuración controlan el reproductor en tiempo real. 
-            Debido a las políticas de Spotify, estas funciones son exclusivas para usuarios con una cuenta Premium activa.
-          </p>
-          <div className="flex flex-col w-full gap-3">
-            <a 
-              href="https://www.spotify.com/premium/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="btn-primary w-full py-3 flex items-center justify-center"
-            >
-              Obtener Spotify Premium
-            </a>
-            <button 
-              onClick={() => setShowPremiumModal(false)} 
-              className="btn-ghost w-full py-3 text-sm text-text-muted hover:text-text-primary transition-colors"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+
 
     {showQRModal && (
       <div className="fixed inset-0 bg-bg-base/90 backdrop-blur-md flex flex-col items-center justify-center z-[110] p-4">
