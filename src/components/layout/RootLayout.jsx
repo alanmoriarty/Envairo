@@ -59,6 +59,9 @@ export function RootLayout() {
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
           useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
+        } else {
+          // Nueva cuenta o sin configuraciones previas: limpiamos el estado local heredado de otra cuenta
+          useSettingsStore.getState().clearSettingsState();
         }
 
         // 2. Hidratar Cola e Historial (host_state)
@@ -73,6 +76,9 @@ export function RootLayout() {
             queue: hostState.queue || [],
             playHistory: hostState.play_history || []
           });
+        } else if (!hsError && !hostState) {
+          // Nueva cuenta sin host_state: limpiamos la cola heredada
+          usePlayerStore.getState().clearPlayerState();
         }
         
         // Fetch global blocked YouTube IDs at startup
