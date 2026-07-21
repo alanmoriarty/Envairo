@@ -128,8 +128,8 @@ export function RootLayout() {
     let timeoutId;
     let prevState = useSettingsStore.getState();
     const unsubSettings = useSettingsStore.subscribe((state) => {
-      // Auto-sync solo para opciones rápidas del Dashboard
-      const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode'];
+      // Auto-sync solo para opciones rápidas y estado crítico
+      const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode', 'alwaysAvailable', 'sessionId'];
       const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
       
       if (changed) {
@@ -147,7 +147,7 @@ export function RootLayout() {
         }, 2000); // 2 second debounce
 
         // 2. Sync to sessions table (for Guest page validation)
-        const dbKeys = ['mode']; // Solo auto-sync mode
+        const dbKeys = ['mode', 'alwaysAvailable', 'sessionId']; // Sync crítico para Guests
         const dbChanged = dbKeys.some(k => state[k] !== prevState[k]);
         
         if (dbChanged) {
@@ -170,6 +170,7 @@ export function RootLayout() {
                 table_count: state.tableCount,
                 requests_per_hour: state.requestsPerHour,
                 requests_per_guest: state.requestsPerGuest,
+                active: state.alwaysAvailable,
                 updated_at: new Date().toISOString()
               }
             }).then(() => {

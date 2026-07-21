@@ -102,6 +102,7 @@ export default function App() {
 
       <Toaster
         position="bottom-center"
+        offset="80px"
         toastOptions={{
           style: {
             background: '#161224',
