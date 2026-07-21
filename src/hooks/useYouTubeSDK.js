@@ -12,9 +12,9 @@ export function useYouTubeSDK() {
 
   const applyStyles = (wrapper, isVis, isFs) => {
     if (!wrapper) return;
-    
+
     const currentTrack = usePlayerStore.getState().currentTrack;
-    
+
     if (isFs) {
       wrapper.style.top = '50%';
       wrapper.style.left = '50%';
@@ -104,13 +104,13 @@ export function useYouTubeSDK() {
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
-      
+
       overlay.addEventListener('dblclick', () => {
         if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
+          document.exitFullscreen().catch(() => { });
         }
       });
-      
+
       overlay.addEventListener('click', () => {
         if (document.fullscreenElement) {
           const state = usePlayerStore.getState();
@@ -144,11 +144,11 @@ export function useYouTubeSDK() {
       closeBtn.style.cursor = 'pointer';
       closeBtn.style.alignItems = 'center';
       closeBtn.style.justifyContent = 'center';
-      
+
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
+          document.exitFullscreen().catch(() => { });
         }
       });
       wrapper.appendChild(closeBtn);
@@ -160,10 +160,10 @@ export function useYouTubeSDK() {
         applyStyles(wrapper, isVisualizerOn, isFs);
         closeBtn.style.display = isFs ? 'flex' : 'none';
       };
-      
+
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
       events.forEach(event => document.addEventListener(event, handleFsChange));
-      
+
       wrapper._fsListener = handleFsChange;
       wrapper._fsEvents = events;
 
@@ -191,7 +191,7 @@ export function useYouTubeSDK() {
             store.setSdkReady(true);
             store.setDeviceId('youtube-device');
             store.setActiveDeviceId('youtube-device');
-            
+
             // Auto-resume or cue after refresh
             if (store.currentTrack && store.currentTrack.id) {
               setTimeout(async () => {
@@ -201,8 +201,8 @@ export function useYouTubeSDK() {
                   const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
                   const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
                   const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
-                                    : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
-                                    :                     'VIDEO OFICIAL';
+                    : mode === 'lyrics' ? 'LYRICS NO COPYRIGHT'
+                      : 'VIDEO OFICIAL';
                   const cacheKey = mode ? `yt_bridge_${store.currentTrack.id}_${mode}` : null;
                   const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
                   if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11) {
@@ -238,7 +238,7 @@ export function useYouTubeSDK() {
                             import('sonner').then(({ toast }) => toast.info(`No se encontró versión ${mode} válida, usando respaldo.`, { id: 'yt-fallback' }));
                             videoIdToPlay = unblocked[0].id;
                           }
-                          
+
                           if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                         } else {
                           videoIdToPlay = null;
@@ -266,7 +266,7 @@ export function useYouTubeSDK() {
                 }
 
                 const startSeconds = (typeof store.progress === 'number' && !isNaN(store.progress)) ? Math.max(0, store.progress / 1000) : 0;
-                
+
                 if (store.isPlaying) {
                   currentYtIdRef.current = videoIdToPlay;
                   event.target.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
@@ -292,7 +292,7 @@ export function useYouTubeSDK() {
               try {
                 event.target.unloadModule('captions');
                 event.target.unloadModule('cc');
-              } catch(e) {}
+              } catch (e) { }
             } else if (event.data === yt.PlayerState.PAUSED) {
               setIsPlaying(false);
               stopProgressTimer();
@@ -312,16 +312,16 @@ export function useYouTubeSDK() {
               wrapper.dataset.errorHidden = 'true';
               wrapper.style.opacity = '0';
             }
-            
+
             // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
             if (event.data === 150 || event.data === 101) {
               console.warn('YouTube SDK Error 101/150: Video embedding blocked. Finding alternative...');
               const store = usePlayerStore.getState();
               const currentYtId = currentYtIdRef.current;
-              
+
               if (currentYtId) {
                 store.addFailedYouTubeId(currentYtId);
-                
+
                 const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
                 const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
                 if (store.currentTrack) {
@@ -329,10 +329,10 @@ export function useYouTubeSDK() {
                 }
               }
 
-                // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
+              // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
               if (store.currentTrack) {
                 import('sonner').then(({ toast }) => {
-                  toast.error('El video fue bloqueado por derechos de autor. Buscando alternativa...', { id: 'yt-copyright' });
+                  toast.error('El video no está disponible. Buscando alternativa...', { id: 'yt-copyright' });
                 });
                 // Forzar reintento de puente, pasando retryCount = 1
                 store.playEngineTrack(store.currentTrack, store.progress, null, 1);
@@ -369,7 +369,7 @@ export function useYouTubeSDK() {
       const wrapper = document.getElementById('youtube-wrapper');
       if (wrapper) {
         if (wrapper._fsListener && wrapper._fsEvents) {
-          wrapper._fsEvents.forEach(event => 
+          wrapper._fsEvents.forEach(event =>
             document.removeEventListener(event, wrapper._fsListener)
           );
         }

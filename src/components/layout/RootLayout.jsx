@@ -64,6 +64,9 @@ export function RootLayout() {
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
           useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
         }
+        
+        // Fetch global blocked YouTube IDs at startup
+        usePlayerStore.getState().fetchGlobalBlockedYouTubeIds();
       } catch(e) {
         console.error('Error hydrating settings on mount:', e);
       }

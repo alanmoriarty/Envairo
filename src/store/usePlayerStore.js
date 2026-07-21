@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
 
 export const usePlayerStore = create(
   persist(
@@ -42,12 +43,49 @@ export const usePlayerStore = create(
         }
         return { playbackEngine };
       }),
-      addFailedYouTubeId: (id) => set((state) => {
-        if (!state.failedYouTubeIds.includes(id)) {
-          return { failedYouTubeIds: [...state.failedYouTubeIds, id] };
+      addFailedYouTubeId: (id) => {
+        set((state) => {
+          if (!state.failedYouTubeIds.includes(id)) {
+            // Guardar localmente
+            const newIds = [...state.failedYouTubeIds, id];
+            
+            // Subir a la base de datos global (fire and forget)
+            supabase.from('youtube_blocked_videos')
+              .insert({ video_id: id })
+              .then(({ error }) => {
+                if (error && error.code !== '23505') { // Ignorar error 23505 (unique violation)
+                  console.warn('Error saving global blocked YouTube ID:', error.message);
+                }
+              });
+
+            return { failedYouTubeIds: newIds };
+          }
+          return state;
+        });
+      },
+      fetchGlobalBlockedYouTubeIds: async () => {
+        try {
+          const { data, error } = await supabase
+            .from('youtube_blocked_videos')
+            .select('video_id');
+            
+          if (error) {
+            console.warn('Error fetching global blocked YouTube IDs:', error.message);
+            return;
+          }
+          
+          if (data && data.length > 0) {
+            set((state) => {
+              const globalIds = data.map(row => row.video_id);
+              // Unir con los locales sin duplicados
+              const merged = Array.from(new Set([...state.failedYouTubeIds, ...globalIds]));
+              return { failedYouTubeIds: merged };
+            });
+          }
+        } catch (err) {
+          console.warn('Global blocked YouTube IDs fetch failed:', err);
         }
-        return state;
-      }),
+      },
       setDeviceId: (deviceId) => set({ deviceId }),
       setActiveDeviceId: (activeDeviceId) => set({ activeDeviceId }),
       setSdkReady: (sdkReady) => set({ sdkReady }),

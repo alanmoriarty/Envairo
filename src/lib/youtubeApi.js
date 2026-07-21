@@ -14,11 +14,26 @@ async function ensureYouTubeToken() {
 }
 let activePipedInstance = null;
 
+const searchCache = new Map();
+
 /**
  * Busca videos en YouTube por término de búsqueda.
  * Retorna una lista formateada para ser compatible con el sistema de cola existente.
  */
 export async function searchYouTubeVideos(query, limit = 8) {
+  const cacheKey = `${query}_${limit}`;
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey);
+  }
+  
+  const results = await _doSearchYouTubeVideos(query, limit);
+  if (results && results.length > 0) {
+    searchCache.set(cacheKey, results);
+  }
+  return results;
+}
+
+async function _doSearchYouTubeVideos(query, limit = 8) {
   // 1. Vía Descentralizada (Piped): Alta disponibilidad y sin consumir recursos propios
   const pipedInstances = [
     'https://pipedapi.kavin.rocks',
