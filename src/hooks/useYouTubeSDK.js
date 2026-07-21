@@ -167,7 +167,6 @@ export function useYouTubeSDK() {
       playerRef.current = new window.YT.Player('youtube-player-target', {
         height: '100%',
         width: '100%',
-        videoId: '',
         playerVars: {
           autoplay: 1,
           controls: 0,
