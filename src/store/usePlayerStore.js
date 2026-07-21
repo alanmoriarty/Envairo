@@ -340,8 +340,11 @@ export const usePlayerStore = create(
            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
            const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
 
-           // Recorrer la cola desde la canción siguiente
-           for (let i = get().currentQueueIndex + 1; i < get().queue.length; i++) {
+           // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas para ahorrar cuota de API)
+           const startIndex = get().currentQueueIndex + 1;
+           const endIndex = Math.min(get().queue.length, startIndex + 5);
+           
+           for (let i = startIndex; i < endIndex; i++) {
              // Es posible que el motor cambie o la cola se limpie durante el proceso
              if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
              

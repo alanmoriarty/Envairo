@@ -350,8 +350,7 @@ export default function DashboardPage() {
 
             {(() => {
               const engine = usePlayerStore.getState().playbackEngine;
-              const hasYoutubeToken = !!localStorage.getItem('youtube_access_token');
-              if (engine === 'spotify' || (engine === 'youtube' && hasYoutubeToken)) {
+              if (engine === 'spotify' || engine === 'youtube') {
                 return (
                   <>
                     <div className="w-px h-4 bg-white/10" />
@@ -374,7 +373,13 @@ export default function DashboardPage() {
           {playbackEngine === 'youtube' && (
             <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setKaraokeEnabled(!karaokeEnabled)}
+                onClick={() => {
+                  const newValue = !karaokeEnabled;
+                  setKaraokeEnabled(newValue);
+                  if (isAdminMode) {
+                    supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_karaoke', value: newValue, ts: Date.now() } } }).then();
+                  }
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                   }`}
                 title="Karaoke"
@@ -386,7 +391,13 @@ export default function DashboardPage() {
               <div className="w-px h-4 bg-white/10" />
 
               <button
-                onClick={() => setLyricsEnabled(!lyricsEnabled)}
+                onClick={() => {
+                  const newValue = !lyricsEnabled;
+                  setLyricsEnabled(newValue);
+                  if (isAdminMode) {
+                    supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_lyrics', value: newValue, ts: Date.now() } } }).then();
+                  }
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                   }`}
                 title="Lyrics"

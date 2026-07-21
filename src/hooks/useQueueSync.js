@@ -167,6 +167,10 @@ export function useQueueSync() {
                     } else if (currentState.playbackEngine !== 'youtube') {
                       api.skipToPrevious(targetDevice).catch(() => {});
                     }
+                  } else if (cmd.action === 'toggle_karaoke') {
+                    useSettingsStore.getState().setKaraokeEnabled(cmd.value);
+                  } else if (cmd.action === 'toggle_lyrics') {
+                    useSettingsStore.getState().setLyricsEnabled(cmd.value);
                   }
                 });
               });
