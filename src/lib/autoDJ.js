@@ -123,7 +123,7 @@ export async function evaluateTrack(track, settings) {
 
     if (validWhitelist.length > 0) {
       const hasAllowedGenre = trackGenres.some(tg => 
-        validWhitelist.some(ag => tg.includes(ag) || ag.includes(tg))
+        validWhitelist.some(ag => tg === ag || tg.includes(ag))
       );
       if (!hasAllowedGenre) {
         return { approved: false, reason: `Ninguno de los géneros (${trackGenres.join(', ')}) está en la lista blanca permitida.` };
@@ -132,7 +132,7 @@ export async function evaluateTrack(track, settings) {
 
     if (validBlacklist.length > 0) {
       const blockedGenre = trackGenres.find(tg => 
-        validBlacklist.some(bg => tg.includes(bg) || bg.includes(tg))
+        validBlacklist.some(bg => tg === bg || tg.includes(bg))
       );
       if (blockedGenre) {
         return { approved: false, reason: `El género "${blockedGenre}" está prohibido en esta sesión.` };
