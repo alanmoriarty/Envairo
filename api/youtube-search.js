@@ -1,18 +1,9 @@
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
 
-// Lista de proxies proporcionados por Webshare
+// Proxy rotativo residencial proporcionado por Webshare
 const PROXIES = [
-  'http://vskzegpk:qi5o4qxrnn38@31.59.20.176:6754',
-  'http://vskzegpk:qi5o4qxrnn38@31.56.127.193:7684',
-  'http://vskzegpk:qi5o4qxrnn38@45.38.107.97:6014',
-  'http://vskzegpk:qi5o4qxrnn38@185.199.229.156:7492',
-  'http://vskzegpk:qi5o4qxrnn38@185.199.228.220:7300',
-  'http://vskzegpk:qi5o4qxrnn38@185.199.231.45:8382',
-  'http://vskzegpk:qi5o4qxrnn38@188.74.210.207:6286',
-  'http://vskzegpk:qi5o4qxrnn38@188.74.183.10:8279',
-  'http://vskzegpk:qi5o4qxrnn38@188.74.210.21:6100',
-  'http://vskzegpk:qi5o4qxrnn38@45.55.159.228:7945'
+  'http://vskzegpk-rotate:qi5o4qxrnn38@p.webshare.io:80'
 ];
 
 export default async function handler(req, res) {
