@@ -235,8 +235,8 @@ export const usePlayerStore = create(
                               : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
                               : null; // null = sin búsqueda, usar ID original
 
-            // Necesita búsqueda si: modo activo (karaoke/lyrics) O si el track es de Spotify
-            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:'));
+            // Necesita búsqueda si: modo activo (karaoke/lyrics) O si el track es de Spotify (o el ID no es de 11 caracteres)
+            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
             const needsSearch = querySuffix !== null || isSpotifyTrack;
 
             if (needsSearch) {
@@ -321,8 +321,8 @@ export const usePlayerStore = create(
               }
             }
 
-            // Validar estrictamente el ID antes de enviarlo al reproductor
-            if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length < 11 || (videoIdToPlay === track.id && isSpotifyTrack)) {
+            // Validar estrictamente el ID antes de enviarlo al reproductor (YouTube requiere EXACTAMENTE 11 caracteres)
+            if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack)) {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
               const nextTrack = get().shiftQueue();
               if (nextTrack) {
