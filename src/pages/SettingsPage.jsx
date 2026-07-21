@@ -124,7 +124,7 @@ export default function SettingsPage() {
     enairoEnabled, setEnairoEnabled,
     enairoPrompt, setEnairoPrompt,
     enairoTestMode, setEnairoTestMode,
-    enairoLastRunAt, enairoStartedAt,
+    enairoLastRunAt,
     visualizerEnabled, setVisualizerEnabled,
     visualizerUrl, setVisualizerUrl,
     lastSavedSignature, setLastSavedSignature

@@ -27,7 +27,10 @@ export const useSettingsStore = create(
       setLastSavedSignature: (sig) => set({ lastSavedSignature: sig }),
       
       enairoEnabled: true,
-
+      enairoPrompt: '',
+      setEnairoPrompt: (prompt) => set({ enairoPrompt: prompt }),
+      enairoTestMode: false,
+      setEnairoTestMode: (v) => set({ enairoTestMode: v }),
       // Session QR ID
       sessionId: `session-${Date.now()}`,
       setSessionId: (id) => set({ sessionId: id }),

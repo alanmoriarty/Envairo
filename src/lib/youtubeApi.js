@@ -48,9 +48,18 @@ export async function searchYouTubeVideos(query, limit = 8) {
         const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
         if (streams.length > 0) {
           // console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
-          return streams.map(item => {
-            const videoIdStr = item.url.split('v=')[1] || '';
-            const videoId = videoIdStr.split('&')[0];
+          const validStreams = streams.map(item => {
+            let videoId = '';
+            if (item.url.includes('v=')) {
+              videoId = item.url.split('v=')[1].split('&')[0];
+            } else if (item.url.includes('/shorts/')) {
+              videoId = item.url.split('/shorts/')[1].split('?')[0];
+            } else {
+              // fallback general extract
+              const match = item.url.match(/([a-zA-Z0-9_-]{11})/);
+              if (match) videoId = match[1];
+            }
+
             return {
               id: videoId,
               uri: `youtube:${videoId}`,
@@ -62,7 +71,9 @@ export async function searchYouTubeVideos(query, limit = 8) {
               duration_ms: item.duration * 1000, 
               source: 'youtube'
             };
-          });
+          }).filter(t => t.id && t.id.length === 11);
+
+          if (validStreams.length > 0) return validStreams;
         }
       }
     } catch (err) {
