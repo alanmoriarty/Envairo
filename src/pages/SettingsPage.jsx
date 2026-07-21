@@ -4,6 +4,7 @@ import { Toggle } from '../components/ui/Toggle';
 import { TagInput } from '../components/ui/TagInput';
 import { ArtistTagInput } from '../components/ui/ArtistTagInput';
 import { SongTagInput } from '../components/ui/SongTagInput';
+import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
 import { supabase } from '../lib/supabase';
@@ -218,6 +219,10 @@ export default function SettingsPage() {
           <Settings size={22} className="text-accent" /> {t('settings.title')}
         </h1>
         <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
+        
+        <div className="mb-6">
+          <InstallAppButton className="w-full sm:w-auto py-3 px-6 rounded-xl" />
+        </div>
         
         {/* Tabs */}
         <div className="flex flex-col sm:flex-row gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:w-fit">

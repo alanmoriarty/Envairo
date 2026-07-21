@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
+import { usePwaStore } from './store/usePwaStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { supabase } from './lib/supabase';
@@ -54,6 +55,23 @@ export default function App() {
     window.addEventListener('spotify_auth_error', handleAuthError);
     return () => window.removeEventListener('spotify_auth_error', handleAuthError);
   }, []);
+
+  const { setDeferredPrompt } = usePwaStore();
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, [setDeferredPrompt]);
 
   if (!engineChecked) return null;
 

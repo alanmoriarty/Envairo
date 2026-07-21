@@ -6,6 +6,7 @@ import { redirectToYouTubeAuth } from '../lib/youtubeAuth';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { InstallAppButton } from '../components/shared/InstallAppButton';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ export default function LoginPage() {
             </svg>
             {t('login.spotify')}
           </button>
-          
+
           {/* YouTube Login */}
           <button
             onClick={redirectToYouTubeAuth}
@@ -82,10 +83,15 @@ export default function LoginPage() {
             }}
           >
             <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
             </svg>
             {t('login.youtube_login')}
           </button>
+
+          {/* Botón de Instalar App (PWA) */}
+          <div className="pt-2">
+            <InstallAppButton className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200" text="Descarga Nuestra App!" />
+          </div>
         </div>
 
         {/* Alert */}
