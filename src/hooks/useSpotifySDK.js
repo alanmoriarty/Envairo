@@ -175,7 +175,7 @@ export function useSpotifySDK() {
       const storeState = usePlayerStore.getState();
       
       // Historial
-      if (normalizedTrack && storeState.currentTrack?.id !== normalizedTrack.id) {
+      if (normalizedTrack) {
         storeState.addToHistory(normalizedTrack);
         
         // Sincronizar el índice de la cola si cambió la canción (ej. por Spotify Connect)

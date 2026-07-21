@@ -14,7 +14,7 @@ export const usePlayerStore = create(
 
       // YouTube Player
       youtubePlayer: null,
-      playbackEngine: 'spotify', // 'spotify' | 'youtube'
+      playbackEngine: 'youtube', // 'spotify' | 'youtube'
       failedYouTubeIds: [],
       currentYtId: null,
       preloadWorkerRunning: false,
@@ -371,6 +371,7 @@ export const usePlayerStore = create(
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
+        get().addToHistory(track);
         const state = get();
         if (state.playbackEngine === 'youtube') {
           if (state.youtubePlayer && track.id) {

@@ -76,50 +76,12 @@ export default function App() {
 
   if (!engineChecked) return null;
 
-  const handleReconnect = async () => {
-    setIsReconnecting(true);
-    try {
-      await supabase.auth.signOut();
-      clearSpotifyTokens();
-      await redirectToSpotifyAuth(false);
-    } catch (err) {
-      console.error('Failed to silent reconnect', err);
-      setIsReconnecting(false);
-    }
-  };
-
   return (
     <>
       <BackgroundVideo />
       <AppRouter />
       
-      {/* Modal de Sesión Expirada */}
-      {sessionExpired && usePlayerStore.getState().playbackEngine !== 'youtube' && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in relative">
-            <button 
-              onClick={() => setSessionExpired(false)}
-              className="absolute top-2 right-2 text-text-muted hover:text-white"
-            >
-              ×
-            </button>
-            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mb-2">
-              <AlertCircle size={32} />
-            </div>
-            <h2 className="text-2xl font-bold text-text-primary">Sesión Expirada</h2>
-            <p className="text-text-muted text-sm mb-4">
-              Por seguridad, Spotify cierra tu sesión cada hora. Haz clic abajo para reconectar y seguir la fiesta sin interrupciones.
-            </p>
-            <button
-              onClick={handleReconnect}
-              disabled={isReconnecting}
-              className="btn-primary w-full py-3"
-            >
-              {isReconnecting ? 'Reconectando...' : 'Reconectar Spotify'}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modales de Spotify eliminados para enfocar la app en YouTube */}
 
       {/* Modal de Kickout (Eliminado) */}
 

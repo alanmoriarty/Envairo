@@ -1,16 +1,68 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music2, AlertCircle } from 'lucide-react';
-import { redirectToSpotifyAuth } from '../lib/spotifyAuth';
-import { redirectToYouTubeAuth } from '../lib/youtubeAuth';
+import { Music2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useTranslation } from '../store/useLanguageStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { InstallAppButton } from '../components/shared/InstallAppButton';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const setUser = useAuthStore(s => s.setUser);
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (isRegistering) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        
+        if (error) throw error;
+        
+        if (data?.user && data?.user?.identities?.length === 0) {
+          toast.error('Este correo ya está registrado.');
+        } else {
+          toast.success('¡Registro exitoso! Por favor revisa tu correo para confirmar tu cuenta.', { duration: 6000 });
+          setIsRegistering(false); // Switch to login view
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) throw error;
+        
+        if (data.session) {
+          setUser(data.user);
+          navigate('/app/dashboard');
+        }
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      if (err.message === 'Email not confirmed') {
+        toast.error('Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
+      } else if (err.message === 'Invalid login credentials') {
+        toast.error('Correo o contraseña incorrectos.');
+      } else {
+        toast.error(err.message || 'Error en la autenticación');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Interceptar parámetros de "QR de Administrador" para control remoto
@@ -52,55 +104,74 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Form */}
         <div className="card p-6 space-y-4 mb-6">
-          <h2 className="text-lg font-semibold text-text-primary text-center mb-2">
-            {t('login.access')}
+          <h2 className="text-lg font-semibold text-text-primary text-center mb-4">
+            {isRegistering ? 'Crear Cuenta' : t('login.access')}
           </h2>
 
-          {/* Spotify Login */}
-          <button
-            onClick={redirectToSpotifyAuth}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #1DB954, #17a349)',
-              boxShadow: '0 4px 20px rgba(29,185,84,0.3)',
-            }}
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
-              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.479.659.24 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.84c.361.181.54.78.301 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.56.3z" />
-            </svg>
-            {t('login.spotify')}
-          </button>
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Correo Electrónico</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full bg-bg-surface border border-accent/20 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                placeholder="tu@correo.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Contraseña</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-bg-surface border border-accent/20 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
 
-          {/* YouTube Login */}
-          <button
-            onClick={redirectToYouTubeAuth}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #FF0000, #cc0000)',
-              boxShadow: '0 4px 20px rgba(255,0,0,0.3)',
-            }}
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-            </svg>
-            {t('login.youtube_login')}
-          </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                boxShadow: '0 4px 20px rgba(157,78,221,0.3)',
+              }}
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : isRegistering ? (
+                'Registrarse'
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </button>
+          </form>
+
+          <div className="text-center mt-4">
+            <button 
+              onClick={() => setIsRegistering(!isRegistering)}
+              className="text-sm text-accent hover:text-primary transition-colors"
+            >
+              {isRegistering ? '¿Ya tienes cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate'}
+            </button>
+          </div>
+
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-text-secondary/20"></div>
+            <span className="flex-shrink-0 mx-4 text-text-secondary text-xs">O</span>
+            <div className="flex-grow border-t border-text-secondary/20"></div>
+          </div>
 
           {/* Botón de Instalar App (PWA) */}
           <div className="pt-2">
             <InstallAppButton className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200" text="Descarga Nuestra App!" />
           </div>
-        </div>
-
-        {/* Alert */}
-        <div className="border border-warning/30 bg-warning/10 rounded-xl p-4 flex gap-3">
-          <AlertCircle size={18} className="text-warning flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-warning/90 leading-relaxed">
-            <strong>Importante:</strong> Para usar el reproductor en vivo se requiere
-            una cuenta de <strong>Spotify Premium</strong> activa.
-          </p>
         </div>
 
         {/* Footer with Legal Links */}
