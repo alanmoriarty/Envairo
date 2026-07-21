@@ -10,6 +10,7 @@ import ActivitiesPage from '../pages/ActivitiesPage';
 import SupportPage from '../pages/SupportPage';
 import PrivacyPage from '../pages/PrivacyPage';
 import TermsPage from '../pages/TermsPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import { RootLayout } from '../components/layout/RootLayout';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
   { path: '/privacy', element: <PrivacyPage /> },
   { path: '/terms', element: <TermsPage /> },
   { path: '/callback', element: <CallbackPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/guest/:sessionId', element: <GuestPage /> },
   {
     path: '/app',
