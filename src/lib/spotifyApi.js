@@ -157,3 +157,11 @@ export async function getTracks(ids) {
   const params = new URLSearchParams({ ids: ids.join(',') });
   return apiFetch(`/tracks?${params}`);
 }
+
+export async function getRecommendations(seedTracks, limit = 5) {
+  const params = new URLSearchParams({
+    seed_tracks: seedTracks.join(','),
+    limit: limit.toString()
+  });
+  return apiFetch(`/recommendations?${params}`);
+}

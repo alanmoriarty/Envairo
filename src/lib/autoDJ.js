@@ -1,4 +1,4 @@
-import { getArtists, searchTracks } from './spotifyApi';
+import { getArtists, searchTracks, getRecommendations } from './spotifyApi';
 
 const artistGenreCache = new Map();
 
@@ -116,4 +116,29 @@ export async function evaluateTrack(track, settings) {
   return { approved: true, reason: 'Aprobada por Auto DJ' };
 }
 
+export async function getAutoQueueRecommendations(playHistory, settings) {
+  // Extract seed tracks from history (most recent first, up to 5)
+  const recentTracks = playHistory
+    .filter(t => t.id && !t.id.includes('youtube')) // Ignore youtube ids if any
+    .slice(0, 5)
+    .map(t => t.id);
 
+  if (recentTracks.length === 0) return null;
+
+  try {
+    const data = await getRecommendations(recentTracks, 10);
+    if (!data || !data.tracks || data.tracks.length === 0) return null;
+
+    // Evaluate each track against current settings
+    for (const track of data.tracks) {
+      const result = await evaluateTrack(track, settings);
+      if (result.approved) {
+        return track; // Return the first valid one
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching recommendations in autoDJ:', err);
+  }
+
+  return null;
+}
