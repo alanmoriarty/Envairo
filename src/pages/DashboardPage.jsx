@@ -63,10 +63,9 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing ${
-        isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
-      }`}
-      {...attributes} 
+      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing ${isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
+        }`}
+      {...attributes}
       {...listeners}
     >
       <div className="text-text-subtle p-1 hidden sm:block">
@@ -74,11 +73,11 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       </div>
 
       {track.image ? (
-        <img src={track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'} 
-             onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
-             alt="" 
-             className="w-10 h-10 rounded-lg object-cover flex-shrink-0" 
-             draggable={false} />
+        <img src={track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'}
+          onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
+          alt=""
+          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+          draggable={false} />
       ) : (
         <div className="w-10 h-10 rounded-lg bg-bg-card flex items-center justify-center flex-shrink-0">
           <Music2 size={14} className="text-text-muted" />
@@ -99,7 +98,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
         {formatDuration(track.duration_ms || 0)}
       </span>
 
-      <div 
+      <div
         className="flex gap-1 flex-shrink-0"
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -122,7 +121,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 }
 
 export default function DashboardPage() {
-  const { 
+  const {
     mode, setMode, autoDJ, setAutoDJ,
     enairoUsageCount, enairoCooldownUntil,
     showRequests, setShowRequests,
@@ -229,7 +228,7 @@ export default function DashboardPage() {
     toast.success(t('dashboard.toast_added', { name: trackName }));
     const secret = useSettingsStore.getState().hostSecret;
     await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'approved' });
-    
+
     // Auto-play if nothing is currently playing
     const state = usePlayerStore.getState();
     if (!state.currentTrack && state.queue.length > 0 && sdkReady) {
@@ -253,10 +252,10 @@ export default function DashboardPage() {
     if ((sdkReady || isAdminMode) && track.uri) {
       if (isAdminMode) {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
-        import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
-          p_session_id: sessionId, 
-          p_secret: useSettingsStore.getState().hostSecret, 
-          p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } 
+        import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', {
+          p_session_id: sessionId,
+          p_secret: useSettingsStore.getState().hostSecret,
+          p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } }
         }).then());
       } else {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
@@ -285,7 +284,7 @@ export default function DashboardPage() {
                   const wrapper = document.getElementById(targetId);
                   if (wrapper) {
                     if (!document.fullscreenElement) {
-                      wrapper.requestFullscreen().catch(() => {});
+                      wrapper.requestFullscreen().catch(() => { });
                     } else {
                       document.exitFullscreen();
                     }
@@ -321,18 +320,16 @@ export default function DashboardPage() {
           <div className="card px-4 py-3 flex items-center gap-3">
             <button
               onClick={() => setMode('party')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
             >
               <Users size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_party')}</span>
             </button>
             <div className="w-px h-4 bg-white/10" />
             <button
               onClick={() => setMode('commercial')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
             >
               <Store size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_commercial')}</span>
             </button>
@@ -342,14 +339,13 @@ export default function DashboardPage() {
           <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowRequests(!showRequests)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                showRequests ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${showRequests ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
               title={t('dashboard.toggle_requests')}
             >
               <ClipboardList size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_requests')}</span>
             </button>
-            
+
             {(() => {
               const engine = usePlayerStore.getState().playbackEngine;
               const hasYoutubeToken = !!localStorage.getItem('youtube_access_token');
@@ -359,9 +355,8 @@ export default function DashboardPage() {
                     <div className="w-px h-4 bg-white/10" />
                     <button
                       onClick={() => setShowPlaylists(!showPlaylists)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        showPlaylists ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                      }`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${showPlaylists ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                        }`}
                       title={t('dashboard.toggle_playlists')}
                     >
                       <ListMusic size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_playlists')}</span>
@@ -378,22 +373,20 @@ export default function DashboardPage() {
             <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setKaraokeEnabled(!karaokeEnabled)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                  }`}
                 title="Karaoke"
               >
                 <Mic2 size={14} />
                 <span className="hidden sm:inline">Karaoke</span>
               </button>
-              
+
               <div className="w-px h-4 bg-white/10" />
-              
+
               <button
                 onClick={() => setLyricsEnabled(!lyricsEnabled)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                  }`}
                 title="Lyrics"
               >
                 <Type size={14} />
@@ -408,7 +401,7 @@ export default function DashboardPage() {
       {isAdminMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-64 z-50 shrink-0 glass border-t border-white/10 p-3 flex items-center justify-center gap-6 shadow-glow-sm">
           <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">{t('nav.remote')}</span>
-          <button 
+          <button
             onClick={() => {
               const track = usePlayerStore.getState().prevQueue();
               if (track) {
@@ -419,9 +412,9 @@ export default function DashboardPage() {
           >
             <SkipBack size={24} />
           </button>
-          
+
           {usePlayerStore.getState().isPlaying ? (
-            <button 
+            <button
               onClick={() => {
                 usePlayerStore.getState().setIsPlaying(false);
                 supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then();
@@ -431,7 +424,7 @@ export default function DashboardPage() {
               <Pause size={28} />
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => {
                 usePlayerStore.getState().setIsPlaying(true);
                 supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then();
@@ -442,7 +435,7 @@ export default function DashboardPage() {
             </button>
           )}
 
-          <button 
+          <button
             onClick={() => {
               const track = usePlayerStore.getState().shiftQueue();
               if (track) {
@@ -461,7 +454,7 @@ export default function DashboardPage() {
         {/* Left Column: Modules */}
         {(showRequests || showPlaylists) && (
           <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto pr-2 custom-scrollbar lg:min-h-0">
-            
+
             {showRequests && (
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -490,10 +483,10 @@ export default function DashboardPage() {
                       <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
                         <div className="flex items-center gap-3 mb-3">
                           {req.track.image && (
-                            <img src={req.track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'} 
-                                 onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
-                                 alt="" 
-                                 className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                            <img src={req.track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'}
+                              onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
@@ -538,7 +531,7 @@ export default function DashboardPage() {
                     {t('dashboard.queue_title')}
                   </h2>
                   <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
-                  <button 
+                  <button
                     onClick={() => setShowAddModal(true)}
                     className="ml-1 p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors"
                     title={t('dashboard.add_song')}
@@ -546,11 +539,11 @@ export default function DashboardPage() {
                     <Plus size={14} />
                   </button>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
                     <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
-                    
+
                     {enairoUsageCount >= 3 ? (
                       <span className="text-xs font-medium text-text-muted" title="Límite diario alcanzado">Límite Diario</span>
                     ) : enairoCooldownUntil > localTime ? (
@@ -563,11 +556,11 @@ export default function DashboardPage() {
                         disabled={isThinking}
                         className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
                       >
-                        {isThinking ? 'Generando...' : 'Generar Ambiente'}
+                        {isThinking ? 'Generando...' : 'EnvAIro'}
                       </button>
                     )}
                   </div>
-                  
+
                   {queue.length > 0 && (
                     <button
                       onClick={() => usePlayerStore.getState().clearQueue()}
@@ -619,7 +612,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      
+
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
     </div>
   );
