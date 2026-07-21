@@ -342,11 +342,11 @@ export default function SettingsPage() {
         <div className="space-y-6 animate-fade-in">
           {/* EnvAIro Selector (IA) */}
           <section className="card p-5 space-y-4 border border-accent/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles size={16} className="text-accent" />
-              <h2 className="font-bold text-text-primary">{t('settings.envairo_title')}</h2>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <Sparkles size={16} className="text-accent shrink-0" />
+              <h2 className="font-bold text-text-primary shrink-0">{t('settings.envairo_title')}</h2>
               {enairoEnabled && enairoTimeLeft && (
-                <span className="ml-auto text-xs font-semibold bg-accent/20 text-accent px-2 py-1 rounded-md animate-fade-in">
+                <span className="ml-auto text-xs font-semibold bg-accent/20 text-accent px-2 py-1 rounded-md animate-fade-in whitespace-nowrap">
                   {enairoTimeLeft}
                 </span>
               )}
@@ -385,7 +385,7 @@ export default function SettingsPage() {
           <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
         </div>
 
-        <div className="flex items-center justify-between p-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
           <div>
             <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
             <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
@@ -411,7 +411,7 @@ export default function SettingsPage() {
             description={t('settings.cooldown_desc')}
           />
           {cooldownEnabled && (
-            <div className="mt-3 flex items-center justify-between gap-3 animate-slide-up pl-12">
+            <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
               <div>
                 <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
               </div>
@@ -504,9 +504,9 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2">
-              <List size={14} className="text-success" />
+              <List size={14} className="text-success shrink-0" />
               <label className="text-sm font-semibold text-success">{t('settings.whitelist_genre_title')}</label>
             </div>
             {whitelistGenres.length > 0 && (
@@ -524,9 +524,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="border-t border-white/5 pt-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2">
-              <Ban size={14} className="text-danger" />
+              <Ban size={14} className="text-danger shrink-0" />
               <label className="text-sm font-semibold text-danger">{t('settings.blacklist_genre_title')}</label>
             </div>
             {blacklistGenres.length > 0 && (
@@ -551,7 +551,7 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2">
               <Ban size={14} className="text-danger" />
               <label className="text-sm font-semibold text-danger">{t('settings.blacklist_song_title')}</label>
@@ -570,7 +570,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="border-t border-white/5 pt-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
             <div className="flex items-center gap-2">
               <Ban size={14} className="text-danger" />
               <label className="text-sm font-semibold text-danger">{t('settings.blacklist_artist_title')}</label>
