@@ -5,7 +5,7 @@ import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { useYouTubeSDK } from '../../hooks/useYouTubeSDK';
 import {
   Play, Pause, SkipForward, SkipBack,
-  Volume2, VolumeX, Music2, Wifi, WifiOff
+  Volume2, VolumeX, Music2, Wifi, WifiOff, RotateCcw
 } from 'lucide-react';
 
 const formatArtists = (artists) => {
@@ -68,6 +68,7 @@ export function PersistentPlayer() {
 
   const handleVolumeChange = (e) => {
     const vol = parseInt(e.target.value, 10);
+    if (vol > 0) previousVolume.current = vol; // Save last audible volume
     setVolume(vol); // Actualiza la UI de inmediato
 
     clearTimeout(volumeDebounce.current);
@@ -101,6 +102,33 @@ export function PersistentPlayer() {
         controls.pause();
       } else {
         controls.resume();
+      }
+    }
+  };
+  const previousVolume = useRef(volume || 100);
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      previousVolume.current = volume;
+      handleVolumeChange({ target: { value: 0 } });
+    } else {
+      handleVolumeChange({ target: { value: previousVolume.current || 100 } });
+    }
+  };
+
+  const handleRestart = () => {
+    const state = usePlayerStore.getState();
+    if (state.playbackEngine === 'youtube') {
+      if (state.youtubePlayer) {
+        state.youtubePlayer.seekTo(0, true);
+        state.youtubePlayer.playVideo();
+      }
+    } else {
+      const targetDevice = state.activeDeviceId || state.deviceId;
+      if (targetDevice) {
+        import('../../lib/spotifyApi').then(({ seekToPosition }) =>
+          seekToPosition(0, targetDevice)
+        );
       }
     }
   };
@@ -231,6 +259,9 @@ export function PersistentPlayer() {
             <button onClick={controls.skipPrev} className="btn-ghost p-2">
               <SkipBack size={18} />
             </button>
+            <button onClick={handleRestart} className="btn-ghost p-2" title="Reiniciar canción">
+              <RotateCcw size={18} />
+            </button>
             <button
               onClick={handlePlayPause}
               disabled={!sdkReady}
@@ -244,7 +275,7 @@ export function PersistentPlayer() {
 
             {/* Mobile Volume Control */}
             <div className="relative group md:hidden flex items-center ml-1">
-              <button className="btn-ghost p-2">
+              <button onClick={toggleMute} className="btn-ghost p-2">
                 {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4">
@@ -269,11 +300,13 @@ export function PersistentPlayer() {
 
           {/* Volume */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-            {volume === 0 ? (
-              <VolumeX size={16} className="text-text-muted" />
-            ) : (
-              <Volume2 size={16} className="text-text-muted" />
-            )}
+            <button onClick={toggleMute} className="btn-ghost p-1 flex items-center justify-center -ml-2 hover:text-white transition-colors">
+              {volume === 0 ? (
+                <VolumeX size={16} className="text-text-muted" />
+              ) : (
+                <Volume2 size={16} className="text-text-muted" />
+              )}
+            </button>
             <input
               type="range"
               min={0}

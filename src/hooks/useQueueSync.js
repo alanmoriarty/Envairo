@@ -167,6 +167,19 @@ export function useQueueSync() {
                     } else if (currentState.playbackEngine !== 'youtube') {
                       api.skipToPrevious(targetDevice).catch(() => {});
                     }
+                  } else if (cmd.action === 'restart') {
+                    if (currentState.playbackEngine === 'youtube') {
+                       if (currentState.youtubePlayer) {
+                         currentState.youtubePlayer.seekTo(0, true);
+                         currentState.youtubePlayer.playVideo();
+                       }
+                    } else {
+                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
+                        currentState.player.seek(0).catch(() => {});
+                      } else {
+                        api.seekToPosition(0, targetDevice).catch(() => {});
+                      }
+                    }
                   } else if (cmd.action === 'toggle_karaoke') {
                     useSettingsStore.getState().setKaraokeEnabled(cmd.value);
                     if (currentState.playbackEngine === 'youtube' && currentState.currentTrack) {
