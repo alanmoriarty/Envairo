@@ -200,6 +200,9 @@ export function useQueueSync() {
           if (Object.keys(updates).length > 0) {
             isRemoteUpdate.current = true;
             usePlayerStore.setState(updates);
+            if (updates.queue) {
+               usePlayerStore.getState().startQueuePreloadWorker();
+            }
           }
         }
       )
@@ -250,6 +253,7 @@ export function useQueueSync() {
             activeDeviceId: data.active_device_id || null,
             ...(data.volume !== null ? { volume: data.volume } : {})
           });
+          usePlayerStore.getState().startQueuePreloadWorker();
         }
         usePlayerStore.getState().setInitialSyncDone(true);
       });
