@@ -308,7 +308,7 @@ export function PlaylistsPanel() {
     );
   }
 
-  if (error) {
+  if (error && error !== 'youtube_auth') {
     return (
       <div className="card p-5 py-16 flex flex-col items-center justify-center">
         <ListMusic size={32} className="text-danger mb-4" />
