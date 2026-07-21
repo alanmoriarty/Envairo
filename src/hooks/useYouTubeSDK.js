@@ -194,86 +194,8 @@ export function useYouTubeSDK() {
 
             // Auto-resume or cue after refresh
             if (store.currentTrack && store.currentTrack.id) {
-              setTimeout(async () => {
-                let videoIdToPlay = store.currentTrack.id;
-
-                if (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))) {
-                  const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-                  const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-                  const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
-                    : mode === 'lyrics' ? 'LYRICS NO COPYRIGHT'
-                      : 'VIDEO OFICIAL';
-                  const cacheKey = mode ? `yt_bridge_${store.currentTrack.id}_${mode}` : null;
-                  const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
-                  if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11) {
-                    videoIdToPlay = cachedId;
-                  } else {
-                    try {
-                      const { searchYouTubeVideos } = await import('../lib/youtubeApi');
-                      const cleanName = (store.currentTrack.name || '')
-                        .replace(/\(?(video oficial|official video|official music video|music video|lyric video|official lyric video|letra oficial|en vivo|live|hd|4k|ft\.?.*|feat\.?.*)\)?/gi, '')
-                        .replace(/[-–]\s*$/, '')
-                        .trim();
-                      const artistStr = (store.currentTrack.artists || '').split(',')[0].trim();
-                      const nameStartsWithArtist = cleanName.toLowerCase().startsWith(artistStr.toLowerCase());
-                      const queryBase = nameStartsWithArtist ? cleanName : `${artistStr} ${cleanName}`;
-                      const query = `${queryBase} ${querySuffix}`;
-                      const results = await searchYouTubeVideos(query, 5);
-                      if (results && results.length > 0) {
-                        const unblocked = results.filter(r => !store.failedYouTubeIds.includes(r.id));
-                        if (unblocked.length > 0) {
-                          let validResults = unblocked;
-                          if (mode === 'karaoke' || mode === 'lyrics') {
-                            validResults = unblocked.filter(r => {
-                              const t = (r.name || '').toLowerCase();
-                              if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
-                              if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
-                              return true;
-                            });
-                          }
-
-                          if (validResults.length > 0) {
-                            videoIdToPlay = validResults[0].id;
-                          } else {
-                            import('sonner').then(({ toast }) => toast.info(`No se encontró versión ${mode} válida, usando respaldo.`, { id: 'yt-fallback' }));
-                            videoIdToPlay = unblocked[0].id;
-                          }
-
-                          if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
-                        } else {
-                          videoIdToPlay = null;
-                        }
-                      } else {
-                        videoIdToPlay = null;
-                      }
-                    } catch (e) {
-                      console.error('Bridge error on resume:', e);
-                      videoIdToPlay = null;
-                    }
-                  }
-                }
-
-                if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length < 11 || (videoIdToPlay === store.currentTrack.id && (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))))) {
-                  import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
-                  const nextTrack = store.shiftQueue();
-                  if (nextTrack) {
-                    store.playEngineTrack(nextTrack);
-                  } else {
-                    store.setCurrentTrack(null);
-                    store.setIsPlaying(false);
-                  }
-                  return;
-                }
-
-                const startSeconds = (typeof store.progress === 'number' && !isNaN(store.progress)) ? Math.max(0, store.progress / 1000) : 0;
-
-                if (store.isPlaying) {
-                  currentYtIdRef.current = videoIdToPlay;
-                  event.target.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
-                } else {
-                  currentYtIdRef.current = videoIdToPlay;
-                  event.target.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
-                }
+              setTimeout(() => {
+                store.playEngineTrack(store.currentTrack, store.progress, null, store.isPlaying);
               }, 500);
             }
           },

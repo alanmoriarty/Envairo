@@ -216,7 +216,7 @@ export const usePlayerStore = create(
         return null;
       },
 
-      playEngineTrack: async (track, progressMs = 0, forceMode = null, retryCount = 0) => {
+      playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
         const state = get();
         if (state.playbackEngine === 'youtube') {
@@ -331,13 +331,17 @@ export const usePlayerStore = create(
                 set({ currentTrack: null, isPlaying: false });
               }
               return; // Abortar
-            }
-
             // Cargar el nuevo video
             const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
             console.log('Final YouTube ID to play:', videoIdToPlay);
-            set({ isPlaying: true, currentYtId: videoIdToPlay });
-            state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+            set({ currentYtId: videoIdToPlay });
+            
+            if (autoplay) {
+              set({ isPlaying: true });
+              state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+            } else {
+              state.youtubePlayer.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+            }
           }
         } else {
           const targetDevice = state.activeDeviceId || state.deviceId;
