@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music2 } from 'lucide-react';
+import { Music2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -185,15 +185,19 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-text-secondary/20"></div>
-            <span className="flex-shrink-0 mx-4 text-text-secondary text-xs">O</span>
+          <div className="relative flex items-center py-4">
             <div className="flex-grow border-t border-text-secondary/20"></div>
           </div>
 
-          {/* Botón de Instalar App (PWA) */}
+          {/* Botón de Instalar App */}
           <div className="pt-2">
-            <InstallAppButton className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200" text="Descarga Nuestra App!" />
+            <a 
+              href="#"
+              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
+            >
+              <Download size={18} />
+              Descarga Nuestra App
+            </a>
           </div>
         </div>
 
