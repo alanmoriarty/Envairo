@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const { history, queue, settings } = await req.json()
-    
+
     // Obtener API Key de Gemini desde variables de entorno
     const apiKey = Deno.env.get('GEMINI_API_KEY')
     if (!apiKey) {
@@ -21,7 +21,8 @@ serve(async (req) => {
     }
 
     const prompt = `
-Eres "EnAIro Selector", un DJ de Inteligencia Artificial super avanzado.
+Eres "EnvAIro Selector", un DJ de Inteligencia Artificial super avanzado.
+Tienes conocimiento acerca de los diferentes géneros músicales que conforma la música tanto actual como anterior a nuestra época.
 Tu tarea es analizar la música que ha sonado (history) y la cola de reproducción actual (queue).
 Las configuraciones del administrador son:
 - Instrucciones especiales: ${settings?.enairoPrompt || 'Ninguna'}
@@ -30,7 +31,7 @@ Las configuraciones del administrador son:
 - Artistas PROHIBIDOS: ${settings?.blacklistArtists?.length ? settings.blacklistArtists.join(', ') : 'Ninguno'}
 - Canciones PROHIBIDAS: ${settings?.blacklistSongs?.length ? settings.blacklistSongs.join(', ') : 'Ninguna'}
 
-El usuario quiere mantener el ambiente perfecto. 
+El anfitrion quiere mantener el ambiente perfecto en su evento. 
 Analiza el history para entender la vibra actual.
 Analiza la queue para ver qué viene.
 Genera una lista EXACTA de 50 sugerencias de canciones (formato "Nombre Canción - Artista") que encajen perfectamente.
@@ -79,7 +80,7 @@ Estructura esperada:
 
     if (!response.ok) {
       let errorText = await response.text()
-      
+
       // Si da 404, vamos a consultar qué modelos sí están disponibles para esta API Key
       if (response.status === 404) {
         try {
@@ -102,10 +103,10 @@ Estructura esperada:
 
     const result = await response.json()
     const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-    
+
     // Limpiar backticks si Gemini los añade accidentalmente
     const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim()
-    
+
     const parsedData = JSON.parse(cleanJson)
 
     return new Response(JSON.stringify(parsedData), {

@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { searchTracks } from '../lib/spotifyApi';
+import { getSecureServerTime, getSecureServerDateString } from '../utils/timeUtils';
 import { toast } from 'sonner';
 
 export function useEnairoSelector() {
   const { 
     enairoEnabled, 
     setEnairoEnabled,
-    enairoStartedAt,
-    enairoLastRunAt,
-    setEnairoLastRunAt,
+    enairoUsageCount,
+    enairoLastUsedDate,
+    enairoCooldownUntil,
+    setEnairoCooldown,
+    resetEnairoUsage,
     enairoPrompt,
     enairoTestMode,
     enairoIsThinking: isThinking,
@@ -23,161 +26,152 @@ export function useEnairoSelector() {
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
   
-  useEffect(() => {
-    if (!enairoEnabled) return;
+  const triggerEnairo = async () => {
+    // 1. Validaciones de tiempo y uso diario
+    const now = await getSecureServerTime();
+    const today = await getSecureServerDateString();
     
-    const runEnairo = async () => {
-      const now = Date.now();
+    // Si cambió el día (basado en el servidor), reiniciar contador
+    let currentUsageCount = enairoUsageCount;
+    if (enairoLastUsedDate !== today) {
+      resetEnairoUsage();
+      currentUsageCount = 0;
+    }
+    
+    // Límite diario: 3 veces al día
+    if (!enairoTestMode && currentUsageCount >= 3) {
+      toast.error('EnvAIro ha alcanzado su límite de 3 usos por día. Vuelve mañana.', { icon: '🚫' });
+      return false;
+    }
+    
+    // Cooldown de 2 horas (7200000 ms)
+    if (!enairoTestMode && now < enairoCooldownUntil) {
+      const minutesLeft = Math.ceil((enairoCooldownUntil - now) / 60000);
+      toast.error(`EnvAIro está descansando. Podrás usarlo de nuevo en ${minutesLeft} minutos.`, { icon: '⏳' });
+      return false;
+    }
+    
+    if (isThinking) return false;
+    
+    setIsThinking(true);
+    // Bloquear inmediatamente el botón para evitar doble clic o spam
+    const cooldownDuration = enairoTestMode ? 30000 : 7200000; // 30s test, 2h real
+    setEnairoCooldown(now + cooldownDuration, currentUsageCount + 1, today);
+    setEnairoEnabled(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('enairo-selector', {
+        body: {
+          history: playHistory.slice(0, 5), // últimas 5 canciones
+          queue: queue,
+          settings: {
+            enairoPrompt,
+            whitelistGenres,
+            blacklistGenres,
+            blacklistSongs,
+            blacklistArtists
+          }
+        }
+      });
 
-      // Apagado automático de seguridad: Si han pasado más de 4 horas (14400000 ms)
-      if (enairoStartedAt && (now - enairoStartedAt) > 14400000) {
-        setEnairoEnabled(false);
-        toast('EnvAIro Selector se ha desactivado automáticamente tras 4 horas continuas.', { icon: '🤖' });
-        return;
+      if (error) throw error;
+      
+      const { tracksToAdd = [], actions = [], reasoning } = data;
+      
+      if (reasoning) {
+        console.log("EnvAIro Selector Reasoning:", reasoning);
       }
 
-      // Evitar llamadas múltiples o spam (esperar 5 minutos mínimo en modo normal, 30s en modo test)
-      const cooldownTime = enairoTestMode ? 30000 : 300000;
-      if (isThinking || (now - enairoLastRunAt < cooldownTime)) return;
-      
-      // La IA trabajará por lotes:
-      // Solo se llama a la IA si:
-      // 1. La cola se está quedando vacía (< 3 canciones)
-      // 2. O si ya pasaron 2 horas desde la última revisión (7200000 ms)
-      const isQueueLow = queue.length < 3;
-      const hourPassed = (now - enairoLastRunAt >= 7200000);
-      
-      // En modo test, ignorar estas validaciones
-      if (!enairoTestMode && !isQueueLow && !hourPassed) return;
-      
-      setIsThinking(true);
-      // Se setea primero un timestamp temporal de 5 minutos para evitar spam si hay errores
-      setEnairoLastRunAt(now - 7200000 + cooldownTime);
-
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('enairo-selector', {
-          body: {
-            history: playHistory.slice(0, 5), // últimas 5 canciones
-            queue: queue,
-            settings: {
-              enairoPrompt,
-              whitelistGenres,
-              blacklistGenres,
-              blacklistSongs,
-              blacklistArtists
+      // Ejecutar Acciones (Reorder / Remove)
+      if (actions.length > 0) {
+        actions.forEach(action => {
+          if (action.type === 'remove' && action.queueId) {
+            removeFromQueue(action.queueId);
+            toast.success(`EnvAIro eliminó una canción por no encajar.`);
+          } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
+            const currentQueue = usePlayerStore.getState().queue;
+            const oldIndex = currentQueue.findIndex(t => t.queueId === action.queueId);
+            if (oldIndex !== -1 && oldIndex !== action.newIndex && action.newIndex < currentQueue.length) {
+              reorderQueue(oldIndex, action.newIndex);
             }
           }
         });
+      }
+      
+      // Agregar nuevas canciones
+      if (tracksToAdd.length > 0) {
+        const searchPromises = tracksToAdd.map(async (query) => {
+          try {
+            const engine = usePlayerStore.getState().playbackEngine;
+            if (engine === 'youtube') {
+              const cacheKey = `yt_ai_${query}`;
+              const cached = localStorage.getItem(cacheKey);
+              if (cached) {
+                const track = JSON.parse(cached);
+                track.addedBy = 'EnvAIro Selector';
+                return track;
+              }
 
-        if (error) throw error;
-        
-        const { tracksToAdd = [], actions = [], reasoning } = data;
-        
-        if (reasoning) {
-          console.log("EnvAIro Selector Reasoning:", reasoning);
-        }
-
-        // Ejecutar Acciones (Reorder / Remove)
-        if (actions.length > 0) {
-          actions.forEach(action => {
-            if (action.type === 'remove' && action.queueId) {
-              removeFromQueue(action.queueId);
-              toast.success(`EnvAIro eliminó una canción por no encajar.`);
-            } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
-              // Encontrar el índice actual
-              const currentQueue = usePlayerStore.getState().queue;
-              const oldIndex = currentQueue.findIndex(t => t.queueId === action.queueId);
-              if (oldIndex !== -1 && oldIndex !== action.newIndex && action.newIndex < currentQueue.length) {
-                reorderQueue(oldIndex, action.newIndex);
+              const { searchYouTubeVideos, getYouTubeVideoDetails } = await import('../lib/youtubeApi');
+              const results = await searchYouTubeVideos(query, 1);
+              if (results && results.length > 0) {
+                let track = results[0];
+                if (track.duration_ms === 0) {
+                   const details = await getYouTubeVideoDetails(track.id);
+                   if (details) track = details;
+                }
+                localStorage.setItem(cacheKey, JSON.stringify(track));
+                track.addedBy = 'EnvAIro Selector';
+                return track;
+              }
+            } else {
+              const results = await searchTracks(query, 1);
+              if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
+                const spotifyTrack = results.tracks.items[0];
+                return {
+                  id: spotifyTrack.id,
+                  name: spotifyTrack.name,
+                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                  image: spotifyTrack.album?.images?.[0]?.url || '',
+                  duration_ms: spotifyTrack.duration_ms,
+                  uri: spotifyTrack.uri,
+                  addedBy: 'EnvAIro Selector'
+                };
               }
             }
-          });
-        }
+          } catch (err) {
+            console.error("Error buscando canción recomendada por EnvAIro:", query, err);
+          }
+          return null;
+        });
         
-        // Agregar nuevas canciones
-        if (tracksToAdd.length > 0) {
-          // Ejecutar todas las búsquedas de Spotify/YouTube en paralelo para ahorrar tiempo
-          const searchPromises = tracksToAdd.map(async (query) => {
-            try {
-              const engine = usePlayerStore.getState().playbackEngine;
-              if (engine === 'youtube') {
-                const cacheKey = `yt_ai_${query}`;
-                const cached = localStorage.getItem(cacheKey);
-                if (cached) {
-                  const track = JSON.parse(cached);
-                  track.addedBy = 'EnvAIro Selector';
-                  return track;
-                }
-
-                const { searchYouTubeVideos, getYouTubeVideoDetails } = await import('../lib/youtubeApi');
-                const results = await searchYouTubeVideos(query, 1);
-                if (results && results.length > 0) {
-                  let track = results[0];
-                  if (track.duration_ms === 0) {
-                     const details = await getYouTubeVideoDetails(track.id);
-                     if (details) track = details;
-                  }
-                  localStorage.setItem(cacheKey, JSON.stringify(track));
-                  track.addedBy = 'EnvAIro Selector';
-                  return track;
-                }
-              } else {
-                const results = await searchTracks(query, 1);
-                if (results && results.tracks && results.tracks.items && results.tracks.items.length > 0) {
-                  const spotifyTrack = results.tracks.items[0];
-                  return {
-                    id: spotifyTrack.id,
-                    name: spotifyTrack.name,
-                    artists: spotifyTrack.artists.map(a => a.name).join(', '),
-                    image: spotifyTrack.album?.images?.[0]?.url || '',
-                    duration_ms: spotifyTrack.duration_ms,
-                    uri: spotifyTrack.uri,
-                    addedBy: 'EnvAIro Selector'
-                  };
-                }
-              }
-            } catch (err) {
-              console.error("Error buscando canción recomendada por EnvAIro:", query, err);
-            }
-            return null;
-          });
-          
-          const foundTracks = (await Promise.all(searchPromises)).filter(Boolean);
-          
-          // Añadirlas a la cola
-          foundTracks.forEach(track => addToQueue(track));
-          
-          toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
-          
-          // Auto-play si el reproductor está inactivo
-          const state = usePlayerStore.getState();
-          if (!state.currentTrack && foundTracks.length > 0) {
-            const nextTrack = state.shiftQueue();
-            if (nextTrack) {
-              usePlayerStore.getState().playEngineTrack(nextTrack);
-            }
+        const foundTracks = (await Promise.all(searchPromises)).filter(Boolean);
+        
+        foundTracks.forEach(track => addToQueue(track));
+        
+        toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
+        
+        const state = usePlayerStore.getState();
+        if (!state.currentTrack && foundTracks.length > 0) {
+          const nextTrack = state.shiftQueue();
+          if (nextTrack) {
+            usePlayerStore.getState().playEngineTrack(nextTrack);
           }
         }
-        
-        // Exito total, actualizar timestamp
-        setEnairoLastRunAt(Date.now());
-        
-      } catch (err) {
-        console.error("Error en EnvAIro Selector:", err);
-      } finally {
-        setIsThinking(false);
       }
-    };
+      
+      return true;
+      
+    } catch (err) {
+      console.error("Error en EnvAIro Selector:", err);
+      // Revertir el uso si falló críticamente (para no gastar el cooldown)
+      setEnairoCooldown(0, Math.max(0, currentUsageCount), today);
+      toast.error('EnvAIro falló en la generación. Inténtalo de nuevo.');
+      return false;
+    } finally {
+      setIsThinking(false);
+    }
+  };
 
-    // Revisar inmediatamente si se cumplen las condiciones
-    runEnairo();
-    
-    // Y configurar un intervalo de polling cada 15 segundos (la función de arriba controla los límites de tiempo reales)
-    const interval = setInterval(runEnairo, 15000);
-    return () => clearInterval(interval);
-    
-  }, [enairoEnabled, enairoStartedAt, setEnairoEnabled, enairoLastRunAt, setEnairoLastRunAt, queue.length, playHistory.length, isThinking, enairoPrompt, whitelistGenres, blacklistGenres]);
-
-  return { isThinking };
+  return { isThinking, triggerEnairo };
 }

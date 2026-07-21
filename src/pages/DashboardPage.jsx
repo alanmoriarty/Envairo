@@ -31,6 +31,7 @@ import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 import { AddSongModal } from '../components/dashboard/AddSongModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
+import { useEnairoSelector } from '../hooks/useEnairoSelector';
 
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { t } = useTranslation();
@@ -116,7 +117,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 export default function DashboardPage() {
   const { 
     mode, setMode, autoDJ, setAutoDJ,
-    enairoEnabled, setEnairoEnabled,
+    enairoUsageCount, enairoCooldownUntil,
     showRequests, setShowRequests,
     showPlaylists, setShowPlaylists,
     visualizerEnabled,
@@ -131,9 +132,15 @@ export default function DashboardPage() {
     currentTrack, sdkReady, playbackEngine
   } = usePlayerStore();
   const { controls } = useSpotifySDK();
-  const { enairoIsThinking } = useSettingsStore();
+  const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const timer = setInterval(() => setLocalTime(Date.now()), 60000); // update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -534,10 +541,24 @@ export default function DashboardPage() {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-black/20 px-2 py-1 rounded-lg border border-white/5">
-                    <Sparkles size={14} className={enairoEnabled ? 'text-accent' : 'text-text-muted'} />
-                    <span className="text-xs font-medium text-text-muted" title="EnvAIro Selector (Inteligencia Artificial)">EnvAIro</span>
-                    <Toggle checked={enairoEnabled} onChange={setEnairoEnabled} />
+                  <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                    <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
+                    
+                    {enairoUsageCount >= 3 ? (
+                      <span className="text-xs font-medium text-text-muted" title="Límite diario alcanzado">Límite Diario</span>
+                    ) : enairoCooldownUntil > localTime ? (
+                      <span className="text-xs font-medium text-text-muted">
+                        Disponible en {Math.ceil((enairoCooldownUntil - localTime) / 60000)} min
+                      </span>
+                    ) : (
+                      <button
+                        onClick={triggerEnairo}
+                        disabled={isThinking}
+                        className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
+                      >
+                        {isThinking ? 'Generando...' : 'Generar Ambiente'}
+                      </button>
+                    )}
                   </div>
                   
                   {queue.length > 0 && (

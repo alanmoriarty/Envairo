@@ -74,13 +74,19 @@ export const useSettingsStore = create(
       
       // EnvAIro Selector AI
       enairoEnabled: false,
-      enairoStartedAt: null,
       enairoLastRunAt: 0,
+      enairoUsageCount: 0,
+      enairoLastUsedDate: '',
+      enairoCooldownUntil: 0,
+      
       setEnairoLastRunAt: (v) => set({ enairoLastRunAt: v }),
-      setEnairoEnabled: (v) => set({ 
-        enairoEnabled: v,
-        enairoStartedAt: v ? Date.now() : null 
+      setEnairoEnabled: (v) => set({ enairoEnabled: v }),
+      setEnairoCooldown: (until, newCount, todayDate) => set({
+        enairoCooldownUntil: until,
+        enairoUsageCount: newCount,
+        enairoLastUsedDate: todayDate
       }),
+      resetEnairoUsage: () => set({ enairoUsageCount: 0, enairoLastUsedDate: '' }),
       enairoPrompt: '',
       setEnairoPrompt: (v) => set({ enairoPrompt: v }),
       enairoIsThinking: false,
