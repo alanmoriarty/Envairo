@@ -100,38 +100,35 @@ export function useEnairoSelector() {
 
       // Agregar nuevas canciones
       if (tracksToAdd.length > 0) {
-        const searchPromises = tracksToAdd.map(async (query) => {
-          try {
-            // Siempre usamos el Edge Function de Spotify para obtener metadatos limpios,
-            // sin importar el motor. Esto asegura que la UI se vea bien y que el 
-            // reproductor de YouTube use la búsqueda dinámica (que tiene fallbacks automáticos)
-            // en lugar de anclarse a un ID fijo que podría estar bloqueado.
-            const { data, error } = await supabase.functions.invoke('search-spotify', {
-              body: { query: query, type: 'track', limit: 1 }
-            });
-
-            if (error) throw error;
-
-            if (data && data.tracks && data.tracks.items && data.tracks.items.length > 0) {
-              const spotifyTrack = data.tracks.items[0];
-              return {
-                id: spotifyTrack.id,
-                name: spotifyTrack.name,
-                artists: spotifyTrack.artists.map(a => a.name).join(', '),
-                image: spotifyTrack.album?.images?.[0]?.url || '',
-                duration_ms: spotifyTrack.duration_ms,
-                uri: spotifyTrack.uri,
-                source: 'spotify', // Forzar origen spotify para que el engine lo busque
-                addedBy: 'EnvAIro Selector'
-              };
-            }
-          } catch (err) {
-            console.error("Error buscando canción recomendada por EnvAIro:", query, err);
+        let foundTracks = [];
+        try {
+          const { data, error } = await supabase.functions.invoke('search-spotify', {
+            body: { queries: tracksToAdd, type: 'track', limit: 1 }
+          });
+          
+          if (error) throw error;
+          
+          if (data && data.results) {
+            foundTracks = data.results.map((res) => {
+              if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
+                const spotifyTrack = res.tracks.items[0];
+                return {
+                  id: spotifyTrack.id,
+                  name: spotifyTrack.name,
+                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                  image: spotifyTrack.album?.images?.[0]?.url || '',
+                  duration_ms: spotifyTrack.duration_ms,
+                  uri: spotifyTrack.uri,
+                  source: 'spotify',
+                  addedBy: 'EnvAIro Selector'
+                };
+              }
+              return null;
+            }).filter(Boolean);
           }
-          return null;
-        });
-
-        const foundTracks = (await Promise.all(searchPromises)).filter(Boolean);
+        } catch (err) {
+          console.error("Error buscando canciones recomendadas en lote:", err);
+        }
 
         foundTracks.forEach(track => addToQueue(track));
 

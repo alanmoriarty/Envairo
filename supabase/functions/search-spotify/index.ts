@@ -14,10 +14,10 @@ serve(async (req) => {
   }
 
   try {
-    const { query, limit = 6, type = 'track' } = await req.json()
+    const { query, queries, limit = 6, type = 'track' } = await req.json()
 
-    if (!query) {
-      return new Response(JSON.stringify({ error: 'Query is required' }), {
+    if (!query && (!queries || !Array.isArray(queries) || queries.length === 0)) {
+      return new Response(JSON.stringify({ error: 'Query or queries array is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -41,28 +41,49 @@ serve(async (req) => {
     const accessToken = tokenData.access_token
 
     // 2. Search Spotify
-    const searchParams = new URLSearchParams({
-      q: query,
-      type: type,
-      limit: limit.toString()
-    })
+    if (queries && queries.length > 0) {
+      // Bulk search mode
+      const searchPromises = queries.map(async (q: string) => {
+        const searchParams = new URLSearchParams({
+          q: q,
+          type: type,
+          limit: limit.toString()
+        })
+        const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        if (!searchResponse.ok) return null;
+        return searchResponse.json();
+      })
 
-    const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+      const results = await Promise.all(searchPromises)
+      return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    } else {
+      // Single search mode
+      const searchParams = new URLSearchParams({
+        q: query,
+        type: type,
+        limit: limit.toString()
+      })
+
+      const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if (!searchResponse.ok) {
+        throw new Error(`Spotify search error: ${await searchResponse.text()}`)
       }
-    })
 
-    if (!searchResponse.ok) {
-      throw new Error(`Spotify search error: ${await searchResponse.text()}`)
+      const searchData = await searchResponse.json()
+
+      return new Response(JSON.stringify(searchData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
-
-    const searchData = await searchResponse.json()
-
-    return new Response(JSON.stringify(searchData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

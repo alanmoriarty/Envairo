@@ -103,8 +103,8 @@ export default function App() {
       )}
 
       <Toaster
-        position="bottom-center"
-        offset="80px"
+        position="top-center"
+        offset="20px"
         toastOptions={{
           style: {
             background: '#161224',

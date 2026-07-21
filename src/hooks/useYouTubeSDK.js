@@ -255,24 +255,24 @@ export function useYouTubeSDK() {
               // Forzar reintento de puente para buscar otro video
               store.playEngineTrack(store.currentTrack, store.progress, null, 1);
               import('sonner').then(({ toast }) => {
-                toast.error('Video bloqueado. Buscando alternativa...', { id: 'yt-fatal-error' });
+                toast.error('Buscando alternativa...', { id: 'yt-fatal-error' });
               });
-            } 
+            }
             // Errores transitorios de carga del reproductor (2, 5)
             else if (event.data === 2 || event.data === 5) {
               console.warn(`YouTube SDK Error ${event.data}: Transient player glitch. Retrying same video...`);
               const store = usePlayerStore.getState();
               const currentYtId = store.currentYtId || currentYtIdRef.current;
-              
+
               if (currentYtId && player && player.loadVideoById) {
-                 setTimeout(() => {
-                   player.loadVideoById({ videoId: currentYtId, startSeconds: store.progress > 0 ? store.progress / 1000 : 0 });
-                 }, 1000);
-                 import('sonner').then(({ toast }) => {
-                   toast.info('Reanudando reproducción...', { id: 'yt-fatal-error' });
-                 });
+                setTimeout(() => {
+                  player.loadVideoById({ videoId: currentYtId, startSeconds: store.progress > 0 ? store.progress / 1000 : 0 });
+                }, 1000);
+                import('sonner').then(({ toast }) => {
+                  toast.info('Reanudando reproducción...', { id: 'yt-fatal-error' });
+                });
               } else {
-                 store.playEngineTrack(store.currentTrack, store.progress, null, 1);
+                store.playEngineTrack(store.currentTrack, store.progress, null, 1);
               }
             } else {
               console.error('YouTube Player Error:', event.data);
@@ -304,12 +304,12 @@ export function useYouTubeSDK() {
 
   const startProgressTimer = (player) => {
     stopProgressTimer();
-    
+
     progressInterval.current = setInterval(() => {
       if (player && player.getCurrentTime) {
         const currentTime = player.getCurrentTime();
         const duration = player.getDuration ? player.getDuration() : 0;
-        
+
         usePlayerStore.getState().setProgress(Math.floor(currentTime * 1000));
       }
     }, 1000);
