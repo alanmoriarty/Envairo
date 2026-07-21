@@ -66,7 +66,7 @@ export function RootLayout() {
           .from('host_state')
           .select('queue, play_history')
           .eq('user_id', sbUser.id)
-          .single();
+          .maybeSingle();
           
         if (!hsError && hostState) {
           usePlayerStore.setState({
@@ -218,7 +218,7 @@ export function RootLayout() {
               user_id: sbUser.id,
               queue: state.queue,
               play_history: state.playHistory
-            }).catch(()=>{});
+            });
           }
         }, 3000); // 3 seconds debounce for queue/history
       }
