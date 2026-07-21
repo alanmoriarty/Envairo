@@ -27,7 +27,7 @@ export function RootLayout() {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  const isPremium = user?.product === 'premium' || isAdminMode;
+
 
 
 
@@ -83,18 +83,7 @@ export function RootLayout() {
     };
     hydrateSettings();
 
-    // Si el usuario no tiene Premium, forzamos que su sesión sea inactiva
-    // para que nadie pueda escanear su QR ni enviarle peticiones.
-    if (!isPremium) {
-      const state = useSettingsStore.getState();
-      if (state.sessionId && state.hostSecret) {
-        supabase.rpc('update_session_state', {
-          p_session_id: state.sessionId,
-          p_secret: state.hostSecret,
-          p_updates: { active: false }
-        }).then();
-      }
-    }
+
     
     // Limpiar peticiones antiguas y actualizar estado de disponibilidad cada minuto
     let lastActiveState = null;
@@ -105,7 +94,7 @@ export function RootLayout() {
       
       let currentActive = state.alwaysAvailable;
 
-      if (lastActiveState !== currentActive && isPremium) {
+      if (lastActiveState !== currentActive) {
         lastActiveState = currentActive;
         if (state.sessionId && state.hostSecret) {
           supabase.rpc('update_session_state', {
@@ -134,7 +123,7 @@ export function RootLayout() {
         }).then();
       }
     };
-  }, [isPremium]);
+  }, []);
 
   // Sincronizar configuraciones en tiempo real hacia Supabase Auth Metadata y sessions table
   useEffect(() => {
@@ -233,11 +222,6 @@ export function RootLayout() {
 
   if (!isAuthenticated && !isAdminMode) {
     return <Navigate to="/" replace />;
-  }
-
-  // Si no es premium y no es admin, forzar vista a métricas
-  if (user && user.product !== 'premium' && location.pathname !== '/app/metrics') {
-    return <Navigate to="/app/metrics" replace />;
   }
 
   return (
