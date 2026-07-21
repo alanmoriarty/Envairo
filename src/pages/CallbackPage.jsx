@@ -73,6 +73,15 @@ export default function CallbackPage() {
         } else {
           user = await getCurrentUser();
         }
+
+        const prevSessionId = (await import('../store/useSettingsStore')).useSettingsStore.getState().sessionId;
+        if (prevSessionId && !prevSessionId.includes('session-') && prevSessionId !== session.user.id) {
+          const { usePlayerStore } = await import('../store/usePlayerStore');
+          const { useSettingsStore } = await import('../store/useSettingsStore');
+          usePlayerStore.getState().clearPlayerState();
+          useSettingsStore.getState().clearSettingsState();
+        }
+
         setUser(user);
         
         // Restore previous session and settings

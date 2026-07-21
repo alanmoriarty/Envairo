@@ -4,6 +4,7 @@ import { Music2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { usePlayerStore } from '../store/usePlayerStore';
 import { useTranslation } from '../store/useLanguageStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { InstallAppButton } from '../components/shared/InstallAppButton';
@@ -54,6 +55,13 @@ export default function LoginPage() {
         if (error) throw error;
         
         if (data.session) {
+          const prevSessionId = useSettingsStore.getState().sessionId;
+          // Si había una sesión previa de OTRO usuario en esta misma PC, limpiamos los datos viejos
+          if (prevSessionId && !prevSessionId.includes('session-') && prevSessionId !== data.user.id) {
+            usePlayerStore.getState().clearPlayerState();
+            useSettingsStore.getState().clearSettingsState();
+          }
+          
           setUser(data.user);
           navigate('/app/dashboard');
         }
