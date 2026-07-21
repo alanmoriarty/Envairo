@@ -206,7 +206,7 @@ export const usePlayerStore = create(
               const cacheKey = mode ? `yt_bridge_${track.id}_${mode}` : null;
               const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
 
-              if (cachedId) {
+              if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11) {
                 videoIdToPlay = cachedId;
               } else {
                 try {
@@ -264,12 +264,14 @@ export const usePlayerStore = create(
               }
             }
 
-            // Si falló la búsqueda y es un track de Spotify, no podemos reproducirlo en YT
-            if (!videoIdToPlay || (videoIdToPlay === track.id && isSpotifyTrack)) {
+            // Validar estrictamente el ID antes de enviarlo al reproductor
+            if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length < 11 || (videoIdToPlay === track.id && isSpotifyTrack)) {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
               const nextTrack = get().shiftQueue();
               if (nextTrack) {
                 get().playEngineTrack(nextTrack);
+              } else {
+                set({ currentTrack: null, isPlaying: false });
               }
               return; // Abortar
             }

@@ -168,7 +168,7 @@ export function useYouTubeSDK() {
         height: '100%',
         width: '100%',
         playerVars: {
-          autoplay: 1,
+          autoplay: 0,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -202,7 +202,7 @@ export function useYouTubeSDK() {
                                     :                     'VIDEO OFICIAL';
                   const cacheKey = mode ? `yt_bridge_${store.currentTrack.id}_${mode}` : null;
                   const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
-                  if (cachedId) {
+                  if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11) {
                     videoIdToPlay = cachedId;
                   } else {
                     try {
@@ -250,11 +250,14 @@ export function useYouTubeSDK() {
                   }
                 }
 
-                if (!videoIdToPlay || (videoIdToPlay === store.currentTrack.id && (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))))) {
+                if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length < 11 || (videoIdToPlay === store.currentTrack.id && (store.currentTrack.source === 'spotify' || (store.currentTrack.uri && store.currentTrack.uri.startsWith('spotify:'))))) {
                   import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
                   const nextTrack = store.shiftQueue();
                   if (nextTrack) {
                     store.playEngineTrack(nextTrack);
+                  } else {
+                    store.setCurrentTrack(null);
+                    store.setIsPlaying(false);
                   }
                   return;
                 }
