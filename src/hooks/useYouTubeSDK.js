@@ -419,5 +419,24 @@ export function useYouTubeSDK() {
     }
   };
 
-  return { ytReady };
+  return { 
+    ytReady,
+    controls: {
+      togglePlay: () => {
+        const p = getActivePlayer();
+        if (!p) return;
+        const state = p.getPlayerState();
+        if (state === 1) p.pauseVideo();
+        else p.playVideo();
+      },
+      skipNext: () => {
+        const next = usePlayerStore.getState().shiftQueue();
+        if (next) usePlayerStore.getState().playEngineTrack(next);
+      },
+      skipPrev: () => {
+        const prev = usePlayerStore.getState().prevQueue();
+        if (prev) usePlayerStore.getState().playEngineTrack(prev);
+      }
+    }
+  };
 }
