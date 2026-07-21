@@ -9,7 +9,7 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useQueueSync } from '../../hooks/useQueueSync';
 import { supabase } from '../../lib/supabase';
-import { Menu, Music2 } from 'lucide-react';
+import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
@@ -26,8 +26,25 @@ export function RootLayout() {
 
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const [kickedOut, setKickedOut] = useState(false);
 
+  useEffect(() => {
+    // Evitar múltiples pestañas
+    const channel = new BroadcastChannel('envairo_app_tabs');
+    const myTabId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString();
+
+    channel.onmessage = (event) => {
+      if (event.data.type === 'NEW_TAB_OPENED' && event.data.tabId !== myTabId) {
+        setKickedOut(true);
+      }
+    };
+
+    channel.postMessage({ type: 'NEW_TAB_OPENED', tabId: myTabId });
+
+    return () => {
+      channel.close();
+    };
+  }, []);
 
 
 
@@ -228,6 +245,21 @@ export function RootLayout() {
 
   if (!isAuthenticated && !isAdminMode) {
     return <Navigate to="/" replace />;
+  }
+
+  if (kickedOut) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-bg-root text-text-primary p-6 text-center z-[9999] relative">
+        <AlertCircle size={64} className="text-danger mb-6" />
+        <h1 className="text-3xl font-bold mb-4">Sesión Abierta en Otra Pestaña</h1>
+        <p className="text-text-muted max-w-md">
+          Has abierto el reproductor de Envairo en otra pestaña de este navegador. Para evitar conflictos, esta pestaña ha sido desconectada.
+        </p>
+        <button onClick={() => window.location.reload()} className="mt-8 btn-primary px-8 py-3">
+          Reconectar aquí
+        </button>
+      </div>
+    );
   }
 
   return (

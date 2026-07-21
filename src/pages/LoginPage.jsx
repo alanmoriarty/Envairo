@@ -12,6 +12,14 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user, isAuthenticated } = useAuthStore();
+  
+  useEffect(() => {
+    // Si ya estamos autenticados, redirigir automáticamente al reproductor
+    if (user || isAuthenticated) {
+      navigate('/app/dashboard');
+    }
+  }, [user, isAuthenticated, navigate]);
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
