@@ -29,6 +29,7 @@ import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 import { AddSongModal } from '../components/dashboard/AddSongModal';
+import { CastToTvModal } from '../components/dashboard/CastToTvModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
@@ -141,6 +142,7 @@ export default function DashboardPage() {
   const { controls } = useSpotifySDK();
   const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isCastModalOpen, setIsCastModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
 
@@ -284,6 +286,13 @@ export default function DashboardPage() {
                 <Maximize2 size={18} />
               </button>
             )}
+            <button
+              onClick={() => setIsCastModalOpen(true)}
+              className="p-1.5 text-text-muted hover:text-accent bg-white/5 hover:bg-accent/20 rounded-lg transition-colors"
+              title="Transmitir a TV"
+            >
+              <Monitor size={18} />
+            </button>
           </div>
           <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
