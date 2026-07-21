@@ -244,9 +244,12 @@ export const usePlayerStore = create(
               const cacheKey = mode ? `yt_bridge_${track.id}_${mode}` : null;
               const cachedId = cacheKey ? localStorage.getItem(cacheKey) : null;
 
-              if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11) {
+              if (cachedId && cachedId !== 'undefined' && cachedId !== 'null' && cachedId.length >= 11 && !get().failedYouTubeIds.includes(cachedId)) {
                 videoIdToPlay = cachedId;
               } else {
+                if (cachedId && cacheKey && get().failedYouTubeIds.includes(cachedId)) {
+                  localStorage.removeItem(cacheKey); // Limpiar caché si estaba bloqueado
+                }
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
                   // Limpiar el nombre del track: quitar cosas como "(Video Oficial)" pero MANTENER los feats
