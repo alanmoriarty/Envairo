@@ -8,7 +8,7 @@ export function CastToTvModal({ isOpen, onClose }) {
   const { isAdminMode } = useSettingsStore();
 
   return (
-    <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
       <div className="card p-0 max-w-lg w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}

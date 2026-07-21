@@ -287,7 +287,7 @@ export default function DashboardPage() {
               </button>
             )}
             <button
-              onClick={() => setIsCastModalOpen(true)}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCastModalOpen(true); console.log("Abriendo Modal Cast"); }}
               className="p-1.5 text-text-muted hover:text-accent bg-white/5 hover:bg-accent/20 rounded-lg transition-colors"
               title="Transmitir a TV"
             >
