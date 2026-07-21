@@ -39,7 +39,8 @@ export async function searchYouTubeVideos(query, limit = 8) {
         if (streams.length > 0) {
           // console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
           return streams.map(item => {
-            const videoId = item.url.replace('/watch?v=', '');
+            const videoIdStr = item.url.split('v=')[1] || '';
+            const videoId = videoIdStr.split('&')[0];
             return {
               id: videoId,
               uri: `youtube:${videoId}`,

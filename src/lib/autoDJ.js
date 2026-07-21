@@ -1,4 +1,5 @@
 import { getArtists, searchTracks, getRecommendations } from './spotifyApi';
+import { getAccessToken } from './spotifyAuth';
 
 const artistGenreCache = new Map();
 
@@ -85,26 +86,30 @@ export async function evaluateTrack(track, settings) {
   // 3. Genres Check (Whitelist & Blacklist)
   const validWhitelist = whitelistGenres.map(normalizeString).filter(Boolean);
   const validBlacklist = blacklistGenres.map(normalizeString).filter(Boolean);
+  
+  // Solo requerimos género si el filtro está activo Y tenemos token de Spotify
+  const needsGenreCheck = validWhitelist.length > 0 || validBlacklist.length > 0;
+  let trackGenre = null;
 
-  if (validWhitelist.length > 0 || validBlacklist.length > 0) {
+  if (needsGenreCheck) {
+    if (!getAccessToken()) {
+      return { approved: false, reason: 'Auto DJ requiere conexión a Spotify para filtrar por género' };
+    }
     const artistName = track.artists ? track.artists.split(',')[0] : '';
-    const trackGenre = await getTrackGenre(track.name, artistName);
+    trackGenre = await getTrackGenre(track.name, artistName);
     
     if (!trackGenre) {
-      // Si la canción no tiene tags o no la encontramos, requiere revisión manual
       return { approved: null, reason: 'No se encontraron etiquetas de género para esta pista' };
     }
 
     const normalizedTrackGenre = normalizeString(trackGenre);
 
-    // Si hay lista blanca, el género DEBE coincidir parcialmente (bidireccional)
     if (validWhitelist.length > 0) {
       if (!validWhitelist.some(ag => normalizedTrackGenre.includes(ag))) {
         return { approved: false, reason: `El género "${trackGenre}" no está en la lista blanca permitida.` };
       }
     }
 
-    // Si hay lista negra, el género NO DEBE coincidir
     if (validBlacklist.length > 0) {
       if (validBlacklist.some(bg => normalizedTrackGenre.includes(bg))) {
         return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
@@ -124,6 +129,7 @@ export async function getAutoQueueRecommendations(playHistory, settings) {
     .map(t => t.id);
 
   if (recentTracks.length === 0) return null;
+  if (!getAccessToken()) return null; // Auto DJ silently disabled if no Spotify token
 
   try {
     const data = await getRecommendations(recentTracks, 10);

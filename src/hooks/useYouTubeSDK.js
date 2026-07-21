@@ -325,6 +325,13 @@ export function useYouTubeSDK() {
               }
             } else {
               console.error('YouTube Player Error:', event.data);
+              // Auto-skip on fatal errors like 2 (invalid id), 5 (HTML5 error) or 100 (not found)
+              if (event.data === 2 || event.data === 100 || event.data === 5) {
+                const store = usePlayerStore.getState();
+                import('sonner').then(({ toast }) => toast.error('Error al reproducir el video. Saltando a la siguiente...', { id: 'yt-fatal-error' }));
+                const nextTrack = store.shiftQueue();
+                if (nextTrack) store.playEngineTrack(nextTrack);
+              }
             }
           }
         }
