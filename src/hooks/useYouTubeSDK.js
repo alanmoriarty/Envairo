@@ -330,7 +330,13 @@ export function useYouTubeSDK() {
                 const store = usePlayerStore.getState();
                 import('sonner').then(({ toast }) => toast.error('Error al reproducir el video. Saltando a la siguiente...', { id: 'yt-fatal-error' }));
                 const nextTrack = store.shiftQueue();
-                if (nextTrack) store.playEngineTrack(nextTrack);
+                if (nextTrack) {
+                  store.playEngineTrack(nextTrack);
+                } else {
+                  // Si no hay más canciones, limpiar la actual para evitar loop de errores al refrescar
+                  store.setCurrentTrack(null);
+                  store.setIsPlaying(false);
+                }
               }
             }
           }
