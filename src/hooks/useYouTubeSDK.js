@@ -263,12 +263,14 @@ export function useYouTubeSDK() {
                   return;
                 }
 
+                const startSeconds = (typeof store.progress === 'number' && !isNaN(store.progress)) ? Math.max(0, store.progress / 1000) : 0;
+                
                 if (store.isPlaying) {
                   currentYtIdRef.current = videoIdToPlay;
-                  event.target.loadVideoById(videoIdToPlay, store.progress / 1000);
+                  event.target.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
                 } else {
                   currentYtIdRef.current = videoIdToPlay;
-                  event.target.cueVideoById(videoIdToPlay, store.progress / 1000);
+                  event.target.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
                 }
               }, 500);
             }

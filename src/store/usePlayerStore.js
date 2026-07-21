@@ -277,7 +277,8 @@ export const usePlayerStore = create(
             }
 
             // Cargar el nuevo video
-            state.youtubePlayer.loadVideoById(videoIdToPlay, progressMs / 1000);
+            const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
+            state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
             set({ isPlaying: true });
           }
         } else {
