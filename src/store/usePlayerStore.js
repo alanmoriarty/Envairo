@@ -16,6 +16,7 @@ export const usePlayerStore = create(
       youtubePlayer: null,
       playbackEngine: 'spotify', // 'spotify' | 'youtube'
       failedYouTubeIds: [],
+      currentYtId: null,
 
       // Playback state
       currentTrack: null,
@@ -334,8 +335,9 @@ export const usePlayerStore = create(
 
             // Cargar el nuevo video
             const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
+            console.log('Final YouTube ID to play:', videoIdToPlay);
+            set({ isPlaying: true, currentYtId: videoIdToPlay });
             state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
-            set({ isPlaying: true });
           }
         } else {
           const targetDevice = state.activeDeviceId || state.deviceId;

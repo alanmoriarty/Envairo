@@ -317,7 +317,7 @@ export function useYouTubeSDK() {
             if (event.data === 150 || event.data === 101) {
               console.warn('YouTube SDK Error 101/150: Video embedding blocked. Finding alternative...');
               const store = usePlayerStore.getState();
-              const currentYtId = currentYtIdRef.current;
+              const currentYtId = store.currentYtId || currentYtIdRef.current;
 
               if (currentYtId) {
                 store.addFailedYouTubeId(currentYtId);
