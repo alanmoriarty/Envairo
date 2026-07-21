@@ -67,6 +67,40 @@ export function useQueueSync() {
     });
 
     // 2. Subscribe to Supabase changes to pull to Zustand
+    const processStateUpdates = (newSessionData) => {
+      const currentState = usePlayerStore.getState();
+      let updatesToApply = {};
+      
+      if (Array.isArray(newSessionData.queue)) {
+        const queueChanged = JSON.stringify(newSessionData.queue) !== JSON.stringify(currentState.queue);
+        if (queueChanged) updatesToApply.queue = newSessionData.queue;
+      }
+
+      if (newSessionData.current_queue_index !== undefined && newSessionData.current_queue_index !== currentState.currentQueueIndex) {
+        updatesToApply.currentQueueIndex = newSessionData.current_queue_index;
+      }
+
+      if (newSessionData.current_track !== undefined && JSON.stringify(newSessionData.current_track) !== JSON.stringify(currentState.currentTrack)) {
+        updatesToApply.currentTrack = newSessionData.current_track;
+      }
+
+      if (newSessionData.active_device_id !== undefined && newSessionData.active_device_id !== currentState.activeDeviceId) {
+        updatesToApply.activeDeviceId = newSessionData.active_device_id;
+      }
+
+      if (newSessionData.volume !== undefined && newSessionData.volume !== null && newSessionData.volume !== currentState.volume) {
+        updatesToApply.volume = newSessionData.volume;
+      }
+
+      if (Object.keys(updatesToApply).length > 0) {
+        isRemoteUpdate.current = true;
+        usePlayerStore.setState(updatesToApply);
+        if (updatesToApply.queue) {
+           usePlayerStore.getState().startQueuePreloadWorker();
+        }
+      }
+    };
+
     const channel = supabase
       .channel(`queue-sync-${sessionId}`)
       .on(
@@ -197,38 +231,8 @@ export function useQueueSync() {
               });
             }
           }
-
-          // FIX: PostgreSQL TOAST issue. If a JSONB column is large (>8KB), and an UPDATE doesn't modify it,
-          // Postgres omits it from the WAL to save space. Supabase Realtime then delivers it as `null` or `undefined`.
-          // Therefore, we only accept the queue from Realtime if it's explicitly an Array (including []).
-          if (Array.isArray(newSession.queue)) {
-            const queueChanged = JSON.stringify(newSession.queue) !== JSON.stringify(currentState.queue);
-            if (queueChanged) updates.queue = newSession.queue;
-          }
-
-          if (newSession.current_queue_index !== undefined && newSession.current_queue_index !== currentState.currentQueueIndex) {
-            updates.currentQueueIndex = newSession.current_queue_index;
-          }
-
-          if (newSession.current_track !== undefined && JSON.stringify(newSession.current_track) !== JSON.stringify(currentState.currentTrack)) {
-            updates.currentTrack = newSession.current_track;
-          }
-
-          if (newSession.active_device_id !== undefined && newSession.active_device_id !== currentState.activeDeviceId) {
-            updates.activeDeviceId = newSession.active_device_id;
-          }
-
-          if (newSession.volume !== undefined && newSession.volume !== null && newSession.volume !== currentState.volume) {
-            updates.volume = newSession.volume;
-          }
-
-          if (Object.keys(updates).length > 0) {
-            isRemoteUpdate.current = true;
-            usePlayerStore.setState(updates);
-            if (updates.queue) {
-               usePlayerStore.getState().startQueuePreloadWorker();
-            }
-          }
+          // Procesar las actualizaciones de la cola y la pista actual
+          processStateUpdates(newSession);
         }
       )
       .on('broadcast', { event: 'playback_sync' }, (payload) => {
@@ -260,7 +264,22 @@ export function useQueueSync() {
            }
          }).catch(()=>{}); // ignorar errores si falla
       }
-    }, 2000);
+    }, 1000);
+
+    // 4. Reconectar y sincronizar cuando la pestaña vuelve a ser visible (para celulares)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data, error } = await supabase.from('sessions').select('*').eq('id', sessionId).single();
+          if (data && !error) {
+            processStateUpdates(data);
+          }
+        } catch (e) {
+          console.error('Error re-syncing session on visibility change:', e);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 3. Initial pull
     supabase

@@ -50,19 +50,39 @@ export function PlaylistsPanel() {
       if (playbackEngine === 'spotify' && track.source === 'youtube') return;
 
       const label = formatDateLabel(track.playedAt);
-      if (!groups[label]) groups[label] = [];
-      // Evitar duplicados exactos en el mismo día
-      if (!groups[label].some(t => t.id === track.id)) {
-        groups[label].push(track);
+      
+      // Filtrar para mostrar solo "Hoy" y "Ayer"
+      if (label === 'Hoy' || label === 'Ayer') {
+        if (!groups[label]) groups[label] = [];
+        // Evitar duplicados exactos en el mismo día
+        if (!groups[label].some(t => t.id === track.id)) {
+          groups[label].push(track);
+        }
       }
     });
-    return Object.entries(groups).map(([label, tracks]) => ({
-      id: `history-${label}`,
-      name: `Historial: ${label}`,
-      isHistory: true,
-      tracks,
-      images: tracks.length > 0 && tracks[0].image ? [{ url: tracks[0].image }] : []
-    }));
+    
+    // Convertir a array y asegurar que "Hoy" salga primero si existe
+    const result = [];
+    if (groups['Hoy']) {
+      result.push({
+        id: 'history-hoy',
+        name: 'Historial: Hoy',
+        isHistory: true,
+        tracks: groups['Hoy'],
+        images: groups['Hoy'].length > 0 && groups['Hoy'][0].image ? [{ url: groups['Hoy'][0].image }] : []
+      });
+    }
+    if (groups['Ayer']) {
+      result.push({
+        id: 'history-ayer',
+        name: 'Historial: Ayer',
+        isHistory: true,
+        tracks: groups['Ayer'],
+        images: groups['Ayer'].length > 0 && groups['Ayer'][0].image ? [{ url: groups['Ayer'][0].image }] : []
+      });
+    }
+    
+    return result;
   }, [playHistory, playbackEngine]);
 
   useEffect(() => {
