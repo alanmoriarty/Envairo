@@ -129,7 +129,8 @@ export default function DashboardPage() {
     visualizerEnabled,
     karaokeEnabled, setKaraokeEnabled,
     lyricsEnabled, setLyricsEnabled,
-    isAdminMode, sessionId, hostSecret
+    isAdminMode, sessionId, hostSecret,
+    enairoTestMode
   } = useSettingsStore();
 
   const {
@@ -544,9 +545,9 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
                     <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
 
-                    {enairoUsageCount >= 3 ? (
+                    {(!enairoTestMode && enairoUsageCount >= 3) ? (
                       <span className="text-xs font-medium text-text-muted" title="Límite diario alcanzado">Límite Diario</span>
-                    ) : enairoCooldownUntil > localTime ? (
+                    ) : (!enairoTestMode && enairoCooldownUntil > localTime) ? (
                       <span className="text-xs font-medium text-text-muted">
                         Disponible en {Math.ceil((enairoCooldownUntil - localTime) / 60000)} min
                       </span>
