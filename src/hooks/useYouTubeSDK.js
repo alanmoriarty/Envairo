@@ -222,21 +222,8 @@ export function useYouTubeSDK() {
               setIsPlaying(false);
               stopProgressTimer();
 
-              // Evitar saltos si el video terminó instantáneamente por culpa de un progressMs incorrecto
-              const player = event.target;
-              const currentTime = player && player.getCurrentTime ? player.getCurrentTime() : 0;
-              const duration = player && player.getDuration ? player.getDuration() : 0;
-              const store = usePlayerStore.getState();
-
-              if (store.progress > 0 && currentTime >= duration && duration > 0) {
-                // Si cargó cerca del final y terminó al instante, reiniciarlo desde 0
-                store.setProgress(0);
-                player.seekTo(0);
-                player.playVideo();
-                return;
-              }
-
               // Advance to next track in queue
+              const store = usePlayerStore.getState();
               const nextTrack = store.shiftQueue();
               if (nextTrack) {
                 store.playEngineTrack(nextTrack);

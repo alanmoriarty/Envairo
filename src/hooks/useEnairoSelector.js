@@ -7,8 +7,8 @@ import { getSecureServerTime, getSecureServerDateString } from '../utils/timeUti
 import { toast } from 'sonner';
 
 export function useEnairoSelector() {
-  const { 
-    enairoEnabled, 
+  const {
+    enairoEnabled,
     setEnairoEnabled,
     enairoUsageCount,
     enairoLastUsedDate,
@@ -19,46 +19,46 @@ export function useEnairoSelector() {
     enairoTestMode,
     enairoIsThinking: isThinking,
     setEnairoIsThinking: setIsThinking,
-    whitelistGenres, 
+    whitelistGenres,
     blacklistGenres,
     blacklistSongs,
     blacklistArtists
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
-  
+
   const triggerEnairo = async () => {
     // 1. Validaciones de tiempo y uso diario
     const now = await getSecureServerTime();
     const today = await getSecureServerDateString();
-    
+
     // Si cambió el día (basado en el servidor), reiniciar contador
     let currentUsageCount = enairoUsageCount;
     if (enairoLastUsedDate !== today) {
       resetEnairoUsage();
       currentUsageCount = 0;
     }
-    
+
     // Límite diario: 3 veces al día
     if (!enairoTestMode && currentUsageCount >= 3) {
       toast.error('EnvAIro ha alcanzado su límite de 3 usos por día. Vuelve mañana.', { icon: '🚫' });
       return false;
     }
-    
+
     // Cooldown de 2 horas (7200000 ms)
     if (!enairoTestMode && now < enairoCooldownUntil) {
       const minutesLeft = Math.ceil((enairoCooldownUntil - now) / 60000);
       toast.error(`EnvAIro está descansando. Podrás usarlo de nuevo en ${minutesLeft} minutos.`, { icon: '⏳' });
       return false;
     }
-    
+
     if (isThinking) return false;
-    
+
     setIsThinking(true);
     // Bloquear inmediatamente el botón para evitar doble clic o spam
     const cooldownDuration = enairoTestMode ? 30000 : 7200000; // 30s test, 2h real
     setEnairoCooldown(now + cooldownDuration, currentUsageCount + 1, today);
     setEnairoEnabled(true);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
@@ -75,9 +75,9 @@ export function useEnairoSelector() {
       });
 
       if (error) throw error;
-      
+
       const { tracksToAdd = [], actions = [], reasoning } = data;
-      
+
       if (reasoning) {
         console.log("EnvAIro Selector Reasoning:", reasoning);
       }
@@ -97,7 +97,7 @@ export function useEnairoSelector() {
           }
         });
       }
-      
+
       // Agregar nuevas canciones
       if (tracksToAdd.length > 0) {
         const searchPromises = tracksToAdd.map(async (query) => {
@@ -109,9 +109,9 @@ export function useEnairoSelector() {
             const { data, error } = await supabase.functions.invoke('search-spotify', {
               body: { query: query, type: 'track', limit: 1 }
             });
-            
+
             if (error) throw error;
-            
+
             if (data && data.tracks && data.tracks.items && data.tracks.items.length > 0) {
               const spotifyTrack = data.tracks.items[0];
               return {
@@ -130,13 +130,13 @@ export function useEnairoSelector() {
           }
           return null;
         });
-        
+
         const foundTracks = (await Promise.all(searchPromises)).filter(Boolean);
-        
+
         foundTracks.forEach(track => addToQueue(track));
-        
+
         toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
-        
+
         const state = usePlayerStore.getState();
         if (!state.currentTrack && foundTracks.length > 0) {
           const nextTrack = state.shiftQueue();
@@ -145,9 +145,9 @@ export function useEnairoSelector() {
           }
         }
       }
-      
+
       return true;
-      
+
     } catch (err) {
       console.error("Error en EnvAIro Selector:", err);
       // Revertir el uso si falló críticamente (para no gastar el cooldown)

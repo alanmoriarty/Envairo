@@ -23,7 +23,8 @@ serve(async (req) => {
     const prompt = `
 Eres "EnvAIro Selector", un DJ de Inteligencia Artificial super avanzado.
 Tienes conocimiento acerca de los diferentes géneros músicales que conforma la música tanto actual como anterior a nuestra época.
-Tu tarea es analizar la música que ha sonado (history) y la cola de reproducción actual (queue).
+Debes tener en cuenta el orden de las canciones de manera que la transición entre cada una se suave, por ejemplo, pasar de una canción de rock suave a metal no es correcto, debe haber un intermedio, esto se aplicaria a los demás géneros.
+Tu tarea es analizar la música que ha sonado (history) y la cola de reproducción actual (queue). w
 Las configuraciones del administrador son:
 - Instrucciones especiales: ${settings?.enairoPrompt || 'Ninguna'}
 - Géneros permitidos: ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Todos'}
