@@ -268,6 +268,13 @@ export const usePlayerStore = create(
                   const query = `${queryBase} ${effectiveSuffix}`;
                   let results = await searchYouTubeVideos(query, 5);
                   
+                  // Si no hay resultados iniciales y estamos en un modo estricto, relajar la búsqueda
+                  if ((!results || results.length === 0) && querySuffix) {
+                    import('sonner').then(({ toast }) => toast.info(`Búsqueda estricta sin resultados, relajando...`));
+                    const relaxedQuery = `${queryBase} AUDIO`;
+                    results = await searchYouTubeVideos(relaxedQuery, 5);
+                  }
+
                   if (results && results.length > 0) {
                     let unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
                     const blockedCount = results.length - unblocked.length;
@@ -312,11 +319,20 @@ export const usePlayerStore = create(
                       videoIdToPlay = null; // Marcar como fallido
                     }
                   } else {
-                    videoIdToPlay = null;
+                    if (track.id && track.id.length === 11 && track.source !== 'spotify') {
+                      import('sonner').then(({ toast }) => toast.info('Búsqueda fallida, usando el video original como respaldo.'));
+                      videoIdToPlay = track.id;
+                    } else {
+                      videoIdToPlay = null;
+                    }
                   }
                 } catch (err) {
                   console.error('Error in YouTube bridge:', err);
-                  videoIdToPlay = null;
+                  if (track.id && track.id.length === 11 && track.source !== 'spotify') {
+                    videoIdToPlay = track.id;
+                  } else {
+                    videoIdToPlay = null;
+                  }
                 }
               }
             }
