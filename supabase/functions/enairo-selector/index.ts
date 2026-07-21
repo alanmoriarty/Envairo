@@ -61,44 +61,58 @@ Estructura esperada:
   "reasoning": "Breve explicación de por qué tomaste estas decisiones."
 }
 `
+    const modelsToTry = [
+      'gemini-3.5-flash',
+      'gemini-2.0-flash',
+      'gemini-3.1-flash-lite'
+    ];
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
+    let response = null;
+    let errorText = '';
+
+    for (const modelName of modelsToTry) {
+      try {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7 }
+          })
+        });
+
+        if (response.ok) {
+          break; // Éxito
+        } else {
+          errorText = await response.text();
+          // Si es un error de sobrecarga o cuota, intenta el siguiente modelo
+          if (response.status === 503 || response.status === 429) {
+            console.warn(`[DEBUG] Modelo ${modelName} falló con ${response.status}. Intentando fallback...`);
+            continue;
+          }
+          break; // Si es otro error (ej: 400 Bad Request), no reintentes
         }
-      })
-    })
+      } catch (err: any) {
+        errorText = err.message;
+        continue;
+      }
+    }
 
-    if (!response.ok) {
-      let errorText = await response.text()
-
+    if (!response || !response.ok) {
       // Si da 404, vamos a consultar qué modelos sí están disponibles para esta API Key
-      if (response.status === 404) {
+      if (response && response.status === 404) {
         try {
           const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`)
           if (modelsRes.ok) {
             const modelsData = await modelsRes.json()
             const availableModels = modelsData.models?.map((m: any) => m.name).join(', ') || 'Ninguno'
             errorText = `${errorText}\n\n[DEBUG] Modelos disponibles para tu API Key: ${availableModels}`
-          } else {
-            const fallbackErr = await modelsRes.text()
-            errorText = `${errorText}\n\n[DEBUG] Falló listar modelos: ${modelsRes.status} - ${fallbackErr}`
           }
-        } catch (e: any) {
-          errorText = `${errorText}\n\n[DEBUG] Excepción listar modelos: ${e?.message}`
+        } catch (e) {
+          // ignorar
         }
       }
-
-      throw new Error(`Gemini API Error (${response.status}): ${errorText}`)
+      throw new Error(`Gemini API Error (${response?.status || 'Network'}): ${errorText}`)
     }
 
     const result = await response.json()
