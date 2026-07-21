@@ -208,7 +208,6 @@ export const usePlayerStore = create(
 
               if (cachedId) {
                 videoIdToPlay = cachedId;
-                console.log(`[Mode:${mode}] Using cached video: ${cachedId}`);
               } else {
                 try {
                   const { searchYouTubeVideos } = await import('../lib/youtubeApi');
@@ -225,7 +224,6 @@ export const usePlayerStore = create(
                   const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
                   const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
                   const query = `${queryBase} ${effectiveSuffix}`;
-                  console.log(`[Mode:${mode}] Searching: "${query}"`);
                   const results = await searchYouTubeVideos(query, 5);
                   if (results && results.length > 0) {
                     const unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
@@ -252,7 +250,6 @@ export const usePlayerStore = create(
 
                       // Guardar en caché siempre para ahorrar cuota
                       if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
-                      console.log(`[Mode:${mode}] Found video: ${videoIdToPlay}`);
                     } else {
                       console.error('All search results were in the failed list!');
                       videoIdToPlay = null; // Marcar como fallido
@@ -278,7 +275,6 @@ export const usePlayerStore = create(
             }
 
             // Cargar el nuevo video
-            console.log(`[Mode:${mode ?? 'n/a'}] Loading video: ${videoIdToPlay}`);
             state.youtubePlayer.loadVideoById(videoIdToPlay, progressMs / 1000);
             set({ isPlaying: true });
           }

@@ -12,6 +12,7 @@ async function ensureYouTubeToken() {
   }
   return localStorage.getItem('youtube_access_token');
 }
+let activePipedInstance = null;
 
 /**
  * Busca videos en YouTube por término de búsqueda.
@@ -27,13 +28,22 @@ export async function searchYouTubeVideos(query, limit = 8) {
     'https://api-piped.mha.fi'
   ];
 
-  // Ordenar aleatoriamente para balancear carga globalmente
-  const shuffledInstances = pipedInstances.sort(() => 0.5 - Math.random());
+  // Ordenar aleatoriamente para balancear carga globalmente, pero priorizar la última que funcionó
+  let instancesToTry = [...pipedInstances];
+  if (activePipedInstance) {
+    instancesToTry = [
+      activePipedInstance,
+      ...pipedInstances.filter(i => i !== activePipedInstance).sort(() => 0.5 - Math.random())
+    ];
+  } else {
+    instancesToTry = pipedInstances.sort(() => 0.5 - Math.random());
+  }
 
-  for (const instance of shuffledInstances) {
+  for (const instance of instancesToTry) {
     try {
       const res = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`);
       if (res.ok) {
+        activePipedInstance = instance; // Recordar la instancia exitosa para la próxima vez
         const data = await res.json();
         const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
         if (streams.length > 0) {
