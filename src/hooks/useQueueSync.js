@@ -55,6 +55,10 @@ export function useQueueSync() {
           })
           .then(({ error }) => {
             if (error) {
+              if (error.code === 'P0001') {
+                console.warn('Session not yet created, skipping queue sync update for now.');
+                return;
+              }
               console.error('Error syncing queue to Supabase:', error);
               import('sonner').then(({ toast }) => toast.error('Error guardando en la nube (RPC): ' + error.message));
             }
