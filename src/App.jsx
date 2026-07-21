@@ -5,6 +5,7 @@ import { usePlayerStore } from './store/usePlayerStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { supabase } from './lib/supabase';
+import { BackgroundVideo } from './components/layout/BackgroundVideo';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 
@@ -70,6 +71,7 @@ export default function App() {
 
   return (
     <>
+      <BackgroundVideo />
       <AppRouter />
       
       {/* Modal de Sesión Expirada */}

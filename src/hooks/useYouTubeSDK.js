@@ -3,7 +3,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export function useYouTubeSDK() {
-  const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack } = usePlayerStore();
+  const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack, currentTrack } = usePlayerStore();
   const playerRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
@@ -38,7 +38,7 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'none';
       wrapper.style.borderRadius = '12px';
       wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
-      wrapper.style.opacity = '0.6';
+      wrapper.style.opacity = currentTrack ? '0.6' : '0';
       wrapper.style.zIndex = '40';
       wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'none';
@@ -52,7 +52,7 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'translate(-50%, -50%)';
       wrapper.style.borderRadius = '0';
       wrapper.style.boxShadow = 'none';
-      wrapper.style.opacity = '0.5';
+      wrapper.style.opacity = currentTrack ? '0.5' : '0';
       wrapper.style.zIndex = '-1';
       wrapper.style.filter = 'blur(4px) saturate(1.5)';
       wrapper.style.pointerEvents = 'none';
@@ -63,7 +63,7 @@ export function useYouTubeSDK() {
     const wrapper = document.getElementById('youtube-wrapper');
     const isFs = document.fullscreenElement === wrapper;
     applyStyles(wrapper, visualizerEnabled, isFs);
-  }, [visualizerEnabled]);
+  }, [visualizerEnabled, currentTrack]);
 
   useEffect(() => {
     if (playbackEngine !== 'youtube') return;

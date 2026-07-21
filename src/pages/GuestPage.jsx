@@ -340,7 +340,7 @@ export default function GuestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-root p-4 max-w-lg mx-auto pt-8">
+    <div className="min-h-screen bg-transparent p-4 max-w-lg mx-auto pt-8">
       {/* Header */}
       <div className="text-center mb-8 relative">
         {/* Language toggle top-right */}
