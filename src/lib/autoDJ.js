@@ -34,18 +34,40 @@ async function getArtistGenres(artistId) {
   return [];
 }
 
-async function getTrackGenre(trackName, artistName) {
+async function getTrackGenresArray(trackName, artistName) {
+  const genres = new Set();
+  
+  // 1. iTunes API (Multiple results to capture variants)
   try {
     const term = encodeURIComponent(`${trackName} ${artistName}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&entity=song`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${term}&limit=5&entity=song`);
     const data = await res.json();
     if (data.results && data.results.length > 0) {
-      return data.results[0].primaryGenreName;
+      data.results.forEach(r => {
+        if (r.primaryGenreName) genres.add(normalizeString(r.primaryGenreName));
+      });
     }
   } catch (err) {
-    console.error('Error fetching track genre', err);
+    console.error('Error fetching iTunes genre', err);
   }
-  return null;
+
+  // 2. Spotify API (If token available)
+  if (getAccessToken()) {
+    try {
+      const searchRes = await searchTracks(`${trackName} ${artistName}`);
+      if (searchRes && searchRes.length > 0) {
+        const firstTrack = searchRes[0];
+        if (firstTrack.artists && firstTrack.artists[0] && firstTrack.artists[0].id) {
+          const spotifyGenres = await getArtistGenres(firstTrack.artists[0].id);
+          spotifyGenres.forEach(g => genres.add(g));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Spotify genre in AutoDJ', err);
+    }
+  }
+
+  return Array.from(genres);
 }
 
 /**
@@ -93,23 +115,27 @@ export async function evaluateTrack(track, settings) {
 
   if (needsGenreCheck) {
     const artistName = track.artists ? track.artists.split(',')[0] : '';
-    trackGenre = await getTrackGenre(track.name, artistName);
+    const trackGenres = await getTrackGenresArray(track.name, artistName);
     
-    if (!trackGenre) {
+    if (!trackGenres || trackGenres.length === 0) {
       return { approved: null, reason: 'No se encontraron etiquetas de género para esta pista' };
     }
 
-    const normalizedTrackGenre = normalizeString(trackGenre);
-
     if (validWhitelist.length > 0) {
-      if (!validWhitelist.some(ag => normalizedTrackGenre.includes(ag))) {
-        return { approved: false, reason: `El género "${trackGenre}" no está en la lista blanca permitida.` };
+      const hasAllowedGenre = trackGenres.some(tg => 
+        validWhitelist.some(ag => tg.includes(ag) || ag.includes(tg))
+      );
+      if (!hasAllowedGenre) {
+        return { approved: false, reason: `Ninguno de los géneros (${trackGenres.join(', ')}) está en la lista blanca permitida.` };
       }
     }
 
     if (validBlacklist.length > 0) {
-      if (validBlacklist.some(bg => normalizedTrackGenre.includes(bg))) {
-        return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
+      const blockedGenre = trackGenres.find(tg => 
+        validBlacklist.some(bg => tg.includes(bg) || bg.includes(tg))
+      );
+      if (blockedGenre) {
+        return { approved: false, reason: `El género "${blockedGenre}" está prohibido en esta sesión.` };
       }
     }
   }
