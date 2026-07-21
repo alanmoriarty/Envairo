@@ -22,6 +22,14 @@ export const useAuthStore = create(
       // Permite regenerar la instancia si se cierra sesión y se vuelve a entrar
       resetInstanceId: () => set({ activeInstanceId: generateUUID() }),
     }),
-    { name: 'bq-auth' }
+    { 
+      name: 'bq-auth',
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        activeInstanceId: currentState.activeInstanceId, // Forzar uso de la nueva ID generada, ignorando caché viejo
+      })
+    }
   )
 );

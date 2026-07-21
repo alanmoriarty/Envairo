@@ -220,10 +220,6 @@ export default function SettingsPage() {
         </h1>
         <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
         
-        <div className="mb-6">
-          <InstallAppButton className="w-full sm:w-auto py-3 px-6 rounded-xl" />
-        </div>
-        
         {/* Tabs */}
         <div className="flex flex-col sm:flex-row gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:w-fit">
           <button
@@ -244,6 +240,10 @@ export default function SettingsPage() {
       {activeTab === 'simple' && (
         <section className="card p-5 space-y-4 animate-fade-in">
         <h2 className="font-bold text-text-primary">General</h2>
+
+        <div className="mb-4">
+          <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descargar App (PWA)" />
+        </div>
 
         <div>
           <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
