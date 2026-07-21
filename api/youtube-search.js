@@ -37,24 +37,63 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
     }
 
-    // Elegir un proxy al azar para rotar IPs y evitar baneos de YouTube
-    const randomProxy = PROXIES[Math.floor(Math.random() * PROXIES.length)];
-    const agent = new HttpsProxyAgent(randomProxy);
-
-    // Hacer la petición a YouTube usando el proxy
-    const response = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, { 
-      agent,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+    // Helper to fetch with timeout
+    const fetchWithTimeout = async (url, options, timeoutMs = 3000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
       }
-    });
+    };
 
-    if (!response.ok) {
-      throw new Error(`YouTube returned status ${response.status}`);
+    let html = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        attempts++;
+        // Use a proxy for the first 2 attempts, then try direct connection
+        const useProxy = attempts < maxAttempts;
+        let agent = undefined;
+        
+        if (useProxy) {
+          const randomProxy = PROXIES[Math.floor(Math.random() * PROXIES.length)];
+          agent = new HttpsProxyAgent(randomProxy);
+        }
+
+        const response = await fetchWithTimeout(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, { 
+          agent,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+          }
+        }, 4000); // 4 second timeout per attempt
+
+        if (!response.ok) {
+          throw new Error(`YouTube returned status ${response.status}`);
+        }
+
+        html = await response.text();
+        
+        // Verificamos si realmente obtuvimos la data
+        if (html && html.includes('ytInitialData')) {
+          break; // Success!
+        }
+      } catch (err) {
+        console.warn(`Attempt ${attempts} failed:`, err.message);
+        if (attempts >= maxAttempts) {
+          throw new Error('Todos los intentos de búsqueda fallaron o la red bloqueó las peticiones.');
+        }
+      }
     }
 
-    const html = await response.text();
-    const match = html.match(/ytInitialData[ =]*(.*?);<\/script>/);
+    const match = html?.match(/ytInitialData[ =]*(.*?);<\/script>/);
 
     if (!match || !match[1]) {
       throw new Error('ytInitialData no encontrado en la respuesta (posible bloqueo o cambio de estructura)');

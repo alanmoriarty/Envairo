@@ -48,6 +48,9 @@ export const useSettingsStore = create(
       visualizerEnabled: false,
       visualizerUrl: '',
       karaokeEnabled: false, // busca "[canción] KARAOKE ORIGINAL WITH LYRICS"
+      setKaraokeEnabled: (v) => set({ karaokeEnabled: v }),
+      youtubeNativeCast: false,
+      setYoutubeNativeCast: (v) => set({ youtubeNativeCast: v }),
       lyricsEnabled: false,  // busca "[canción] LYRICS"
       themeColor: 'default', // 'default', 'red', 'blue', 'green', 'amber'
       setShowRequests: (v) => set({ showRequests: v }),

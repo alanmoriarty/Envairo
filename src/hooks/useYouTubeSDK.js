@@ -8,7 +8,7 @@ export function useYouTubeSDK() {
   const currentYtIdRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
-  const { visualizerEnabled } = useSettingsStore();
+  const { visualizerEnabled, youtubeNativeCast } = useSettingsStore();
 
   const applyStyles = (wrapper, isVis, isFs) => {
     if (!wrapper) return;
@@ -99,11 +99,14 @@ export function useYouTubeSDK() {
       targetDiv.id = 'youtube-player-target';
       wrapper.appendChild(targetDiv);
 
-      // Capa invisible para capturar eventos sobre el video
+      // Overlay to capture clicks. Hide if native cast is enabled so user can click the iframe controls
       const overlay = document.createElement('div');
+      overlay.id = 'youtube-overlay';
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
+      overlay.style.cursor = 'pointer';
+      overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
 
       overlay.addEventListener('dblclick', () => {
         if (document.fullscreenElement) {
@@ -172,8 +175,8 @@ export function useYouTubeSDK() {
         width: '100%',
         playerVars: {
           autoplay: 0,
-          controls: 0,
-          disablekb: 1,
+          controls: useSettingsStore.getState().youtubeNativeCast ? 1 : 0,
+          disablekb: useSettingsStore.getState().youtubeNativeCast ? 0 : 1,
           fs: 0,
           modestbranding: 1,
           rel: 0,

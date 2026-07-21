@@ -5,7 +5,12 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 export function CastToTvModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
-  const { isAdminMode } = useSettingsStore();
+  const { isAdminMode, youtubeNativeCast, setYoutubeNativeCast } = useSettingsStore();
+
+  const handleToggleNativeCast = () => {
+    setYoutubeNativeCast(!youtubeNativeCast);
+    window.location.reload(); // Re-iniciar la página para aplicar los playerVars de YouTube
+  };
 
   return (
     <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
@@ -75,6 +80,32 @@ export function CastToTvModal({ isOpen, onClose }) {
                   Si tu televisor tiene un navegador web, simplemente entra a la página de EnvAIro desde ahí e ingresa como Anfitrión. ¡Es la opción con mejor calidad visual!
                 </p>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-2 p-4 bg-black/20 rounded-xl border border-white/5 mt-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="bg-[#FF0000]/20 p-2 rounded-lg text-[#FF0000]">
+                    <Monitor size={18} />
+                  </div>
+                  <h4 className="font-medium text-white text-sm">Cast Nativo de YouTube</h4>
+                </div>
+                <button
+                  onClick={handleToggleNativeCast}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg-base ${
+                    youtubeNativeCast ? 'bg-accent' : 'bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      youtubeNativeCast ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed mt-2">
+                Habilita los controles originales de YouTube para usar su botón integrado de Cast con tu Chromecast. Al activarlo, la página se recargará.
+              </p>
             </div>
           </div>
         </div>
