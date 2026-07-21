@@ -92,9 +92,6 @@ export async function evaluateTrack(track, settings) {
   let trackGenre = null;
 
   if (needsGenreCheck) {
-    if (!getAccessToken()) {
-      return { approved: false, reason: 'Auto DJ requiere conexión a Spotify para filtrar por género' };
-    }
     const artistName = track.artists ? track.artists.split(',')[0] : '';
     trackGenre = await getTrackGenre(track.name, artistName);
     
