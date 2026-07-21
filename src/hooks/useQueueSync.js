@@ -109,8 +109,6 @@ export function useQueueSync() {
         async (payload) => {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
-          
-          if (currentState.isKickedOut) return;
 
           const { activeInstanceId, user, logout } = useAuthStore.getState();
           const { isAdminMode } = useSettingsStore.getState();
@@ -119,7 +117,7 @@ export function useQueueSync() {
           // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
           if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
             import('sonner').then(({ toast }) => {
-              toast.error('Sesión iniciada en otro dispositivo. Cerrando reproductor.', { duration: 8000 });
+              toast.error('Sesión iniciada en otro dispositivo', { duration: 5000 });
             });
             
             // Pausar y desconectar el reproductor del dispositivo viejo
@@ -133,9 +131,10 @@ export function useQueueSync() {
               if (targetDevice) {
                 import('../lib/spotifyApi').then(m => m.pausePlayback(targetDevice)).catch(()=>{});
               }
-              state.setIsKickedOut(true);
             } catch (err) {}
 
+            logout();
+            window.location.href = '/';
             return;
           }
 

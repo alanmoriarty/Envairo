@@ -14,7 +14,6 @@ import { AlertCircle, MonitorPlay } from 'lucide-react';
 export default function App() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const isKickedOut = usePlayerStore((state) => state.isKickedOut);
   
   useInactivityTimeout();
   // Sincronizar el estado entre pestañas (Host vs Guest local)
@@ -122,30 +121,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal de Kickout (Reemplazado) */}
-      {isKickedOut && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in relative">
-            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-2">
-              <MonitorPlay size={32} />
-            </div>
-            <h2 className="text-2xl font-bold text-text-primary">Reproducción en pausa</h2>
-            <p className="text-text-muted text-sm mb-4">
-              Estás reproduciendo la música de EnvAIro en otro dispositivo o pestaña.
-            </p>
-            <button
-              onClick={() => {
-                usePlayerStore.getState().setIsKickedOut(false);
-                useAuthStore.getState().resetInstanceId();
-                window.location.reload();
-              }}
-              className="btn-primary w-full py-3"
-            >
-              Reproducir aquí
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modal de Kickout (Eliminado) */}
 
       <Toaster
         position="top-center"
