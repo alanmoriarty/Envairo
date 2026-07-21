@@ -3,12 +3,13 @@ import { Toaster } from 'sonner';
 import AppRouter from './router';
 import { usePlayerStore } from './store/usePlayerStore';
 import { usePwaStore } from './store/usePwaStore';
+import { useAuthStore } from './store/useAuthStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { supabase } from './lib/supabase';
 import { BackgroundVideo } from './components/layout/BackgroundVideo';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, MonitorPlay } from 'lucide-react';
 
 export default function App() {
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -125,22 +126,22 @@ export default function App() {
       {isKickedOut && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="card p-8 max-w-sm w-full text-center flex flex-col items-center gap-4 animate-in zoom-in-95 fade-in relative">
-            <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center text-warning mb-2">
-              <AlertCircle size={32} />
+            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-2">
+              <MonitorPlay size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-text-primary">Sesión en otro dispositivo</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Reproducción en pausa</h2>
             <p className="text-text-muted text-sm mb-4">
-              Has abierto EnvAIro en otra pestaña, ventana o dispositivo (como la App PWA). 
-              Esta ventana ha sido pausada para evitar que la música se duplique.
+              Estás reproduciendo la música de EnvAIro en otro dispositivo o pestaña.
             </p>
             <button
               onClick={() => {
                 usePlayerStore.getState().setIsKickedOut(false);
-                window.location.href = '/';
+                useAuthStore.getState().resetInstanceId();
+                window.location.reload();
               }}
-              className="btn-secondary w-full py-3"
+              className="btn-primary w-full py-3"
             >
-              Volver al Inicio
+              Reproducir aquí
             </button>
           </div>
         </div>
