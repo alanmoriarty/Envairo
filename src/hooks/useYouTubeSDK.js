@@ -5,6 +5,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack, currentTrack } = usePlayerStore();
   const playerRef = useRef(null);
+  const currentYtIdRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
   const { visualizerEnabled } = useSettingsStore();
@@ -263,8 +264,10 @@ export function useYouTubeSDK() {
                 }
 
                 if (store.isPlaying) {
+                  currentYtIdRef.current = videoIdToPlay;
                   event.target.loadVideoById(videoIdToPlay, store.progress / 1000);
                 } else {
+                  currentYtIdRef.current = videoIdToPlay;
                   event.target.cueVideoById(videoIdToPlay, store.progress / 1000);
                 }
               }, 500);
@@ -273,6 +276,8 @@ export function useYouTubeSDK() {
           onStateChange: (event) => {
             const yt = window.YT;
             if (event.data === yt.PlayerState.PLAYING) {
+              const wrapper = document.getElementById('youtube-wrapper');
+              if (wrapper) wrapper.style.opacity = '1';
               setIsPlaying(true);
               setDuration(Math.floor(event.target.getDuration() * 1000));
               startProgressTimer(event.target);
@@ -295,29 +300,26 @@ export function useYouTubeSDK() {
             }
           },
           onError: (event) => {
+            const wrapper = document.getElementById('youtube-wrapper');
+            if (wrapper) wrapper.style.opacity = '0';
+            
             // 101 o 150 = El propietario del video no permite su reproducción en reproductores integrados.
-            if (event.data === 101 || event.data === 150) {
+            if (event.data === 150 || event.data === 101) {
               console.warn('YouTube SDK Error 101/150: Video embedding blocked. Finding alternative...');
               const store = usePlayerStore.getState();
+              const currentYtId = currentYtIdRef.current;
               
-              if (playerRef.current) {
-                const url = playerRef.current.getVideoUrl();
-                const match = url?.match(/[?&]v=([^&]+)/);
-                const currentYtId = match ? match[1] : null;
+              if (currentYtId) {
+                store.addFailedYouTubeId(currentYtId);
                 
-                if (currentYtId) {
-                  store.addFailedYouTubeId(currentYtId);
-                  
-                  // Borrar de la caché local para evitar un loop infinito
-                  const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-                  const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-                  if (store.currentTrack) {
-                    localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
-                  }
+                const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+                const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+                if (store.currentTrack) {
+                  localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
                 }
               }
 
-              // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
+                // Intentar reproducir de nuevo (esto disparará playEngineTrack que usará la nueva lista de bloqueados)
               if (store.currentTrack) {
                 import('sonner').then(({ toast }) => {
                   toast.error('El video fue bloqueado por derechos de autor. Buscando alternativa...', { id: 'yt-copyright' });
