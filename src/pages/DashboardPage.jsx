@@ -632,6 +632,7 @@ export default function DashboardPage() {
       </div>
 
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
+      <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
     </div>
   );
 }
