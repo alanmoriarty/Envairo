@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw, Monitor
 } from 'lucide-react';
 import {
   DndContext,
