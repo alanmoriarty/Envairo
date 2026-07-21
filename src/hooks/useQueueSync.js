@@ -109,6 +109,9 @@ export function useQueueSync() {
         async (payload) => {
           const newSession = payload.new;
           const currentState = usePlayerStore.getState();
+          
+          if (currentState.isKickedOut) return;
+
           const { activeInstanceId, user, logout } = useAuthStore.getState();
           const { isAdminMode } = useSettingsStore.getState();
           let updates = {};
