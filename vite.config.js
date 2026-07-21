@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'EnvAIro | Tu Rockola Social Inteligente',
         short_name: 'EnvAIro',
-        description: 'Crea una sala, comparte tu código QR y permite que tus invitados elijan la música de la fiesta en tiempo real.',
+        description: 'Convientete en anfitrión, comparte tu código QR y permite que tus invitados elijan la música de la fiesta en tiempo real.',
         theme_color: '#9D4EDD',
         background_color: '#0F0F13',
         display: 'standalone',
