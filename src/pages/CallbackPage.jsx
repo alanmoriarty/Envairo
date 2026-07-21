@@ -136,6 +136,12 @@ export default function CallbackPage() {
         const { usePlayerStore } = await import('../store/usePlayerStore');
         usePlayerStore.getState().setPlaybackEngine(provider === 'google' ? 'youtube' : 'spotify');
         
+        if (window.opener) {
+          window.opener.postMessage({ type: 'oauth_callback_success' }, '*');
+          window.close();
+          return;
+        }
+
         if (user.product === 'premium') {
           navigate('/app/dashboard');
         } else {

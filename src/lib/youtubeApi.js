@@ -55,7 +55,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
               id: videoId,
               uri: `youtube:${videoId}`,
               name: item.title,
-              artists: [{ name: item.uploaderName }],
+              artists: item.uploaderName || 'YouTube',
               album: {
                 images: [{ url: item.thumbnail }]
               },
@@ -84,7 +84,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
         id: item.id.videoId,
         uri: `youtube:${item.id.videoId}`,
         name: item.snippet.title,
-        artists: [{ name: item.snippet.channelTitle }],
+        artists: item.snippet.channelTitle || 'YouTube',
         album: {
           images: [
             { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
@@ -126,7 +126,7 @@ export async function searchYouTubeVideos(query, limit = 8) {
     id: item.id.videoId,
     uri: `youtube:${item.id.videoId}`, 
     name: item.snippet.title,
-    artists: [{ name: item.snippet.channelTitle }],
+    artists: item.snippet.channelTitle || 'YouTube',
     album: {
       images: [
         { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
@@ -164,7 +164,7 @@ export async function getYouTubeVideoDetails(videoId) {
     id: item.id,
     uri: `youtube:${item.id}`,
     name: item.snippet.title,
-    artists: [{ name: item.snippet.channelTitle }],
+    artists: item.snippet.channelTitle || 'YouTube',
     album: {
       images: [
         { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
@@ -205,7 +205,7 @@ export function getMockYouTubeResults(query) {
  */
 export async function getUserYouTubePlaylists(limit = 50) {
   const token = await ensureYouTubeToken();
-  if (!token) throw new Error('No YouTube access token found');
+  if (!token) throw new Error('YOUTUBE_AUTH_REQUIRED');
 
   const url = new URL(`${BASE_URL}/playlists`);
   url.searchParams.append('part', 'snippet,contentDetails');
@@ -220,6 +220,10 @@ export async function getUserYouTubePlaylists(limit = 50) {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('youtube_access_token');
+      throw new Error('YOUTUBE_AUTH_REQUIRED');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || 'Error fetching YouTube playlists');
   }

@@ -27,6 +27,35 @@ export async function redirectToYouTubeAuth() {
   }
 }
 
+export async function openYouTubeAuthPopup() {
+  localStorage.setItem('auth_intent', 'youtube');
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      scopes: YOUTUBE_SCOPES,
+      redirectTo: `${window.location.origin}/callback`,
+      skipBrowserRedirect: true,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent'
+      }
+    }
+  });
+
+  if (error) {
+    console.error('Error getting Google auth URL:', error);
+    throw error;
+  }
+
+  if (data?.url) {
+    const width = 500;
+    const height = 750;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    window.open(data.url, 'YouTubeAuth', `width=${width},height=${height},left=${left},top=${top}`);
+  }
+}
+
 export function getYouTubeAccessToken() {
   return localStorage.getItem('youtube_access_token');
 }
