@@ -373,6 +373,13 @@ export default function DashboardPage() {
                   setKaraokeEnabled(newValue);
                   if (isAdminMode) {
                     supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_karaoke', value: newValue, ts: Date.now() } } }).then();
+                  } else {
+                    const currentTrack = usePlayerStore.getState().currentTrack;
+                    const progress = usePlayerStore.getState().progress;
+                    if (currentTrack) {
+                      const newMode = newValue ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+                      usePlayerStore.getState().playEngineTrack(currentTrack, progress, newMode);
+                    }
                   }
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
@@ -391,6 +398,13 @@ export default function DashboardPage() {
                   setLyricsEnabled(newValue);
                   if (isAdminMode) {
                     supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_lyrics', value: newValue, ts: Date.now() } } }).then();
+                  } else {
+                    const currentTrack = usePlayerStore.getState().currentTrack;
+                    const progress = usePlayerStore.getState().progress;
+                    if (currentTrack) {
+                      const newMode = newValue ? 'lyrics' : karaokeEnabled ? 'karaoke' : 'normal';
+                      usePlayerStore.getState().playEngineTrack(currentTrack, progress, newMode);
+                    }
                   }
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
