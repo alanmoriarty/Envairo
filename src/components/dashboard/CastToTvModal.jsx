@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, X, Tv, Laptop, Cast, Chrome } from 'lucide-react';
+import { Monitor, X, Tv, Laptop, Cast, Globe } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
 export function CastToTvModal({ isOpen, onClose }) {
@@ -52,7 +52,7 @@ export function CastToTvModal({ isOpen, onClose }) {
             
             <div className="flex gap-4 items-start p-4 bg-black/20 rounded-xl border border-white/5">
               <div className="bg-[#4285F4]/20 p-2 rounded-lg text-[#4285F4] shrink-0 mt-1">
-                <Chrome size={20} />
+                <Globe size={20} />
               </div>
               <div>
                 <h4 className="font-medium text-white text-sm mb-1">Usando Google Chrome o Edge</h4>
