@@ -194,7 +194,7 @@ export default function GuestPage() {
     if (blacklistGenres.length > 0 && selected.genre) {
       const normalizedTrackGenre = normalize(selected.genre);
       const blocked = blacklistGenres.some((g) =>
-        normalizedTrackGenre.includes(normalize(g)) || normalize(g).includes(normalizedTrackGenre)
+        normalizedTrackGenre.includes(normalize(g))
       );
       if (blocked) {
         toast.error(t('guest.error_genre'));
@@ -206,7 +206,7 @@ export default function GuestPage() {
     if (blacklistSongs?.length > 0) {
       const normalizedTrackName = normalize(selected.name);
       const blocked = blacklistSongs.some((s) =>
-        normalizedTrackName.includes(normalize(s)) || normalize(s).includes(normalizedTrackName)
+        normalizedTrackName.includes(normalize(s))
       );
       if (blocked) {
         toast.error(t('guest.error_song'));
@@ -218,7 +218,7 @@ export default function GuestPage() {
     if (blacklistArtists?.length > 0) {
       const normalizedTrackArtist = normalize(selected.artists);
       const blocked = blacklistArtists.some((a) =>
-        normalizedTrackArtist.includes(normalize(a)) || normalize(a).includes(normalizedTrackArtist)
+        normalizedTrackArtist.includes(normalize(a))
       );
       if (blocked) {
         toast.error(t('guest.error_artist'));

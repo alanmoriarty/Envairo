@@ -99,14 +99,14 @@ export async function evaluateTrack(track, settings) {
 
     // Si hay lista blanca, el género DEBE coincidir parcialmente (bidireccional)
     if (validWhitelist.length > 0) {
-      if (!validWhitelist.some(ag => normalizedTrackGenre.includes(ag) || ag.includes(normalizedTrackGenre))) {
+      if (!validWhitelist.some(ag => normalizedTrackGenre.includes(ag))) {
         return { approved: false, reason: `El género "${trackGenre}" no está en la lista blanca permitida.` };
       }
     }
 
     // Si hay lista negra, el género NO DEBE coincidir
     if (validBlacklist.length > 0) {
-      if (validBlacklist.some(bg => normalizedTrackGenre.includes(bg) || bg.includes(normalizedTrackGenre))) {
+      if (validBlacklist.some(bg => normalizedTrackGenre.includes(bg))) {
         return { approved: false, reason: `El género "${trackGenre}" está prohibido en esta sesión.` };
       }
     }
