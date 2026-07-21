@@ -578,27 +578,7 @@ function ChairGameCard() {
   );
 }
 
-                        const isActive = isSynced ? i === activeLineIndex : false;
-                        const isPast = isSynced ? i < activeLineIndex : false;
-                        const lineText = isSynced ? line.text : line;
-                        return (
-                          <p key={i} id={`lyric-line-${i}`} className={`font-bold text-3xl md:text-5xl transition-all duration-300 ${isSynced ? (isActive ? 'text-accent scale-105' : isPast ? 'text-white/40' : 'text-white/80') : 'text-white/90 hover:text-accent'}`} style={{ textShadow: isActive ? '0 0 20px rgba(157, 78, 221, 0.5)' : '0 4px 20px rgba(0,0,0,0.5)' }}>
-                            {lineText}
-                          </p>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
+
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ActivitiesPage() {
