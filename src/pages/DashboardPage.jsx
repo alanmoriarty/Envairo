@@ -33,6 +33,13 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
 
+const formatArtists = (artists) => {
+  if (typeof artists === 'string') return artists;
+  if (Array.isArray(artists)) return artists.map(a => a.name || a).join(', ');
+  if (typeof artists === 'object' && artists !== null && artists.name) return artists.name;
+  return 'Artista Desconocido';
+};
+
 function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -81,7 +88,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text-primary truncate">{track.name}</p>
         <p className="text-xs text-text-muted truncate">
-          {track.artists}
+          {formatArtists(track.artists)}
           {track.requestedBy && (
             <span className="ml-2 text-accent">• {t('dashboard.requested_by')} {track.requestedBy}</span>
           )}

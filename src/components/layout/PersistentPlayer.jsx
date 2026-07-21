@@ -8,6 +8,13 @@ import {
   Volume2, VolumeX, Music2, Wifi, WifiOff
 } from 'lucide-react';
 
+const formatArtists = (artists) => {
+  if (typeof artists === 'string') return artists;
+  if (Array.isArray(artists)) return artists.map(a => a.name || a).join(', ');
+  if (typeof artists === 'object' && artists !== null && artists.name) return artists.name;
+  return 'Artista Desconocido';
+};
+
 export function PersistentPlayer() {
   const {
     currentTrack, isPlaying, progress, duration, volume,
@@ -209,7 +216,7 @@ export function PersistentPlayer() {
             </p>
             <div className="flex items-center gap-2 truncate">
               <p className="text-xs text-text-muted truncate">
-                {currentTrack?.artists || 'Conecta Envairo a un altavoz'}
+                {currentTrack?.artists ? formatArtists(currentTrack.artists) : 'Conecta Envairo a un altavoz'}
               </p>
               {currentTrack?.requestedBy && (
                 <span className="text-[10px] font-bold uppercase tracking-wide text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">

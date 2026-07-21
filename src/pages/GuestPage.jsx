@@ -29,6 +29,13 @@ const filterMusicEmojis = (text) => {
   return result;
 };
 
+const formatArtists = (artists) => {
+  if (typeof artists === 'string') return artists;
+  if (Array.isArray(artists)) return artists.map(a => a.name || a).join(', ');
+  if (typeof artists === 'object' && artists !== null && artists.name) return artists.name;
+  return 'Artista Desconocido';
+};
+
 export default function GuestPage() {
   const { sessionId } = useParams();
   
@@ -441,7 +448,7 @@ export default function GuestPage() {
                     {track.name}
                   </p>
                   <p className="text-xs text-text-muted truncate">
-                    {track.artists} · {track.album}
+                    {formatArtists(track.artists)} · {track.album}
                   </p>
                 </div>
               </button>
@@ -457,7 +464,7 @@ export default function GuestPage() {
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-accent truncate">{selected.name}</p>
-              <p className="text-xs text-text-muted truncate">{selected.artists}</p>
+              <p className="text-xs text-text-muted truncate">{formatArtists(selected.artists)}</p>
             </div>
             <button onClick={() => { setSelected(null); setQuery(''); }} className="text-text-muted hover:text-white">
               <X size={16} />
@@ -524,7 +531,7 @@ export default function GuestPage() {
                 )}
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-text-primary truncate">{track.name}</p>
-                  <p className="text-xs text-text-muted truncate">{track.artists}</p>
+                  <p className="text-xs text-text-muted truncate">{formatArtists(track.artists)}</p>
                 </div>
               </div>
             ))}
