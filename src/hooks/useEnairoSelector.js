@@ -137,6 +137,11 @@ export function useEnairoSelector() {
         foundTracks.forEach(track => addToQueue(track));
 
         toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
+        
+        // Ejecutar reordenamiento inicial para evitar repeticiones en lo recién añadido
+        setTimeout(() => {
+          autoReorderQueue();
+        }, 1000);
       }
 
       return true;
@@ -218,11 +223,10 @@ export function useEnairoSelector() {
         state.incrementPlaybackMinutes();
       }
       
-      // Chequeo cada minuto: si ya pasaron 40 min y hay nuevas peticiones, reordenar
+      // Chequeo cada minuto: si ya pasaron 40 min, reordenar sin importar si hay nuevas peticiones
       const currentMins = usePlayerStore.getState().playbackMinutes;
-      const hasNew = usePlayerStore.getState().hasNewRequestsSinceReorder;
       
-      if (currentMins >= 40 && hasNew && !useSettingsStore.getState().enairoIsThinking) {
+      if (currentMins >= 40 && !useSettingsStore.getState().enairoIsThinking) {
         autoReorderQueue();
       }
     }, 60000);
