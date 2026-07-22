@@ -157,6 +157,9 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
   // Convertimos a array
   let tracksPool = Array.from(pool.values());
 
+  // NUEVO FILTRO ESTRICTO: Solo permitir canciones que fueron explícitamente pedidas (ignorar lo que el Auto DJ agregó antes)
+  tracksPool = tracksPool.filter(track => track.requestedBy && track.requestedBy !== 'Auto DJ');
+
   // 4. Filtrar: No queremos repetir canciones que han sonado muy recientemente
   const recentHistory = playHistory.slice(-20).map(t => t.id);
   tracksPool = tracksPool.filter(track => !recentHistory.includes(track.id));
