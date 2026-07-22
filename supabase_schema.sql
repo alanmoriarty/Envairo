@@ -95,10 +95,12 @@ DECLARE
   v_secret UUID;
 BEGIN
   -- Verificar si el usuario está autenticado y es el dueño de la sesión
+  -- Permitir si id coincide con auth.uid() (compatibilidad con sesiones antiguas) o supabase_user_id coincide
   UPDATE sessions 
   SET active_instance_id = p_active_instance_id,
-      active_device_id = NULL -- Reseteamos el reproductor de Spotify para que el nuevo dispositivo lo reclame
-  WHERE id = p_session_id AND supabase_user_id = auth.uid()
+      active_device_id = NULL, -- Reseteamos el reproductor de Spotify para que el nuevo dispositivo lo reclame
+      supabase_user_id = auth.uid() -- Auto-corregir el supabase_user_id faltante en sesiones antiguas
+  WHERE id = p_session_id AND (supabase_user_id = auth.uid() OR id = auth.uid()::text)
   RETURNING host_secret INTO v_secret;
   
   IF v_secret IS NULL THEN
