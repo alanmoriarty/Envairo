@@ -1,16 +1,29 @@
 import React, { useEffect } from 'react';
 
 export function AdSense({ slot, style = { display: 'block' }, format = 'auto', responsive = 'true' }) {
+  const clientId = import.meta.env.VITE_ADSENSE_CLIENT_ID;
+
   useEffect(() => {
+    if (!clientId) return;
+
+    // Inyectar el script de AdSense dinámicamente si no existe
+    let script = document.getElementById('adsense-script');
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'adsense-script';
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      document.head.appendChild(script);
+    }
+
     try {
       // Evitar empujar anuncios repetidos si ya se cargó para este componente en particular.
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (e) {
       console.error('Error cargando el anuncio de AdSense:', e);
     }
-  }, []);
-
-  const clientId = import.meta.env.VITE_ADSENSE_CLIENT_ID;
+  }, [clientId]);
 
   if (!clientId) {
     // Si no hay ID de cliente en desarrollo, mostramos un placeholder (comenta esto en prod si prefieres)
