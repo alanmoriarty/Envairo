@@ -47,6 +47,11 @@ export function Sidebar({ isOpen, onClose }) {
       if (state.youtubePlayer) {
         state.youtubePlayer.pauseVideo();
       }
+
+      // Limpiar cola local, peticiones e historial para no dejar rastro
+      state.clearPlayerState();
+      settingsState.clearSettingsState();
+      
     } catch (err) {
       // Ignore errors during logout
     }

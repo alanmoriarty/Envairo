@@ -108,9 +108,14 @@ export default function LoginPage() {
       toast.error('Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.');
       return;
     }
+    if (!captchaToken) {
+      toast.error('Por favor, resuelve el Captcha para verificar que eres humano.');
+      return;
+    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
+        captchaToken
       });
       if (error) throw error;
       toast.success('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.', { duration: 6000 });
