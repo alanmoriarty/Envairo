@@ -40,7 +40,7 @@ Filtros de Seguridad:
 
 REGLAS DE ORO:
 1. Genera una lista EXACTA de ${settings?.trackCount || 35} sugerencias de canciones (formato "Nombre Canción - Artista"). IMPORTANTE: Si el usuario especifica una cantidad exacta en las Instrucciones Especiales (ej. "dame 10 canciones" o "solo 5"), DEBES ignorar tu límite por defecto y generar EXACTAMENTE esa cantidad solicitada (máximo absoluto 50).
-2. DIVERSIDAD EXTREMA: NUNCA repitas el mismo artista en la lista.
+2. DIVERSIDAD EXTREMA: NUNCA repitas el mismo artista en la lista, por lo menos exista un espacio de 5 canciones si retornas al mismo artista en el resultado.
 3. TRANSICIONES: El orden debe tener fluidez (ej. no saltes de una balada lenta a algo extremadamente agresivo de golpe).
 
 REGLAS DE SALIDA:
