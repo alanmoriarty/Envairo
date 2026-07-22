@@ -333,7 +333,7 @@ export function useQueueSync() {
           }
           await supabase.rpc('update_session_state', {
             p_session_id: sessionId,
-            p_secret: secret,
+            p_secret: useSettingsStore.getState().hostSecret,
             p_updates: {
               ...(useSettingsStore.getState().isAdminMode ? { active_remote_id: activeInstanceId } : {}),
               active: true,
