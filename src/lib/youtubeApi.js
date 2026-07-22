@@ -34,77 +34,8 @@ export async function searchYouTubeVideos(query, limit = 8) {
 }
 
 async function _doSearchYouTubeVideos(query, limit = 8) {
-  // 1. Vía Descentralizada (Piped): Alta disponibilidad y sin consumir recursos propios
-  const pipedInstances = [
-    'https://pipedapi.kavin.rocks',
-    'https://pipedapi.tokhmi.xyz',
-    'https://pipedapi.moomoo.me',
-    'https://pipedapi.syncpundit.io',
-    'https://api-piped.mha.fi'
-  ];
-
-  // Ordenar aleatoriamente para balancear carga globalmente, pero priorizar la última que funcionó
-  let instancesToTry = [...pipedInstances];
-  if (activePipedInstance) {
-    instancesToTry = [
-      activePipedInstance,
-      ...pipedInstances.filter(i => i !== activePipedInstance).sort(() => 0.5 - Math.random())
-    ];
-  } else {
-    instancesToTry = pipedInstances.sort(() => 0.5 - Math.random());
-  }
-
-  for (const instance of instancesToTry) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos máximo para darle más tiempo a los nodos
-      
-      const res = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      
-      if (res.ok) {
-        activePipedInstance = instance; // Recordar la instancia exitosa para la próxima vez
-        const data = await res.json();
-        const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
-        if (streams.length > 0) {
-          // console.log(`[YouTube API] Éxito usando nodo descentralizado: ${instance}`);
-          const validStreams = streams.map(item => {
-            let videoId = '';
-            if (item.url.includes('v=')) {
-              videoId = item.url.split('v=')[1].split('&')[0];
-            } else if (item.url.includes('/shorts/')) {
-              videoId = item.url.split('/shorts/')[1].split('?')[0];
-            } else {
-              // fallback general extract
-              const match = item.url.match(/([a-zA-Z0-9_-]{11})/);
-              if (match) videoId = match[1];
-            }
-
-            return {
-              id: videoId,
-              uri: `youtube:${videoId}`,
-              name: item.title,
-              artists: item.uploaderName || 'YouTube',
-              album: {
-                images: [{ url: item.thumbnail }]
-              },
-              duration_ms: item.duration * 1000, 
-              source: 'youtube'
-            };
-          }).filter(t => t.id && t.id.length === 11);
-
-          if (validStreams.length > 0) return validStreams;
-        }
-      }
-    } catch (err) {
-      // Silenciar el log para mantener la consola limpia
-      // console.warn(`[YouTube API] Falló nodo descentralizado (${instance}), intentando el siguiente...`);
-    }
-  }
-
-  // 2. Vía Centralizada (Nuestro Vercel Scraper): Como primer nivel de respaldo
+  // Ahora toda la lógica de búsqueda (Piped descentralizado + Webshare Scraper)
+  // reside en nuestro backend (api/youtube-search) para no filtrar URLs en el Network tab del cliente.
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const baseUrl = isLocal ? 'https://envairoqr.com' : window.location.origin;
@@ -130,10 +61,9 @@ async function _doSearchYouTubeVideos(query, limit = 8) {
       }));
     }
   } catch (err) {
-    // console.warn('Vercel serverless scraper falló:', err);
+    // console.warn('El proxy falló:', err);
   }
 
-  // 3. Si ambos niveles fallan, lanzamos un error en lugar de consumir cuota oficial
   throw new Error('La búsqueda está temporalmente fuera de servicio. Intenta más tarde.');
 }
 
@@ -141,38 +71,41 @@ async function _doSearchYouTubeVideos(query, limit = 8) {
  * Obtiene detalles adicionales de un video (como la duración real)
  */
 export async function getYouTubeVideoDetails(videoId) {
-  if (!API_KEY) return null;
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocal ? 'https://envairoqr.com' : window.location.origin;
+    const url = new URL(baseUrl + '/api/youtube-details');
+    url.searchParams.append('id', videoId);
 
-  const url = new URL(`${BASE_URL}/videos`);
-  url.searchParams.append('part', 'contentDetails,snippet');
-  url.searchParams.append('id', videoId);
-  url.searchParams.append('key', API_KEY);
+    const response = await fetch(url.toString());
+    if (!response.ok) return null;
 
-  const response = await fetch(url.toString());
-  if (!response.ok) return null;
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) return null;
 
-  const data = await response.json();
-  if (!data.items || data.items.length === 0) return null;
+    const item = data.items[0];
+    
+    // Convertir duración ISO 8601 (ej. PT3M2S) a milisegundos
+    const durationStr = item.contentDetails.duration;
+    const durationMs = parseYouTubeDuration(durationStr);
 
-  const item = data.items[0];
-  
-  // Convertir duración ISO 8601 (ej. PT3M2S) a milisegundos
-  const durationStr = item.contentDetails.duration;
-  const durationMs = parseYouTubeDuration(durationStr);
-
-  return {
-    id: item.id,
-    uri: `youtube:${item.id}`,
-    name: item.snippet.title,
-    artists: item.snippet.channelTitle || 'YouTube',
-    album: {
-      images: [
-        { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
-      ]
-    },
-    duration_ms: durationMs,
-    source: 'youtube'
-  };
+    return {
+      id: item.id,
+      uri: `youtube:${item.id}`,
+      name: item.snippet.title,
+      artists: item.snippet.channelTitle || 'YouTube',
+      album: {
+        images: [
+          { url: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url }
+        ]
+      },
+      duration_ms: durationMs,
+      source: 'youtube'
+    };
+  } catch (error) {
+    console.error('Error fetching video details via proxy:', error);
+    return null;
+  }
 }
 
 function parseYouTubeDuration(durationStr) {

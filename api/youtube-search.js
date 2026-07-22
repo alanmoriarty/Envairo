@@ -41,7 +41,59 @@ export default async function handler(req, res) {
         throw err;
       }
     };
+    // --- 1. INTENTO VÍA PIPED (Descentralizado) ---
+    const pipedInstances = [
+      'https://pipedapi.kavin.rocks',
+      'https://pipedapi.tokhmi.xyz',
+      'https://pipedapi.moomoo.me',
+      'https://pipedapi.syncpundit.io',
+      'https://api-piped.mha.fi'
+    ];
+    const instancesToTry = pipedInstances.sort(() => 0.5 - Math.random());
 
+    for (const instance of instancesToTry) {
+      try {
+        const res = await fetchWithTimeout(`${instance}/search?q=${encodeURIComponent(q)}&filter=all`, {}, 5000);
+        if (res.ok) {
+          const data = await res.json();
+          const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, parseInt(limit, 10));
+          
+          if (streams.length > 0) {
+            const items = streams.map(item => {
+              let videoId = '';
+              if (item.url.includes('v=')) {
+                videoId = item.url.split('v=')[1].split('&')[0];
+              } else if (item.url.includes('/shorts/')) {
+                videoId = item.url.split('/shorts/')[1].split('?')[0];
+              } else {
+                const match = item.url.match(/([a-zA-Z0-9_-]{11})/);
+                if (match) videoId = match[1];
+              }
+
+              return {
+                id: { videoId },
+                snippet: {
+                  title: item.title,
+                  channelTitle: item.uploaderName || 'YouTube',
+                  thumbnails: {
+                    high: { url: item.thumbnail },
+                    default: { url: item.thumbnail }
+                  }
+                }
+              };
+            }).filter(t => t.id && t.id.videoId && t.id.videoId.length === 11);
+
+            if (items.length > 0) {
+              return res.status(200).json({ items });
+            }
+          }
+        }
+      } catch (err) {
+        // Ignorar y probar el siguiente nodo
+      }
+    }
+
+    // --- 2. INTENTO VÍA SCRAPER (Webshare) ---
     let html = null;
     let attempts = 0;
     const maxAttempts = 3;
