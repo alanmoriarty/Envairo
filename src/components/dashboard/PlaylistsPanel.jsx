@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ListMusic, Play, Loader2, Link as LinkIcon } from 'lucide-react';
+import { ListMusic, Play, Loader2, Link as LinkIcon, Search, Plus, MoreVertical, Trash2, Import, RefreshCw, X } from 'lucide-react';
 import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spotifyApi';
-import { getUserYouTubePlaylists, getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeApi';
-import { openYouTubeAuthPopup } from '../../lib/youtubeAuth';
+import { getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeApi';
 import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -92,22 +91,10 @@ export function PlaylistsPanel() {
       if (showLoading) setLoading(true);
       try {
         if (playbackEngine === 'youtube') {
-          const res = await getUserYouTubePlaylists(50);
+          // Se eliminó la función de iniciar sesión en YouTube para playlists privadas.
+          // Los usuarios pueden usar el input de URL para agregar playlists públicas.
           if (!isMounted) return;
-          if (res && res.items) {
-            const myPlaylists = res.items.map(pl => ({
-              id: pl.id,
-              name: pl.snippet.title,
-              snapshot_id: pl.etag,
-              owner: { id: 'youtube' },
-              images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
-            }));
-            setPlaylists(prev => {
-              const prevSnaps = prev.map(p => p.snapshot_id).join(',');
-              const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
-              return prevSnaps === newSnaps ? prev : myPlaylists;
-            });
-          }
+          setPlaylists([]);
         } else {
           const [res, user] = await Promise.all([
             getUserPlaylists(50),
@@ -128,12 +115,8 @@ export function PlaylistsPanel() {
         }
       } catch (err) {
         if (!isMounted) return;
-        if (err.message === 'YOUTUBE_AUTH_REQUIRED') {
-          setError('youtube_auth');
-        } else {
-          console.error('Error fetching playlists:', err);
-          if (showLoading) setError('No se pudieron cargar tus playlists.');
-        }
+        console.error('Error fetching playlists:', err);
+        if (showLoading) setError('No se pudieron cargar tus playlists.');
       } finally {
         if (isMounted && showLoading) setLoading(false);
       }
@@ -425,18 +408,7 @@ export function PlaylistsPanel() {
       </div>
 
       <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-96">
-        {error === 'youtube_auth' ? (
-          <div className="text-center py-8">
-            <ListMusic size={32} className="text-text-subtle mx-auto mb-3" />
-            <p className="text-text-muted text-sm mb-4">Inicia sesión con YouTube para ver tus playlists.</p>
-            <button 
-              onClick={(e) => { e.preventDefault(); openYouTubeAuthPopup(); }} 
-              className="btn-primary text-sm px-4 py-2"
-            >
-              Conectar YouTube
-            </button>
-          </div>
-        ) : playlists.length === 0 ? (
+        {playlists.length === 0 ? (
           <div className="text-center py-8">
             <ListMusic size={32} className="text-text-subtle mx-auto mb-3" />
             <p className="text-text-muted text-sm">{t('dashboard.playlists_empty')}</p>
