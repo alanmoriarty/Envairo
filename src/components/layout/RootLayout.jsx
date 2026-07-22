@@ -135,9 +135,6 @@ export function RootLayout() {
 
     const interval = setInterval(checkAndUpdateStatus, 60000);
 
-    // Ejecutar una vez al montar
-    checkAndUpdateStatus();
-
     return () => {
       clearInterval(interval);
     };
@@ -149,7 +146,7 @@ export function RootLayout() {
     let prevState = useSettingsStore.getState();
     const unsubSettings = useSettingsStore.subscribe((state) => {
       // Auto-sync solo para opciones rápidas y estado crítico
-      const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode', 'alwaysAvailable', 'sessionId', 'explicitFilter'];
+      const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode', 'alwaysAvailable', 'explicitFilter'];
       const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
 
       if (changed) {
