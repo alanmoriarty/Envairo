@@ -151,6 +151,15 @@ export const usePlayerStore = create(
           };
         });
         get().startQueuePreloadWorker();
+        
+        // Si el reproductor está completamente vacío (cola acabada y nada sonando), iniciar auto-reproducción
+        const stateAfter = get();
+        if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
+          const nextTrack = stateAfter.shiftQueue();
+          if (nextTrack) {
+            stateAfter.playEngineTrack(nextTrack);
+          }
+        }
       },
 
       removeFromQueue: (queueId) => {

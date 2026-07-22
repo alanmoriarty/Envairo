@@ -137,15 +137,6 @@ export function useEnairoSelector() {
         foundTracks.forEach(track => addToQueue(track));
 
         toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
-
-        const state = usePlayerStore.getState();
-        // Si no hay canción sonando o el reproductor está pausado, iniciar la nueva playlist inmediatamente
-        if ((!state.currentTrack || !state.isPlaying) && foundTracks.length > 0) {
-          const nextTrack = state.shiftQueue();
-          if (nextTrack) {
-            usePlayerStore.getState().playEngineTrack(nextTrack);
-          }
-        }
       }
 
       return true;

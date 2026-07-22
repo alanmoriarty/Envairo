@@ -332,7 +332,7 @@ export default function SettingsPage() {
                 min="1"
                 max="50"
                 value={store.enairoTrackCount}
-                onChange={(e) => store.setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 50)))}
+                onChange={(e) => store.setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 35)))}
                 className="input-field w-full sm:w-24 text-center"
               />
             </div>

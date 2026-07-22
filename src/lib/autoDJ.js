@@ -102,3 +102,77 @@ export async function evaluateTrack(track, settings) {
   return { approved: true, reason: 'Aprobada por Auto DJ' };
 }
 
+/**
+ * Selecciona una canción aleatoria del "Pool Local" (Playlists de usuario, Historial, Cola y Peticiones)
+ * cuando la cola se vacía y el AutoDJ está encendido.
+ */
+export async function getAutoQueueRecommendations(playHistory = [], settings = {}) {
+  const pool = new Map(); // Usamos un Map para evitar duplicados por ID
+  
+  // 1. Extraer canciones de Playlists Personalizadas guardadas localmente
+  try {
+    const savedPlaylists = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+    savedPlaylists.forEach(playlist => {
+      if (playlist.tracks && Array.isArray(playlist.tracks)) {
+        playlist.tracks.forEach(track => {
+          if (track && track.id) {
+            pool.set(track.id, { ...track, source: 'Custom Playlist' });
+          }
+        });
+      }
+    });
+  } catch (err) {
+    console.error('Error parseando playlists guardadas para AutoDJ', err);
+  }
+
+  // Para evitar ciclos e importaciones circulares en el boot, importamos de forma dinámica el store
+  let currentState = null;
+  try {
+    const { usePlayerStore } = await import('../store/usePlayerStore');
+    currentState = usePlayerStore.getState();
+  } catch (err) {
+    console.warn('No se pudo acceder a usePlayerStore desde AutoDJ', err);
+  }
+
+  if (currentState) {
+    // 2. Extraer de la Cola Completa (Incluye peticiones aprobadas pasadas y EnvAIro Selector)
+    if (Array.isArray(currentState.queue)) {
+      currentState.queue.forEach(track => {
+        if (track && track.id) {
+          pool.set(track.id, { ...track, source: track.requestedBy || 'Queue' });
+        }
+      });
+    }
+
+    // 3. Extraer del Historial de Reproducción
+    if (Array.isArray(currentState.playHistory)) {
+      currentState.playHistory.forEach(track => {
+        if (track && track.id) {
+          pool.set(track.id, { ...track, source: 'History' });
+        }
+      });
+    }
+  }
+
+  // Convertimos a array
+  let tracksPool = Array.from(pool.values());
+
+  // 4. Filtrar: No queremos repetir canciones que han sonado muy recientemente
+  const recentHistory = playHistory.slice(-20).map(t => t.id);
+  tracksPool = tracksPool.filter(track => !recentHistory.includes(track.id));
+
+  // 5. Shuffle (Aleatorizar)
+  tracksPool.sort(() => Math.random() - 0.5);
+
+  // 6. Evaluar contra los filtros (Blacklist, etc.)
+  for (const track of tracksPool) {
+    const evaluation = await evaluateTrack(track, settings);
+    if (evaluation.approved) {
+      return track;
+    }
+  }
+
+  // Si después de todo no encontramos nada válido (ej. primera canción de la fiesta sin playlists), 
+  // devolvemos null y esperamos a que el usuario añada algo.
+  return null;
+}
