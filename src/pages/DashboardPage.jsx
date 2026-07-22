@@ -178,20 +178,14 @@ export default function DashboardPage() {
       if (e.code === 'Space') {
         e.preventDefault();
         const state = usePlayerStore.getState();
-        if (state.playbackEngine === 'youtube') {
-          if (state.youtubePlayer && typeof state.youtubePlayer.getPlayerState === 'function') {
-            const playerState = state.youtubePlayer.getPlayerState();
-            if (playerState === 1) { // 1 = Playing
-              state.youtubePlayer.pauseVideo();
-              usePlayerStore.setState({ isPlaying: false });
-            } else {
-              state.youtubePlayer.playVideo();
-              usePlayerStore.setState({ isPlaying: true });
-            }
-          }
-        } else {
-          if (controls) {
-            controls.togglePlay().catch(console.error);
+        if (state.youtubePlayer && typeof state.youtubePlayer.getPlayerState === 'function') {
+          const playerState = state.youtubePlayer.getPlayerState();
+          if (playerState === 1) { // 1 = Playing
+            state.youtubePlayer.pauseVideo();
+            usePlayerStore.setState({ isPlaying: false });
+          } else {
+            state.youtubePlayer.playVideo();
+            usePlayerStore.setState({ isPlaying: true });
           }
         }
       }
@@ -199,7 +193,7 @@ export default function DashboardPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [controls]);
+  }, []);
 
   // El listener de karaoke/lyrics ha sido movido globalmente a useQueueSync.js
 
