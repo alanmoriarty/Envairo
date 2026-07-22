@@ -51,7 +51,7 @@ export function Sidebar({ isOpen, onClose }) {
 
       // Limpiar cola local, peticiones e historial para no dejar rastro
       state.clearPlayerState();
-      settingsState.clearSettingsState();
+      // NO llamar a clearSettingsState() aquí, ya se encarga useAuthStore.logout() al final.
 
     } catch (err) {
       // Ignore errors during logout
