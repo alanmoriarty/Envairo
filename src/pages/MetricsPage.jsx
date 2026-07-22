@@ -42,6 +42,7 @@ export default function MetricsPage() {
   const [selectedDate, setSelectedDate] = useState(last7Days[0]);
 
   const metrics = useMemo(() => {
+    // 1. Filtrar peticiones de invitados
     const allRequests = requestHistory.filter(req => {
       if (req.requester === 'EnvAIro Selector' || req.requester === 'Dashboard') return false;
       
@@ -53,14 +54,17 @@ export default function MetricsPage() {
     const totalRequests = allRequests.length;
     const totalApproved = allRequests.filter(req => req.status === 'approved').length;
 
+    // 2. Filtrar historial de reproducción real (canciones que sí sonaron)
+    const allPlays = playHistory.filter(track => {
+      if (selectedDate === 'all') return true;
+      const dateToUse = new Date(track.playedAt || track.timestamp || Date.now());
+      return getLocalDateString(dateToUse) === selectedDate;
+    });
+
     const artistCounts = {};
     const hourCounts = {};
 
-    allRequests.forEach(req => {
-      // Excluir canciones rechazadas de las estadísticas visuales
-      if (req.status === 'rejected') return;
-
-      const track = req.track;
+    allPlays.forEach(track => {
       const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
       const mainArtistId = track.artistIds?.[0];
 
@@ -71,12 +75,12 @@ export default function MetricsPage() {
           id: mainArtistId,
           name: mainArtistName,
           plays: 0,
-          image: track.image
+          image: track.image || track.album?.images?.[0]?.url
         };
       }
       artistCounts[key].plays++;
 
-      const dateToUse = new Date(req.timestamp);
+      const dateToUse = new Date(track.playedAt || track.timestamp || Date.now());
       const h = dateToUse.getHours().toString().padStart(2, '0') + ':00';
       hourCounts[h] = (hourCounts[h] || 0) + 1;
     });
@@ -93,7 +97,7 @@ export default function MetricsPage() {
       hourData.push({ hour: new Date().getHours().toString().padStart(2, '0') + ':00', reproducciones: 0 });
     }
 
-    let peakHour = hourData.length > 0 && allRequests.length > 0
+    let peakHour = hourData.length > 0 && allPlays.length > 0
       ? hourData.reduce((max, h) => h.reproducciones > max.reproducciones ? h : max, hourData[0]).hour
       : '--:--';
 
@@ -106,7 +110,7 @@ export default function MetricsPage() {
       displayTopArtists: topArtists.slice(0, 5),
       hourData
     };
-  }, [requestHistory, selectedDate]);
+  }, [requestHistory, playHistory, selectedDate, t]);
 
   const maxPlays = Math.max(...metrics.displayTopArtists.map((a) => a.plays), 1);
 

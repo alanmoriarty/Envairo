@@ -49,7 +49,14 @@ export default function GuestPage() {
     };
     fetchSession();
 
-    const channel = supabase.channel(`session-${sessionId}`)
+    let channel = null;
+    let isMounted = true;
+    let initTimeout;
+
+    initTimeout = setTimeout(() => {
+      if (!isMounted) return;
+      
+      channel = supabase.channel(`session-${sessionId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
         setSessionConfig(prev => ({ ...prev, ...payload.new }));
       })
@@ -67,8 +74,13 @@ export default function GuestPage() {
         }
       })
       .subscribe();
+    }, 150);
       
-    return () => supabase.removeChannel(channel);
+    return () => {
+      isMounted = false;
+      clearTimeout(initTimeout);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [sessionId]);
 
   const { queue, currentQueueIndex, playHistory, pendingRequests } = usePlayerStore();

@@ -13,6 +13,12 @@ export function useQueueSync() {
 
   useEffect(() => {
     if (!sessionId) return;
+    
+    let syncChannel = null;
+    let requestsChannel = null;
+    let isMounted = true;
+    let initSyncTimeout;
+    let initReqTimeout;
 
     // 1. Subscribe to local Zustand changes to push to Supabase
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
@@ -105,8 +111,11 @@ export function useQueueSync() {
       }
     };
 
-    const syncChannel = supabase
-      .channel(`queue-sync-${sessionId}`)
+    initSyncTimeout = setTimeout(() => {
+      if (!isMounted) return;
+
+      syncChannel = supabase
+        .channel(`queue-sync-${sessionId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
@@ -258,6 +267,7 @@ export function useQueueSync() {
         }
       })
       .subscribe();
+    }, 150);
 
     // Broadcast para sincronizar el progreso de la canción con controles remotos/invitados
     let broadcastInterval = setInterval(() => {
@@ -400,8 +410,11 @@ export function useQueueSync() {
     };
     syncSession();
 
-    const requestsChannel = supabase
-      .channel(`requests-${sessionId}`)
+    initReqTimeout = setTimeout(() => {
+      if (!isMounted) return;
+
+      requestsChannel = supabase
+        .channel(`requests-${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, async (payload) => {
         const newReq = payload.new;
         const store = usePlayerStore.getState();
@@ -451,14 +464,19 @@ export function useQueueSync() {
         }
       })
       .subscribe();
+    }, 150);
 
     return () => {
+      isMounted = false;
+      clearTimeout(initSyncTimeout);
+      clearTimeout(initReqTimeout);
+      
       unsubscribe();
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
       }
-      supabase.removeChannel(syncChannel);
-      supabase.removeChannel(requestsChannel);
+      if (syncChannel) supabase.removeChannel(syncChannel);
+      if (requestsChannel) supabase.removeChannel(requestsChannel);
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
         supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).then();

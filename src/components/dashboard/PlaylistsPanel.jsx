@@ -90,11 +90,12 @@ export function PlaylistsPanel() {
     async function fetchPlaylists(showLoading = true) {
       if (showLoading) setLoading(true);
       try {
+        const customSaved = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+        const customForEngine = customSaved.filter(p => p.source === playbackEngine);
+
         if (playbackEngine === 'youtube') {
-          // Se eliminó la función de iniciar sesión en YouTube para playlists privadas.
-          // Los usuarios pueden usar el input de URL para agregar playlists públicas.
           if (!isMounted) return;
-          setPlaylists([]);
+          setPlaylists(customForEngine);
         } else {
           const [res, user] = await Promise.all([
             getUserPlaylists(50),
@@ -105,11 +106,16 @@ export function PlaylistsPanel() {
 
           if (res && res.items && user && user.id) {
             const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
-
             setPlaylists(prev => {
+              const combined = [...customForEngine];
+              for (const pl of myPlaylists) {
+                if (!combined.find(c => c.id === pl.id)) {
+                  combined.push(pl);
+                }
+              }
               const prevSnaps = prev.map(p => p.snapshot_id).join(',');
-              const newSnaps = myPlaylists.map(p => p.snapshot_id).join(',');
-              return prevSnaps === newSnaps ? prev : myPlaylists;
+              const newSnaps = combined.map(p => p.snapshot_id).join(',');
+              return prevSnaps === newSnaps ? prev : combined;
             });
           }
         }
@@ -288,6 +294,19 @@ export function PlaylistsPanel() {
 
       if (!playlistData) throw new Error('No se encontró la playlist');
 
+      // Guardar playlist importada localmente
+      playlistData.source = playbackEngine;
+      playlistData.is_custom = true;
+      const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+      if (!existing.find(p => p.id === playlistData.id)) {
+        const newPlaylists = [playlistData, ...existing];
+        localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
+        setPlaylists(prev => {
+          const isAlreadyIn = prev.find(p => p.id === playlistData.id);
+          return isAlreadyIn ? prev : [playlistData, ...prev];
+        });
+      }
+
       toast.dismiss(toastId);
       await handleSelectPlaylist(playlistData);
       setPlaylistLink('');
@@ -385,6 +404,23 @@ export function PlaylistsPanel() {
                   {/* Canciones count removed */}
                 </p>
               </div>
+
+              {pl.is_custom && (
+                <button
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all shrink-0 mr-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+                    const newPlaylists = existing.filter(p => p.id !== pl.id);
+                    localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
+                    setPlaylists(prev => prev.filter(p => p.id !== pl.id));
+                    toast.success('Playlist eliminada de tus guardados');
+                  }}
+                  title="Eliminar de guardados"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
 
               <button
                 className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
