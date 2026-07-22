@@ -482,11 +482,15 @@ function ChairGameCard() {
   const scheduleNext = useCallback(() => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      if (controls?.pause) controls.pause();
+      const state = usePlayerStore.getState();
+      if (state.youtubePlayer && typeof state.youtubePlayer.pauseVideo === 'function') {
+        state.youtubePlayer.pauseVideo();
+        usePlayerStore.setState({ isPlaying: false });
+      }
       setPaused(true);
       setCountdown(null);
     }, getRandomInterval());
-  }, [controls]);
+  }, []);
 
   const startGame = () => {
     setActive(true);
@@ -502,13 +506,21 @@ function ChairGameCard() {
     setActive(false);
     setPaused(false);
     setCountdown(null);
-    if (controls?.resume && !isPlaying) controls.resume();
+    const state = usePlayerStore.getState();
+    if (!state.isPlaying && state.youtubePlayer && typeof state.youtubePlayer.playVideo === 'function') {
+      state.youtubePlayer.playVideo();
+      usePlayerStore.setState({ isPlaying: true });
+    }
   };
 
   const nextRound = () => {
     setPaused(false);
     setRound(r => r + 1);
-    if (controls?.resume) controls.resume();
+    const state = usePlayerStore.getState();
+    if (state.youtubePlayer && typeof state.youtubePlayer.playVideo === 'function') {
+      state.youtubePlayer.playVideo();
+      usePlayerStore.setState({ isPlaying: true });
+    }
     scheduleNext();
   };
 
