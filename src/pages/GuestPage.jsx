@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X, Download } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -42,11 +42,17 @@ export default function GuestPage() {
 
   // Real-time session config from Supabase
   const [sessionConfig, setSessionConfig] = useState(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   useEffect(() => {
     const fetchSession = async () => {
-      const { data } = await supabase.from('sessions').select('*').eq('id', sessionId).single();
-      if (data) setSessionConfig(data);
+      const { data } = await supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle();
+      if (data) {
+        setSessionConfig(data);
+      } else {
+        setSessionConfig({ _notFound: true });
+      }
+      setIsLoadingConfig(false);
     };
     fetchSession();
 
@@ -90,7 +96,7 @@ export default function GuestPage() {
 
   const stateData = sessionConfig?.session_state || {};
 
-  const isAvailable = stateData.active ?? sessionConfig?.active ?? true;
+  const isAvailable = sessionConfig?._notFound ? false : (stateData.active ?? sessionConfig?.active ?? true);
   const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
   const blacklistGenres = stateData.blacklist_genres || sessionConfig?.blacklist_genres || [];
   const blacklistSongs = stateData.blacklist_songs || sessionConfig?.blacklist_songs || [];
@@ -304,7 +310,7 @@ export default function GuestPage() {
         track: finalTrack,
         requester: identifier.trim() || 'Anónimo',
         status: 'pending'
-      }).select().single();
+      }).select().maybeSingle();
 
       if (error) {
         toast.error(t('guest.error_send'));
@@ -347,6 +353,14 @@ export default function GuestPage() {
 
 
   const formatCooldown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  if (isLoadingConfig) {
+    return (
+      <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
+        <Loader2 size={32} className="text-accent animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAvailable) {
     return <ClosedScreen />;
@@ -570,16 +584,24 @@ export default function GuestPage() {
 }
 
 function ClosedScreen() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   return (
     <div className="min-h-screen bg-bg-root flex flex-col items-center justify-center p-8 text-center">
       <div className="text-8xl mb-6">🌙</div>
       <h1 className="text-3xl font-bold text-text-primary mb-3">{t('guest.closed_title')}</h1>
-      <p className="text-text-muted max-w-xs">
+      <p className="text-text-muted max-w-xs mb-8">
         {t('guest.closed_sub')}
       </p>
-      <div className="mt-8 w-20 h-1 rounded-full bg-accent/30 mx-auto" />
-      <div className="mt-6">
+      
+      <Link 
+        to="/" 
+        className="btn-primary py-3 px-8 rounded-xl font-bold shadow-glow text-lg mb-8"
+      >
+        {lang === 'es' ? '¡Conviértete en anfitrión!' : 'Become a host!'}
+      </Link>
+
+      <div className="w-20 h-1 rounded-full bg-accent/30 mx-auto mb-6" />
+      <div>
         <LanguageSelector />
       </div>
     </div>
