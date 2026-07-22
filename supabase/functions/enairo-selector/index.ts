@@ -14,11 +14,8 @@ serve(async (req) => {
   try {
     const { history, queue, settings, action_mode = 'generate' } = await req.json()
 
-    // Obtener API Key de Gemini desde variables de entorno
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY no configurada en el servidor.')
-    }
+    // Obtener API Key de DeepSeek (usando la key provista, pero idealmente desde variables de entorno)
+    const apiKey = Deno.env.get('DEEPSEEK_API_KEY') || 'sk-23ebc3e95db346e7a3d1bc401a4d1e02'
 
     let prompt = '';
 
@@ -84,27 +81,30 @@ Estructura esperada:
 `
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7
-        }
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: 'Eres un asistente experto que SIEMPRE responde con un objeto JSON válido, sin texto adicional.' },
+          { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.7
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+      throw new Error(`DeepSeek API Error (${response.status}): ${errText}`);
     }
 
     const result = await response.json();
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const responseText = result.choices?.[0]?.message?.content || '{}';
 
     // Limpiar backticks si la IA los añade accidentalmente a pesar del response_format
     const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
