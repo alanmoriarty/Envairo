@@ -39,7 +39,7 @@ export function SongTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar canc
       setShowDropdown(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query: val, limit: 5, type: 'track' }
+          body: { query: val, limit: 5, type: 'track', filterExplicit: useSettingsStore.getState().explicitFilter }
         });
         if (error) throw error;
         if (data && data.tracks && data.tracks.items) {

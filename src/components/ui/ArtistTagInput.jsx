@@ -39,7 +39,7 @@ export function ArtistTagInput({ tags, onAdd, onRemove, placeholder = 'Buscar ar
       setShowDropdown(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query: val, limit: 5, type: 'artist' }
+          body: { query: val, limit: 5, type: 'artist', filterExplicit: useSettingsStore.getState().explicitFilter }
         });
         if (error) throw error;
         if (data && data.artists && data.artists.items) {

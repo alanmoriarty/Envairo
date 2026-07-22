@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X, Download } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { AdSense } from '../components/ads/AdSense';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
@@ -132,7 +133,11 @@ export default function GuestPage() {
       setSearching(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query, limit: 6 }
+          body: { 
+            query, 
+            limit: 6,
+            filterExplicit: useSettingsStore.getState().explicitFilter 
+          }
         });
         if (error) throw error;
         const items = data?.tracks?.items || [];

@@ -14,7 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    const { query, queries, limit = 6, type = 'track' } = await req.json()
+      let { query, queries, type = 'track', limit = 10, filterExplicit = false } = await req.json()
+      
+      // Asegurar que limit sea un número válido para los algoritmos
+      const originalLimit = parseInt(limit.toString()) || 10;
+      // Si necesitamos filtrar, pedimos más resultados a las APIs para tener de donde escoger versiones limpias
+      const fetchLimit = filterExplicit ? Math.max(originalLimit * 3, 10).toString() : originalLimit.toString();
 
     if (!query && (!queries || !Array.isArray(queries) || queries.length === 0)) {
       return new Response(JSON.stringify({ error: 'Query or queries array is required' }), {
@@ -66,7 +71,7 @@ serve(async (req) => {
 
           const searchParams = new URLSearchParams({
             q: d_query,
-            limit: limit.toString(),
+            limit: fetchLimit,
             order: 'RANKING' // Fuerza a ordenar por popularidad para evitar covers/karaokes
           });
           
@@ -80,10 +85,17 @@ serve(async (req) => {
           
           const deezerData = await searchResponse.json();
           
+          // Aplicar filtro de contenido explícito si está activado
+          let cleanData = deezerData.data || [];
+          if (filterExplicit) {
+            cleanData = cleanData.filter((track: any) => track.explicit_lyrics === false);
+          }
+          cleanData = cleanData.slice(0, originalLimit);
+          
           // Mapear la respuesta de Deezer para que luzca EXACTAMENTE como la de Spotify
           const fakeSpotifyResponse = {
             tracks: {
-              items: (deezerData.data || []).map((track: any) => ({
+              items: cleanData.map((track: any) => ({
                 id: track.id.toString(),
                 uri: `deezer:track:${track.id}`,
                 name: track.title,
@@ -119,7 +131,7 @@ serve(async (req) => {
       const searchParams = new URLSearchParams({
         term: query,
         entity: 'song',
-        limit: limit.toString()
+        limit: fetchLimit
       });
 
       const searchResponse = await fetch(`https://itunes.apple.com/search?${searchParams}`);
@@ -129,6 +141,14 @@ serve(async (req) => {
       }
 
       const itunesData = await searchResponse.json();
+      
+      if (filterExplicit && itunesData.results) {
+        itunesData.results = itunesData.results.filter((track: any) => track.trackExplicitness !== 'explicit');
+      }
+      if (itunesData.results) {
+        itunesData.results = itunesData.results.slice(0, originalLimit);
+      }
+      
       const fakeSpotifyResponse = mapITunesToSpotify(itunesData);
 
       return new Response(JSON.stringify(fakeSpotifyResponse), {

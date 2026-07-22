@@ -39,7 +39,7 @@ export function AddSongModal({ onClose }) {
       setSearching(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query, limit: 10 }
+          body: { query, limit: 10, filterExplicit: useSettingsStore.getState().explicitFilter }
         });
         if (error) throw error;
         const items = data?.tracks?.items || [];

@@ -112,7 +112,7 @@ export function useEnairoSelector() {
         let foundTracks = [];
         try {
           const { data, error } = await supabase.functions.invoke('search-spotify', {
-            body: { queries: tracksToAdd, type: 'track', limit: 1 }
+            body: { queries: tracksToAdd, type: 'track', limit: 1, filterExplicit: useSettingsStore.getState().explicitFilter }
           });
 
           if (error) throw error;
@@ -288,7 +288,7 @@ export function useEnairoSelector() {
         let foundTracks = [];
         try {
           const { data: searchData, error: searchError } = await supabase.functions.invoke('search-spotify', {
-            body: { queries: tracksToAdd, type: 'track', limit: 1 }
+            body: { queries: tracksToAdd, type: 'track', limit: 1, filterExplicit: useSettingsStore.getState().explicitFilter }
           });
 
           if (searchError) throw searchError;
