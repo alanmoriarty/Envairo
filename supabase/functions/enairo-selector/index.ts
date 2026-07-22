@@ -120,19 +120,38 @@ Estructura esperada:
       if (!parsedData || !Array.isArray(parsedData.tracksToAdd)) {
         finalData = parsedData; // Fallback si falló la primera pasada
       } else {
-        const fixPrompt = `
+        // Detectar programáticamente los artistas repetidos
+        const seenArtists = new Set<string>();
+        const duplicatedSongs: string[] = [];
+        const uniqueSongs: string[] = [];
+
+        parsedData.tracksToAdd.forEach((track: string) => {
+          const lastDashIndex = track.lastIndexOf('-');
+          if (lastDashIndex !== -1) {
+            const artist = track.substring(lastDashIndex + 1).trim().toLowerCase();
+            if (seenArtists.has(artist)) {
+              duplicatedSongs.push(track);
+            } else {
+              seenArtists.add(artist);
+              uniqueSongs.push(track);
+            }
+          } else {
+            uniqueSongs.push(track);
+          }
+        });
+
+        let fixPrompt = '';
+
+        if (duplicatedSongs.length === 0) {
+          // Si mágicamente no hubo repetidos, solo forzamos el reordenamiento
+          fixPrompt = `
 VIBRA DESEADA ORIGINAL: "${settings?.enairoPrompt || 'Música variada'}"
 
-Acabas de generar esta lista de canciones:
-${JSON.stringify(parsedData.tracksToAdd, null, 2)}
+Aquí tienes la lista generada (¡bien hecho, sin repetidos!):
+${JSON.stringify(uniqueSongs, null, 2)}
 
-TAREA 1: ELIMINAR DUPLICADOS DE ARTISTAS
-Analiza la lista. Si encuentras CUALQUIER artista que aparezca 2 o más veces, CONSERVA SOLO UNA canción de ese artista.
-Reemplaza las canciones que eliminaste con canciones de ARTISTAS COMPLETAMENTE NUEVOS que encajen en la "Vibra Deseada Original".
-No debe haber ABSOLUTAMENTE NINGÚN artista repetido en la lista final.
-
-TAREA 2: REORDENAR LA LISTA (OBLIGATORIO)
-REORDENA TODA LA LISTA resultante para que las transiciones de energía y ritmo sean impecables. No devuelvas la lista en el mismo orden.
+TAREA: REORDENAR LA LISTA
+REORDENA TODA LA LISTA para que las transiciones de energía y ritmo sean impecables. Asegúrate de que las canciones del mismo género o vibra similar estén agrupadas con transiciones suaves.
 
 REGLAS DE SALIDA:
 Responde ESTRICTAMENTE con un objeto JSON válido.
@@ -140,8 +159,37 @@ Estructura esperada:
 {
   "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"],
   "actions": [],
-  "reasoning": "Menciona a qué artistas repetidos eliminaste y cómo mejoraste el orden."
+  "reasoning": "Explica brevemente cómo mejoraste el orden para mayor fluidez."
 }`;
+        } else {
+          // Si hubo repetidos, obligamos a reemplazarlos exactamente
+          fixPrompt = `
+VIBRA DESEADA ORIGINAL: "${settings?.enairoPrompt || 'Música variada'}"
+
+El sistema detectó que tu generación anterior repitió artistas.
+ESTAS ${duplicatedSongs.length} CANCIONES DEBEN SER DESCARTADAS por ser de artistas repetidos:
+${JSON.stringify(duplicatedSongs, null, 2)}
+
+CANCIONES APROBADAS (NO LAS ELIMINES):
+${JSON.stringify(uniqueSongs, null, 2)}
+
+TAREA 1: GENERAR REEMPLAZOS
+Genera EXACTAMENTE ${duplicatedSongs.length} NUEVAS canciones de ARTISTAS COMPLETAMENTE DIFERENTES a los que ya están en las "Canciones Aprobadas". Deben encajar en la "Vibra Deseada Original".
+
+TAREA 2: INTEGRAR Y REORDENAR
+Une las ${uniqueSongs.length} Canciones Aprobadas con tus ${duplicatedSongs.length} nuevas canciones (formando un total exacto de ${parsedData.tracksToAdd.length} canciones).
+REORDENA toda la lista resultante para que fluya perfectamente.
+
+REGLAS DE SALIDA:
+Responde ESTRICTAMENTE con un objeto JSON válido.
+Estructura esperada:
+{
+  "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"], // Lista final completa y reordenada
+  "actions": [],
+  "reasoning": "Menciona a qué artistas nuevos agregaste para reemplazar a los repetidos y cómo reordenaste la lista."
+}`;
+        }
+
         finalData = await askDeepSeek(fixPrompt);
       }
     } else {
