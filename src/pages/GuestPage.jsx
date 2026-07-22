@@ -136,7 +136,7 @@ export default function GuestPage() {
           body: { 
             query, 
             limit: 6,
-            filterExplicit: stateData.explicitFilter || sessionConfig?.explicit_filter || false
+            filterExplicit: stateData?.settings?.explicitFilter || false
           }
         });
         if (error) throw error;
@@ -258,7 +258,7 @@ export default function GuestPage() {
     }
 
     // DeepSeek AI Explicit Check (Cheap, fast, single-track check)
-    const isExplicitFilterOn = stateData.explicitFilter || sessionConfig?.explicit_filter || false;
+    const isExplicitFilterOn = stateData?.settings?.explicitFilter || false;
     if (isExplicitFilterOn) {
       const checkToastId = toast.loading('Revisando contenido...');
       try {
