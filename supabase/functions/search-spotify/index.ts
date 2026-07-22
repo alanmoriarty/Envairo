@@ -60,8 +60,9 @@ serve(async (req) => {
           })
           
           if (!searchResponse.ok) {
-            console.error('Spotify API error for query:', q, searchResponse.status);
-            return null;
+            const errText = await searchResponse.text();
+            console.error('Spotify API error for query:', q, searchResponse.status, errText);
+            return { error: true, status: searchResponse.status, message: errText, query: q };
           }
           return searchResponse.json();
         });
@@ -71,7 +72,7 @@ serve(async (req) => {
         
         // Small delay to prevent rate limits
         if (i + chunkSize < queries.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
       }
 
