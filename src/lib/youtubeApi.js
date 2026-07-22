@@ -1,4 +1,3 @@
-const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
 
 async function ensureYouTubeToken() {
@@ -174,9 +173,7 @@ export async function getYouTubePlaylist(playlistId) {
   url.searchParams.append('part', 'snippet');
   url.searchParams.append('id', playlistId);
   
-  if (!token && API_KEY) {
-    url.searchParams.append('key', API_KEY);
-  } else if (!token && !API_KEY) {
+  if (!token) {
     throw new Error('No YouTube auth available');
   }
 
@@ -215,9 +212,7 @@ export async function getYouTubePlaylistItems(playlistId, limit = 50) {
   url.searchParams.append('playlistId', playlistId);
   url.searchParams.append('maxResults', limit.toString());
   
-  if (!token && API_KEY) {
-    url.searchParams.append('key', API_KEY);
-  } else if (!token && !API_KEY) {
+  if (!token) {
     throw new Error('No YouTube auth available for fetching playlist items');
   }
 
@@ -242,20 +237,12 @@ export async function getYouTubePlaylistItems(playlistId, limit = 50) {
   let durations = {};
   if (videoIds.length > 0) {
     try {
-      const vidUrl = new URL(`${BASE_URL}/videos`);
-      vidUrl.searchParams.append('part', 'contentDetails');
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const baseUrlStr = isLocal ? 'https://envairoqr.com' : window.location.origin;
+      const vidUrl = new URL(`${baseUrlStr}/api/youtube-details`);
       vidUrl.searchParams.append('id', videoIds.join(','));
       
-      if (!token && API_KEY) {
-        vidUrl.searchParams.append('key', API_KEY);
-      }
-      
-      const vidHeaders = {};
-      if (token) {
-        vidHeaders['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const vidRes = await fetch(vidUrl.toString(), { headers: vidHeaders });
+      const vidRes = await fetch(vidUrl.toString());
       if (vidRes.ok) {
         const vidData = await vidRes.json();
         vidData.items.forEach(v => {
