@@ -241,7 +241,7 @@ export function useQueueSync() {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         try {
-          const { data, error } = await supabase.from('sessions').select('*').eq('id', sessionId).single();
+          const { data, error } = await supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle();
           if (data && !error) {
             processStateUpdates(data);
           }
@@ -257,7 +257,7 @@ export function useQueueSync() {
       .from('sessions')
       .select('queue, current_queue_index, current_track, active_device_id, volume')
       .eq('id', sessionId)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (!error && data) {
           isRemoteUpdate.current = true;
@@ -300,7 +300,7 @@ export function useQueueSync() {
       const secret = useSettingsStore.getState().hostSecret;
       const activeInstanceId = getInstanceId();
       const authStore = useAuthStore.getState();
-      const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).single();
+      const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).maybeSingle();
       
       const { data: { user: sbUser } } = await supabase.auth.getUser();
 

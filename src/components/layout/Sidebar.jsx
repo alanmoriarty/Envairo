@@ -34,11 +34,13 @@ export function Sidebar({ isOpen, onClose }) {
     try {
       const { supabase } = await import('../../lib/supabase');
       const settingsState = useSettingsStore.getState();
+      const authState = useAuthStore.getState();
+      const currentSessionId = authState.user?.id || settingsState.sessionId;
 
-      if (settingsState.sessionId) {
+      if (currentSessionId) {
         // Desactivar sesión y limpiar peticiones al cerrar sesión
-        await supabase.from('sessions').update({ active: false }).eq('id', settingsState.sessionId);
-        await supabase.from('requests').delete().eq('session_id', settingsState.sessionId);
+        await supabase.from('sessions').update({ active: false }).eq('id', currentSessionId);
+        await supabase.from('requests').delete().eq('session_id', currentSessionId);
       }
 
       const { usePlayerStore } = await import('../../store/usePlayerStore');

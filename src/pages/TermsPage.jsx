@@ -6,15 +6,15 @@ export default function TermsPage() {
     <div className="min-h-screen bg-bg-base text-text-primary p-8 md:p-12 overflow-y-auto">
       <div className="max-w-3xl mx-auto space-y-8">
         <Link to="/" className="text-primary hover:underline">&larr; Volver al inicio</Link>
-        
+
         <h1 className="text-4xl font-bold">Términos y Condiciones</h1>
         <p className="text-text-secondary">Última actualización: {new Date().toLocaleDateString()}</p>
-        
+
         <div className="space-y-6 text-lg leading-relaxed">
           <section>
             <h2 className="text-2xl font-semibold mb-3">1. Aceptación de los Términos</h2>
             <p>
-              Al acceder y utilizar EnvAIro, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no podrás acceder al servicio.
+              Al acceder y utilizar envAIro, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no podrás acceder al servicio.
             </p>
           </section>
 
