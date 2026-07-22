@@ -158,11 +158,11 @@ Revisa la siguiente lista de canciones:
 ${JSON.stringify(parsedData.tracksToAdd, null, 2)}
 
 TAREA: FILTRO DE CONTENIDO EXPLÍCITO (LETRAS Y VIDEOS)
-Analiza estrictamente si ALGUNA de estas canciones tiene letras altamente explícitas o si su video oficial es conocido por tener contenido inapropiado o explícito.
-Si detectas canciones inapropiadas:
+Analiza ESTRICTAMENTE si ALGUNA de estas canciones, en su letra, título o contexto cultural, contiene: lenguaje soez (groserías, malas palabras), contenido sexual, doble sentido obsceno, apología a drogas/violencia, o si es una canción de reggaetón/champeta/urbano conocida por ser vulgar o inapropiada para niños.
+Si detectas canciones con contenido inapropiado o soez:
 1. ELIMÍNALAS de la lista.
-2. REEMPLÁZALAS por canciones de un género idéntico o muy similar, de la misma época y vibra, pero que sean "Clean" o no explícitas.
-Si la canción es segura, mantenla intacta.
+2. REEMPLÁZALAS por canciones de un género idéntico o muy similar, de la misma época y vibra, pero que sean "Clean" o 100% no explícitas.
+Si la canción es totalmente segura y apta para todo público, mantenla intacta.
 
 REGLAS DE SALIDA:
 Devuelve un JSON con la lista FINAL completa (misma cantidad de canciones).
@@ -187,11 +187,11 @@ REVISIÓN DE COLA (CONTENIDO EXPLÍCITO)
 Aquí está la cola actual de reproducción:
 ${JSON.stringify(queue.map((t: any) => ({ queueId: t.queueId, name: t.name, artist: t.artists })), null, 2)}
 
-TAREA:
-Busca canciones con letras explícitas o videos explícitos.
-Para cada canción explícita que encuentres:
+TAREA: FILTRO DE CONTENIDO EXPLÍCITO ESTRICTO
+Busca canciones que, en su letra, título o contexto cultural, contengan: lenguaje soez (groserías, malas palabras), contenido sexual, doble sentido obsceno, apología a drogas/violencia, o que sean canciones de géneros urbanos conocidas por ser vulgares.
+Para cada canción explícita o soez que encuentres:
 1. Emite una acción de tipo "remove" con el 'queueId'.
-2. Propón en 'tracksToAdd' una canción nueva del MISMO GÉNERO EXACTO, pero que sea completamente limpia.
+2. Propón en 'tracksToAdd' una canción nueva del MISMO GÉNERO EXACTO, pero que sea 100% limpia y apta para todo público.
 
 REGLAS DE SALIDA:
 Devuelve un JSON estrictamente así (vacío si no hay nada que limpiar):
@@ -205,8 +205,9 @@ Devuelve un JSON estrictamente así (vacío si no hay nada que limpiar):
       finalData = await askDeepSeek(sweepPrompt) || { tracksToAdd: [], actions: [] };
     } else if (action_mode === 'check_single_explicit') {
       const trackName = reqBody.trackName || '';
-      const singlePrompt = `Analiza la siguiente canción: "${trackName}".
-Responde "YES" si la canción o su letra contiene lenguaje explícito, groserías, o contenido inapropiado. Responde "NO" si es aceptable.
+      const singlePrompt = `Eres un filtro censor extremadamente estricto. Analiza la siguiente canción: "${trackName}".
+Responde "YES" si la canción, su letra, su título o su contexto cultural contiene: lenguaje soez (groserías, malas palabras), contenido sexual, doble sentido obsceno, apología a drogas/violencia, o si es una canción de reggaetón/champeta/urbano conocida por ser vulgar o inapropiada para niños.
+Responde "NO" solo si estás 100% seguro de que es una canción totalmente limpia y apta para todo público.
 DEBES responder ÚNICAMENTE con un JSON válido en este formato exacto: {"isExplicit": true} o {"isExplicit": false}. NO agregues ningún otro texto.`;
       finalData = await askDeepSeek(singlePrompt) || { isExplicit: false };
     } else {
