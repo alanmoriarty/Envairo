@@ -14,10 +14,10 @@ serve(async (req) => {
   try {
     const { history, queue, settings, action_mode = 'generate' } = await req.json()
 
-    // Obtener API Key de Groq desde variables de entorno
-    const apiKey = Deno.env.get('GROQ_API_KEY')
+    // Obtener API Key de Gemini desde variables de entorno
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
     if (!apiKey) {
-      throw new Error('GROQ_API_KEY no configurada en el servidor.')
+      throw new Error('GEMINI_API_KEY no configurada en el servidor.')
     }
 
     let prompt = '';
@@ -84,27 +84,27 @@ Estructura esperada:
 `
     }
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        response_format: { type: "json_object" }
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { 
+          responseMimeType: "application/json",
+          temperature: 0.7
+        }
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Groq API Error (${response.status}): ${errText}`);
+      throw new Error(`Gemini API Error (${response.status}): ${errText}`);
     }
 
     const result = await response.json();
-    const responseText = result.choices[0]?.message?.content || '{}';
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
     // Limpiar backticks si la IA los añade accidentalmente a pesar del response_format
     const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();

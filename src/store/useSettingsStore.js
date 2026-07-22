@@ -114,6 +114,8 @@ export const useSettingsStore = create(
       enairoUsageCount: 0,
       enairoLastUsedDate: '',
       enairoCooldownUntil: 0,
+      enairoAutoReorderCount: 0,
+      enairoAutoReorderDate: '',
       
       setEnairoLastRunAt: (v) => set({ enairoLastRunAt: v }),
       setEnairoEnabled: (v) => set({ enairoEnabled: v }),
@@ -123,6 +125,8 @@ export const useSettingsStore = create(
         enairoLastUsedDate: todayDate
       }),
       resetEnairoUsage: () => set({ enairoUsageCount: 0, enairoLastUsedDate: '' }),
+      setEnairoAutoReorderCount: (count, date) => set({ enairoAutoReorderCount: count, enairoAutoReorderDate: date }),
+      resetEnairoAutoReorderUsage: () => set({ enairoAutoReorderCount: 0, enairoAutoReorderDate: '' }),
       enairoPrompt: '',
       setEnairoPrompt: (v) => set({ enairoPrompt: v }),
       enairoIsThinking: false,

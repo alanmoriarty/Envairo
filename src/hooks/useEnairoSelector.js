@@ -137,11 +137,6 @@ export function useEnairoSelector() {
         foundTracks.forEach(track => addToQueue(track));
 
         toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
-        
-        // Ejecutar reordenamiento inicial para evitar repeticiones en lo recién añadido
-        setTimeout(() => {
-          autoReorderQueue(true); // isInitial = true
-        }, 1000);
       }
 
       return true;
@@ -160,6 +155,26 @@ export function useEnairoSelector() {
   const autoReorderQueue = async (isInitial = false) => {
     // Solo ejecutamos si hay reproductor listo y no está pensando
     if (isThinking) return;
+
+    if (!isInitial) {
+      // 1. Validaciones de tiempo y uso diario para Auto Reorder (max 5)
+      const today = await getSecureServerDateString();
+      let currentAutoCount = useSettingsStore.getState().enairoAutoReorderCount || 0;
+      const autoDate = useSettingsStore.getState().enairoAutoReorderDate || '';
+
+      if (autoDate !== today) {
+        useSettingsStore.getState().resetEnairoAutoReorderUsage();
+        currentAutoCount = 0;
+      }
+
+      if (!useSettingsStore.getState().enairoTestMode && currentAutoCount >= 5) {
+        console.warn('Límite de Auto Reordenamiento (5 al día) alcanzado. Esperando a mañana.');
+        return; // Skip reorder
+      }
+      
+      // Update usage (solo se actualiza el contador, la UI no bloquea pero esto previene spam)
+      useSettingsStore.getState().setEnairoAutoReorderCount(currentAutoCount + 1, today);
+    }
 
     setIsThinking(true);
     
