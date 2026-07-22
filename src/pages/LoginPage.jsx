@@ -151,7 +151,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <img 
-            src="/envairo-logo.svg" 
+            src="/envairo-logo-sin-fondo.svg" 
             alt="EnvAIro Logo" 
             className="h-24 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
           />

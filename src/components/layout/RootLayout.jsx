@@ -271,7 +271,7 @@ export function RootLayout() {
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">
           <div className="flex items-center">
             <img 
-              src="/envairo-logo.svg" 
+              src="/envAIro-logo-horizontal.svg" 
               alt="EnvAIro" 
               className="h-10 w-auto" 
             />

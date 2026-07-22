@@ -32,6 +32,15 @@ export function Sidebar({ isOpen, onClose }) {
 
   const handleLogout = async () => {
     try {
+      const { supabase } = await import('../../lib/supabase');
+      const settingsState = useSettingsStore.getState();
+      
+      if (settingsState.sessionId) {
+        // Desactivar sesión y limpiar peticiones al cerrar sesión
+        await supabase.from('sessions').update({ active: false }).eq('id', settingsState.sessionId);
+        await supabase.from('requests').delete().eq('session_id', settingsState.sessionId);
+      }
+
       const { usePlayerStore } = await import('../../store/usePlayerStore');
       const state = usePlayerStore.getState();
       
@@ -43,8 +52,10 @@ export function Sidebar({ isOpen, onClose }) {
     }
 
     if (usePlayerStore.getState().playbackEngine !== 'youtube') {
-      clearSpotifyTokens();
+      localStorage.removeItem('spotify_access_token');
+      localStorage.removeItem('spotify_refresh_token');
     }
+    
     logout();
     navigate('/');
   };
@@ -65,7 +76,7 @@ export function Sidebar({ isOpen, onClose }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <img 
-              src="/envairo-logo.svg" 
+              src="/envAIro-logo-horizontal.svg" 
               alt="EnvAIro" 
               className="h-12 w-auto" 
             />
