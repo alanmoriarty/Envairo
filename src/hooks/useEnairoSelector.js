@@ -140,7 +140,7 @@ export function useEnairoSelector() {
         
         // Ejecutar reordenamiento inicial para evitar repeticiones en lo recién añadido
         setTimeout(() => {
-          autoReorderQueue();
+          autoReorderQueue(true); // isInitial = true
         }, 1000);
       }
 
@@ -157,7 +157,7 @@ export function useEnairoSelector() {
     }
   };
 
-  const autoReorderQueue = async () => {
+  const autoReorderQueue = async (isInitial = false) => {
     // Solo ejecutamos si hay reproductor listo y no está pensando
     if (isThinking) return;
 
@@ -173,7 +173,7 @@ export function useEnairoSelector() {
           action_mode: 'reorder',
           history: history.slice(0, 5),
           queue: currentQueue,
-          settings: {} // No enviamos whitelist/blacklist para reorder puro
+          settings: { isInitialReorder: isInitial } // Mandamos el flag de primer reorden
         }
       });
 

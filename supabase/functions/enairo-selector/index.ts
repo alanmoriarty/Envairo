@@ -54,18 +54,21 @@ Estructura esperada:
 }
 `
     } else if (action_mode === 'reorder') {
+      const isInitial = settings?.isInitialReorder === true;
+
       prompt = `
 Eres "EnvAIro Selector", un DJ de Inteligencia Artificial.
 Tienes conocimiento de generos músicales tanto actuales como anteriores a nuestra época.
 Tu ÚNICA tarea ahora es revisar la cola de reproducción pendiente (queue) y reordenarla para garantizar transiciones suaves entre géneros musicales y niveles de energía (ej. no saltar de balada acústica a heavy metal bruscamente). 
-También puedes ELIMINAR (remove) canciones si consideras que rompen completamente la vibra de la lista.
+${isInitial ? 
+'REGLA ESTRICTA: Este es el primer ordenamiento. NO PUEDES ELIMINAR (remove) ninguna canción bajo ninguna circunstancia. Solo debes reordenarlas.' : 
+'También puedes ELIMINAR (remove) canciones, pero SOLO aquellas que no cumplan con el género musical o rompan completamente la vibra de la lista.'}
 
-Cola actual pendiente (ESTAS SON LAS QUE DEBES REORDENAR O ELIMINAR):
+Cola actual pendiente (ESTAS SON LAS QUE DEBES REORDENAR${isInitial ? '' : ' O ELIMINAR'}):
 ${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
 
 ACCIONES PERMITIDAS:
-- {"type": "remove", "queueId": "id_de_la_cola"}
-- {"type": "reorder", "queueId": "id_de_la_cola", "newIndex": indice_entero} (donde newIndex es la nueva posición deseada dentro de la cola)
+${isInitial ? '' : '- {"type": "remove", "queueId": "id_de_la_cola"}\n'}- {"type": "reorder", "queueId": "id_de_la_cola", "newIndex": indice_entero} (donde newIndex es la nueva posición deseada dentro de la cola)
 
 REGLAS DE SALIDA:
 Responde ESTRICTAMENTE con un objeto JSON (sin formato Markdown). No añadas canciones nuevas.
@@ -73,8 +76,7 @@ Estructura esperada:
 {
   "tracksToAdd": [],
   "actions": [
-    {"type": "remove", "queueId": "id-ejemplo-123"},
-    {"type": "reorder", "queueId": "id-ejemplo-456", "newIndex": 2}
+    ${isInitial ? '' : '{"type": "remove", "queueId": "id-ejemplo-123"},\n    '}{"type": "reorder", "queueId": "id-ejemplo-456", "newIndex": 2}
   ],
   "reasoning": "Breve explicación de los cambios que hiciste para mejorar la transición."
 }
