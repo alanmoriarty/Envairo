@@ -191,6 +191,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={100}
                 className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
                 placeholder="tu@correo.com"
               />
@@ -209,9 +210,18 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={isRegistering ? 8 : 6}
+                maxLength={64}
+                pattern={isRegistering ? "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}" : undefined}
+                title={isRegistering ? "Debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número." : undefined}
                 className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
                 placeholder="••••••••"
               />
+              {isRegistering && (
+                <p className="text-[11px] text-text-muted mt-2 ml-1 leading-tight">
+                  Tu contraseña debe tener al menos 8 caracteres, e incluir una letra mayúscula, una minúscula y un número.
+                </p>
+              )}
             </div>
 
             <div className="flex justify-center pt-2 pb-2">
