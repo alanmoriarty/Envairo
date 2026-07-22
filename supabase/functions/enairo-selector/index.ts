@@ -81,36 +81,66 @@ Estructura esperada:
 `
     }
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: 'Eres un asistente experto que SIEMPRE responde con un objeto JSON válido, sin texto adicional.' },
-          { role: 'user', content: prompt }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7
-      })
-    });
+    const askDeepSeek = async (promptText: string) => {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'Eres un asistente experto que SIEMPRE responde con un objeto JSON válido, sin texto adicional.' },
+            { role: 'user', content: promptText }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.7
+        })
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`DeepSeek API Error (${response.status}): ${errText}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`DeepSeek API Error (${response.status}): ${errText}`);
+      }
+
+      const result = await response.json();
+      const responseText = result.choices?.[0]?.message?.content || '{}';
+
+      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    };
+
+    let finalData;
+
+    if (action_mode === 'generate') {
+      // 1. Primera pasada: Generación inicial
+      let parsedData = await askDeepSeek(prompt);
+
+      // 2. Segunda pasada: Revisión estricta de repetidos
+      const fixPrompt = `
+Acabas de generar esta lista de canciones:
+${JSON.stringify(parsedData.tracksToAdd, null, 2)}
+
+TAREA CRÍTICA DE REVISIÓN:
+Analiza exhaustivamente la lista. Si encuentras CUALQUIER artista repetido (incluso si la canción es diferente), ELIMINA las repeticiones y REEMPLÁZALAS por nuevas canciones de artistas COMPLETAMENTE DIFERENTES que encajen perfectamente con la misma vibra solicitada.
+El objetivo es que en la lista final haya 0% de artistas repetidos. También reordénalas si consideras que la transición entre canciones puede ser más fluida.
+
+REGLAS DE SALIDA:
+Responde ESTRICTAMENTE con un objeto JSON válido.
+Estructura esperada:
+{
+  "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"],
+  "actions": [],
+  "reasoning": "Menciona qué artistas repetidos encontraste y por quiénes los reemplazaste, o confirma que la lista estaba perfecta."
+}`;
+      finalData = await askDeepSeek(fixPrompt);
+    } else {
+      // Para 'reorder' hacemos una sola pasada
+      finalData = await askDeepSeek(prompt);
     }
 
-    const result = await response.json();
-    const responseText = result.choices?.[0]?.message?.content || '{}';
-
-    // Limpiar backticks si la IA los añade accidentalmente a pesar del response_format
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsedData = JSON.parse(cleanJson);
-
-    return new Response(JSON.stringify(parsedData), {
+    return new Response(JSON.stringify(finalData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
