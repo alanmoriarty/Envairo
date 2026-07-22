@@ -23,7 +23,30 @@ serve(async (req) => {
       })
     }
 
-    // Búsqueda masiva (Bulk) usando DEEZER
+    // Función auxiliar para mapear iTunes a Spotify format
+    const mapITunesToSpotify = (itunesData: any) => {
+      return {
+        tracks: {
+          items: (itunesData.results || []).map((track: any) => {
+            // Reemplazar 100x100 por 600x600 para alta resolución
+            const bigImageUrl = track.artworkUrl100 ? track.artworkUrl100.replace('100x100bb', '600x600bb') : '';
+            return {
+              id: track.trackId?.toString() || Math.random().toString(),
+              uri: `itunes:track:${track.trackId}`,
+              name: track.trackName || track.collectionName || 'Unknown',
+              duration_ms: track.trackTimeMillis || 0,
+              artists: [{ name: track.artistName || 'Unknown' }],
+              album: {
+                name: track.collectionName || '',
+                images: [{ url: bigImageUrl }]
+              }
+            };
+          })
+        }
+      };
+    };
+
+    // 2. Búsqueda masiva (Bulk) para Inteligencia Artificial usando DEEZER (Mayor límite de peticiones)
     if (queries && queries.length > 0) {
       const results = [];
       const chunkSize = 15; // Deezer aguanta muy bien ráfagas (50 reqs / 5s)
@@ -58,7 +81,6 @@ serve(async (req) => {
           const deezerData = await searchResponse.json();
           
           // Mapear la respuesta de Deezer para que luzca EXACTAMENTE como la de Spotify
-          // Así el frontend no se rompe y cree que sigue hablando con Spotify.
           const fakeSpotifyResponse = {
             tracks: {
               items: (deezerData.data || []).map((track: any) => ({
@@ -93,46 +115,21 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     } else {
-      // Single search mode usando DEEZER
-      let d_query = query;
-      if (query.includes('-')) {
-        const parts = query.split('-');
-        const trackPart = parts[0].trim();
-        const artistPart = parts.slice(1).join('-').trim();
-        d_query = `track:"${trackPart}" artist:"${artistPart}"`;
-      }
-
+      // Single search mode usando iTUNES
       const searchParams = new URLSearchParams({
-        q: d_query,
-        limit: limit.toString(),
-        order: 'RANKING' // Fuerza a ordenar por popularidad
-      })
+        term: query,
+        entity: 'song',
+        limit: limit.toString()
+      });
 
-      const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
+      const searchResponse = await fetch(`https://itunes.apple.com/search?${searchParams}`);
 
       if (!searchResponse.ok) {
-        throw new Error(`Deezer search error: ${await searchResponse.text()}`)
+        throw new Error(`iTunes search error: ${await searchResponse.text()}`)
       }
 
-      const deezerData = await searchResponse.json();
-      
-      const fakeSpotifyResponse = {
-        tracks: {
-          items: (deezerData.data || []).map((track: any) => ({
-            id: track.id.toString(),
-            uri: `deezer:track:${track.id}`,
-            name: track.title,
-            duration_ms: track.duration * 1000,
-            artists: [{ name: track.artist.name }],
-            album: {
-              name: track.album.title,
-              images: [
-                { url: track.album.cover_xl || track.album.cover_big || track.album.cover }
-              ]
-            }
-          }))
-        }
-      };
+      const itunesData = await searchResponse.json();
+      const fakeSpotifyResponse = mapITunesToSpotify(itunesData);
 
       return new Response(JSON.stringify(fakeSpotifyResponse), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
