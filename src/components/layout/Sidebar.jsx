@@ -38,8 +38,7 @@ export function Sidebar({ isOpen, onClose }) {
       const currentSessionId = authState.user?.id || settingsState.sessionId;
 
       if (currentSessionId) {
-        // Desactivar sesión y limpiar peticiones al cerrar sesión
-        await supabase.from('sessions').update({ active: false }).eq('id', currentSessionId);
+        // Limpiar peticiones al cerrar sesión
         await supabase.from('requests').delete().eq('session_id', currentSessionId);
       }
 
@@ -63,7 +62,7 @@ export function Sidebar({ isOpen, onClose }) {
       localStorage.removeItem('spotify_refresh_token');
     }
 
-    logout();
+    await logout();
     navigate('/');
   };
 
