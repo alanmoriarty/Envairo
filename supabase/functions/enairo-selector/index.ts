@@ -14,8 +14,13 @@ serve(async (req) => {
   try {
     const { history, queue, settings, action_mode = 'generate' } = await req.json()
 
-    // Obtener API Key de DeepSeek (usando la key provista, pero idealmente desde variables de entorno)
-    const apiKey = Deno.env.get('DEEPSEEK_API_KEY') || 'sk-23ebc3e95db346e7a3d1bc401a4d1e02'
+    // Obtener API Keys
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    const deepSeekKey = Deno.env.get('DEEPSEEK_API_KEY') || 'sk-23ebc3e95db346e7a3d1bc401a4d1e02'
+
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY no configurada en el servidor.')
+    }
 
     let prompt = '';
 
@@ -81,32 +86,59 @@ Estructura esperada:
 `
     }
 
-    const askDeepSeek = async (promptText: string) => {
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const askGemini = async (promptText: string) => {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'Eres un asistente experto que SIEMPRE responde con un objeto JSON válido, sin texto adicional.' },
-            { role: 'user', content: promptText }
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.7
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7
+          }
         })
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`DeepSeek API Error (${response.status}): ${errText}`);
+        throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+      }
+
+      const result = await response.json();
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    };
+
+    const askDeepSeek = async (promptText: string) => {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${deepSeekKey}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'Eres un supervisor de seguridad experto. Tu objetivo principal es evitar contenido explícito. SIEMPRE respondes con un JSON válido.' },
+            { role: 'user', content: promptText }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`DeepSeek API Error (${response.status}): ${errText}`);
+        return null;
       }
 
       const result = await response.json();
       const responseText = result.choices?.[0]?.message?.content || '{}';
-
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleanJson);
     };
@@ -114,89 +146,66 @@ Estructura esperada:
     let finalData;
 
     if (action_mode === 'generate') {
-      // 1. Primera pasada: Generación inicial
-      let parsedData = await askDeepSeek(prompt);
+      // Generación inicial con Gemini
+      let parsedData = await askGemini(prompt);
 
-      if (!parsedData || !Array.isArray(parsedData.tracksToAdd)) {
-        finalData = parsedData; // Fallback si falló la primera pasada
-      } else {
-        // Detectar programáticamente los artistas repetidos
-        const seenArtists = new Set<string>();
-        const duplicatedSongs: string[] = [];
-        const uniqueSongs: string[] = [];
+      // Si el filtro explícito está encendido, usamos DeepSeek para revisar y limpiar
+      if (settings?.explicitFilter === true && parsedData && Array.isArray(parsedData.tracksToAdd)) {
+        const explicitCheckPrompt = `
+Revisa la siguiente lista de canciones:
+${JSON.stringify(parsedData.tracksToAdd, null, 2)}
 
-        parsedData.tracksToAdd.forEach((track: string) => {
-          const lastDashIndex = track.lastIndexOf('-');
-          if (lastDashIndex !== -1) {
-            const artist = track.substring(lastDashIndex + 1).trim().toLowerCase();
-            if (seenArtists.has(artist)) {
-              duplicatedSongs.push(track);
-            } else {
-              seenArtists.add(artist);
-              uniqueSongs.push(track);
-            }
-          } else {
-            uniqueSongs.push(track);
-          }
-        });
-
-        let fixPrompt = '';
-
-        if (duplicatedSongs.length === 0) {
-          // Si mágicamente no hubo repetidos, solo forzamos el reordenamiento
-          fixPrompt = `
-VIBRA DESEADA ORIGINAL: "${settings?.enairoPrompt || 'Música variada'}"
-
-Aquí tienes la lista generada (¡bien hecho, sin repetidos!):
-${JSON.stringify(uniqueSongs, null, 2)}
-
-TAREA: REORDENAR LA LISTA
-REORDENA TODA LA LISTA para que las transiciones de energía y ritmo sean impecables. Asegúrate de que las canciones del mismo género o vibra similar estén agrupadas con transiciones suaves.
+TAREA: FILTRO DE CONTENIDO EXPLÍCITO (LETRAS Y VIDEOS)
+Analiza estrictamente si ALGUNA de estas canciones tiene letras altamente explícitas o si su video oficial es conocido por tener contenido inapropiado o explícito.
+Si detectas canciones inapropiadas:
+1. ELIMÍNALAS de la lista.
+2. REEMPLÁZALAS por canciones de un género idéntico o muy similar, de la misma época y vibra, pero que sean "Clean" o no explícitas.
+Si la canción es segura, mantenla intacta.
 
 REGLAS DE SALIDA:
-Responde ESTRICTAMENTE con un objeto JSON válido.
-Estructura esperada:
+Devuelve un JSON con la lista FINAL completa (misma cantidad de canciones).
 {
-  "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"],
+  "tracksToAdd": ["Canción 1 - Artista 1", "Nueva Canción Limpia - Artista 2"],
   "actions": [],
-  "reasoning": "Explica brevemente cómo mejoraste el orden para mayor fluidez."
+  "reasoning": "Menciona qué canciones eliminaste por contenido explícito y por cuáles las reemplazaste."
 }`;
+        const deepSeekData = await askDeepSeek(explicitCheckPrompt);
+        if (deepSeekData && Array.isArray(deepSeekData.tracksToAdd)) {
+          finalData = deepSeekData;
         } else {
-          // Si hubo repetidos, obligamos a reemplazarlos exactamente
-          fixPrompt = `
-VIBRA DESEADA ORIGINAL: "${settings?.enairoPrompt || 'Música variada'}"
+          finalData = parsedData; // Fallback
+        }
+      } else {
+        finalData = parsedData;
+      }
+    } else if (action_mode === 'sweep_explicit') {
+      // Barrido de la cola actual con DeepSeek
+      const sweepPrompt = `
+REVISIÓN DE COLA (CONTENIDO EXPLÍCITO)
+Aquí está la cola actual de reproducción:
+${JSON.stringify(queue.map((t: any) => ({ queueId: t.queueId, name: t.name, artist: t.artists })), null, 2)}
 
-El sistema detectó que tu generación anterior repitió artistas.
-ESTAS ${duplicatedSongs.length} CANCIONES DEBEN SER DESCARTADAS por ser de artistas repetidos:
-${JSON.stringify(duplicatedSongs, null, 2)}
-
-CANCIONES APROBADAS (NO LAS ELIMINES):
-${JSON.stringify(uniqueSongs, null, 2)}
-
-TAREA 1: GENERAR REEMPLAZOS
-Genera EXACTAMENTE ${duplicatedSongs.length} NUEVAS canciones de ARTISTAS COMPLETAMENTE DIFERENTES a los que ya están en las "Canciones Aprobadas". Deben encajar en la "Vibra Deseada Original".
-
-TAREA 2: INTEGRAR Y REORDENAR
-Une las ${uniqueSongs.length} Canciones Aprobadas con tus ${duplicatedSongs.length} nuevas canciones (formando un total exacto de ${parsedData.tracksToAdd.length} canciones).
-REORDENA toda la lista resultante para que fluya perfectamente.
+TAREA:
+Busca canciones con letras explícitas o videos explícitos.
+Para cada canción explícita que encuentres:
+1. Emite una acción de tipo "remove" con el 'queueId'.
+2. Propón en 'tracksToAdd' una canción nueva del MISMO GÉNERO EXACTO, pero que sea completamente limpia.
 
 REGLAS DE SALIDA:
-Responde ESTRICTAMENTE con un objeto JSON válido.
-Estructura esperada:
+Devuelve un JSON estrictamente así (vacío si no hay nada que limpiar):
 {
-  "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"], // Lista final completa y reordenada
-  "actions": [],
-  "reasoning": "Menciona a qué artistas nuevos agregaste para reemplazar a los repetidos y cómo reordenaste la lista."
+  "tracksToAdd": ["Canción Limpia Reemplazo - Artista X"],
+  "actions": [
+    {"type": "remove", "queueId": "id-de-la-cancion-mala"}
+  ],
+  "reasoning": "Se eliminó X por contenido explícito y se reemplazó por Y."
 }`;
-        }
-
-        finalData = await askDeepSeek(fixPrompt);
-      }
+      finalData = await askDeepSeek(sweepPrompt) || { tracksToAdd: [], actions: [] };
     } else {
-      // Para 'reorder' hacemos una sola pasada
-      finalData = await askDeepSeek(prompt);
-    }
-
+      // Para 'reorder' hacemos una sola pasada con Gemini
+      finalData = await askGemini(prompt);
+    } 
+    
     return new Response(JSON.stringify(finalData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

@@ -24,7 +24,12 @@ export function useEnairoSelector() {
     blacklistGenres,
     blacklistSongs,
     blacklistArtists,
-    enairoTrackCount
+    enairoTrackCount,
+    explicitFilter,
+    enairoSweepCount,
+    enairoSweepDate,
+    setEnairoSweepCount,
+    resetEnairoSweepUsage
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
 
@@ -226,6 +231,98 @@ export function useEnairoSelector() {
     }
   };
 
+  const autoSweepExplicitContent = async () => {
+    if (!explicitFilter) return;
+
+    const today = await getSecureServerDateString();
+    let currentSweepCount = enairoSweepCount || 0;
+    
+    if (enairoSweepDate !== today) {
+      resetEnairoSweepUsage();
+      currentSweepCount = 0;
+    }
+
+    if (currentSweepCount >= 5) return; // Máximo 5 barridos por día
+
+    if (isThinking) return;
+    setIsThinking(true);
+
+    try {
+      const state = usePlayerStore.getState();
+      const currentQueue = state.queue;
+
+      if (currentQueue.length === 0) return;
+
+      const { data, error } = await supabase.functions.invoke('enairo-selector', {
+        body: {
+          action_mode: 'sweep_explicit',
+          queue: currentQueue
+        }
+      });
+
+      if (error) throw error;
+      const { tracksToAdd = [], actions = [], reasoning } = data;
+
+      if (reasoning) {
+        console.log("envAIro Sweep Reasoning:", reasoning);
+      }
+
+      if (actions.length > 0) {
+        actions.forEach(action => {
+          if (action.type === 'remove' && action.queueId) {
+            state.removeFromQueue(action.queueId);
+            toast.success(`Filtro de Contenido: envAIro eliminó una canción explícita de la cola.`);
+          }
+        });
+      }
+
+      // Si la IA nos mandó reemplazos limpios, los buscamos en Spotify y los agregamos
+      if (tracksToAdd.length > 0) {
+        let foundTracks = [];
+        try {
+          const { data: searchData, error: searchError } = await supabase.functions.invoke('search-spotify', {
+            body: { queries: tracksToAdd, type: 'track', limit: 1 }
+          });
+
+          if (searchError) throw searchError;
+
+          if (searchData && searchData.results) {
+            foundTracks = searchData.results.map((res) => {
+              if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
+                const spotifyTrack = res.tracks.items[0];
+                return {
+                  id: spotifyTrack.id,
+                  name: spotifyTrack.name,
+                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                  image: spotifyTrack.album?.images?.[0]?.url || '',
+                  duration_ms: spotifyTrack.duration_ms,
+                  uri: spotifyTrack.uri,
+                  source: 'spotify',
+                  addedBy: 'Filtro envAIro'
+                };
+              }
+              return null;
+            }).filter(Boolean);
+          }
+        } catch (err) {
+          console.error("Error buscando reemplazos limpios:", err);
+        }
+
+        foundTracks.forEach(track => state.addToQueue(track));
+        if (foundTracks.length > 0) {
+           toast.success(`Filtro de Contenido: envAIro añadió ${foundTracks.length} canciones limpias en reemplazo.`);
+        }
+      }
+
+      setEnairoSweepCount(currentSweepCount + 1, today);
+
+    } catch (err) {
+      console.error("Error en sweep_explicit:", err);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
   useEffect(() => {
     if (isEnairoTimerRunning) return;
     isEnairoTimerRunning = true;
@@ -242,7 +339,12 @@ export function useEnairoSelector() {
       const currentMins = usePlayerStore.getState().playbackMinutes;
 
       if (currentMins >= 40 && !useSettingsStore.getState().enairoIsThinking) {
-        autoReorderQueue();
+        // Ejecutamos el barrido explícito primero, y luego reordenamos
+        if (useSettingsStore.getState().explicitFilter) {
+          autoSweepExplicitContent().then(() => autoReorderQueue());
+        } else {
+          autoReorderQueue();
+        }
       }
     }, 60000);
 
@@ -252,5 +354,5 @@ export function useEnairoSelector() {
     };
   }, []);
 
-  return { isThinking, triggerEnairo, autoReorderQueue };
+  return { isThinking, triggerEnairo, autoReorderQueue, autoSweepExplicitContent };
 }
