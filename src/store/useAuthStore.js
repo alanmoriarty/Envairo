@@ -12,20 +12,21 @@ function generateUUID() {
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
-        const { sessionId, hostSecret } = useSettingsStore.getState();
-        const currentUser = set.name ? null : null; // Hack para acceder al state, mejor usamos el id directo
+        const { hostSecret } = useSettingsStore.getState();
+        const currentUser = get().user;
+        const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
         
         // Disparar el apagado de la sesión en la base de datos de inmediato
-        if (sessionId && hostSecret) {
+        if (sessionIdToClose && hostSecret) {
           import('../lib/supabase').then(({ supabase }) => {
             supabase.rpc('update_session_state', { 
-              p_session_id: sessionId, 
+              p_session_id: sessionIdToClose, 
               p_secret: hostSecret, 
               p_updates: { active: false } 
             }).then().catch(console.error);
