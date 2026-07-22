@@ -323,6 +323,19 @@ export default function SettingsPage() {
                 className="input-field w-full h-24 resize-none"
               />
             </div>
+            
+            <div className="pt-2">
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">Cantidad de sugerencias a generar</label>
+              <p className="text-xs text-text-muted mb-2">Máximo 50 canciones por generación.</p>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={store.enairoTrackCount}
+                onChange={(e) => store.setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 50)))}
+                className="input-field w-full sm:w-24 text-center"
+              />
+            </div>
 
             <div className="border-t border-white/5 pt-4">
               <Toggle

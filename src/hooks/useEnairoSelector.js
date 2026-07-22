@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { getSecureServerTime, getSecureServerDateString } from '../utils/timeUtils';
 import { toast } from 'sonner';
+
+let isEnairoTimerRunning = false;
 
 export function useEnairoSelector() {
   const {
@@ -21,7 +23,8 @@ export function useEnairoSelector() {
     whitelistGenres,
     blacklistGenres,
     blacklistSongs,
-    blacklistArtists
+    blacklistArtists,
+    enairoTrackCount
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
 
@@ -61,6 +64,7 @@ export function useEnairoSelector() {
     try {
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
+          action_mode: 'generate',
           history: playHistory.slice(0, 5), // últimas 5 canciones
           queue: queue,
           settings: {
@@ -68,7 +72,8 @@ export function useEnairoSelector() {
             whitelistGenres,
             blacklistGenres,
             blacklistSongs,
-            blacklistArtists
+            blacklistArtists,
+            trackCount: enairoTrackCount
           }
         }
       });
@@ -156,5 +161,86 @@ export function useEnairoSelector() {
     }
   };
 
-  return { isThinking, triggerEnairo };
+  const autoReorderQueue = async () => {
+    // Solo ejecutamos si hay reproductor listo y no está pensando
+    if (isThinking) return;
+
+    setIsThinking(true);
+    
+    try {
+      const state = usePlayerStore.getState();
+      const currentQueue = state.queue;
+      const history = state.playHistory;
+      
+      const { data, error } = await supabase.functions.invoke('enairo-selector', {
+        body: {
+          action_mode: 'reorder',
+          history: history.slice(0, 5),
+          queue: currentQueue,
+          settings: {} // No enviamos whitelist/blacklist para reorder puro
+        }
+      });
+
+      if (error) throw error;
+
+      const { actions = [], reasoning } = data;
+
+      if (reasoning) {
+        console.log("EnvAIro Auto-Reorder Reasoning:", reasoning);
+      }
+
+      if (actions.length > 0) {
+        actions.forEach(action => {
+          if (action.type === 'remove' && action.queueId) {
+            state.removeFromQueue(action.queueId);
+            toast.success(`EnvAIro eliminó una petición que no encajaba con el ambiente.`);
+          } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
+            const latestQueue = usePlayerStore.getState().queue;
+            const oldIndex = latestQueue.findIndex(t => t.queueId === action.queueId);
+            if (oldIndex !== -1 && oldIndex !== action.newIndex && action.newIndex < latestQueue.length) {
+              state.reorderQueue(oldIndex, action.newIndex);
+            }
+          }
+        });
+        toast.info(`EnvAIro ha reordenado la lista para mejorar las transiciones.`);
+      }
+
+    } catch (err) {
+      console.error("Error en EnvAIro Auto-Reorder:", err);
+    } finally {
+      setIsThinking(false);
+      // Reseteamos banderas sin importar si tuvo éxito o falló
+      usePlayerStore.getState().resetNewRequestsFlag();
+      usePlayerStore.getState().resetPlaybackMinutes();
+    }
+  };
+
+  useEffect(() => {
+    if (isEnairoTimerRunning) return;
+    isEnairoTimerRunning = true;
+    
+    const interval = setInterval(() => {
+      const state = usePlayerStore.getState();
+      
+      // Contar tiempo solo si está reproduciendo
+      if (state.isPlaying) {
+        state.incrementPlaybackMinutes();
+      }
+      
+      // Chequeo cada minuto: si ya pasaron 40 min y hay nuevas peticiones, reordenar
+      const currentMins = usePlayerStore.getState().playbackMinutes;
+      const hasNew = usePlayerStore.getState().hasNewRequestsSinceReorder;
+      
+      if (currentMins >= 40 && hasNew && !useSettingsStore.getState().enairoIsThinking) {
+        autoReorderQueue();
+      }
+    }, 60000);
+    
+    return () => {
+      clearInterval(interval);
+      isEnairoTimerRunning = false;
+    };
+  }, []);
+
+  return { isThinking, triggerEnairo, autoReorderQueue };
 }

@@ -37,6 +37,12 @@ export const usePlayerStore = create(
       lastCommandTs: 0,
       historyTimer: null,
       
+      hasNewRequestsSinceReorder: false,
+      resetNewRequestsFlag: () => set({ hasNewRequestsSinceReorder: false }),
+      playbackMinutes: 0,
+      incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
+      resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
+      
       clearPlayerState: () => set({
         queue: [],
         currentQueueIndex: -1,
@@ -140,7 +146,8 @@ export const usePlayerStore = create(
           newQueue.splice(insertIndex, 0, newTrack);
           
           return {
-            queue: newQueue
+            queue: newQueue,
+            hasNewRequestsSinceReorder: true
           };
         });
         get().startQueuePreloadWorker();

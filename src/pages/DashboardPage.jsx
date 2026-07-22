@@ -143,6 +143,7 @@ export default function DashboardPage() {
   const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);
+  const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
 
@@ -578,7 +579,7 @@ export default function DashboardPage() {
                       </span>
                     ) : (
                       <button
-                        onClick={triggerEnairo}
+                        onClick={() => setIsEnairoModalOpen(true)}
                         disabled={isThinking}
                         className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
                       >
@@ -641,6 +642,45 @@ export default function DashboardPage() {
 
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
+      
+      {/* EnvAIro Confirmation Modal */}
+      {isEnairoModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
+            <div className="p-5">
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-accent/20 rounded-full">
+                  <Sparkles size={32} className="text-accent" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center text-white mb-2">
+                ¿Generar Ambiente?
+              </h3>
+              <p className="text-sm text-center text-text-muted mb-6">
+                Asegúrate de haber configurado correctamente el prompt y los géneros en los Ajustes. Una vez generado, EnvAIro no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsEnairoModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-text-primary bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEnairoModalOpen(false);
+                    triggerEnairo();
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white bg-accent hover:bg-accent-hover transition-colors shadow-glow-sm"
+                >
+                  Sí, Generar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

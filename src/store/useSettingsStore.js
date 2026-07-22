@@ -29,6 +29,8 @@ export const useSettingsStore = create(
       enairoEnabled: true,
       enairoPrompt: '',
       setEnairoPrompt: (prompt) => set({ enairoPrompt: prompt }),
+      enairoTrackCount: 50,
+      setEnairoTrackCount: (count) => set({ enairoTrackCount: count }),
       enairoTestMode: false,
       setEnairoTestMode: (v) => set({ enairoTestMode: v }),
       // Session QR ID
