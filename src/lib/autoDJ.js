@@ -98,6 +98,24 @@ export async function evaluateTrack(track, settings) {
     }
   }
 
+  // 4. DeepSeek AI Explicit Check
+  if (settings.explicitFilter) {
+    try {
+      const { supabase } = await import('./supabase');
+      const { data: explicitData, error: explicitError } = await supabase.functions.invoke('enairo-selector', {
+        body: {
+          action_mode: 'check_single_explicit',
+          trackName: `${track.name} - ${track.artists}`
+        }
+      });
+      if (!explicitError && explicitData && explicitData.isExplicit) {
+        return { approved: false, reason: 'Contenido explícito bloqueado por DeepSeek' };
+      }
+    } catch (err) {
+      console.error('Explicit check failed in AutoDJ', err);
+    }
+  }
+
   // Si pasó todas las pruebas
   return { approved: true, reason: 'Aprobada por Auto DJ' };
 }

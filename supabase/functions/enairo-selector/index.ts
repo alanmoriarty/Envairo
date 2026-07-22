@@ -148,38 +148,8 @@ Estructura esperada:
     let finalData;
 
     if (action_mode === 'generate') {
-      // Generación inicial con Gemini
-      let parsedData = await askGemini(prompt);
-
-      // Si el filtro explícito está encendido, usamos DeepSeek para revisar y limpiar
-      if (settings?.explicitFilter === true && parsedData && Array.isArray(parsedData.tracksToAdd)) {
-        const explicitCheckPrompt = `
-Revisa la siguiente lista de canciones:
-${JSON.stringify(parsedData.tracksToAdd, null, 2)}
-
-TAREA: FILTRO DE CONTENIDO EXPLÍCITO (LETRAS Y VIDEOS)
-Analiza ESTRICTAMENTE si ALGUNA de estas canciones, en su letra, título o contexto cultural, contiene: lenguaje soez (groserías, malas palabras), contenido sexual, doble sentido obsceno, apología a drogas/violencia, o si es una canción de reggaetón/champeta/urbano conocida por ser vulgar o inapropiada para niños.
-Si detectas canciones con contenido inapropiado o soez:
-1. ELIMÍNALAS de la lista.
-2. REEMPLÁZALAS por canciones de un género idéntico o muy similar, de la misma época y vibra, pero que sean "Clean" o 100% no explícitas.
-Si la canción es totalmente segura y apta para todo público, mantenla intacta.
-
-REGLAS DE SALIDA:
-Devuelve un JSON con la lista FINAL completa (misma cantidad de canciones).
-{
-  "tracksToAdd": ["Canción 1 - Artista 1", "Nueva Canción Limpia - Artista 2"],
-  "actions": [],
-  "reasoning": "Menciona qué canciones eliminaste por contenido explícito y por cuáles las reemplazaste."
-}`;
-        const deepSeekData = await askDeepSeek(explicitCheckPrompt);
-        if (deepSeekData && Array.isArray(deepSeekData.tracksToAdd)) {
-          finalData = deepSeekData;
-        } else {
-          finalData = parsedData; // Fallback
-        }
-      } else {
-        finalData = parsedData;
-      }
+      // Generación inicial con Gemini (eliminamos la segunda capa de DeepSeek según la nueva arquitectura)
+      finalData = await askGemini(prompt);
     } else if (action_mode === 'sweep_explicit') {
       // Barrido de la cola actual con DeepSeek
       const sweepPrompt = `

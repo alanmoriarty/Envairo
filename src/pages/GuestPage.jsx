@@ -257,28 +257,7 @@ export default function GuestPage() {
       }
     }
 
-    // DeepSeek AI Explicit Check (Cheap, fast, single-track check)
-    const isExplicitFilterOn = stateData?.explicit_filter || false;
-    if (isExplicitFilterOn) {
-      const checkToastId = toast.loading('Revisando contenido...');
-      try {
-        const { data: explicitData, error: explicitError } = await supabase.functions.invoke('enairo-selector', {
-          body: {
-            action_mode: 'check_single_explicit',
-            trackName: `${selected.name} - ${selected.artists}`
-          }
-        });
-        if (!explicitError && explicitData && explicitData.isExplicit) {
-          toast.dismiss(checkToastId);
-          toast.error('Lo sentimos, esta canción contiene lenguaje o contenido explícito y no puede ser agregada.');
-          return;
-        }
-        toast.dismiss(checkToastId);
-      } catch (err) {
-        console.error('Explicit check failed', err);
-        toast.dismiss(checkToastId);
-      }
-    }
+    // (El filtro explícito con DeepSeek ahora se evalúa en el Auto DJ, no en el cliente del invitado)
 
     // Check if recently played (repeat cooldown logic)
     const repeatCooldown = sessionConfig?.repeat_cooldown ?? -1;
