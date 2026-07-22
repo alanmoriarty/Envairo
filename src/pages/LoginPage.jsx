@@ -14,7 +14,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuthStore();
-  
+
   useEffect(() => {
     // Si ya estamos autenticados, redirigir automáticamente al reproductor
     if (user || isAuthenticated) {
@@ -27,8 +27,21 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const setUser = useAuthStore(s => s.setUser);
 
+  const ALLOWED_EMAILS = [
+    'aliriopina04@gmail.com',
+    'aliriopina05@gmail.com',
+    'javiercardonaaudiovisual@gmail.com'
+  ]; // <-- Agrega aquí los correos a los que les darás acceso a la Beta
+
   const handleEmailAuth = async (e) => {
     e.preventDefault();
+
+    // Si la lista tiene elementos, validamos. Si está vacía, dejamos pasar a todos (o puedes bloquearlo por defecto).
+    if (ALLOWED_EMAILS.length > 0 && !ALLOWED_EMAILS.includes(email.toLowerCase().trim())) {
+      toast.error('Acceso denegado: Tu correo no está en la lista de probadores Beta.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -37,9 +50,9 @@ export default function LoginPage() {
           email,
           password,
         });
-        
+
         if (error) throw error;
-        
+
         if (data?.user && data?.user?.identities?.length === 0) {
           toast.error('Este correo ya está registrado.');
         } else {
@@ -51,9 +64,9 @@ export default function LoginPage() {
           email,
           password,
         });
-        
+
         if (error) throw error;
-        
+
         if (data.session) {
           const prevSessionId = useSettingsStore.getState().sessionId;
           // Si había una sesión previa de OTRO usuario en esta misma PC, limpiamos los datos viejos
@@ -61,7 +74,7 @@ export default function LoginPage() {
             usePlayerStore.getState().clearPlayerState();
             useSettingsStore.getState().clearSettingsState();
           }
-          
+
           setUser(data.user);
           navigate('/app/dashboard');
         }
@@ -145,8 +158,8 @@ export default function LoginPage() {
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">Correo Electrónico</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -163,8 +176,8 @@ export default function LoginPage() {
                   </button>
                 )}
               </div>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -193,7 +206,7 @@ export default function LoginPage() {
           </form>
 
           <div className="text-center mt-4">
-            <button 
+            <button
               onClick={() => setIsRegistering(!isRegistering)}
               className="text-sm text-accent hover:text-primary transition-colors"
             >
@@ -207,7 +220,7 @@ export default function LoginPage() {
 
           {/* Botón de Instalar App */}
           <div className="pt-2">
-            <a 
+            <a
               href="#"
               className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
             >
