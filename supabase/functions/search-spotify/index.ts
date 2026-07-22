@@ -23,28 +23,10 @@ serve(async (req) => {
       })
     }
 
-    // 1. Get Client Credentials Token
-    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)
-      },
-      body: 'grant_type=client_credentials'
-    })
-
-    if (!tokenResponse.ok) {
-      throw new Error(`Spotify token error: ${await tokenResponse.text()}`)
-    }
-
-    const tokenData = await tokenResponse.json()
-    const accessToken = tokenData.access_token
-
-    // 2. Search Spotify
+    // Búsqueda masiva (Bulk) usando DEEZER
     if (queries && queries.length > 0) {
-      // Bulk search mode
       const results = [];
-      const chunkSize = 15; // Aumentado de 5 a 15 para paralelizar más peticiones
+      const chunkSize = 15; // Deezer aguanta muy bien ráfagas (50 reqs / 5s)
       
       for (let i = 0; i < queries.length; i += chunkSize) {
         const chunk = queries.slice(i, i + chunkSize);
@@ -52,27 +34,48 @@ serve(async (req) => {
         const chunkPromises = chunk.map(async (q: string) => {
           const searchParams = new URLSearchParams({
             q: q,
-            type: type,
             limit: limit.toString()
-          })
-          const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-          })
+          });
+          
+          const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
           
           if (!searchResponse.ok) {
             const errText = await searchResponse.text();
-            console.error('Spotify API error for query:', q, searchResponse.status, errText);
+            console.error('Deezer API error for query:', q, searchResponse.status, errText);
             return { error: true, status: searchResponse.status, message: errText, query: q };
           }
-          return searchResponse.json();
+          
+          const deezerData = await searchResponse.json();
+          
+          // Mapear la respuesta de Deezer para que luzca EXACTAMENTE como la de Spotify
+          // Así el frontend no se rompe y cree que sigue hablando con Spotify.
+          const fakeSpotifyResponse = {
+            tracks: {
+              items: (deezerData.data || []).map((track: any) => ({
+                id: track.id.toString(),
+                uri: `deezer:track:${track.id}`,
+                name: track.title,
+                duration_ms: track.duration * 1000,
+                artists: [{ name: track.artist.name }],
+                album: {
+                  name: track.album.title,
+                  images: [
+                    { url: track.album.cover_xl || track.album.cover_big || track.album.cover }
+                  ]
+                }
+              }))
+            }
+          };
+          
+          return fakeSpotifyResponse;
         });
         
         const chunkResults = await Promise.all(chunkPromises);
         results.push(...chunkResults);
         
-        // Pequeño delay para no romper el límite de Spotify, pero lo suficientemente rápido (250ms en vez de 800ms)
+        // Pausa diminuta para respetar el límite de 50 peticiones cada 5 segundos de Deezer
         if (i + chunkSize < queries.length) {
-          await new Promise(resolve => setTimeout(resolve, 250));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
 
@@ -80,26 +83,39 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     } else {
-      // Single search mode
+      // Single search mode usando DEEZER
       const searchParams = new URLSearchParams({
         q: query,
-        type: type,
         limit: limit.toString()
       })
 
-      const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
+      const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
 
       if (!searchResponse.ok) {
-        throw new Error(`Spotify search error: ${await searchResponse.text()}`)
+        throw new Error(`Deezer search error: ${await searchResponse.text()}`)
       }
 
-      const searchData = await searchResponse.json()
+      const deezerData = await searchResponse.json();
+      
+      const fakeSpotifyResponse = {
+        tracks: {
+          items: (deezerData.data || []).map((track: any) => ({
+            id: track.id.toString(),
+            uri: `deezer:track:${track.id}`,
+            name: track.title,
+            duration_ms: track.duration * 1000,
+            artists: [{ name: track.artist.name }],
+            album: {
+              name: track.album.title,
+              images: [
+                { url: track.album.cover_xl || track.album.cover_big || track.album.cover }
+              ]
+            }
+          }))
+        }
+      };
 
-      return new Response(JSON.stringify(searchData), {
+      return new Response(JSON.stringify(fakeSpotifyResponse), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
