@@ -14,6 +14,10 @@ export function useQueueSync() {
   useEffect(() => {
     if (!sessionId) return;
     
+    // Capturar el secret inicial para usarlo en el cleanup, 
+    // incluso si el usuario hace logout y el store se limpia antes de desmontar.
+    const initialSecret = useSettingsStore.getState().hostSecret;
+    
     let syncChannel = null;
     let isMounted = true;
     let initSyncTimeout;
@@ -289,6 +293,9 @@ export function useQueueSync() {
   useEffect(() => {
     if (!sessionId) return;
     
+    // Capture secret to ensure cleanup RPC fires even if store is cleared on logout
+    const initialSecret = useSettingsStore.getState().hostSecret;
+
     let requestsChannel = null;
     let isMounted = true;
     let initReqTimeout;
@@ -432,9 +439,8 @@ export function useQueueSync() {
       clearTimeout(initReqTimeout);
       
       if (requestsChannel) supabase.removeChannel(requestsChannel);
-      const secret = useSettingsStore.getState().hostSecret;
-      if (secret) {
-        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).then();
+      if (initialSecret) {
+        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: initialSecret, p_updates: { active: false } }).then();
       }
     };
   }, [sessionId]);
