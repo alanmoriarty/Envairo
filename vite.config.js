@@ -19,17 +19,17 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'envAIro-logo-sin-texto.svg',
+            src: 'pwa-icon.svg',
             sizes: '192x192',
             type: 'image/svg+xml'
           },
           {
-            src: 'envAIro-logo-sin-texto.svg',
+            src: 'pwa-icon.svg',
             sizes: '512x512',
             type: 'image/svg+xml'
           },
           {
-            src: 'envAIro-logo-sin-texto.svg',
+            src: 'pwa-icon.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable'

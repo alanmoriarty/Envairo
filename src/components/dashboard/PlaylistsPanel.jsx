@@ -235,6 +235,11 @@ export function PlaylistsPanel() {
       playlistData.is_custom = true;
       const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
       if (!existing.find(p => p.id === playlistData.id)) {
+        if (existing.length >= 10) {
+          toast.error('Límite de playlists: Solo puedes guardar un máximo de 10 playlists.', { id: toastId });
+          setImporting(false);
+          return;
+        }
         const newPlaylists = [playlistData, ...existing];
         localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
         setPlaylists(prev => {
@@ -410,6 +415,21 @@ export function PlaylistsPanel() {
                   {/* Canciones count removed */}
                 </p>
               </div>
+
+              <button
+                className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all shrink-0 mr-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+                  const newPlaylists = existing.filter(p => p.id !== pl.id);
+                  localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
+                  setPlaylists(prev => prev.filter(p => p.id !== pl.id));
+                  toast.success('Playlist eliminada');
+                }}
+                title="Eliminar playlist"
+              >
+                <Trash2 size={14} />
+              </button>
 
               <button
                 className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent hover:text-white shrink-0"
