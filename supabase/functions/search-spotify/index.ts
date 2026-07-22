@@ -47,26 +47,44 @@ serve(async (req) => {
       // Procesamiento secuencial puro con un pequeño retraso entre CADA petición
       // Esto evita los picos de ráfaga (bursts) que disparan el error 429 de Spotify.
       for (const q of queries) {
-        const searchParams = new URLSearchParams({
-          q: q,
-          type: type,
-          limit: limit.toString()
-        });
-        
-        const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        
-        if (!searchResponse.ok) {
-          const errText = await searchResponse.text();
-          console.error('Spotify API error for query:', q, searchResponse.status, errText);
-          results.push({ error: true, status: searchResponse.status, message: errText, query: q });
-        } else {
-          results.push(await searchResponse.json());
+        let retries = 3;
+        let success = false;
+
+        while (retries > 0 && !success) {
+          const searchParams = new URLSearchParams({
+            q: q,
+            type: type,
+            limit: limit.toString()
+          });
+          
+          const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          
+          if (searchResponse.status === 429) {
+            // Fuimos bloqueados, leer cuánto tiempo esperar
+            const retryAfter = searchResponse.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000; // Por defecto 2 segundos
+            console.warn(`[429 RATE LIMIT] Esperando ${waitTime}ms para reintentar... (${retries} intentos restantes)`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            retries--;
+          } else if (!searchResponse.ok) {
+            const errText = await searchResponse.text();
+            console.error('Spotify API error for query:', q, searchResponse.status, errText);
+            results.push({ error: true, status: searchResponse.status, message: errText, query: q });
+            success = true; // Salir del while para este item
+          } else {
+            results.push(await searchResponse.json());
+            success = true;
+          }
+        }
+
+        if (!success) {
+           results.push({ error: true, status: 429, message: "Too many requests after retries", query: q });
         }
         
-        // Retraso uniforme de 250ms (máximo 4 peticiones por segundo, muy seguro para Spotify)
-        await new Promise(resolve => setTimeout(resolve, 250));
+        // Retraso uniforme de 600ms para evitar llegar al límite (menos de 2 peticiones por seg)
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
 
       return new Response(JSON.stringify({ results }), {
