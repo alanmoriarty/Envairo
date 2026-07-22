@@ -121,7 +121,9 @@ export function RootLayout() {
 
       if (lastActiveState !== currentActive) {
         lastActiveState = currentActive;
-        if (state.sessionId && state.hostSecret) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(state.sessionId);
+        
+        if (state.sessionId && state.hostSecret && isUuid) {
           supabase.rpc('update_session_state', {
             p_session_id: state.sessionId,
             p_secret: state.hostSecret,
@@ -138,15 +140,6 @@ export function RootLayout() {
 
     return () => {
       clearInterval(interval);
-      // Desactivar peticiones por defecto al cerrar la sesión/app
-      const state = useSettingsStore.getState();
-      if (state.sessionId && state.hostSecret) {
-        supabase.rpc('update_session_state', {
-          p_session_id: state.sessionId,
-          p_secret: state.hostSecret,
-          p_updates: { active: false }
-        }).then();
-      }
     };
   }, []);
 
