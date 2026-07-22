@@ -44,36 +44,29 @@ serve(async (req) => {
     if (queries && queries.length > 0) {
       // Bulk search mode
       const results = [];
-      const chunkSize = 5; // Reducido para evitar el error 429 de Spotify
-      
-      for (let i = 0; i < queries.length; i += chunkSize) {
-        const chunk = queries.slice(i, i + chunkSize);
-        
-        const chunkPromises = chunk.map(async (q: string) => {
-          const searchParams = new URLSearchParams({
-            q: q,
-            type: type,
-            limit: limit.toString()
-          })
-          const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-          })
-          
-          if (!searchResponse.ok) {
-            const errText = await searchResponse.text();
-            console.error('Spotify API error for query:', q, searchResponse.status, errText);
-            return { error: true, status: searchResponse.status, message: errText, query: q };
-          }
-          return searchResponse.json();
+      // Procesamiento secuencial puro con un pequeño retraso entre CADA petición
+      // Esto evita los picos de ráfaga (bursts) que disparan el error 429 de Spotify.
+      for (const q of queries) {
+        const searchParams = new URLSearchParams({
+          q: q,
+          type: type,
+          limit: limit.toString()
         });
         
-        const chunkResults = await Promise.all(chunkPromises);
-        results.push(...chunkResults);
+        const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
         
-        // Delay más conservador para evitar ban temporal de Spotify (429 Too Many Requests)
-        if (i + chunkSize < queries.length) {
-          await new Promise(resolve => setTimeout(resolve, 800));
+        if (!searchResponse.ok) {
+          const errText = await searchResponse.text();
+          console.error('Spotify API error for query:', q, searchResponse.status, errText);
+          results.push({ error: true, status: searchResponse.status, message: errText, query: q });
+        } else {
+          results.push(await searchResponse.json());
         }
+        
+        // Retraso uniforme de 250ms (máximo 4 peticiones por segundo, muy seguro para Spotify)
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
 
       return new Response(JSON.stringify({ results }), {
