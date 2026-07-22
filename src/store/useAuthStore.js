@@ -18,6 +18,20 @@ export const useAuthStore = create(
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
+        const { sessionId, hostSecret } = useSettingsStore.getState();
+        const currentUser = set.name ? null : null; // Hack para acceder al state, mejor usamos el id directo
+        
+        // Disparar el apagado de la sesión en la base de datos de inmediato
+        if (sessionId && hostSecret) {
+          import('../lib/supabase').then(({ supabase }) => {
+            supabase.rpc('update_session_state', { 
+              p_session_id: sessionId, 
+              p_secret: hostSecret, 
+              p_updates: { active: false } 
+            }).then().catch(console.error);
+          });
+        }
+
         set({ user: null, isAuthenticated: false });
         usePlayerStore.getState().clearPlayerState();
         useSettingsStore.getState().clearSettingsState();
