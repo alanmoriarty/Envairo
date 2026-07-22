@@ -439,9 +439,6 @@ export function useQueueSync() {
       clearTimeout(initReqTimeout);
       
       if (requestsChannel) supabase.removeChannel(requestsChannel);
-      if (initialSecret) {
-        supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: initialSecret, p_updates: { active: false } }).then();
-      }
     };
   }, [sessionId]);
 }
