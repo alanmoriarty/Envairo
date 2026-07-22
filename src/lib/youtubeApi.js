@@ -107,7 +107,7 @@ async function _doSearchYouTubeVideos(query, limit = 8) {
   // 2. Vía Centralizada (Nuestro Vercel Scraper): Como primer nivel de respaldo
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocal ? 'https://envairoqr.vercel.app' : window.location.origin;
+    const baseUrl = isLocal ? 'https://envairoqr.com' : window.location.origin;
     const proxyUrl = new URL(baseUrl + '/api/youtube-search');
     proxyUrl.searchParams.append('q', query);
     proxyUrl.searchParams.append('limit', limit.toString());

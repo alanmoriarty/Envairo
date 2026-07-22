@@ -105,7 +105,7 @@ export function useQueueSync() {
       }
     };
 
-    const channel = supabase
+    const syncChannel = supabase
       .channel(`queue-sync-${sessionId}`)
       .on(
         'postgres_changes',
@@ -400,7 +400,7 @@ export function useQueueSync() {
     };
     syncSession();
 
-    const channel = supabase
+    const requestsChannel = supabase
       .channel(`requests-${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, async (payload) => {
         const newReq = payload.new;
@@ -457,7 +457,8 @@ export function useQueueSync() {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
       }
-      supabase.removeChannel(channel);
+      supabase.removeChannel(syncChannel);
+      supabase.removeChannel(requestsChannel);
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
         supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).then();
