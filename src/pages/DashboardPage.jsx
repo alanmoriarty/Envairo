@@ -301,7 +301,7 @@ export default function DashboardPage() {
             </span>
             {isThinking && (
               <span className="text-accent flex items-center gap-1 animate-pulse">
-                <Sparkles size={14} /> EnvAIro pensando...
+                <Sparkles size={14} /> envAIro Selector pensando...
               </span>
             )}
           </p>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
           >
             <RotateCcw size={24} />
           </button>
-          
+
           <button
             onClick={() => {
               const track = usePlayerStore.getState().prevQueue();
@@ -583,7 +583,7 @@ export default function DashboardPage() {
                         disabled={isThinking}
                         className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
                       >
-                        {isThinking ? 'Generando...' : 'EnvAIro'}
+                        {isThinking ? 'Generando...' : 'envAIro'}
                       </button>
                     )}
                   </div>
@@ -642,7 +642,7 @@ export default function DashboardPage() {
 
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
-      
+
       {/* EnvAIro Confirmation Modal */}
       {isEnairoModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -659,7 +659,7 @@ export default function DashboardPage() {
               <p className="text-sm text-center text-text-muted mb-6">
                 Asegúrate de haber configurado correctamente el prompt y los géneros en los Ajustes. Una vez generado, EnvAIro no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
               </p>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setIsEnairoModalOpen(false)}

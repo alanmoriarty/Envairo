@@ -197,14 +197,14 @@ export function useEnairoSelector() {
       const { actions = [], reasoning } = data;
 
       if (reasoning) {
-        console.log("EnvAIro Auto-Reorder Reasoning:", reasoning);
+        console.log("envAIro Auto-Reorder Reasoning:", reasoning);
       }
 
       if (actions.length > 0) {
         actions.forEach(action => {
           if (action.type === 'remove' && action.queueId) {
             state.removeFromQueue(action.queueId);
-            toast.success(`EnvAIro eliminó una petición que no encajaba con el ambiente.`);
+            toast.success(`envAIro eliminó una petición que no encajaba con el ambiente.`);
           } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
             const latestQueue = usePlayerStore.getState().queue;
             const oldIndex = latestQueue.findIndex(t => t.queueId === action.queueId);
@@ -213,11 +213,11 @@ export function useEnairoSelector() {
             }
           }
         });
-        toast.info(`EnvAIro ha reordenado la lista para mejorar las transiciones.`);
+        toast.info(`envAIro ha reordenado la lista para mejorar las transiciones.`);
       }
 
     } catch (err) {
-      console.error("Error en EnvAIro Auto-Reorder:", err);
+      console.error("Error en envAIro Auto-Reorder:", err);
     } finally {
       setIsThinking(false);
       // Reseteamos banderas sin importar si tuvo éxito o falló

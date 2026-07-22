@@ -8,7 +8,7 @@ function normalizeString(str) {
 
 async function getTrackGenresArray(trackName, artistName) {
   const genres = new Set();
-  
+
   // 1. iTunes API (Multiple results to capture variants)
   try {
     const term = encodeURIComponent(`${trackName} ${artistName}`);
@@ -32,18 +32,18 @@ async function getTrackGenresArray(trackName, artistName) {
  * Evalúa si una canción cumple con las reglas del Auto DJ
  */
 export async function evaluateTrack(track, settings) {
-  const { 
+  const {
     whitelistGenres = [],
-    blacklistGenres = [], 
-    blacklistSongs = [], 
-    blacklistArtists = [], 
-    allowRepeats = false 
+    blacklistGenres = [],
+    blacklistSongs = [],
+    blacklistArtists = [],
+    allowRepeats = false
   } = settings;
 
   // 1. Blacklist Artists
   const blockedArtists = blacklistArtists.map(a => normalizeString(a.name || a)).filter(Boolean);
   const trackArtistNames = (track.artists || '').split(',').map(normalizeString).filter(Boolean);
-  
+
   for (const name of trackArtistNames) {
     if (blockedArtists.includes(name)) {
       return { approved: false, reason: `El artista ${name} está en la lista negra.` };
@@ -54,7 +54,7 @@ export async function evaluateTrack(track, settings) {
   if (blacklistSongs && blacklistSongs.length > 0) {
     const validBlockedSongs = blacklistSongs.map(normalizeString).filter(Boolean);
     if (validBlockedSongs.length > 0) {
-      const blocked = validBlockedSongs.some(s => 
+      const blocked = validBlockedSongs.some(s =>
         normalizeString(track.name).includes(s)
       );
       if (blocked) {
@@ -66,7 +66,7 @@ export async function evaluateTrack(track, settings) {
   // 3. Genres Check (Whitelist & Blacklist)
   const validWhitelist = whitelistGenres.map(normalizeString).filter(Boolean);
   const validBlacklist = blacklistGenres.map(normalizeString).filter(Boolean);
-  
+
   // Solo requerimos género si el filtro está activo Y tenemos token de Spotify
   const needsGenreCheck = validWhitelist.length > 0 || validBlacklist.length > 0;
   let trackGenre = null;
@@ -74,13 +74,13 @@ export async function evaluateTrack(track, settings) {
   if (needsGenreCheck) {
     const artistName = track.artists ? track.artists.split(',')[0] : '';
     const trackGenres = await getTrackGenresArray(track.name, artistName);
-    
+
     if (!trackGenres || trackGenres.length === 0) {
       return { approved: null, reason: 'No se encontraron etiquetas de género para esta pista' };
     }
 
     if (validWhitelist.length > 0) {
-      const hasAllowedGenre = trackGenres.some(tg => 
+      const hasAllowedGenre = trackGenres.some(tg =>
         validWhitelist.some(ag => tg === ag || tg.includes(ag))
       );
       if (!hasAllowedGenre) {
@@ -89,7 +89,7 @@ export async function evaluateTrack(track, settings) {
     }
 
     if (validBlacklist.length > 0) {
-      const blockedGenre = trackGenres.find(tg => 
+      const blockedGenre = trackGenres.find(tg =>
         validBlacklist.some(bg => tg === bg || tg.includes(bg))
       );
       if (blockedGenre) {
@@ -108,7 +108,7 @@ export async function evaluateTrack(track, settings) {
  */
 export async function getAutoQueueRecommendations(playHistory = [], settings = {}) {
   const pool = new Map(); // Usamos un Map para evitar duplicados por ID
-  
+
   // 1. Extraer canciones de Playlists Personalizadas guardadas localmente
   try {
     const savedPlaylists = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
@@ -135,7 +135,7 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
   }
 
   if (currentState) {
-    // 2. Extraer de la Cola Completa (Incluye peticiones aprobadas pasadas y EnvAIro Selector)
+    // 2. Extraer de la Cola Completa (Incluye peticiones aprobadas pasadas y envAIro Selector)
     if (Array.isArray(currentState.queue)) {
       currentState.queue.forEach(track => {
         if (track && track.id) {

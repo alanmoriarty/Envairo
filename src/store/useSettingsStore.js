@@ -22,10 +22,10 @@ export const useSettingsStore = create(
       requestsPerHour: 15,
       requestsPerGuest: 0,
       tableCount: 0,
-      
+
       lastSavedSignature: '',
       setLastSavedSignature: (sig) => set({ lastSavedSignature: sig }),
-      
+
       enairoEnabled: true,
       enairoPrompt: '',
       setEnairoPrompt: (prompt) => set({ enairoPrompt: prompt }),
@@ -107,8 +107,8 @@ export const useSettingsStore = create(
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       setRequestsPerGuest: (v) => set({ requestsPerGuest: v }),
       setTableCount: (v) => set({ tableCount: v }),
-      
-      // EnvAIro Selector AI
+
+      // envAIro Selector AI
       enairoEnabled: false,
       enairoLastRunAt: 0,
       enairoUsageCount: 0,
@@ -116,7 +116,7 @@ export const useSettingsStore = create(
       enairoCooldownUntil: 0,
       enairoAutoReorderCount: 0,
       enairoAutoReorderDate: '',
-      
+
       setEnairoLastRunAt: (v) => set({ enairoLastRunAt: v }),
       setEnairoEnabled: (v) => set({ enairoEnabled: v }),
       setEnairoCooldown: (until, newCount, todayDate) => set({

@@ -28,7 +28,7 @@ export const usePlayerStore = create(
       duration: 0,
       volume: 70,
 
-      // Envairo
+      // envAIro
       queue: [],
       currentQueueIndex: -1,
       pendingRequests: [],
@@ -36,13 +36,13 @@ export const usePlayerStore = create(
       requestHistory: [],
       lastCommandTs: 0,
       historyTimer: null,
-      
+
       hasNewRequestsSinceReorder: false,
       resetNewRequestsFlag: () => set({ hasNewRequestsSinceReorder: false }),
       playbackMinutes: 0,
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
-      
+
       clearPlayerState: () => set({
         queue: [],
         currentQueueIndex: -1,
@@ -70,7 +70,7 @@ export const usePlayerStore = create(
           if (!state.failedYouTubeIds.includes(id)) {
             // Guardar localmente
             const newIds = [...state.failedYouTubeIds, id];
-            
+
             // Subir a la base de datos global (fire and forget)
             supabase.from('youtube_blocked_videos')
               .insert({ video_id: id })
@@ -90,12 +90,12 @@ export const usePlayerStore = create(
           const { data, error } = await supabase
             .from('youtube_blocked_videos')
             .select('video_id');
-            
+
           if (error) {
             console.warn('Error fetching global blocked YouTube IDs:', error.message);
             return;
           }
-          
+
           if (data && data.length > 0) {
             set((state) => {
               const globalIds = data.map(row => row.video_id);
@@ -125,9 +125,9 @@ export const usePlayerStore = create(
 
       // ── Queue ─────────────────────────────────────────────────────────────
       setQueue: (tracks) => {
-        set({ 
-          queue: tracks.map((t, i) => ({ ...t, queueId: `${t.id}-${Date.now()}-${i}` })), 
-          currentQueueIndex: -1 
+        set({
+          queue: tracks.map((t, i) => ({ ...t, queueId: `${t.id}-${Date.now()}-${i}` })),
+          currentQueueIndex: -1
         });
         get().startQueuePreloadWorker();
       },
@@ -135,23 +135,23 @@ export const usePlayerStore = create(
       addToQueue: (track) => {
         set((state) => {
           const newTrack = { ...track, queueId: `${track.id}-${Date.now()}` };
-          
+
           const newQueue = [...state.queue];
           let insertIndex = newQueue.length;
-          
+
           if (state.currentQueueIndex >= 0) {
             insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
           }
-          
+
           newQueue.splice(insertIndex, 0, newTrack);
-          
+
           return {
             queue: newQueue,
             hasNewRequestsSinceReorder: true
           };
         });
         get().startQueuePreloadWorker();
-        
+
         // Si el reproductor está completamente vacío (cola acabada y nada sonando), iniciar auto-reproducción
         const stateAfter = get();
         if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
@@ -166,14 +166,14 @@ export const usePlayerStore = create(
         set((state) => {
           const index = state.queue.findIndex((t) => t.queueId === queueId);
           if (index === -1) return state;
-          
+
           let updatedIndex = state.currentQueueIndex;
           if (index < state.currentQueueIndex) {
             updatedIndex--;
           } else if (index === state.currentQueueIndex) {
             updatedIndex--;
           }
-          
+
           return {
             queue: state.queue.filter((t) => t.queueId !== queueId),
             currentQueueIndex: updatedIndex
@@ -181,7 +181,7 @@ export const usePlayerStore = create(
         });
         get().startQueuePreloadWorker();
       },
-        
+
       clearQueue: () =>
         set(() => {
           return {
@@ -195,7 +195,7 @@ export const usePlayerStore = create(
           const q = [...state.queue];
           const [removed] = q.splice(oldIndex, 1);
           q.splice(newIndex, 0, removed);
-          
+
           let updatedIndex = state.currentQueueIndex;
           if (oldIndex === state.currentQueueIndex) {
             updatedIndex = newIndex;
@@ -204,7 +204,7 @@ export const usePlayerStore = create(
           } else if (oldIndex > state.currentQueueIndex && newIndex <= state.currentQueueIndex) {
             updatedIndex++;
           }
-          
+
           return { queue: q, currentQueueIndex: updatedIndex };
         });
         get().startQueuePreloadWorker();
@@ -260,14 +260,14 @@ export const usePlayerStore = create(
       resolveYouTubeVideoId: async (track, forceMode = null) => {
         if (!track) return null;
         let videoIdToPlay = track.id;
-        
+
         const { useSettingsStore } = await import('./useSettingsStore');
         const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
         const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
         const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
-                          : mode === 'lyrics'  ? 'LYRICS NO COPYRIGHT'
-                          : null; 
-        
+          : mode === 'lyrics' ? 'LYRICS NO COPYRIGHT'
+            : null;
+
         const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
         const needsSearch = querySuffix !== null || isSpotifyTrack;
 
@@ -280,7 +280,7 @@ export const usePlayerStore = create(
             videoIdToPlay = cachedId;
           } else {
             if (cachedId && cacheKey && get().failedYouTubeIds.includes(cachedId)) {
-              localStorage.removeItem(cacheKey); 
+              localStorage.removeItem(cacheKey);
             }
             try {
               const { searchYouTubeVideos } = await import('../lib/youtubeApi');
@@ -289,12 +289,12 @@ export const usePlayerStore = create(
                 .replace(/[-–]\s*$/, '').trim();
               const allArtists = (track.artists || '').replace(/,/g, '');
               const firstArtist = (track.artists || '').split(',')[0].trim();
-              
+
               const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
               const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
               const query = `${queryBase} ${effectiveSuffix}`;
               let results = await searchYouTubeVideos(query, 5);
-              
+
               if ((!results || results.length === 0) && querySuffix) {
                 const relaxedQuery = `${queryBase} AUDIO`;
                 results = await searchYouTubeVideos(relaxedQuery, 5);
@@ -303,18 +303,18 @@ export const usePlayerStore = create(
               if (results && results.length > 0) {
                 let unblocked = results.filter(r => !get().failedYouTubeIds.includes(r.id));
                 const blockedCount = results.length - unblocked.length;
-                
+
                 if (blockedCount >= 3 && mode === 'normal') {
-                   const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
-                   const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
-                   if (fallbackResults && fallbackResults.length > 0) {
-                       const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
-                       if (fallbackUnblocked.length > 0) {
-                           unblocked = fallbackUnblocked;
-                       }
-                   }
+                  const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
+                  const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
+                  if (fallbackResults && fallbackResults.length > 0) {
+                    const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
+                    if (fallbackUnblocked.length > 0) {
+                      unblocked = fallbackUnblocked;
+                    }
+                  }
                 }
-                
+
                 if (unblocked.length > 0) {
                   let validResults = unblocked;
                   if (mode === 'karaoke' || mode === 'lyrics') {
@@ -334,7 +334,7 @@ export const usePlayerStore = create(
 
                   if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
                 } else {
-                  videoIdToPlay = null; 
+                  videoIdToPlay = null;
                 }
               } else {
                 if (track.id && track.id.length === 11 && track.source !== 'spotify') {
@@ -353,51 +353,51 @@ export const usePlayerStore = create(
             }
           }
         }
-        
+
         return { videoIdToPlay, isSpotifyTrack };
       },
 
       // Worker en segundo plano para precargar IDs de toda la cola
       startQueuePreloadWorker: async () => {
-         const state = get();
-         // Si ya está corriendo o no estamos en YouTube, abortar
-         if (state.preloadWorkerRunning || state.playbackEngine !== 'youtube') return;
-         
-         set({ preloadWorkerRunning: true });
-         
-         try {
-           const { useSettingsStore } = await import('./useSettingsStore');
-           const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-           const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+        const state = get();
+        // Si ya está corriendo o no estamos en YouTube, abortar
+        if (state.preloadWorkerRunning || state.playbackEngine !== 'youtube') return;
 
-           // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas para ahorrar cuota de API)
-           const startIndex = get().currentQueueIndex + 1;
-           const endIndex = Math.min(get().queue.length, startIndex + 5);
-           
-           for (let i = startIndex; i < endIndex; i++) {
-             // Es posible que el motor cambie o la cola se limpie durante el proceso
-             if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
-             
-             const track = get().queue[i];
-             const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
-             
-             if (isSpotifyTrack) {
-               const cacheKey = `yt_bridge_${track.id}_${mode}`;
-               const cachedId = localStorage.getItem(cacheKey);
-               
-               // Si no está en caché o falló, resolverlo
-               if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
-                 await get().resolveYouTubeVideoId(track);
-                 // Esperar 1 segundo entre búsquedas para no saturar la red o ser bloqueados por YouTube (429)
-                 await new Promise(resolve => setTimeout(resolve, 1000));
-               }
-             }
-           }
-         } catch (error) {
-           console.error("Error in queue preload worker:", error);
-         } finally {
-           set({ preloadWorkerRunning: false });
-         }
+        set({ preloadWorkerRunning: true });
+
+        try {
+          const { useSettingsStore } = await import('./useSettingsStore');
+          const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+          const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+
+          // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas para ahorrar cuota de API)
+          const startIndex = get().currentQueueIndex + 1;
+          const endIndex = Math.min(get().queue.length, startIndex + 5);
+
+          for (let i = startIndex; i < endIndex; i++) {
+            // Es posible que el motor cambie o la cola se limpie durante el proceso
+            if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
+
+            const track = get().queue[i];
+            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
+
+            if (isSpotifyTrack) {
+              const cacheKey = `yt_bridge_${track.id}_${mode}`;
+              const cachedId = localStorage.getItem(cacheKey);
+
+              // Si no está en caché o falló, resolverlo
+              if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
+                await get().resolveYouTubeVideoId(track);
+                // Esperar 1 segundo entre búsquedas para no saturar la red o ser bloqueados por YouTube (429)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error in queue preload worker:", error);
+        } finally {
+          set({ preloadWorkerRunning: false });
+        }
       },
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
@@ -427,7 +427,7 @@ export const usePlayerStore = create(
             const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
             console.log('Final YouTube ID to play:', videoIdToPlay);
             set({ currentYtId: videoIdToPlay });
-            
+
             if (autoplay) {
               set({ isPlaying: true });
               state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
@@ -440,10 +440,10 @@ export const usePlayerStore = create(
               const { useSettingsStore } = await import('./useSettingsStore');
               const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
               const currentMode = forceMode || (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-              
+
               const modesToCache = ['normal', 'karaoke', 'lyrics'].filter(m => m !== currentMode);
               modesToCache.forEach(m => {
-                get().resolveYouTubeVideoId(track, m).catch(() => {});
+                get().resolveYouTubeVideoId(track, m).catch(() => { });
               });
             } catch (e) {
               console.error('Error starting preload for alternate modes:', e);
@@ -485,11 +485,11 @@ export const usePlayerStore = create(
 
       addPendingRequest: (req) =>
         set((state) => {
-          const newReq = { 
-            ...req, 
-            reqId: req.reqId || `req-${Date.now()}`, 
-            timestamp: req.timestamp || new Date().toISOString(), 
-            status: req.status || 'pending' 
+          const newReq = {
+            ...req,
+            reqId: req.reqId || `req-${Date.now()}`,
+            timestamp: req.timestamp || new Date().toISOString(),
+            status: req.status || 'pending'
           };
           return {
             pendingRequests: [newReq, ...state.pendingRequests],
@@ -506,22 +506,22 @@ export const usePlayerStore = create(
         set((state) => {
           const req = state.pendingRequests.find((r) => r.reqId === reqId);
           if (!req) return {};
-          
-          const newTrack = { 
-            ...req.track, 
-            queueId: `${req.track.id}-${Date.now()}`, 
+
+          const newTrack = {
+            ...req.track,
+            queueId: `${req.track.id}-${Date.now()}`,
             requestedBy: req.requester,
             requestedAt: req.timestamp,
             reqId: req.reqId
           };
-          
+
           const newQueue = [...state.queue];
           let insertIndex = newQueue.length;
-          
+
           if (state.currentQueueIndex >= 0) {
             insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
           }
-          
+
           newQueue.splice(insertIndex, 0, newTrack);
 
           return {

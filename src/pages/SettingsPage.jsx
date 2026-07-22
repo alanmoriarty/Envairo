@@ -294,7 +294,7 @@ export default function SettingsPage() {
                   className="input-field w-full text-sm font-mono placeholder:font-sans"
                 />
                 <p className="text-[10px] text-text-muted mt-1.5">
-                  Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. EnvAIro la reproducirá en bucle.
+                  Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. envAIro la reproducirá en bucle.
                 </p>
               </div>
             )}
@@ -323,7 +323,7 @@ export default function SettingsPage() {
                 className="input-field w-full h-24 resize-none"
               />
             </div>
-            
+
             <div className="pt-2">
               <label className="block text-sm font-semibold text-text-primary mb-1.5">Cantidad de sugerencias a generar</label>
               <p className="text-xs text-text-muted mb-2">Máximo 50 canciones por generación.</p>

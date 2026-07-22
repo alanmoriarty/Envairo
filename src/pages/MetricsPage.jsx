@@ -44,8 +44,8 @@ export default function MetricsPage() {
   const metrics = useMemo(() => {
     // 1. Filtrar peticiones de invitados
     const allRequests = requestHistory.filter(req => {
-      if (req.requester === 'EnvAIro Selector' || req.requester === 'Dashboard') return false;
-      
+      if (req.requester === 'envAIro Selector' || req.requester === 'Dashboard') return false;
+
       if (selectedDate === 'all') return true;
       const dateToUse = new Date(req.timestamp);
       return getLocalDateString(dateToUse) === selectedDate;
@@ -60,7 +60,7 @@ export default function MetricsPage() {
     allRequests.forEach(req => {
       const track = req.track;
       if (!track) return;
-      
+
       const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
       const mainArtistId = track.artistIds?.[0];
 

@@ -201,10 +201,10 @@ const ES = {
     blacklist_genre_label: 'Géneros Bloqueados',
     blacklist_genre_desc: 'El Auto-DJ NUNCA reproducirá estos géneros.',
     blacklist_artist_label: 'Artistas Bloqueados',
-    blacklist_artist_desc: 'Envairo bloqueará automáticamente canciones de estos artistas.',
+    blacklist_artist_desc: 'envAIro bloqueará automáticamente canciones de estos artistas.',
     blacklist_song_label: 'Canciones Bloqueadas',
-    blacklist_song_desc: 'Envairo bloqueará estas canciones exactas.',
-    ai_title: 'EnvAIro Selector Inteligente',
+    blacklist_song_desc: 'envAIro bloqueará estas canciones exactas.',
+    ai_title: 'envAIro Selector Inteligente',
     ai_desc: 'Analiza las peticiones de los invitados usando Inteligencia Artificial para decidir si la canción encaja con el ambiente (vibe) de tu evento actual.',
     ai_test_mode: 'Modo Pruebas (Solo etiqueta, no rechaza)',
     ai_prompt_label: 'Describe el ambiente de tu evento:',
@@ -222,8 +222,8 @@ const ES = {
       "Ska", "Soul", "Soundtrack", "Techno", "Trance", "Trap", "Trap Latino",
       "Tropical", "Urbano latino", "Vallenato"
     ],
-    envairo_title: 'EnvAIro Selector (Configuración IA)',
-    envairo_desc: 'EnvAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."',
+    envairo_title: 'envAIro Selector (Configuración IA)',
+    envairo_desc: 'envAIro Selector se activa desde el Dashboard. Aquí puedes darle instrucciones sobre cómo debe comportarse. Ej: "Es una boda elegante, mantén la música romántica pero bailable, evita cosas vulgares."',
     envairo_prompt_label: 'Contexto Especial / Vibra (Opcional)',
     envairo_prompt_placeholder: 'Escribe las instrucciones para la IA...',
     envairo_test_label: 'Modo Pruebas (Sin restricciones)',
@@ -315,7 +315,7 @@ const ES = {
   },
   support: {
     title: 'Soporte y Ayuda',
-    subtitle: 'Resolvemos todas tus dudas sobre Envairo',
+    subtitle: 'Resolvemos todas tus dudas sobre envAIro',
     faq_title: 'Preguntas Frecuentes',
     contact_title: '¿Necesitas ayuda directa?',
     contact_desc: 'Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier problema en tiempo real.',
@@ -323,12 +323,12 @@ const ES = {
     version_info: 'Envairo v1.0.0 · Construido con ❤️',
     faqs: [
       {
-        question: '¿Qué es Envairo QR?',
+        question: '¿Qué es envAIro QR?',
         answer: 'Envairo QR es una plataforma interactiva que permite a los invitados de tus eventos o clientes de tu negocio pedir canciones escaneando un código QR, interactuar con actividades musicales y disfrutar de un ambiente personalizado en tiempo real.'
       },
       {
         question: '¿Cómo funciona el reproductor?',
-        answer: 'El reproductor se sincroniza directamente. Desde el panel principal de Envairo, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
+        answer: 'El reproductor se sincroniza directamente. Desde el panel principal de envAIro, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
       },
       {
         question: '¿Cómo funcionan los QRs?',
@@ -336,23 +336,23 @@ const ES = {
       },
       {
         question: '¿Cómo funcionan las peticiones?',
-        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. Envairo revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción en tiempo real.'
+        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. envAIro revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción en tiempo real.'
       },
       {
         question: '¿Puedo utilizar playlists?',
-        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists. Envairo puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
+        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists. envAIro puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
       },
       {
         question: '¿Cómo funciona el Auto-DJ?',
         answer: 'El Auto-DJ es un sistema inteligente que se encarga de mantener la música sonando si no hay peticiones de los invitados. Selecciona canciones adecuadas basándose en los géneros permitidos y el ambiente del evento para que nunca haya silencios.'
       },
       {
-        question: '¿Cómo funciona EnvAIro Selector?',
-        answer: 'EnvAIro Selector utiliza Inteligencia Artificial para analizar el contexto de tu evento. Solo necesitas darle una breve descripción (ej. "Boda elegante y romántica") y la IA analizará cada petición para asegurarse de que encaja perfectamente con la vibra que has configurado.'
+        question: '¿Cómo funciona envAIro Selector?',
+        answer: 'envAIro Selector utiliza Inteligencia Artificial para analizar el contexto de tu evento. Solo necesitas darle una breve descripción (ej. "Boda elegante y romántica") y la IA analizará cada petición para asegurarse de que encaja perfectamente con la vibra que has configurado.'
       },
       {
         question: '¿Qué son las actividades interactivas?',
-        answer: 'Envairo incluye actividades divertidas para animar tu evento, como el Juego de la Silla, Trivia Musical y Retos personalizados. Estas dinámicas se activan desde la pestaña Actividades y utilizan la música en curso para crear experiencias memorables con tus invitados.'
+        answer: 'envAIro incluye actividades divertidas para animar tu evento, como el Juego de la Silla, Trivia Musical y Retos personalizados. Estas dinámicas se activan desde la pestaña Actividades y utilizan la música en curso para crear experiencias memorables con tus invitados.'
       },
       {
         question: '¿Qué diferencia hay entre el Modo Fiesta y el Modo Comercial?',
@@ -640,20 +640,20 @@ const EN = {
   },
   support: {
     title: 'Support and Help',
-    subtitle: 'We solve all your doubts about Envairo',
+    subtitle: 'We solve all your doubts about envAIro',
     faq_title: 'Frequently Asked Questions',
     contact_title: 'Need direct help?',
     contact_desc: 'Our support team is available on WhatsApp to solve any problem in real time.',
     contact_btn: 'Contact via WhatsApp',
-    version_info: 'Envairo v1.0.0 · Built with ❤️',
+    version_info: 'envAIro v1.0.0 · Built with ❤️',
     faqs: [
       {
-        question: 'What is Envairo QR?',
-        answer: 'Envairo QR is an interactive platform that allows your event guests or business customers to request songs by scanning a QR code, interact with musical activities, and enjoy a personalized environment in real time.'
+        question: 'What is envAIro QR?',
+        answer: 'envAIro QR is an interactive platform that allows your event guests or business customers to request songs by scanning a QR code, interact with musical activities, and enjoy a personalized environment in real time.'
       },
       {
         question: 'How does the player work?',
-        answer: 'The player syncs directly. From the main Envairo dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
+        answer: 'The player syncs directly. From the main envAIro dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
       },
       {
         question: 'How do the QRs work?',
@@ -661,23 +661,23 @@ const EN = {
       },
       {
         question: 'How do requests work?',
-        answer: 'Requests sent by guests are added to a smart queue. Envairo checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the playlist in real time.'
+        answer: 'Requests sent by guests are added to a smart queue. envAIro checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the playlist in real time.'
       },
       {
         question: 'Can I use playlists?',
-        answer: 'Yes! From the dashboard, you can search and load your existing playlists. Envairo can alternate between guest requests and your playlist to ensure the music never stops.'
+        answer: 'Yes! From the dashboard, you can search and load your existing playlists. envAIro can alternate between guest requests and your playlist to ensure the music never stops.'
       },
       {
         question: 'How does Auto-DJ work?',
         answer: 'Auto-DJ is a smart system that keeps the music playing if there are no guest requests. It selects appropriate songs based on the allowed genres and the atmosphere of the event so there are never any silences.'
       },
       {
-        question: 'How does EnvAIro Selector work?',
-        answer: 'EnvAIro Selector uses Artificial Intelligence to analyze the context of your event. You just need to give it a brief description (e.g., "Elegant and romantic wedding") and the AI will analyze each request to make sure it perfectly fits the vibe you\'ve set.'
+        question: 'How does envAIro Selector work?',
+        answer: 'envAIro Selector uses Artificial Intelligence to analyze the context of your event. You just need to give it a brief description (e.g., "Elegant and romantic wedding") and the AI will analyze each request to make sure it perfectly fits the vibe you\'ve set.'
       },
       {
         question: 'What are the interactive activities?',
-        answer: 'Envairo includes fun activities to liven up your event, such as Musical Chairs, Musical Trivia, and personalized Challenges. These dynamics are activated from the Activities tab and use the current music to create memorable experiences with your guests.'
+        answer: 'envAIro includes fun activities to liven up your event, such as Musical Chairs, Musical Trivia, and personalized Challenges. These dynamics are activated from the Activities tab and use the current music to create memorable experiences with your guests.'
       },
       {
         question: 'What is the difference between Party Mode and Commercial Mode?',

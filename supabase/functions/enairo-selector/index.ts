@@ -24,7 +24,7 @@ serve(async (req) => {
 
     if (action_mode === 'generate') {
       prompt = `
-Eres "EnvAIro Selector", un DJ de Inteligencia Artificial experto en curación musical de clase mundial.
+Eres "envAIro Selector", un DJ de Inteligencia Artificial experto en curación musical de clase mundial.
 Tu objetivo principal es generar una lista de reproducción basándote ESTRICTAMENTE en las "Instrucciones Especiales".
 
 VIBRA DESEADA (Instrucciones Especiales del Anfitrión): 
@@ -57,13 +57,13 @@ Estructura esperada:
       const isInitial = settings?.isInitialReorder === true;
 
       prompt = `
-Eres "EnvAIro Selector", un DJ de Inteligencia Artificial.
+Eres "envAIro Selector", un DJ de Inteligencia Artificial.
 Tienes conocimiento de generos músicales tanto actuales como anteriores a nuestra época.
 Tu ÚNICA tarea ahora es revisar la cola de reproducción pendiente (queue) y reordenarla para garantizar transiciones suaves entre géneros musicales y niveles de energía (ej. no saltar de balada acústica a heavy metal bruscamente). 
 REGLA MUY IMPORTANTE DE ESPACIADO: DEBES separar las canciones del mismo artista. Está estrictamente PROHIBIDO dejar dos o más canciones del mismo artista juntas de forma consecutiva. Asegúrate de que haya varias canciones de diferencia entre apariciones del mismo artista.
-${isInitial ? 
-'REGLA ESTRICTA: Este es el primer ordenamiento. NO PUEDES ELIMINAR (remove) ninguna canción bajo ninguna circunstancia. Solo debes reordenarlas.' : 
-'También puedes ELIMINAR (remove) canciones, pero SOLO aquellas que no cumplan con el género musical o rompan completamente la vibra de la lista.'}
+${isInitial ?
+          'REGLA ESTRICTA: Este es el primer ordenamiento. NO PUEDES ELIMINAR (remove) ninguna canción bajo ninguna circunstancia. Solo debes reordenarlas.' :
+          'También puedes ELIMINAR (remove) canciones, pero SOLO aquellas que no cumplan con el género musical o rompan completamente la vibra de la lista.'}
 
 Cola actual pendiente (ESTAS SON LAS QUE DEBES REORDENAR${isInitial ? '' : ' O ELIMINAR'}):
 ${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
@@ -91,7 +91,7 @@ Estructura esperada:
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { 
+        generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.7
         }

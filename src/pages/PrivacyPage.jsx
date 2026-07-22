@@ -6,15 +6,15 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-bg-base text-text-primary p-8 md:p-12 overflow-y-auto">
       <div className="max-w-3xl mx-auto space-y-8">
         <Link to="/" className="text-primary hover:underline">&larr; Volver al inicio</Link>
-        
+
         <h1 className="text-4xl font-bold">Política de Privacidad</h1>
         <p className="text-text-secondary">Última actualización: {new Date().toLocaleDateString()}</p>
-        
+
         <div className="space-y-6 text-lg leading-relaxed">
           <section>
             <h2 className="text-2xl font-semibold mb-3">1. Información que recopilamos</h2>
             <p>
-              EnvAIro recopila información básica de tu perfil público de Spotify o Google (nombre, imagen de perfil y correo electrónico) únicamente para mostrar tu identidad dentro de las sesiones colaborativas y permitirte buscar y agregar canciones.
+              envAIro recopila información básica de tu perfil público de Spotify o Google (nombre, imagen de perfil y correo electrónico) únicamente para mostrar tu identidad dentro de las sesiones colaborativas y permitirte buscar y agregar canciones.
             </p>
           </section>
 
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-3">4. Derechos del usuario</h2>
             <p>
-              Puedes revocar el acceso de EnvAIro a tu cuenta de Spotify o Google en cualquier momento desde el panel de aplicaciones de terceros de tu respectiva cuenta. Al hacerlo, EnvAIro perderá inmediatamente el acceso a tu cuenta.
+              Puedes revocar el acceso de envAIro a tu cuenta de Spotify o Google en cualquier momento desde el panel de aplicaciones de terceros de tu respectiva cuenta. Al hacerlo, envAIro perderá inmediatamente el acceso a tu cuenta.
             </p>
           </section>
 
