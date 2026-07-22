@@ -43,20 +43,38 @@ serve(async (req) => {
     // 2. Search Spotify
     if (queries && queries.length > 0) {
       // Bulk search mode
-      const searchPromises = queries.map(async (q: string) => {
-        const searchParams = new URLSearchParams({
-          q: q,
-          type: type,
-          limit: limit.toString()
-        })
-        const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        })
-        if (!searchResponse.ok) return null;
-        return searchResponse.json();
-      })
+      const results = [];
+      const chunkSize = 5;
+      
+      for (let i = 0; i < queries.length; i += chunkSize) {
+        const chunk = queries.slice(i, i + chunkSize);
+        
+        const chunkPromises = chunk.map(async (q: string) => {
+          const searchParams = new URLSearchParams({
+            q: q,
+            type: type,
+            limit: limit.toString()
+          })
+          const searchResponse = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          })
+          
+          if (!searchResponse.ok) {
+            console.error('Spotify API error for query:', q, searchResponse.status);
+            return null;
+          }
+          return searchResponse.json();
+        });
+        
+        const chunkResults = await Promise.all(chunkPromises);
+        results.push(...chunkResults);
+        
+        // Small delay to prevent rate limits
+        if (i + chunkSize < queries.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
 
-      const results = await Promise.all(searchPromises)
       return new Response(JSON.stringify({ results }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
