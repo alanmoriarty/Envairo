@@ -109,7 +109,7 @@ export async function evaluateTrack(track, settings) {
         }
       });
       if (!explicitError && explicitData && explicitData.isExplicit) {
-        return { approved: false, reason: 'Contenido explícito bloqueado por DeepSeek' };
+        return { approved: false, reason: 'Contenido explícito bloqueado' };
       }
     } catch (err) {
       console.error('Explicit check failed in AutoDJ', err);

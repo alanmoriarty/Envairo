@@ -61,21 +61,22 @@ export default function MetricsPage() {
       const track = req.track;
       if (!track) return;
 
-      const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
-      const mainArtistId = track.artistIds?.[0];
+      if (req.status === 'approved') {
+        const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
+        const mainArtistId = track.artistIds?.[0];
 
-      const key = mainArtistId || mainArtistName;
+        const key = mainArtistId || mainArtistName;
 
-      if (!artistCounts[key]) {
-        artistCounts[key] = {
-          id: mainArtistId,
-          name: mainArtistName,
-          plays: 0,
-          image: track.image || track.album?.images?.[0]?.url
-        };
+        if (!artistCounts[key]) {
+          artistCounts[key] = {
+            id: mainArtistId,
+            name: mainArtistName,
+            plays: 0,
+            image: track.image || track.album?.images?.[0]?.url
+          };
+        }
+        artistCounts[key].plays++;
       }
-      artistCounts[key].plays++;
-
       const dateToUse = new Date(req.timestamp || Date.now());
       const h = dateToUse.getHours().toString().padStart(2, '0') + ':00';
       hourCounts[h] = (hourCounts[h] || 0) + 1;
