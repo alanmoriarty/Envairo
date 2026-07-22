@@ -173,13 +173,17 @@ export async function getYouTubePlaylist(playlistId) {
   url.searchParams.append('part', 'snippet');
   url.searchParams.append('id', playlistId);
   
-  if (!token) {
-    throw new Error('No YouTube auth available');
+  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+  if (!token && !apiKey) {
+    throw new Error('No YouTube auth available (OAuth token or API Key required)');
   }
 
   const headers = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else if (apiKey) {
+    url.searchParams.append('key', apiKey);
   }
 
   const response = await fetch(url.toString(), { headers });
@@ -212,13 +216,17 @@ export async function getYouTubePlaylistItems(playlistId, limit = 50) {
   url.searchParams.append('playlistId', playlistId);
   url.searchParams.append('maxResults', limit.toString());
   
-  if (!token) {
+  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+  if (!token && !apiKey) {
     throw new Error('No YouTube auth available for fetching playlist items');
   }
 
   const headers = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else if (apiKey) {
+    url.searchParams.append('key', apiKey);
   }
 
   const response = await fetch(url.toString(), { headers });
