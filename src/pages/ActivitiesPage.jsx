@@ -474,6 +474,7 @@ function ChairGameCard() {
   const [countdown, setCountdown] = useState(null);
   const [round, setRound] = useState(0);
   const timerRef = useRef(null);
+  const countdownRef = useRef(null);
   const shiftQueue = usePlayerStore(s => s.shiftQueue);
   const isPlaying = usePlayerStore(s => s.isPlaying);
 
