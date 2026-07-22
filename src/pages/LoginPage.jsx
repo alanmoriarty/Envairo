@@ -150,10 +150,10 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <img 
-            src="/envairo-logo-sin-fondo.svg" 
-            alt="EnvAIro Logo" 
-            className="h-24 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
+          <img
+            src="/envairo-logo-sin-fondo.svg"
+            alt="EnvAIro Logo"
+            className="h-28 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in"
           />
           <p className="text-text-muted text-center max-w-xs">
             {t('login.title')}
