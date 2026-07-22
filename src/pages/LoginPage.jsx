@@ -34,7 +34,9 @@ export default function LoginPage() {
     'aliriopina04@gmail.com',
     'aliriopina05@gmail.com',
     'javiercardonaaudiovisual@gmail.com',
-    'alextascvers@gmail.com'
+    'alextascvers@gmail.com',
+    'bernabeite@gmail.com',
+    'camiloardila.1803@gmail.com'
   ]; // <-- Agrega aquí los correos a los que les darás acceso a la Beta
 
   const handleEmailAuth = async (e) => {
