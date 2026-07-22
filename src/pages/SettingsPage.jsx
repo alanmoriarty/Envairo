@@ -7,6 +7,7 @@ import { SongTagInput } from '../components/ui/SongTagInput';
 import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../store/useLanguageStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
@@ -132,6 +133,15 @@ export default function SettingsPage() {
   } = useSettingsStore();
   const store = useSettingsStore();
   const { t } = useTranslation();
+  
+  const user = useAuthStore(s => s.user);
+  const userEmail = user?.email?.toLowerCase() || '';
+  const ALLOWED_EMAILS = [
+    'aliriopina04@gmail.com',
+    'aliriopina05@gmail.com',
+    'javiercardonaaudiovisual@gmail.com'
+  ];
+  const canSeeTestMode = ALLOWED_EMAILS.includes(userEmail);
 
   const COMMON_GENRES = t('settings.common_genres') || [];
 
@@ -337,14 +347,16 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="border-t border-white/5 pt-4">
-              <Toggle
-                checked={enairoTestMode}
-                onChange={setEnairoTestMode}
-                label={t('settings.envairo_test_label')}
-                description={t('settings.envairo_test_desc')}
-              />
-            </div>
+            {canSeeTestMode && (
+              <div className="border-t border-white/5 pt-4">
+                <Toggle
+                  checked={enairoTestMode}
+                  onChange={setEnairoTestMode}
+                  label={t('settings.envairo_test_label')}
+                  description={t('settings.envairo_test_desc')}
+                />
+              </div>
+            )}
           </section>
 
 
