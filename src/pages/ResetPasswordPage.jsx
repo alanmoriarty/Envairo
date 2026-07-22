@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
           <img 
             src="/envairo-logo.svg" 
             alt="EnvAIro Logo" 
-            className="h-20 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
+            className="h-24 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
           />
           <p className="text-text-muted text-center max-w-xs text-sm">
             Ingresa tu nueva contraseña a continuación.

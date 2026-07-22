@@ -67,7 +67,7 @@ export function Sidebar({ isOpen, onClose }) {
             <img 
               src="/envairo-logo.svg" 
               alt="EnvAIro" 
-              className="h-10 w-auto" 
+              className="h-12 w-auto" 
             />
           </div>
           

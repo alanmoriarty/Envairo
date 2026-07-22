@@ -360,7 +360,7 @@ export default function GuestPage() {
           <LanguageSelector />
         </div>
         <div className="flex justify-center mb-4">
-          <img src="/envairo-logo.svg" alt="EnvAIro Logo" className="h-16 w-auto drop-shadow-[0_0_10px_rgba(157,78,221,0.3)]" />
+          <img src="/envairo-logo.svg" alt="EnvAIro Logo" className="h-20 w-auto drop-shadow-[0_0_10px_rgba(157,78,221,0.3)]" />
         </div>
         <h1 className="text-2xl font-bold text-gradient">
           {eventName 
