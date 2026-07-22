@@ -144,6 +144,13 @@ export function useEnairoSelector() {
         toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
       }
 
+      // Ejecutar el primer barrido de contenido explícito inmediatamente después de la generación
+      if (useSettingsStore.getState().explicitFilter) {
+        setTimeout(() => {
+          autoSweepExplicitContent();
+        }, 3000); // Pequeño delay para que la UI respire antes del barrido
+      }
+
       return true;
 
     } catch (err) {

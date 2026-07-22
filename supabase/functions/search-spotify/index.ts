@@ -32,8 +32,17 @@ serve(async (req) => {
         const chunk = queries.slice(i, i + chunkSize);
         
         const chunkPromises = chunk.map(async (q: string) => {
+          // Extraer pista y artista si vienen en formato "Cancion - Artista" para precisión extrema
+          let d_query = q;
+          if (q.includes('-')) {
+            const parts = q.split('-');
+            const trackPart = parts[0].trim();
+            const artistPart = parts.slice(1).join('-').trim();
+            d_query = `track:"${trackPart}" artist:"${artistPart}"`;
+          }
+
           const searchParams = new URLSearchParams({
-            q: q,
+            q: d_query,
             limit: limit.toString(),
             order: 'RANKING' // Fuerza a ordenar por popularidad para evitar covers/karaokes
           });
@@ -85,8 +94,16 @@ serve(async (req) => {
       })
     } else {
       // Single search mode usando DEEZER
+      let d_query = query;
+      if (query.includes('-')) {
+        const parts = query.split('-');
+        const trackPart = parts[0].trim();
+        const artistPart = parts.slice(1).join('-').trim();
+        d_query = `track:"${trackPart}" artist:"${artistPart}"`;
+      }
+
       const searchParams = new URLSearchParams({
-        q: query,
+        q: d_query,
         limit: limit.toString(),
         order: 'RANKING' // Fuerza a ordenar por popularidad
       })
