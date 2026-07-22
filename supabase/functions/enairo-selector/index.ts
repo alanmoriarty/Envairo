@@ -43,12 +43,6 @@ REGLAS DE ORO:
 2. DIVERSIDAD EXTREMA: NUNCA repitas el mismo artista en la lista.
 3. TRANSICIONES: El orden debe tener fluidez (ej. no saltes de una balada lenta a algo extremadamente agresivo de golpe).
 
-Historial reciente (Para no repetir lo que ya sonó):
-${JSON.stringify(history.map((t: any) => t.name + ' - ' + t.artists))}
-
-Cola actual:
-${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
-
 REGLAS DE SALIDA:
 Responde ESTRICTAMENTE con un objeto JSON válido.
 Estructura esperada:
