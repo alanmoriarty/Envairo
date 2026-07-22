@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Music2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -27,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [captchaToken, setCaptchaToken] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const captchaRef = useRef(null);
   const setUser = useAuthStore(s => s.setUser);
 
   const ALLOWED_EMAILS = [
@@ -100,6 +101,10 @@ export default function LoginPage() {
       }
     } finally {
       setIsLoading(false);
+      if (captchaRef.current) {
+        captchaRef.current.resetCaptcha();
+      }
+      setCaptchaToken(null);
     }
   };
 
@@ -121,6 +126,11 @@ export default function LoginPage() {
       toast.success('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.', { duration: 6000 });
     } catch (err) {
       toast.error(err.message || 'Error al solicitar el restablecimiento');
+    } finally {
+      if (captchaRef.current) {
+        captchaRef.current.resetCaptcha();
+      }
+      setCaptchaToken(null);
     }
   };
 
@@ -204,6 +214,7 @@ export default function LoginPage() {
 
             <div className="flex justify-center pt-2 pb-2">
               <HCaptcha
+                ref={captchaRef}
                 sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
                 onVerify={(token) => setCaptchaToken(token)}
                 onExpire={() => setCaptchaToken(null)}
