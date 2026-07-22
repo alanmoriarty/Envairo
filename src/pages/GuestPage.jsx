@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { AdSense } from '../components/ads/AdSense';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { useTranslation } from '../store/useLanguageStore';
+import { InstallAppButton } from '../components/shared/InstallAppButton';
 
 const COOLDOWN_SECONDS = 10 * 60; // 10 minutes
 const MAX_REQUESTS = 3;
@@ -553,13 +554,11 @@ export default function GuestPage() {
 
       {/* Botón de Instalar App */}
       <div className="mt-6">
-        <a
-          href="#"
-          className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
-        >
-          <Download size={18} />
-          {lang === 'es' ? 'Descarga Nuestra App' : 'Download Our App'}
-        </a>
+        <InstallAppButton
+          variant="custom"
+          text={lang === 'es' ? 'Descarga Nuestra App' : 'Download Our App'}
+          className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
+        />
       </div>
 
       {/* Bottom Banner Ad */}

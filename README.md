@@ -1,6 +1,6 @@
-# Envairo 🎵
+# envAIro 🎵
 
-Envairo es un sistema interactivo tipo "Jukebox" (rockola) diseñado para DJs, Bares, y eventos. Permite al anfitrión gestionar la reproducción de música directamente desde Spotify, mientras que los invitados pueden escanear un código QR para buscar y pedir sus canciones favoritas desde sus propios teléfonos móviles.
+envAIro es un sistema interactivo tipo "Jukebox" (rockola) diseñado para DJs, Bares, y eventos. Permite al anfitrión gestionar la reproducción de música directamente desde Spotify, mientras que los invitados pueden escanear un código QR para buscar y pedir sus canciones favoritas desde sus propios teléfonos móviles.
 
 ## ✨ Características Principales
 

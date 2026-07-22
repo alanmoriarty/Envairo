@@ -21,12 +21,12 @@ export function RootLayout() {
   const { isAuthenticated, user } = useAuthStore();
   const { isAdminMode, themeColor } = useSettingsStore();
   const location = useLocation();
-  
+
   useQueueSync();
   useEnairoSelector();
   useAutoQueue();
 
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [kickedOut, setKickedOut] = useState(false);
 
@@ -55,7 +55,7 @@ export function RootLayout() {
     if (user?.id) {
       useSettingsStore.getState().setSessionId(user.id);
     }
-    
+
     // Sincronizar configuraciones e historial de la nube al montar
     const hydrateSettings = async () => {
       try {
@@ -73,7 +73,7 @@ export function RootLayout() {
             }
           });
           useSettingsStore.setState(validSettings);
-          
+
           const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
@@ -89,7 +89,7 @@ export function RootLayout() {
           .select('queue, play_history')
           .eq('user_id', sbUser.id)
           .maybeSingle();
-          
+
         if (!hsError && hostState) {
           usePlayerStore.setState({
             queue: hostState.queue || [],
@@ -99,24 +99,24 @@ export function RootLayout() {
           // Nueva cuenta sin host_state: limpiamos la cola heredada
           usePlayerStore.getState().clearPlayerState();
         }
-        
+
         // Fetch global blocked YouTube IDs at startup
         usePlayerStore.getState().fetchGlobalBlockedYouTubeIds();
-      } catch(e) {
+      } catch (e) {
         console.error('Error hydrating settings on mount:', e);
       }
     };
     hydrateSettings();
 
 
-    
+
     // Limpiar peticiones antiguas y actualizar estado de disponibilidad cada minuto
     let lastActiveState = null;
-    
+
     const checkAndUpdateStatus = () => {
       const state = useSettingsStore.getState();
       usePlayerStore.getState().cleanupOldRequests?.();
-      
+
       let currentActive = state.alwaysAvailable;
 
       if (lastActiveState !== currentActive) {
@@ -132,10 +132,10 @@ export function RootLayout() {
     };
 
     const interval = setInterval(checkAndUpdateStatus, 60000);
-    
+
     // Ejecutar una vez al montar
     checkAndUpdateStatus();
-    
+
     return () => {
       clearInterval(interval);
       // Desactivar peticiones por defecto al cerrar la sesión/app
@@ -158,7 +158,7 @@ export function RootLayout() {
       // Auto-sync solo para opciones rápidas y estado crítico
       const autoSyncKeys = ['mode', 'enairoEnabled', 'enairoTestMode', 'alwaysAvailable', 'sessionId'];
       const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
-      
+
       if (changed) {
         // 1. Sync to user_metadata (for host persistence across devices)
         clearTimeout(timeoutId);
@@ -167,7 +167,7 @@ export function RootLayout() {
           // Guardar estado de todas las llaves en metadatos (aunque el auto-sync sea solo por los toggles)
           const allKeys = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           allKeys.forEach(k => { settingsObj[k] = state[k]; });
-          
+
           supabase.auth.updateUser({
             data: { host_settings: JSON.stringify(settingsObj) }
           }).catch(console.error);
@@ -176,7 +176,7 @@ export function RootLayout() {
         // 2. Sync to sessions table (for Guest page validation)
         const dbKeys = ['mode', 'alwaysAvailable', 'sessionId']; // Sync crítico para Guests
         const dbChanged = dbKeys.some(k => state[k] !== prevState[k]);
-        
+
         if (dbChanged) {
           const sessionId = state.sessionId;
           const hostSecret = state.hostSecret;
@@ -203,7 +203,7 @@ export function RootLayout() {
             }).then(() => {
               // Direct update fallback in case RPC doesn't support 'mode' column
               return supabase.from('sessions').update({ mode: state.mode }).eq('id', sessionId);
-            }).catch(()=>{});
+            }).catch(() => { });
           }
         }
       }
@@ -222,7 +222,7 @@ export function RootLayout() {
     const unsubPlayer = usePlayerStore.subscribe((state) => {
       const dbKeys = ['queue', 'playHistory'];
       const changed = dbKeys.some(k => state[k] !== prevPlayerState[k]);
-      
+
       if (changed) {
         clearTimeout(playerTimeoutId);
         playerTimeoutId = setTimeout(async () => {
@@ -255,7 +255,7 @@ export function RootLayout() {
         <AlertCircle size={64} className="text-danger mb-6" />
         <h1 className="text-3xl font-bold mb-4">Sesión Abierta en Otra Pestaña</h1>
         <p className="text-text-muted max-w-md">
-          Has abierto el reproductor de Envairo en otra pestaña de este navegador. Para evitar conflictos, esta pestaña ha sido desconectada.
+          Has abierto el reproductor de envAIro en otra pestaña de este navegador. Para evitar conflictos, esta pestaña ha sido desconectada.
         </p>
         <button onClick={() => window.location.reload()} className="mt-8 btn-primary px-8 py-3">
           Reconectar aquí
@@ -270,10 +270,10 @@ export function RootLayout() {
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">
           <div className="flex items-center">
-            <img 
-              src="/envAIro-logo-horizontal.svg" 
-              alt="EnvAIro" 
-              className="h-10 w-auto" 
+            <img
+              src="/envAIro-logo-horizontal.svg"
+              alt="EnvAIro"
+              className="h-10 w-auto"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -285,14 +285,14 @@ export function RootLayout() {
         </div>
 
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        
+
         <main className="flex-1 md:ml-64 mt-16 md:mt-0 overflow-y-auto flex flex-col relative">
           <div className="radial-gradient-bg flex-1 flex flex-col pb-6">
             <Outlet />
           </div>
         </main>
       </div>
-      
+
       {/* Visualizer Background */}
       <VisualizerBackground />
 

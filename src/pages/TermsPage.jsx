@@ -21,14 +21,14 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-3">2. Descripción del Servicio</h2>
             <p>
-              EnvAIro es una plataforma de música colaborativa que permite a los usuarios sincronizar listas de reproducción y gestionar colas musicales en tiempo real utilizando las APIs públicas de Spotify y YouTube.
+              envAIro es una plataforma de música colaborativa que permite a los usuarios sincronizar listas de reproducción y gestionar colas musicales en tiempo real utilizando las APIs públicas de Spotify y YouTube.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold mb-3">3. Uso Aceptable</h2>
             <p>
-              Como usuario de EnvAIro, te comprometes a:
+              Como usuario de envAIro, te comprometes a:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1 text-text-secondary">
               <li>No utilizar la plataforma para ningún propósito ilegal o no autorizado.</li>
@@ -40,7 +40,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-3">4. Integraciones de Terceros</h2>
             <p>
-              Nuestra plataforma interactúa con servicios de terceros. Al usar EnvAIro, también aceptas los Términos de Servicio de:
+              Nuestra plataforma interactúa con servicios de terceros. Al usar envAIro, también aceptas los Términos de Servicio de:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1 text-text-secondary">
               <li><a href="https://www.spotify.com/legal/end-user-agreement/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Spotify</a></li>
@@ -58,7 +58,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-3">6. Limitación de Responsabilidad</h2>
             <p>
-              EnvAIro se proporciona "tal cual" sin garantías de ningún tipo. No somos responsables de interrupciones del servicio, pérdida de datos o problemas derivados de las plataformas de terceros utilizadas.
+              envAIro se proporciona "tal cual" sin garantías de ningún tipo. No somos responsables de interrupciones del servicio, pérdida de datos o problemas derivados de las plataformas de terceros utilizadas.
             </p>
           </section>
         </div>

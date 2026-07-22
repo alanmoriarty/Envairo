@@ -2,7 +2,7 @@ import React from 'react';
 import { Download } from 'lucide-react';
 import { usePwaStore } from '../../store/usePwaStore';
 
-export function InstallAppButton({ className = '', text = 'Instalar App' }) {
+export function InstallAppButton({ className = '', text = 'Instalar App', variant = 'primary' }) {
   const { isInstallable, deferredPrompt, clearPrompt } = usePwaStore();
 
   const handleInstallClick = async () => {
@@ -42,7 +42,7 @@ export function InstallAppButton({ className = '', text = 'Instalar App' }) {
   return (
     <button
       onClick={handleInstallClick}
-      className={`btn-primary flex items-center justify-center gap-2 ${className}`}
+      className={`flex items-center justify-center gap-2 ${variant === 'primary' ? 'btn-primary' : ''} ${className}`}
     >
       <Download size={18} />
       {text}

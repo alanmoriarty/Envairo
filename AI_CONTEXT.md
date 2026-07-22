@@ -1,9 +1,9 @@
-# EnvAIro - Contexto del Proyecto para Asistentes de IA
+# envAIro - Contexto del Proyecto para Asistentes de IA
 
-Este documento sirve como la fuente principal de la verdad (Single Source of Truth) para cualquier IA o desarrollador que se integre al proyecto EnvAIro. Contiene la arquitectura, el stack tecnológico, las reglas de negocio y las decisiones técnicas fundamentales.
+Este documento sirve como la fuente principal de la verdad (Single Source of Truth) para cualquier IA o desarrollador que se integre al proyecto envAIro. Contiene la arquitectura, el stack tecnológico, las reglas de negocio y las decisiones técnicas fundamentales.
 
 ## 1. Descripción General del Proyecto
-**EnvAIro** es una aplicación web (PWA) de música colaborativa tipo "Jukebox". Permite a un "Anfitrión" crear una sesión musical en su dispositivo (computadora o tablet) y proyectar un código QR. Los "Invitados" escanean el QR para unirse a la sesión desde sus teléfonos y solicitar canciones. La aplicación cuenta con un DJ de Inteligencia Artificial (Auto DJ / EnvAIro) que evalúa las peticiones de los usuarios en tiempo real.
+**envAIro** es una aplicación web (PWA) de música colaborativa tipo "Jukebox". Permite a un "Anfitrión" crear una sesión musical en su dispositivo (computadora o tablet) y proyectar un código QR. Los "Invitados" escanean el QR para unirse a la sesión desde sus teléfonos y solicitar canciones. La aplicación cuenta con un DJ de Inteligencia Artificial (Auto DJ / envAIro) que evalúa las peticiones de los usuarios en tiempo real.
 
 ## 2. Stack Tecnológico
 - **Frontend:** React + Vite
@@ -36,14 +36,14 @@ El estado de la reproducción de la música no es peer-to-peer, sino que se sinc
 ## 4. Estructura de Stores (Zustand)
 La lógica de negocio reside casi enteramente en hooks de Zustand:
 - `usePlayerStore.js`: Maneja el núcleo de la reproducción. Controla la `queue` (cola), el `currentTrack` (canción actual), el `progress` (progreso en ms) y los comandos de reproducción hacia YouTube.
-- `useSettingsStore.js`: Maneja el estado de la sesión, configuración del Host, `sessionId`, secret keys, lista negra/blanca de géneros y configuraciones del Auto DJ (EnvAIro).
+- `useSettingsStore.js`: Maneja el estado de la sesión, configuración del Host, `sessionId`, secret keys, lista negra/blanca de géneros y configuraciones del Auto DJ (envAIro).
 - `useAuthStore.js`: Controla el estado del usuario (`session` de Supabase).
 - `useLanguageStore.js`: Maneja las traducciones y cadenas de texto (i18n de forma manual y simplificada).
 
-## 5. Auto DJ vs EnvAIro Selector
+## 5. Auto DJ vs envAIro Selector
 Aunque trabajan en conjunto para automatizar la música, son dos funcionalidades completamente distintas:
 - **Auto DJ (Filtro automatizado):** Se encarga de evaluar las peticiones de los invitados que entran a la tabla `requests` con estado `pending`. El Host ejecuta localmente el hook correspondiente (`useAutoQueue.js`) que invoca una Edge Function en Supabase (`evaluate-request`) para revisar si la canción cumple con las reglas (Whitelist, Blacklist) y la aprueba o rechaza automáticamente.
-- **EnvAIro Selector (IA proactiva):** Es la funcionalidad encargada de inyectar y sugerir nuevas canciones. Se ejecuta mediante el hook `useEnairoSelector.js` para añadir pistas a la cola automáticamente basándose en el contexto cuando el ambiente lo requiere (por ejemplo, cuando la cola se vacía).
+- **envAIro Selector (IA proactiva):** Es la funcionalidad encargada de inyectar y sugerir nuevas canciones. Se ejecuta mediante el hook `useEnairoSelector.js` para añadir pistas a la cola automáticamente basándose en el contexto cuando el ambiente lo requiere (por ejemplo, cuando la cola se vacía).
 
 ## 6. Flujo de Archivos Clave
 - `src/hooks/useQueueSync.js`: **EL ARCHIVO MÁS IMPORTANTE PARA EL MULTIJUGADOR**. Escucha los cambios de Supabase Realtime (tabla `sessions`, `requests` y eventos `broadcast`) y sincroniza el estado de Zustand entre los diferentes dispositivos.

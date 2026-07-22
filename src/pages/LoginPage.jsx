@@ -256,13 +256,11 @@ export default function LoginPage() {
 
           {/* Botón de Instalar App */}
           <div className="pt-2">
-            <a
-              href="#"
-              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
-            >
-              <Download size={18} />
-              Descarga Nuestra App
-            </a>
+            <InstallAppButton
+              variant="custom"
+              text="Descarga Nuestra App"
+              className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
+            />
           </div>
         </div>
 

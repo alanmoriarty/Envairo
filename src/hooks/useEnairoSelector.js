@@ -42,14 +42,14 @@ export function useEnairoSelector() {
 
     // Límite diario: 3 veces al día
     if (!enairoTestMode && currentUsageCount >= 3) {
-      toast.error('EnvAIro ha alcanzado su límite de 3 usos por día. Vuelve mañana.', { icon: '🚫' });
+      toast.error('envAIro ha alcanzado su límite de 3 usos por día. Vuelve mañana.', { icon: '🚫' });
       return false;
     }
 
     // Cooldown de 2 horas (7200000 ms)
     if (!enairoTestMode && now < enairoCooldownUntil) {
       const minutesLeft = Math.ceil((enairoCooldownUntil - now) / 60000);
-      toast.error(`EnvAIro está descansando. Podrás usarlo de nuevo en ${minutesLeft} minutos.`, { icon: '⏳' });
+      toast.error(`envAIro está descansando. Podrás usarlo de nuevo en ${minutesLeft} minutos.`, { icon: '⏳' });
       return false;
     }
 
@@ -109,9 +109,9 @@ export function useEnairoSelector() {
           const { data, error } = await supabase.functions.invoke('search-spotify', {
             body: { queries: tracksToAdd, type: 'track', limit: 1 }
           });
-          
+
           if (error) throw error;
-          
+
           if (data && data.results) {
             foundTracks = data.results.map((res) => {
               if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
@@ -142,10 +142,10 @@ export function useEnairoSelector() {
       return true;
 
     } catch (err) {
-      console.error("Error en EnvAIro Selector:", err);
+      console.error("Error en envAIro Selector:", err);
       // Revertir el uso si falló críticamente (para no gastar el cooldown)
       setEnairoCooldown(0, Math.max(0, currentUsageCount), today);
-      toast.error('EnvAIro falló en la generación. Inténtalo de nuevo.');
+      toast.error('envAIro falló en la generación. Inténtalo de nuevo.');
       return false;
     } finally {
       setIsThinking(false);
@@ -171,18 +171,18 @@ export function useEnairoSelector() {
         console.warn('Límite de Auto Reordenamiento (5 al día) alcanzado. Esperando a mañana.');
         return; // Skip reorder
       }
-      
+
       // Update usage (solo se actualiza el contador, la UI no bloquea pero esto previene spam)
       useSettingsStore.getState().setEnairoAutoReorderCount(currentAutoCount + 1, today);
     }
 
     setIsThinking(true);
-    
+
     try {
       const state = usePlayerStore.getState();
       const currentQueue = state.queue;
       const history = state.playHistory;
-      
+
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
           action_mode: 'reorder',
@@ -229,23 +229,23 @@ export function useEnairoSelector() {
   useEffect(() => {
     if (isEnairoTimerRunning) return;
     isEnairoTimerRunning = true;
-    
+
     const interval = setInterval(() => {
       const state = usePlayerStore.getState();
-      
+
       // Contar tiempo solo si está reproduciendo
       if (state.isPlaying) {
         state.incrementPlaybackMinutes();
       }
-      
+
       // Chequeo cada minuto: si ya pasaron 40 min, reordenar sin importar si hay nuevas peticiones
       const currentMins = usePlayerStore.getState().playbackMinutes;
-      
+
       if (currentMins >= 40 && !useSettingsStore.getState().enairoIsThinking) {
         autoReorderQueue();
       }
     }, 60000);
-    
+
     return () => {
       clearInterval(interval);
       isEnairoTimerRunning = false;

@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'EnvAIro | Tu Rockola Social Inteligente',
-        short_name: 'EnvAIro',
+        name: 'envAIro | Tu Rockola Social Inteligente',
+        short_name: 'envAIro',
         description: 'Convientete en anfitrión, comparte tu código QR y permite que tus invitados elijan la música de la fiesta en tiempo real.',
         theme_color: '#9D4EDD',
         background_color: '#0F0F13',

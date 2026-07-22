@@ -53,7 +53,7 @@ export function Sidebar({ isOpen, onClose }) {
       // Limpiar cola local, peticiones e historial para no dejar rastro
       state.clearPlayerState();
       settingsState.clearSettingsState();
-      
+
     } catch (err) {
       // Ignore errors during logout
     }
@@ -84,7 +84,7 @@ export function Sidebar({ isOpen, onClose }) {
             <div className="flex items-center">
               <img
                 src="/envAIro-logo-horizontal.svg"
-                alt="EnvAIro"
+                alt="envAIro"
                 className="h-10 w-auto"
               />
             </div>
