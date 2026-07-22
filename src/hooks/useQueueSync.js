@@ -15,10 +15,8 @@ export function useQueueSync() {
     if (!sessionId) return;
     
     let syncChannel = null;
-    let requestsChannel = null;
     let isMounted = true;
     let initSyncTimeout;
-    let initReqTimeout;
 
     // 1. Subscribe to local Zustand changes to push to Supabase
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
@@ -272,9 +270,9 @@ export function useQueueSync() {
     // Broadcast para sincronizar el progreso de la canción con controles remotos/invitados
     let broadcastInterval = setInterval(() => {
       const user = useAuthStore.getState().user;
-      if (user && channel && channel.state === 'joined') {
+      if (user && syncChannel && syncChannel.state === 'joined') {
          const store = usePlayerStore.getState();
-         channel.send({
+         syncChannel.send({
            type: 'broadcast',
            event: 'playback_sync',
            payload: {
@@ -322,15 +320,24 @@ export function useQueueSync() {
       });
 
     return () => {
+      isMounted = false;
+      clearTimeout(initSyncTimeout);
       unsubscribe();
       clearInterval(broadcastInterval);
-      supabase.removeChannel(channel);
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+      if (syncChannel) supabase.removeChannel(syncChannel);
     };
   }, [sessionId]);
 
   // Handle requests and session initialization globally
   useEffect(() => {
     if (!sessionId) return;
+    
+    let requestsChannel = null;
+    let isMounted = true;
+    let initReqTimeout;
 
     const syncSession = async () => {
       const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
@@ -468,14 +475,8 @@ export function useQueueSync() {
 
     return () => {
       isMounted = false;
-      clearTimeout(initSyncTimeout);
       clearTimeout(initReqTimeout);
       
-      unsubscribe();
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-      if (syncChannel) supabase.removeChannel(syncChannel);
       if (requestsChannel) supabase.removeChannel(requestsChannel);
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
