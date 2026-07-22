@@ -64,7 +64,7 @@ const ES = {
     remoteMode: 'Modo Admin',
   },
   login: {
-    title: 'La forma más elegante de gestionar las canciones de tu evento',
+    title: 'Gestiona tus eventos de una manera sencilla y elegante.',
     access: 'Accede a tu panel',
     spotify: 'Ingresar con Correo',
     youtube_login: 'Ingresar con YouTube',

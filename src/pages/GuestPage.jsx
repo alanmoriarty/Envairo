@@ -15,7 +15,7 @@ const filterMusicEmojis = (text) => {
   if (!window.Intl || !Intl.Segmenter) return text;
   const segmenter = new Intl.Segmenter('es', { granularity: 'grapheme' });
   const allowedEmojis = ['🎸', '🎵', '🎶', '🎤', '🎧', '🎷', '🎺', '🎹', '🎻', '🥁', '📻', '🎙️', '🎚️', '🎛️', '🎼', '💿', '🪩', '🕺', '💃', '👨‍🎤', '👩‍🎤', '🧑‍🎤', '✨', '🔥', '🎉'];
-  
+
   let result = '';
   for (const { segment } of segmenter.segment(text)) {
     if (/\p{Emoji_Presentation}/u.test(segment)) {
@@ -38,7 +38,7 @@ const formatArtists = (artists) => {
 
 export default function GuestPage() {
   const { sessionId } = useParams();
-  
+
   // Real-time session config from Supabase
   const [sessionConfig, setSessionConfig] = useState(null);
 
@@ -55,27 +55,27 @@ export default function GuestPage() {
 
     initTimeout = setTimeout(() => {
       if (!isMounted) return;
-      
+
       channel = supabase.channel(`session-${sessionId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
-        setSessionConfig(prev => ({ ...prev, ...payload.new }));
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
-        if (payload.new.status === 'approved') {
-          setMyPendingRequests(prev => {
-            if (prev[payload.new.id]) {
-              toast.success(`¡Tu petición "${prev[payload.new.id]}" fue aprobada y añadida a la cola!`);
-              const newPending = { ...prev };
-              delete newPending[payload.new.id];
-              return newPending;
-            }
-            return prev;
-          });
-        }
-      })
-      .subscribe();
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, (payload) => {
+          setSessionConfig(prev => ({ ...prev, ...payload.new }));
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, (payload) => {
+          if (payload.new.status === 'approved') {
+            setMyPendingRequests(prev => {
+              if (prev[payload.new.id]) {
+                toast.success(`¡Tu petición "${prev[payload.new.id]}" fue aprobada y añadida a la cola!`);
+                const newPending = { ...prev };
+                delete newPending[payload.new.id];
+                return newPending;
+              }
+              return prev;
+            });
+          }
+        })
+        .subscribe();
     }, 150);
-      
+
     return () => {
       isMounted = false;
       clearTimeout(initTimeout);
@@ -88,7 +88,7 @@ export default function GuestPage() {
   const { t, lang } = useTranslation();
 
   const stateData = sessionConfig?.session_state || {};
-  
+
   const isAvailable = stateData.active ?? sessionConfig?.active ?? true;
   const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
   const blacklistGenres = stateData.blacklist_genres || sessionConfig?.blacklist_genres || [];
@@ -131,10 +131,10 @@ export default function GuestPage() {
         const items = data?.tracks?.items || [];
         setResults(items.map(normalizeApiTrack));
       } catch (err) {
-          setResults([]);
-        } finally {
-          setSearching(false);
-        }
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
@@ -149,9 +149,9 @@ export default function GuestPage() {
         if (reqs.length > 0) {
           const lastReq = reqs[reqs.length - 1];
           const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
-          
+
           const cooldownSeconds = cooldownMinutes * 60;
-          
+
           if (cooldownEnabled && secondsSinceLast < cooldownSeconds) {
             setCooldown(cooldownSeconds - secondsSinceLast);
           } else if (!cooldownEnabled) {
@@ -159,7 +159,7 @@ export default function GuestPage() {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [sessionId, cooldownEnabled, cooldownMinutes]);
 
   // Cooldown countdown
@@ -191,7 +191,7 @@ export default function GuestPage() {
       const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
       const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
       const queueCount = queue.slice(currentQueueIndex + 1).filter(track => myActiveIds.includes(track.id)).length;
-      
+
       if (pendingCount + queueCount >= maxUserRequests) {
         toast.error(`Límite Anti-Spam: Solo puedes tener ${maxUserRequests} canciones en cola al mismo tiempo. Espera a que suene una de tus canciones para pedir otra.`);
         return;
@@ -277,7 +277,7 @@ export default function GuestPage() {
       // Check global requests per hour limit against Supabase
       const limit = requestsPerHour;
       const oneHourAgoTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      
+
       const { count: globalCount, error: countError } = await supabase
         .from('requests')
         .select('*', { count: 'exact', head: true })
@@ -335,7 +335,7 @@ export default function GuestPage() {
       setSelected(null);
       setQuery('');
       setResults([]);
-      
+
       if (cooldownEnabled) {
         setCooldown(cooldownMinutes * 60);
       }
@@ -360,10 +360,10 @@ export default function GuestPage() {
           <LanguageSelector />
         </div>
         <div className="flex justify-center mb-4">
-          <img src="/envairo-logo.svg" alt="EnvAIro Logo" className="h-20 w-auto drop-shadow-[0_0_10px_rgba(157,78,221,0.3)]" />
+          <img src="/envairo-logo.svg" alt="EnvAIro Logo" className="h-24 w-auto drop-shadow-[0_0_10px_rgba(157,78,221,0.3)]" />
         </div>
         <h1 className="text-2xl font-bold text-gradient">
-          {eventName 
+          {eventName
             ? `${t('guest.title')} ${t('guest.for_event') || (lang === 'EN' ? 'for' : 'para')} ${eventName}`
             : t('guest.title')}
         </h1>
@@ -388,7 +388,7 @@ export default function GuestPage() {
             </span>
           )}
         </label>
-        
+
         {isCommercial && (sessionConfig?.table_count || 0) > 0 ? (
           <select
             className="input-field appearance-none bg-bg-elevated"
@@ -489,11 +489,11 @@ export default function GuestPage() {
       {(() => {
         const maxUserRequests = sessionConfig?.requests_per_guest || 0;
         if (maxUserRequests <= 0) return null;
-        
+
         const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
         const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
         const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
-        
+
         if (pendingCount + queueCount >= maxUserRequests) {
           return (
             <div className="card p-5 text-center bg-danger/10 border border-danger/30">
@@ -507,7 +507,7 @@ export default function GuestPage() {
         }
         return null;
       })()}
-      
+
       {isInCooldown ? (
         <div className="card p-5 text-center">
           <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-3">
@@ -553,7 +553,7 @@ export default function GuestPage() {
 
       {/* Botón de Instalar App */}
       <div className="mt-6">
-        <a 
+        <a
           href="#"
           className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
         >
