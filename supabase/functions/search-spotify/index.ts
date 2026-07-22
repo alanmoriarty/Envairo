@@ -34,7 +34,8 @@ serve(async (req) => {
         const chunkPromises = chunk.map(async (q: string) => {
           const searchParams = new URLSearchParams({
             q: q,
-            limit: limit.toString()
+            limit: limit.toString(),
+            order: 'RANKING' // Fuerza a ordenar por popularidad para evitar covers/karaokes
           });
           
           const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
@@ -86,7 +87,8 @@ serve(async (req) => {
       // Single search mode usando DEEZER
       const searchParams = new URLSearchParams({
         q: query,
-        limit: limit.toString()
+        limit: limit.toString(),
+        order: 'RANKING' // Fuerza a ordenar por popularidad
       })
 
       const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
