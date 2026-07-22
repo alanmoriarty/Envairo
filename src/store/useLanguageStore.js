@@ -66,7 +66,7 @@ const ES = {
   login: {
     title: 'La forma más elegante de gestionar las canciones de tu evento',
     access: 'Accede a tu panel',
-    spotify: 'Ingresar con Spotify',
+    spotify: 'Ingresar con Correo',
     youtube_login: 'Ingresar con YouTube',
     youtube_anon: 'Modo YouTube (Anónimo)',
   },
@@ -142,9 +142,8 @@ const ES = {
     toast_pl_empty: 'La playlist está vacía o contiene archivos locales.',
     toast_pl_added: '¡"{{name}}" añadida! Reproduciendo...',
     toast_pl_added_multiple: '¡Se añadieron {{count}} canciones a la cola!',
-    toast_pl_dev_error: 'Modo Desarrollo: Spotify bloquea playlists de otros usuarios.',
-    toast_pl_error: 'Error al importar la playlist. Asegúrate de que sea pública.',
-    toast_pl_link_error: 'Ingresa un link válido de Spotify.',
+    toast_pl_dev_error: 'Modo Desarrollo.',
+    toast_pl_link_error: 'Ingresa un link válido.',
     toast_pl_importing: 'Importando "{{name}}"...',
     toast_pl_fetching: 'Obteniendo información...',
     toast_player_not_ready: 'Reproductor no listo. Espera un momento.',
@@ -256,7 +255,7 @@ const ES = {
     blacklist_artist_placeholder: 'Ej: Anuel AA, Yeri Mua...',
     empty_btn: 'Vaciar',
     guide_modal_title: 'Guía de Familias de Género',
-    guide_modal_intro: 'Al seleccionar un género en los filtros, el Auto-DJ añadirá automáticamente sus variantes y subgéneros asociados para evitar que Spotify rechace canciones por diferencias en el nombre.',
+    guide_modal_intro: 'Al seleccionar un género en los filtros, el Auto-DJ intentará bloquear canciones relacionadas.',
     guide_modal_urbano: 'Urbano y Reggaeton',
     guide_modal_pop: 'Pop y Rock',
     guide_modal_electro: 'Música Electrónica',
@@ -321,7 +320,7 @@ const ES = {
     contact_title: '¿Necesitas ayuda directa?',
     contact_desc: 'Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier problema en tiempo real.',
     contact_btn: 'Contactar por WhatsApp',
-    version_info: 'Envairo v1.0.0 · Construido con ❤️ y Spotify Premium',
+    version_info: 'Envairo v1.0.0 · Construido con ❤️',
     faqs: [
       {
         question: '¿Qué es Envairo QR?',
@@ -329,7 +328,7 @@ const ES = {
       },
       {
         question: '¿Cómo funciona el reproductor?',
-        answer: 'El reproductor se sincroniza directamente con Spotify. Desde el panel principal de Envairo, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
+        answer: 'El reproductor se sincroniza directamente. Desde el panel principal de Envairo, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
       },
       {
         question: '¿Cómo funcionan los QRs?',
@@ -337,11 +336,11 @@ const ES = {
       },
       {
         question: '¿Cómo funcionan las peticiones?',
-        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. Envairo revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción de Spotify en tiempo real.'
+        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. Envairo revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción en tiempo real.'
       },
       {
-        question: '¿Puedo utilizar playlists de Spotify?',
-        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists existentes de Spotify. Envairo puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
+        question: '¿Puedo utilizar playlists?',
+        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists. Envairo puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
       },
       {
         question: '¿Cómo funciona el Auto-DJ?',
@@ -360,8 +359,8 @@ const ES = {
         answer: 'El Modo Fiesta es ideal para eventos sociales, permitiendo a los invitados usar apodos divertidos. El Modo Comercial está pensado para bares o restaurantes, donde se requiere que el usuario introduzca su número de mesa para llevar un control preciso de dónde viene la petición.'
       },
       {
-        question: '¿Necesito Spotify Premium para utilizar la aplicación?',
-        answer: 'Sí, debido a las políticas de reproducción de Spotify, se requiere una cuenta Premium activa para que Envairo pueda controlar la música y reproducir las peticiones. Sin embargo, aún sin una cuenta Premium, puedes visualizar las métricas de los eventos pasados.'
+        question: '¿Necesito pagar para utilizar la aplicación?',
+        answer: 'No, la aplicación es gratuita y no requiere suscripciones a servicios de terceros.'
       },
       {
         question: '¿Cómo funciona el Control Remoto?',
@@ -405,7 +404,7 @@ const EN = {
   login: {
     title: 'The most elegant way to manage your event\'s music',
     access: 'Access your dashboard',
-    spotify: 'Log in with Spotify',
+    spotify: 'Log in with Email',
     youtube_login: 'Log in with YouTube',
     youtube_anon: 'YouTube Mode (Anonymous)',
   },
@@ -481,9 +480,9 @@ const EN = {
     toast_pl_empty: 'The playlist is empty or contains local files.',
     toast_pl_added: '"{{name}}" added! Playing...',
     toast_pl_added_multiple: 'Added {{count}} songs to the queue!',
-    toast_pl_dev_error: 'Dev Mode: Spotify blocks third-party playlists.',
-    toast_pl_error: 'Error importing playlist. Make sure it is public.',
-    toast_pl_link_error: 'Please enter a valid Spotify link.',
+    toast_pl_dev_error: 'Dev Mode.',
+    toast_pl_success: 'Playlist ready to import.',
+    toast_pl_link_error: 'Please enter a valid link.',
     toast_pl_importing: 'Importing "{{name}}"...',
     toast_pl_fetching: 'Fetching information...',
     toast_player_not_ready: 'Player not ready. Please wait.',
@@ -544,7 +543,7 @@ const EN = {
     time_config: 'Schedule set: {{start}} to {{end}}',
     time_cross: ' (crosses midnight)',
     explicit_filter_title: 'Explicit content filter',
-    explicit_filter_desc: 'Automatically block songs marked as explicit (E) on Spotify',
+    explicit_filter_desc: 'Automatically block songs marked as explicit (E)',
     req_per_hour_title: 'Requests per hour (Global)',
     req_per_hour_desc: 'Total limit of songs all guests combined can request in one hour',
     req_per_guest_title: 'Requests limit per guest',
@@ -568,7 +567,7 @@ const EN = {
     blacklist_artist_placeholder: 'Ex: Anuel AA, Yeri Mua...',
     empty_btn: 'Clear',
     guide_modal_title: 'Genre Families Guide',
-    guide_modal_intro: 'When selecting a genre in filters, Auto-DJ will automatically add its variants and associated subgenres to prevent Spotify from rejecting songs due to naming differences.',
+    guide_modal_intro: 'When selecting a genre in filters, Auto-DJ will attempt to block related songs.',
     guide_modal_urbano: 'Urban and Reggaeton',
     guide_modal_pop: 'Pop and Rock',
     guide_modal_electro: 'Electronic Music',
@@ -646,7 +645,7 @@ const EN = {
     contact_title: 'Need direct help?',
     contact_desc: 'Our support team is available on WhatsApp to solve any problem in real time.',
     contact_btn: 'Contact via WhatsApp',
-    version_info: 'Envairo v1.0.0 · Built with ❤️ and Spotify Premium',
+    version_info: 'Envairo v1.0.0 · Built with ❤️',
     faqs: [
       {
         question: 'What is Envairo QR?',
@@ -654,7 +653,7 @@ const EN = {
       },
       {
         question: 'How does the player work?',
-        answer: 'The player syncs directly with Spotify. From the main Envairo dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
+        answer: 'The player syncs directly. From the main Envairo dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
       },
       {
         question: 'How do the QRs work?',
@@ -662,11 +661,11 @@ const EN = {
       },
       {
         question: 'How do requests work?',
-        answer: 'Requests sent by guests are added to a smart queue. Envairo checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the Spotify playlist in real time.'
+        answer: 'Requests sent by guests are added to a smart queue. Envairo checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the playlist in real time.'
       },
       {
-        question: 'Can I use Spotify playlists?',
-        answer: 'Yes! From the dashboard, you can search and load your existing Spotify playlists. Envairo can alternate between guest requests and your playlist to ensure the music never stops.'
+        question: 'Can I use playlists?',
+        answer: 'Yes! From the dashboard, you can search and load your existing playlists. Envairo can alternate between guest requests and your playlist to ensure the music never stops.'
       },
       {
         question: 'How does Auto-DJ work?',
@@ -685,8 +684,8 @@ const EN = {
         answer: 'Party Mode is ideal for social events, allowing guests to use fun nicknames. Commercial Mode is designed for bars or restaurants, where the user is required to enter their table number to keep precise track of where the request comes from.'
       },
       {
-        question: 'Do I need Spotify Premium to use the application?',
-        answer: 'Yes, due to Spotify\'s playback policies, an active Premium account is required for Envairo to control the music and play requests. However, even without a Premium account, you can still view the metrics from past events.'
+        question: 'Do I need to pay to use the application?',
+        answer: 'No, the application is free and does not require third-party subscriptions.'
       },
       {
         question: 'How does the Remote Control work?',

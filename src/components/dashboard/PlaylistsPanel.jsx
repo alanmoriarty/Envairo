@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ListMusic, Play, Loader2, Link as LinkIcon, Search, Plus, MoreVertical, Trash2, Import, RefreshCw, X } from 'lucide-react';
-import { getUserPlaylists, getPlaylistTracks, getPlaylist } from '../../lib/spotifyApi';
 import { getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeApi';
-import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
@@ -31,7 +29,6 @@ export function PlaylistsPanel() {
   const [importing, setImporting] = useState(false);
   const [playlistLink, setPlaylistLink] = useState('');
 
-  const { controls } = useSpotifySDK();
   const sdkReady = usePlayerStore((s) => s.sdkReady);
   const setQueue = usePlayerStore((s) => s.setQueue);
   const shiftQueue = usePlayerStore((s) => s.shiftQueue);
@@ -44,8 +41,7 @@ export function PlaylistsPanel() {
   const historyByDay = React.useMemo(() => {
     const groups = {};
     playHistory.forEach(track => {
-      // En el motor de YouTube, podemos reproducir tanto YouTube como Spotify (con el bridge).
-      // En el motor de Spotify, solo podemos reproducir Spotify.
+      // En el motor de YouTube, no necesitamos validar el source.
       if (playbackEngine === 'spotify' && track.source === 'youtube') return;
 
       const label = formatDateLabel(track.playedAt);
@@ -91,34 +87,11 @@ export function PlaylistsPanel() {
       if (showLoading) setLoading(true);
       try {
         const customSaved = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-        const customForEngine = customSaved.filter(p => p.source === playbackEngine);
-
-        if (playbackEngine === 'youtube') {
-          if (!isMounted) return;
-          setPlaylists(customForEngine);
-        } else {
-          const [res, user] = await Promise.all([
-            getUserPlaylists(50),
-            import('../../lib/spotifyApi').then(m => m.getCurrentUser())
-          ]);
-
-          if (!isMounted) return;
-
-          if (res && res.items && user && user.id) {
-            const myPlaylists = res.items.filter(pl => pl.owner.id === user.id);
-            setPlaylists(prev => {
-              const combined = [...customForEngine];
-              for (const pl of myPlaylists) {
-                if (!combined.find(c => c.id === pl.id)) {
-                  combined.push(pl);
-                }
-              }
-              const prevSnaps = prev.map(p => p.snapshot_id).join(',');
-              const newSnaps = combined.map(p => p.snapshot_id).join(',');
-              return prevSnaps === newSnaps ? prev : combined;
-            });
-          }
-        }
+        // We only support YouTube playlists now
+        const customForEngine = customSaved.filter(p => p.source === 'youtube');
+        
+        if (!isMounted) return;
+        setPlaylists(customForEngine);
       } catch (err) {
         if (!isMounted) return;
         console.error('Error fetching playlists:', err);
@@ -133,40 +106,7 @@ export function PlaylistsPanel() {
     return () => {
       isMounted = false;
     };
-  }, [sdkReady, sessionId, playbackEngine]);
-
-  // Escuchar mensaje de la ventana emergente de inicio de sesión
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data?.type === 'oauth_callback_success') {
-        // Recargar playlists sin recargar la página entera
-        setError(null);
-        setLoading(true);
-        if (playbackEngine === 'youtube') {
-          getUserYouTubePlaylists(50)
-            .then(res => {
-              if (res && res.items) {
-                const myPlaylists = res.items.map(pl => ({
-                  id: pl.id,
-                  name: pl.snippet.title,
-                  snapshot_id: pl.etag,
-                  owner: { id: 'youtube' },
-                  images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
-                }));
-                setPlaylists(myPlaylists);
-              }
-            })
-            .catch(err => {
-              if (err.message === 'YOUTUBE_AUTH_REQUIRED') setError('youtube_auth');
-              else setError('No se pudieron cargar tus playlists.');
-            })
-            .finally(() => setLoading(false));
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [playbackEngine]);
+  }, [sdkReady, sessionId]);
 
   const handleSelectPlaylist = async (playlist) => {
     const isAdminMode = useSettingsStore.getState().isAdminMode;
@@ -180,15 +120,11 @@ export function PlaylistsPanel() {
 
     try {
       let items = [];
-      const engine = usePlayerStore.getState().playbackEngine;
       if (playlist.isHistory) {
         // La playlist del historial ya tiene las pistas cargadas
         items = playlist.tracks.map(t => ({ track: { ...t, is_local: false, album: { images: [{ url: t.image }] }, artists: [{ name: t.artists }] } }));
-      } else if (engine === 'youtube') {
-        const res = await getYouTubePlaylistItems(playlist.id, 100);
-        items = res?.items || [];
       } else {
-        const res = await getPlaylistTracks(playlist.id, 100);
+        const res = await getYouTubePlaylistItems(playlist.id, 100);
         items = res?.items || [];
       }
 
@@ -202,7 +138,7 @@ export function PlaylistsPanel() {
           artistIds: Array.isArray(item.track.artists) ? item.track.artists.map(a => a.id) : [],
           image: item.track.album?.images?.[0]?.url,
           duration_ms: item.track.duration_ms || 0,
-          source: item.track.source || (item.track.uri?.startsWith('youtube') ? 'youtube' : 'spotify'),
+          source: 'youtube',
           requestedBy: playlist.isHistory ? 'Host (Historial)' : 'Host (Playlist)',
           queueId: crypto.randomUUID()
         }));

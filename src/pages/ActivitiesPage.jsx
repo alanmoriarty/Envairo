@@ -6,7 +6,7 @@ import {
   Timer, Star, PartyPopper, Wine, Baby, Crown, Loader2
 } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { useSpotifySDK } from '../hooks/useSpotifySDK';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { toast } from 'sonner';
 import { useTranslation } from '../store/useLanguageStore';
 import { TRIVIA_ES } from '../i18n/trivia_es';
@@ -190,7 +190,7 @@ function ChallengeCard({ currentTrack }) {
     setRevealed(true);
   };
 
-  const requester = currentTrack?.requestedBy && currentTrack.requestedBy !== 'Spotify Connect'
+  const requester = currentTrack?.requestedBy && currentTrack.requestedBy !== 'Host'
     ? currentTrack.requestedBy
     : null;
 
@@ -262,7 +262,7 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
   const [ready, setReady] = useState(false);
 
   const setup = useCallback(() => {
-    if (!currentTrack?.requestedBy || currentTrack.requestedBy === 'Anónimo' || currentTrack.requestedBy === 'Spotify Connect') {
+    if (!currentTrack?.requestedBy || currentTrack.requestedBy === 'Anónimo' || currentTrack.requestedBy === 'Host') {
       setReady(false);
       return;
     }
@@ -273,7 +273,7 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
     const pool = [...new Set(
       requestHistory
         .map(r => r.requester || r.requestedBy || r.track?.requestedBy)
-        .filter(r => r && r !== correct && r !== 'Anónimo' && r !== 'Spotify Connect' && r !== 'Host')
+        .filter(r => r && r !== correct && r !== 'Anónimo' && r !== 'Host')
     )];
 
     // Pad with invented options if pool is small
@@ -292,7 +292,7 @@ function GuessWhoCard({ currentTrack, requestHistory }) {
 
   const isAnon = !currentTrack?.requestedBy
     || currentTrack.requestedBy === 'Anónimo'
-    || currentTrack.requestedBy === 'Spotify Connect';
+    || currentTrack.requestedBy === 'Host';
 
   if (!currentTrack) {
     return <p className="text-text-muted text-sm text-center py-4">{t('activities.guesswho_no_track')}</p>;
@@ -474,8 +474,7 @@ function ChairGameCard() {
   const [countdown, setCountdown] = useState(null);
   const [round, setRound] = useState(0);
   const timerRef = useRef(null);
-  const countdownRef = useRef(null);
-  const { controls } = useSpotifySDK();
+  const shiftQueue = usePlayerStore(s => s.shiftQueue);
   const isPlaying = usePlayerStore(s => s.isPlaying);
 
   const getRandomInterval = () => Math.floor(Math.random() * 40000) + 20000; // 20–60s

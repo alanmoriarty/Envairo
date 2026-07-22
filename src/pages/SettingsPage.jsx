@@ -242,7 +242,7 @@ export default function SettingsPage() {
           <h2 className="font-bold text-text-primary">General</h2>
 
           <div className="mb-4">
-            <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descargar App (PWA)" />
+            <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descarga Nuestra App!" />
           </div>
 
           <div>

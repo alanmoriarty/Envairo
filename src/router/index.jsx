@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
-import CallbackPage from '../pages/CallbackPage';
+
 import GuestPage from '../pages/GuestPage';
 import DashboardPage from '../pages/DashboardPage';
 import SettingsPage from '../pages/SettingsPage';
@@ -37,7 +37,7 @@ const router = createBrowserRouter([
   { path: '/', element: <LoginPage /> },
   { path: '/privacy', element: <PrivacyPage /> },
   { path: '/terms', element: <TermsPage /> },
-  { path: '/callback', element: <CallbackPage /> },
+
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/guest/:sessionId', element: <GuestPage /> },
   {

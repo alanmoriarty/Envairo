@@ -60,10 +60,6 @@ export default function LoginPage() {
           if (prevSessionId && !prevSessionId.includes('session-') && prevSessionId !== data.user.id) {
             usePlayerStore.getState().clearPlayerState();
             useSettingsStore.getState().clearSettingsState();
-            localStorage.removeItem('youtube_access_token');
-            localStorage.removeItem('youtube_token_expires_at');
-            localStorage.removeItem('spotify_access_token');
-            localStorage.removeItem('spotify_token_expires_at');
           }
           
           setUser(data.user);

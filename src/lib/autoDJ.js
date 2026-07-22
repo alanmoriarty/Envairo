@@ -1,37 +1,9 @@
-import { getArtists, searchTracks, getRecommendations } from './spotifyApi';
-import { getAccessToken } from './spotifyAuth';
-
-const artistGenreCache = new Map();
-
 /**
  * Normaliza textos (ej. "Reggaetón" -> "reggaeton")
  */
 function normalizeString(str) {
   if (!str) return '';
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-}
-
-/**
- * Obtiene los géneros de un artista, usando caché para no saturar la API
- */
-async function getArtistGenres(artistId) {
-  if (!artistId) return [];
-  if (artistGenreCache.has(artistId)) {
-    return artistGenreCache.get(artistId);
-  }
-  
-  try {
-    const data = await getArtists([artistId]);
-    if (data && data.artists && data.artists[0]) {
-      const genres = data.artists[0].genres.map(normalizeString);
-      artistGenreCache.set(artistId, genres);
-      return genres;
-    }
-  } catch (err) {
-    console.error('Error fetching artist genres', err);
-  }
-  
-  return [];
 }
 
 async function getTrackGenresArray(trackName, artistName) {
@@ -51,21 +23,7 @@ async function getTrackGenresArray(trackName, artistName) {
     console.error('Error fetching iTunes genre', err);
   }
 
-  // 2. Spotify API (If token available)
-  if (getAccessToken()) {
-    try {
-      const searchRes = await searchTracks(`${trackName} ${artistName}`);
-      if (searchRes && searchRes.length > 0) {
-        const firstTrack = searchRes[0];
-        if (firstTrack.artists && firstTrack.artists[0] && firstTrack.artists[0].id) {
-          const spotifyGenres = await getArtistGenres(firstTrack.artists[0].id);
-          spotifyGenres.forEach(g => genres.add(g));
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching Spotify genre in AutoDJ', err);
-    }
-  }
+
 
   return Array.from(genres);
 }
@@ -152,7 +110,7 @@ export async function getAutoQueueRecommendations(playHistory, settings) {
     .map(t => t.id);
 
   if (recentTracks.length === 0) return null;
-  if (!getAccessToken()) return null; // Auto DJ silently disabled if no Spotify token
+
 
   try {
     const data = await getRecommendations(recentTracks, 10);
