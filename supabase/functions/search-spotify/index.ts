@@ -44,7 +44,7 @@ serve(async (req) => {
     if (queries && queries.length > 0) {
       // Bulk search mode
       const results = [];
-      const chunkSize = 5;
+      const chunkSize = 15; // Aumentado de 5 a 15 para paralelizar más peticiones
       
       for (let i = 0; i < queries.length; i += chunkSize) {
         const chunk = queries.slice(i, i + chunkSize);
@@ -70,9 +70,9 @@ serve(async (req) => {
         const chunkResults = await Promise.all(chunkPromises);
         results.push(...chunkResults);
         
-        // Small delay to prevent rate limits
+        // Pequeño delay para no romper el límite de Spotify, pero lo suficientemente rápido (250ms en vez de 800ms)
         if (i + chunkSize < queries.length) {
-          await new Promise(resolve => setTimeout(resolve, 800));
+          await new Promise(resolve => setTimeout(resolve, 250));
         }
       }
 
