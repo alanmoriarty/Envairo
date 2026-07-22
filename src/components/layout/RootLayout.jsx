@@ -269,14 +269,12 @@ export function RootLayout() {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-16 bg-bg-card/70 backdrop-blur-lg border-b border-white/5 flex items-center justify-between px-4 z-30">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center shadow-glow-sm">
-              <Music2 size={16} className="text-accent" />
-            </div>
-            <div className="leading-none">
-              <span className="font-bold text-text-primary block leading-none">Envairo</span>
-              <span className="text-[10px] text-accent font-semibold block mt-0.5">QR</span>
-            </div>
+          <div className="flex items-center">
+            <img 
+              src="/envairo-logo.svg" 
+              alt="EnvAIro" 
+              className="w-24 h-auto" 
+            />
           </div>
           <div className="flex items-center gap-2">
             <LanguageSelector />

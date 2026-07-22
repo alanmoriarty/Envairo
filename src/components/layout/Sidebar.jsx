@@ -63,14 +63,12 @@ export function Sidebar({ isOpen, onClose }) {
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shadow-glow-sm">
-              <Music2 size={20} className="text-accent" />
-            </div>
-            <div>
-              <h1 className="font-bold text-text-primary leading-none">Envairo</h1>
-              <p className="text-xs text-accent font-semibold">QR</p>
-            </div>
+          <div className="flex items-center">
+            <img 
+              src="/envairo-logo.svg" 
+              alt="EnvAIro" 
+              className="w-32 h-auto" 
+            />
           </div>
           
           <button 

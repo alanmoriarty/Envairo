@@ -46,10 +46,11 @@ export default function ResetPasswordPage() {
       
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         <div className="flex flex-col items-center mb-10">
-          <div className="w-20 h-20 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center mb-5 shadow-glow">
-            <Music2 size={40} className="text-accent" />
-          </div>
-          <h1 className="text-3xl font-bold text-gradient mb-2">Restablecer Contraseña</h1>
+          <img 
+            src="/envairo-logo.svg" 
+            alt="EnvAIro Logo" 
+            className="w-48 h-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
+          />
           <p className="text-text-muted text-center max-w-xs text-sm">
             Ingresa tu nueva contraseña a continuación.
           </p>

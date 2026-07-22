@@ -359,8 +359,8 @@ export default function GuestPage() {
         <div className="absolute right-0 top-0">
           <LanguageSelector />
         </div>
-        <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-4 shadow-glow">
-          <Music2 size={28} className="text-accent" />
+        <div className="flex justify-center mb-4">
+          <img src="/envairo-logo.svg" alt="EnvAIro Logo" className="w-32 h-auto drop-shadow-[0_0_10px_rgba(157,78,221,0.3)]" />
         </div>
         <h1 className="text-2xl font-bold text-gradient">
           {eventName 
