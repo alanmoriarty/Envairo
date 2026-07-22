@@ -159,15 +159,16 @@ export function PersistentPlayer() {
         {/* Progress bar */}
         <div
           ref={progressRef}
-          className="h-1 bg-white/10 cursor-pointer group"
+          className="h-1 hover:h-1.5 transition-all bg-white/10 cursor-pointer group relative"
           onClick={handleProgressClick}
           style={{
             background: `linear-gradient(to right, #9D4EDD ${progressPct}%, rgba(255,255,255,0.1) ${progressPct}%)`
           }}
         >
+          {/* Thumb circle that appears on hover */}
           <div
-            className="h-full bg-accent transition-none"
-            style={{ width: `${progressPct}%` }}
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+            style={{ left: `calc(${progressPct}% - 6px)` }}
           />
         </div>
 
