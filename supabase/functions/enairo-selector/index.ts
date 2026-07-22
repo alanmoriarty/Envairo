@@ -117,14 +117,22 @@ Estructura esperada:
       // 1. Primera pasada: Generación inicial
       let parsedData = await askDeepSeek(prompt);
 
-      // 2. Segunda pasada: Revisión estricta de repetidos
-      const fixPrompt = `
+      if (!parsedData || !Array.isArray(parsedData.tracksToAdd)) {
+        finalData = parsedData; // Fallback si falló la primera pasada
+      } else {
+        const fixPrompt = `
+VIBRA DESEADA ORIGINAL: "${settings?.enairoPrompt || 'Música variada'}"
+
 Acabas de generar esta lista de canciones:
 ${JSON.stringify(parsedData.tracksToAdd, null, 2)}
 
-TAREA CRÍTICA DE REVISIÓN:
-Analiza exhaustivamente la lista. Si encuentras CUALQUIER artista repetido (incluso si la canción es diferente), ELIMINA las repeticiones y REEMPLÁZALAS por nuevas canciones de artistas COMPLETAMENTE DIFERENTES que encajen perfectamente con la misma vibra solicitada.
-El objetivo es que en la lista final haya 0% de artistas repetidos. También reordénalas si consideras que la transición entre canciones puede ser más fluida.
+TAREA 1: ELIMINAR DUPLICADOS DE ARTISTAS
+Analiza la lista. Si encuentras CUALQUIER artista que aparezca 2 o más veces, CONSERVA SOLO UNA canción de ese artista.
+Reemplaza las canciones que eliminaste con canciones de ARTISTAS COMPLETAMENTE NUEVOS que encajen en la "Vibra Deseada Original".
+No debe haber ABSOLUTAMENTE NINGÚN artista repetido en la lista final.
+
+TAREA 2: REORDENAR LA LISTA (OBLIGATORIO)
+REORDENA TODA LA LISTA resultante para que las transiciones de energía y ritmo sean impecables. No devuelvas la lista en el mismo orden.
 
 REGLAS DE SALIDA:
 Responde ESTRICTAMENTE con un objeto JSON válido.
@@ -132,9 +140,10 @@ Estructura esperada:
 {
   "tracksToAdd": ["Canción 1 - Artista 1", "Canción 2 - Artista 2"],
   "actions": [],
-  "reasoning": "Menciona qué artistas repetidos encontraste y por quiénes los reemplazaste, o confirma que la lista estaba perfecta."
+  "reasoning": "Menciona a qué artistas repetidos eliminaste y cómo mejoraste el orden."
 }`;
-      finalData = await askDeepSeek(fixPrompt);
+        finalData = await askDeepSeek(fixPrompt);
+      }
     } else {
       // Para 'reorder' hacemos una sola pasada
       finalData = await askDeepSeek(prompt);
