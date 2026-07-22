@@ -109,21 +109,7 @@ export async function evaluateTrack(track, settings) {
 export async function getAutoQueueRecommendations(playHistory = [], settings = {}) {
   const pool = new Map(); // Usamos un Map para evitar duplicados por ID
 
-  // 1. Extraer canciones de Playlists Personalizadas guardadas localmente
-  try {
-    const savedPlaylists = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-    savedPlaylists.forEach(playlist => {
-      if (playlist.tracks && Array.isArray(playlist.tracks)) {
-        playlist.tracks.forEach(track => {
-          if (track && track.id) {
-            pool.set(track.id, { ...track, source: 'Custom Playlist' });
-          }
-        });
-      }
-    });
-  } catch (err) {
-    console.error('Error parseando playlists guardadas para AutoDJ', err);
-  }
+  // 1. (Removido) Ya no se extraen canciones de Playlists Personalizadas guardadas localmente.
 
   // Para evitar ciclos e importaciones circulares en el boot, importamos de forma dinámica el store
   let currentState = null;
