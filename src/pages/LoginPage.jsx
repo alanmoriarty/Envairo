@@ -9,6 +9,7 @@ import { useTranslation } from '../store/useLanguageStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { toast } from 'sonner';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const setUser = useAuthStore(s => s.setUser);
 
@@ -43,6 +45,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error('Por favor, resuelve el Captcha para verificar que eres humano.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -50,6 +57,7 @@ export default function LoginPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: { captchaToken }
         });
 
         if (error) throw error;
@@ -64,6 +72,7 @@ export default function LoginPage() {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
+          options: { captchaToken }
         });
 
         if (error) throw error;
@@ -184,6 +193,15 @@ export default function LoginPage() {
                 required
                 className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
                 placeholder="••••••••"
+              />
+            </div>
+
+            <div className="flex justify-center pt-2 pb-2">
+              <HCaptcha
+                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+                theme="dark"
               />
             </div>
 
