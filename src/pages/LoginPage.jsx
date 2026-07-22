@@ -153,7 +153,7 @@ export default function LoginPage() {
           <img 
             src="/envairo-logo.svg" 
             alt="EnvAIro Logo" 
-            className="w-48 h-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
+            className="h-14 w-auto mb-6 drop-shadow-[0_0_15px_rgba(157,78,221,0.5)] animate-fade-in" 
           />
           <p className="text-text-muted text-center max-w-xs">
             {t('login.title')}

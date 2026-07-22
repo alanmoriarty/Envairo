@@ -273,7 +273,7 @@ export function RootLayout() {
             <img 
               src="/envairo-logo.svg" 
               alt="EnvAIro" 
-              className="w-24 h-auto" 
+              className="h-6 w-auto" 
             />
           </div>
           <div className="flex items-center gap-2">
