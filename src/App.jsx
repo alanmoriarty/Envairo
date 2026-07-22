@@ -5,7 +5,6 @@ import { usePlayerStore } from './store/usePlayerStore';
 import { usePwaStore } from './store/usePwaStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
-import { redirectToSpotifyAuth, clearSpotifyTokens } from './lib/spotifyAuth';
 import { supabase } from './lib/supabase';
 import { BackgroundVideo } from './components/layout/BackgroundVideo';
 import { toast } from 'sonner';
@@ -29,32 +28,9 @@ export default function App() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Self-heal playback engine if it was lost from local storage
   useEffect(() => {
-    const fixEngine = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const intent = localStorage.getItem('auth_intent');
-        const provider = intent === 'youtube' ? 'google' : (session?.user?.app_metadata?.provider || 'spotify');
-        
-        if (provider === 'google') {
-          usePlayerStore.getState().setPlaybackEngine('youtube');
-        }
-      } catch(e) {}
-      setEngineChecked(true);
-    };
-    fixEngine();
-  }, []);
-
-  // Handle Spotify 401 Unauthorized errors globally
-  useEffect(() => {
-    const handleAuthError = () => {
-      if (usePlayerStore.getState().playbackEngine === 'youtube') return;
-      setSessionExpired(true);
-    };
-
-    window.addEventListener('spotify_auth_error', handleAuthError);
-    return () => window.removeEventListener('spotify_auth_error', handleAuthError);
+    usePlayerStore.getState().setPlaybackEngine('youtube');
+    setEngineChecked(true);
   }, []);
 
   const { setDeferredPrompt } = usePwaStore();

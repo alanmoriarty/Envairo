@@ -54,17 +54,13 @@ export default function MetricsPage() {
     const totalRequests = allRequests.length;
     const totalApproved = allRequests.filter(req => req.status === 'approved').length;
 
-    // 2. Filtrar historial de reproducción real (canciones que sí sonaron)
-    const allPlays = playHistory.filter(track => {
-      if (selectedDate === 'all') return true;
-      const dateToUse = new Date(track.playedAt || track.timestamp || Date.now());
-      return getLocalDateString(dateToUse) === selectedDate;
-    });
-
     const artistCounts = {};
     const hourCounts = {};
 
-    allPlays.forEach(track => {
+    allRequests.forEach(req => {
+      const track = req.track;
+      if (!track) return;
+      
       const mainArtistName = track.artists?.split(',')[0]?.trim() || t('metrics.unknown');
       const mainArtistId = track.artistIds?.[0];
 
@@ -80,7 +76,7 @@ export default function MetricsPage() {
       }
       artistCounts[key].plays++;
 
-      const dateToUse = new Date(track.playedAt || track.timestamp || Date.now());
+      const dateToUse = new Date(req.timestamp || Date.now());
       const h = dateToUse.getHours().toString().padStart(2, '0') + ':00';
       hourCounts[h] = (hourCounts[h] || 0) + 1;
     });
@@ -91,14 +87,14 @@ export default function MetricsPage() {
 
     const hourData = Object.entries(hourCounts)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([hour, count]) => ({ hour, reproducciones: count }));
+      .map(([hour, count]) => ({ hour, peticiones: count }));
 
     if (hourData.length === 0) {
-      hourData.push({ hour: new Date().getHours().toString().padStart(2, '0') + ':00', reproducciones: 0 });
+      hourData.push({ hour: new Date().getHours().toString().padStart(2, '0') + ':00', peticiones: 0 });
     }
 
-    let peakHour = hourData.length > 0 && allPlays.length > 0
-      ? hourData.reduce((max, h) => h.reproducciones > max.reproducciones ? h : max, hourData[0]).hour
+    let peakHour = hourData.length > 0 && allRequests.length > 0
+      ? hourData.reduce((max, h) => h.peticiones > max.peticiones ? h : max, hourData[0]).hour
       : '--:--';
 
     return {
@@ -201,7 +197,7 @@ export default function MetricsPage() {
               <XAxis dataKey="hour" tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#9D9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip t={t} />} />
-              <Bar dataKey="reproducciones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="peticiones" fill="#9D4EDD" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

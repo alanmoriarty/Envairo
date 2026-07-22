@@ -173,7 +173,7 @@ const ES = {
     top_artists: 'Top Artistas',
     not_enough_data: 'No hay suficientes datos aún.',
     requests_per_hour: 'Peticiones por Hora',
-    plays: 'reproducciones',
+    plays: 'peticiones',
     unknown: 'Desconocido',
   },
   settings: {
@@ -512,7 +512,7 @@ const EN = {
     top_artists: 'Top Artists',
     not_enough_data: 'Not enough data yet.',
     requests_per_hour: 'Requests per Hour',
-    plays: 'plays',
+    plays: 'requests',
     unknown: 'Unknown',
   },
   settings: {

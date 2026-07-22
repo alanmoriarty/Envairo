@@ -3,7 +3,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PersistentPlayer } from './PersistentPlayer';
 import { VisualizerBackground } from './VisualizerBackground';
-import { useSpotifySDK } from '../../hooks/useSpotifySDK';
+
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -17,7 +17,7 @@ import { LanguageSelector } from '../ui/LanguageSelector';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
 
 export function RootLayout() {
-  const { controls } = useSpotifySDK();
+
   const { isAuthenticated, user } = useAuthStore();
   const { isAdminMode, themeColor } = useSettingsStore();
   const location = useLocation();

@@ -433,13 +433,6 @@ export const usePlayerStore = create(
               console.error('Error starting preload for alternate modes:', e);
             }
           }
-        } else {
-          const targetDevice = state.activeDeviceId || state.deviceId;
-          if (targetDevice) {
-            import('../lib/spotifyApi').then(({ playTrack }) =>
-              playTrack(targetDevice, [track.uri], progressMs)
-            ).catch(console.error);
-          }
         }
       },
 

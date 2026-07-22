@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useSpotifySDK } from '../../hooks/useSpotifySDK';
 import { useYouTubeSDK } from '../../hooks/useYouTubeSDK';
 import {
   Play, Pause, SkipForward, SkipBack,
@@ -22,11 +21,11 @@ export function PersistentPlayer() {
     setVolume, activeDeviceId, deviceId, playbackEngine
   } = usePlayerStore();
 
-  const { controls: spotifyControls } = useSpotifySDK();
+
   const { controls: youtubeControls, ytReady } = useYouTubeSDK();
 
-  const controls = playbackEngine === 'spotify' ? spotifyControls : youtubeControls;
-  const isReady = playbackEngine === 'spotify' ? sdkReady : ytReady;
+  const controls = youtubeControls;
+  const isReady = ytReady;
   const progressRef = useRef(null);
 
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
@@ -49,19 +48,10 @@ export function PersistentPlayer() {
     const posMs = Math.round(pct * duration);
     const state = usePlayerStore.getState();
 
-    if (state.playbackEngine === 'youtube') {
       if (state.youtubePlayer) {
         state.youtubePlayer.seekTo(posMs / 1000, true);
         usePlayerStore.getState().setProgress(posMs);
       }
-    } else {
-      const targetDevice = state.activeDeviceId || state.deviceId;
-      if (targetDevice) {
-        import('../../lib/spotifyApi').then(({ seekToPosition }) =>
-          seekToPosition(posMs, targetDevice)
-        );
-      }
-    }
   };
 
   const volumeDebounce = useRef(null);
@@ -74,22 +64,12 @@ export function PersistentPlayer() {
     clearTimeout(volumeDebounce.current);
     volumeDebounce.current = setTimeout(() => {
       const state = usePlayerStore.getState();
-      if (state.playbackEngine === 'youtube') {
-        if (state.youtubePlayer) state.youtubePlayer.setVolume(vol);
-      } else {
-        const targetDevice = state.activeDeviceId || state.deviceId;
-        if (targetDevice) {
-          import('../../lib/spotifyApi').then(({ setVolume: apiSetVolume }) =>
-            apiSetVolume(vol, targetDevice)
-          ).catch(console.error);
-        }
-      }
+      if (state.youtubePlayer) state.youtubePlayer.setVolume(vol);
     }, 300);
   };
 
   const handlePlayPause = () => {
     const state = usePlayerStore.getState();
-    if (state.playbackEngine === 'youtube') {
       if (state.youtubePlayer) {
         if (isPlaying) {
           state.youtubePlayer.pauseVideo();
@@ -97,13 +77,6 @@ export function PersistentPlayer() {
           state.youtubePlayer.playVideo();
         }
       }
-    } else {
-      if (isPlaying) {
-        controls.pause();
-      } else {
-        controls.resume();
-      }
-    }
   };
   const previousVolume = useRef(volume || 100);
 
@@ -118,19 +91,10 @@ export function PersistentPlayer() {
 
   const handleRestart = () => {
     const state = usePlayerStore.getState();
-    if (state.playbackEngine === 'youtube') {
       if (state.youtubePlayer) {
         state.youtubePlayer.seekTo(0, true);
         state.youtubePlayer.playVideo();
       }
-    } else {
-      const targetDevice = state.activeDeviceId || state.deviceId;
-      if (targetDevice) {
-        import('../../lib/spotifyApi').then(({ seekToPosition }) =>
-          seekToPosition(0, targetDevice)
-        );
-      }
-    }
   };
 
   return (
@@ -151,18 +115,9 @@ export function PersistentPlayer() {
                 setPendingResume(false);
                 if (currentTrack) {
                   const state = usePlayerStore.getState();
-                  if (state.playbackEngine === 'youtube') {
-                    if (state.youtubePlayer) {
-                      state.youtubePlayer.seekTo(progress / 1000, true);
-                      state.youtubePlayer.playVideo();
-                    }
-                  } else {
-                    const targetDevice = state.activeDeviceId || state.deviceId;
-                    if (targetDevice) {
-                      import('../../lib/spotifyApi').then(({ playTrack }) => {
-                        playTrack(targetDevice, [currentTrack.uri], progress).catch(err => console.error(err));
-                      });
-                    }
+                  if (state.youtubePlayer) {
+                    state.youtubePlayer.seekTo(progress / 1000, true);
+                    state.youtubePlayer.playVideo();
                   }
                 }
               }}
@@ -193,11 +148,6 @@ export function PersistentPlayer() {
                 const { deviceId, setActiveDeviceId } = state;
                 if (deviceId) {
                   setActiveDeviceId(deviceId); // Triggers Supabase sync via hook
-                  if (state.playbackEngine !== 'youtube') {
-                    import('../../lib/spotifyApi').then(({ transferPlayback }) => {
-                      transferPlayback(deviceId, true).catch(console.error);
-                    });
-                  }
                 }
               }}
               className="text-xs bg-accent/20 hover:bg-accent/40 text-accent px-2 py-1 rounded-md transition-colors font-semibold"

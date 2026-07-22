@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { QRCard } from '../qr/QRCard';
 import { useAuthStore } from '../../store/useAuthStore';
-import { clearSpotifyTokens } from '../../lib/spotifyAuth';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { LanguageSelector } from '../ui/LanguageSelector';
@@ -36,25 +35,8 @@ export function Sidebar({ isOpen, onClose }) {
       const { usePlayerStore } = await import('../../store/usePlayerStore');
       const state = usePlayerStore.getState();
       
-      if (state.playbackEngine === 'youtube') {
-        if (state.youtubePlayer) {
-           state.youtubePlayer.pauseVideo();
-        }
-      } else {
-        const { pausePlayback } = await import('../../lib/spotifyApi');
-        // Attempt to pause local SDK player
-        if (state.player) {
-          state.player.pause().catch(() => {});
-          setTimeout(() => {
-             state.player.disconnect();
-          }, 100);
-        }
-        
-        // Attempt to pause active device via API
-        const activeDevice = state.activeDeviceId || state.deviceId;
-        if (activeDevice) {
-          await pausePlayback(activeDevice).catch(() => {});
-        }
+      if (state.youtubePlayer) {
+        state.youtubePlayer.pauseVideo();
       }
     } catch (err) {
       // Ignore errors during logout

@@ -135,13 +135,8 @@ export function useQueueSync() {
             // Pausar y desconectar el reproductor del dispositivo viejo
             try {
               const state = usePlayerStore.getState();
-              if (state.player) {
-                state.player.pause().catch(()=>{});
-                setTimeout(() => state.player.disconnect(), 100);
-              }
-              const targetDevice = state.activeDeviceId || state.deviceId;
-              if (targetDevice) {
-                import('../lib/spotifyApi').then(m => m.pausePlayback(targetDevice)).catch(()=>{});
+              if (state.youtubePlayer) {
+                state.youtubePlayer.pauseVideo();
               }
             } catch (err) {}
 
@@ -155,8 +150,6 @@ export function useQueueSync() {
             import('sonner').then(({ toast }) => {
               toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
             });
-            const { clearSpotifyTokens } = await import('../lib/spotifyAuth');
-            clearSpotifyTokens();
             useSettingsStore.getState().setIsAdminMode(false);
             return;
           }
@@ -167,42 +160,15 @@ export function useQueueSync() {
             const cmd = newSession.playback_command;
             if (cmd.ts !== currentState.lastCommandTs) {
               usePlayerStore.getState().setLastCommandTs(cmd.ts);
-              
-              if (Date.now() - cmd.ts < 10000) {
-                import('../hooks/useSpotifySDK').then(({ useSpotifySDK }) => {
-                  // Instanciar la lógica de controles temporalmente para ejecutar el comando
-                  // No llamamos al hook aquí directamente, usamos las funciones exportadas de spotifyApi
-                  import('../lib/spotifyApi').then(api => {
-                    const targetDevice = currentState.activeDeviceId || currentState.deviceId;
-                  
-                  // Si estamos en Spotify y no hay dispositivo, no podemos hacer mucho
-                  if (!targetDevice && currentState.playbackEngine !== 'youtube') return;
+                          if (Date.now() - cmd.ts < 10000) {
                   if (cmd.action === 'play') {
-                    if (currentState.playbackEngine === 'youtube') {
-                       if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();
-                    } else {
-                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                        currentState.player.resume().catch(() => {});
-                      } else {
-                        api.resumePlayback(targetDevice).catch(() => {});
-                      }
-                    }
+                    if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();
                   } else if (cmd.action === 'pause') {
-                    if (currentState.playbackEngine === 'youtube') {
-                       if (currentState.youtubePlayer) currentState.youtubePlayer.pauseVideo();
-                    } else {
-                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                        currentState.player.pause().catch(() => {});
-                      } else {
-                        api.pausePlayback(targetDevice).catch(() => {});
-                      }
-                    }
+                    if (currentState.youtubePlayer) currentState.youtubePlayer.pauseVideo();
                   } else if (cmd.action === 'next') {
                     const nextTrack = usePlayerStore.getState().shiftQueue();
                     if (nextTrack) {
                       usePlayerStore.getState().playEngineTrack(nextTrack);
-                    } else if (currentState.playbackEngine !== 'youtube') {
-                      api.skipToNext(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'play_specific') {
                     const track = usePlayerStore.getState().playTrackFromQueue(cmd.queueId);
@@ -213,41 +179,29 @@ export function useQueueSync() {
                     const prevTrack = usePlayerStore.getState().prevQueue();
                     if (prevTrack) {
                       usePlayerStore.getState().playEngineTrack(prevTrack);
-                    } else if (currentState.playbackEngine !== 'youtube') {
-                      api.skipToPrevious(targetDevice).catch(() => {});
                     }
                   } else if (cmd.action === 'restart') {
-                    if (currentState.playbackEngine === 'youtube') {
-                       if (currentState.youtubePlayer) {
-                         currentState.youtubePlayer.seekTo(0, true);
-                         currentState.youtubePlayer.playVideo();
-                       }
-                    } else {
-                      if (currentState.player && currentState.activeDeviceId === currentState.deviceId) {
-                        currentState.player.seek(0).catch(() => {});
-                      } else {
-                        api.seekToPosition(0, targetDevice).catch(() => {});
-                      }
+                    if (currentState.youtubePlayer) {
+                      currentState.youtubePlayer.seekTo(0, true);
+                      currentState.youtubePlayer.playVideo();
                     }
                   } else if (cmd.action === 'toggle_karaoke') {
                     useSettingsStore.getState().setKaraokeEnabled(cmd.value);
-                    if (currentState.playbackEngine === 'youtube' && currentState.currentTrack) {
+                    if (currentState.currentTrack) {
                       const newMode = cmd.value ? 'karaoke' : useSettingsStore.getState().lyricsEnabled ? 'lyrics' : 'normal';
                       usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
                     }
                   } else if (cmd.action === 'toggle_lyrics') {
                     useSettingsStore.getState().setLyricsEnabled(cmd.value);
-                    if (currentState.playbackEngine === 'youtube' && currentState.currentTrack) {
+                    if (currentState.currentTrack) {
                       const newMode = cmd.value ? 'lyrics' : useSettingsStore.getState().karaokeEnabled ? 'karaoke' : 'normal';
                       usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
                     }
                   }
-                });
-              });
             }
           }
         }
-        // Procesar las actualizaciones de la cola y la pista actual
+          // Procesar las actualizaciones de la cola y la pista actual
           processStateUpdates(newSession);
         }
       )
@@ -482,57 +436,6 @@ export function useQueueSync() {
       if (secret) {
         supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: secret, p_updates: { active: false } }).then();
       }
-    };
-  }, [sessionId]);
-
-  // --- Sincronización de progreso para el Control Remoto ---
-  useEffect(() => {
-    if (!sessionId || !useSettingsStore.getState().isAdminMode) return;
-    
-    let remoteSyncInterval = setInterval(async () => {
-      try {
-        const engine = usePlayerStore.getState().playbackEngine;
-        if (engine === 'youtube') return; // En youtube el progreso llega vía realtime broadcast
-
-        const api = await import('../lib/spotifyApi');
-        const state = await api.getPlaybackState();
-        if (state && state.item) {
-          const store = usePlayerStore.getState();
-          store.setProgress(state.progress_ms);
-          store.setDuration(state.item.duration_ms);
-          store.setIsPlaying(state.is_playing);
-          
-          // Fallback sync for currentTrack just in case Realtime missed it
-          if (store.currentTrack?.id !== state.item.id) {
-            const apiTrack = {
-              id: state.item.id,
-              uri: state.item.uri,
-              name: state.item.name,
-              artists: state.item.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
-              album: state.item.album?.name,
-              image: state.item.album?.images?.[0]?.url,
-              duration_ms: state.item.duration_ms
-            };
-            store.setCurrentTrack(apiTrack);
-            
-            // Also update queue index if found
-            const qIdx = store.queue.findIndex(t => t.id === state.item.id);
-            if (qIdx !== -1) store.setCurrentQueueIndex(qIdx);
-          }
-        }
-      } catch (e) {}
-    }, 5000);
-
-    let localProgressInterval = setInterval(() => {
-      const store = usePlayerStore.getState();
-      if (store.isPlaying && store.progress < store.duration) {
-        store.setProgress(store.progress + 1000);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(remoteSyncInterval);
-      clearInterval(localProgressInterval);
     };
   }, [sessionId]);
 }

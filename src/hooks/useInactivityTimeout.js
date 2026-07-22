@@ -25,18 +25,7 @@ export function useInactivityTimeout() {
       
       try {
         const state = usePlayerStore.getState();
-        if (state.playbackEngine === 'youtube') {
-          if (state.youtubePlayer) state.youtubePlayer.pauseVideo();
-        } else {
-          if (state.player) {
-            state.player.pause().catch(()=>{});
-            setTimeout(() => state.player.disconnect(), 100);
-          }
-          const activeDevice = state.activeDeviceId || state.deviceId;
-          if (activeDevice) {
-             await import('../lib/spotifyApi').then(m => m.pausePlayback(activeDevice)).catch(()=>{});
-          }
-        }
+        if (state.youtubePlayer) state.youtubePlayer.pauseVideo();
       } catch (e) {}
 
       logout();

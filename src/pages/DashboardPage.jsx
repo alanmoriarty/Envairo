@@ -24,7 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useSpotifySDK } from '../hooks/useSpotifySDK';
+
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
@@ -139,7 +139,7 @@ export default function DashboardPage() {
     reorderQueue, removeFromQueue, approveRequest, rejectRequest,
     currentTrack, sdkReady, playbackEngine
   } = usePlayerStore();
-  const { controls } = useSpotifySDK();
+
   const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);

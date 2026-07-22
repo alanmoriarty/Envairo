@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
-import { searchTracks } from '../lib/spotifyApi';
 import { getSecureServerTime, getSecureServerDateString } from '../utils/timeUtils';
 import { toast } from 'sonner';
 
