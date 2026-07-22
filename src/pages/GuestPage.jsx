@@ -136,7 +136,7 @@ export default function GuestPage() {
           body: { 
             query, 
             limit: 6,
-            filterExplicit: settings.explicitFilter 
+            filterExplicit: stateData.explicitFilter || sessionConfig?.explicit_filter || false
           }
         });
         if (error) throw error;
@@ -258,7 +258,8 @@ export default function GuestPage() {
     }
 
     // DeepSeek AI Explicit Check (Cheap, fast, single-track check)
-    if (settings.explicitFilter) {
+    const isExplicitFilterOn = stateData.explicitFilter || sessionConfig?.explicit_filter || false;
+    if (isExplicitFilterOn) {
       const checkToastId = toast.loading('Revisando contenido...');
       try {
         const { data: explicitData, error: explicitError } = await supabase.functions.invoke('enairo-selector', {
