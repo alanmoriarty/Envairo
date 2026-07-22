@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music2, Download } from 'lucide-react';
+import { Music2, Download, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const captchaRef = useRef(null);
@@ -205,18 +206,28 @@ export default function LoginPage() {
                   </button>
                 )}
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={isRegistering ? 8 : 6}
-                maxLength={64}
-                pattern={isRegistering ? "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}" : undefined}
-                title={isRegistering ? "Debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número." : undefined}
-                className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={isRegistering ? 8 : 6}
+                  maxLength={64}
+                  pattern={isRegistering ? "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}" : undefined}
+                  title={isRegistering ? "Debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número." : undefined}
+                  className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 pr-12 text-white focus:outline-none focus:border-accent transition-colors"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors flex items-center justify-center"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {isRegistering && (
                 <p className="text-[11px] text-text-muted mt-2 ml-1 leading-tight">
                   Tu contraseña debe tener al menos 8 caracteres, e incluir una letra mayúscula, una minúscula y un número.

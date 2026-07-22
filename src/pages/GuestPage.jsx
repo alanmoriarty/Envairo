@@ -422,7 +422,8 @@ export default function GuestPage() {
             className="input-field"
             placeholder={isCommercial ? t('guest.placeholder_table') : t('guest.placeholder_nickname')}
             value={identifier}
-            onChange={(e) => setIdentifier(filterMusicEmojis(e.target.value))}
+            maxLength={15}
+            onChange={(e) => setIdentifier(filterMusicEmojis(e.target.value).replace(/[<>]/g, ''))}
             disabled={isInCooldown}
           />
         )}
@@ -438,7 +439,8 @@ export default function GuestPage() {
             className="input-field pr-10"
             placeholder={t('guest.search_placeholder')}
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
+            maxLength={30}
+            onChange={(e) => { setQuery(e.target.value.replace(/[<>]/g, '')); setSelected(null); }}
             disabled={isInCooldown}
           />
           {searching && (
