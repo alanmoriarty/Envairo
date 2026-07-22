@@ -12,7 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { history, queue, settings, action_mode = 'generate' } = await req.json()
+    const reqBody = await req.json()
+    const { history, queue, settings, action_mode = 'generate' } = reqBody
 
     // Obtener API Keys
     const apiKey = Deno.env.get('GEMINI_API_KEY')
@@ -23,6 +24,7 @@ serve(async (req) => {
     }
 
     let prompt = '';
+    let systemPrompt = '';
 
     if (action_mode === 'generate') {
       prompt = `
@@ -201,6 +203,12 @@ Devuelve un JSON estrictamente así (vacío si no hay nada que limpiar):
   "reasoning": "Se eliminó X por contenido explícito y se reemplazó por Y."
 }`;
       finalData = await askDeepSeek(sweepPrompt) || { tracksToAdd: [], actions: [] };
+    } else if (action_mode === 'check_single_explicit') {
+      const trackName = reqBody.trackName || '';
+      const singlePrompt = `Analiza la siguiente canción: "${trackName}".
+Responde "YES" si la canción o su letra contiene lenguaje explícito, groserías, o contenido inapropiado. Responde "NO" si es aceptable.
+DEBES responder ÚNICAMENTE con un JSON válido en este formato exacto: {"isExplicit": true} o {"isExplicit": false}. NO agregues ningún otro texto.`;
+      finalData = await askDeepSeek(singlePrompt) || { isExplicit: false };
     } else {
       // Para 'reorder' hacemos una sola pasada con Gemini
       finalData = await askGemini(prompt);
