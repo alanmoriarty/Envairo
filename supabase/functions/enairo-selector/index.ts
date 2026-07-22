@@ -25,10 +25,10 @@ serve(async (req) => {
     if (action_mode === 'generate') {
       prompt = `
 Eres "EnvAIro Selector", un DJ de Inteligencia Artificial experto en curación musical de clase mundial.
-Tu objetivo principal es generar una lista de reproducción basándote ESTRICTAMENTE en las "Instrucciones Especiales" y la vibra actual.
+Tu objetivo principal es generar una lista de reproducción basándote ESTRICTAMENTE en las "Instrucciones Especiales".
 
 VIBRA DESEADA (Instrucciones Especiales del Anfitrión): 
-""" ${settings?.enairoPrompt || 'Usa el historial reciente para deducir el ambiente y continúa con ese mismo estilo.'} """
+""" ${settings?.enairoPrompt || 'Genera canciones que encajen con las restricciones de género y artistas.'} """
 
 IMPORTANTE: Si las instrucciones especiales especifican un género, ambiente o estilo (ej. "tienda de consolas", "electrónica suave", "soundtracks"), DEBES respetarlo al 100%. No agregues rock clásico, pop comercial ni géneros no relacionados si no encajan con la descripción.
 
@@ -61,11 +61,9 @@ Estructura esperada:
     } else if (action_mode === 'reorder') {
       prompt = `
 Eres "EnvAIro Selector", un DJ de Inteligencia Artificial.
+Tienes conocimiento de generos músicales tanto actuales como anteriores a nuestra época.
 Tu ÚNICA tarea ahora es revisar la cola de reproducción pendiente (queue) y reordenarla para garantizar transiciones suaves entre géneros musicales y niveles de energía (ej. no saltar de balada acústica a heavy metal bruscamente). 
-También puedes ELIMINAR (remove) canciones si consideras que rompen completamente la vibra de la fiesta o si son inapropiadas según el historial reciente.
-
-Historial reciente (para entender la vibra actual):
-${JSON.stringify(history.map((t: any) => t.name + ' - ' + t.artists))}
+También puedes ELIMINAR (remove) canciones si consideras que rompen completamente la vibra de la lista.
 
 Cola actual pendiente (ESTAS SON LAS QUE DEBES REORDENAR O ELIMINAR):
 ${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
