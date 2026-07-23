@@ -22,6 +22,12 @@ export const useSettingsStore = create(
       requestsPerHour: 15,
       requestsPerGuest: 0,
       tableCount: 0,
+      
+      // DJ Profile
+      djName: 'Dj Anfitrión',
+      djAvatar: 'avatar1',
+      setDjName: (name) => set({ djName: name }),
+      setDjAvatar: (avatar) => set({ djAvatar: avatar }),
 
       lastSavedSignature: '',
       setLastSavedSignature: (sig) => set({ lastSavedSignature: sig }),
@@ -62,6 +68,8 @@ export const useSettingsStore = create(
         requestsPerHour: 15,
         requestsPerGuest: 0,
         tableCount: 0,
+        djName: 'Dj Anfitrión',
+        djAvatar: 'avatar1',
         lastSavedSignature: '',
         enairoEnabled: true,
         enairoPrompt: '',

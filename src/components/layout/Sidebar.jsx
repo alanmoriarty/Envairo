@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, BarChart2, Zap,
-  HelpCircle, LogOut, Music2, ChevronRight, XCircle, Palette, QrCode
+  HelpCircle, LogOut, Music2, ChevronRight, XCircle, Palette, QrCode, PencilLine
 } from 'lucide-react';
 import { QRCard } from '../qr/QRCard';
+import { ProfileModal, STOCK_AVATARS } from './ProfileModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -21,9 +22,10 @@ const NAV_KEYS = [
 
 export function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
-  const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode, themeColor, setThemeColor } = useSettingsStore();
+  const { isAdminMode, setSessionId, setHostSecret, setIsAdminMode, themeColor, setThemeColor, djName, djAvatar } = useSettingsStore();
   const navigate = useNavigate();
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const { t } = useTranslation();
 
   const visibleNavItems = isAdminMode
@@ -47,6 +49,15 @@ export function Sidebar({ isOpen, onClose }) {
 
       if (state.youtubePlayer) {
         state.youtubePlayer.pauseVideo();
+      }
+
+      // Notificar a las pantallas esclavas que el anfitrión se ha desconectado
+      try {
+        const channel = new BroadcastChannel('envairo_tv_sync');
+        channel.postMessage({ type: 'MASTER_DISCONNECT' });
+        channel.close();
+      } catch (e) {
+        console.error('Error broadcasting disconnect', e);
       }
 
       // Limpiar cola local, peticiones e historial para no dejar rastro
@@ -101,32 +112,35 @@ export function Sidebar({ isOpen, onClose }) {
         {/* User info */}
         {user ? (
           <div className="px-4 py-4 border-b border-white/5">
-            <div className="flex items-center gap-3 p-3 bg-bg-elevated rounded-xl">
-              {user.images?.[0]?.url ? (
+            <button 
+              onClick={() => setShowProfileModal(true)}
+              className="w-full flex items-center gap-3 p-3 bg-bg-elevated hover:bg-white/5 border border-transparent hover:border-white/10 rounded-xl transition-all group text-left"
+              title="Editar Perfil"
+            >
+              <div className="relative">
                 <img
-                  src={user.images[0].url}
+                  src={STOCK_AVATARS.find(a => a.id === djAvatar)?.url || STOCK_AVATARS[0].url}
                   alt="avatar"
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-accent/50 transition-colors"
                 />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center text-sm font-bold text-accent">
-                  {user.display_name?.[0]?.toUpperCase() || 'U'}
+                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <PencilLine size={16} className="text-white" />
                 </div>
-              )}
-              <div className="min-w-0">
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">
-                  {user.display_name}
+                  {djName}
                 </p>
-                <p className="text-xs text-text-muted truncate">
-                  {user.email}
+                <p className="text-[10px] text-accent font-medium truncate uppercase tracking-wide flex items-center gap-1">
+                  <PencilLine size={10} /> Editar Perfil
                 </p>
               </div>
-            </div>
+            </button>
           </div>
         ) : isAdminMode && (
           <div className="px-4 py-4 border-b border-white/5">
             <div className="flex items-center gap-3 p-3 bg-bg-elevated rounded-xl">
-              <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center text-sm font-bold text-accent">
+              <div className="w-10 h-10 rounded-full bg-accent/30 flex items-center justify-center text-sm font-bold text-accent">
                 R
               </div>
               <div className="min-w-0">
@@ -222,6 +236,10 @@ export function Sidebar({ isOpen, onClose }) {
             <QRCard />
           </div>
         </div>
+      )}
+
+      {showProfileModal && (
+        <ProfileModal onClose={() => setShowProfileModal(false)} />
       )}
     </>
   );

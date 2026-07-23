@@ -7,10 +7,14 @@ export default function TVDisplayPage() {
   const player2Ref = useRef(null);
   const activePlayerIndex = useRef(1);
   const isTransitioning = useRef(false);
-  const [status, setStatus] = useState('Esperando conexión...');
+  const [status, setStatus] = useState('Verificando disponibilidad...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [isCheckingLimit, setIsCheckingLimit] = useState(true);
+  const myTvId = useRef(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString());
+  const activeTvs = useRef(new Set());
   const idleTimerRef = useRef(null);
   const currentVideoIdRef = useRef(null);
 
@@ -18,27 +22,63 @@ export default function TVDisplayPage() {
   const getBufferPlayer = () => activePlayerIndex.current === 1 ? player2Ref.current : player1Ref.current;
 
   useEffect(() => {
-    // 1. Cargar API de YouTube IFrame
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    }
-
-    // 2. Inicializar el BroadcastChannel
+    // 1. Inicializar el BroadcastChannel globalmente
     channelRef.current = new BroadcastChannel('envairo_tv_sync');
 
-    // 3. Callback cuando la API de YouTube esté lista
-    window.onYouTubeIframeAPIReady = () => {
-      setStatus('Conectado. Esperando música...');
-      initPlayers();
+    const handleMessage = (e) => {
+      if (e.data.type === 'PING') {
+        if (!limitReached) {
+          channelRef.current.postMessage({ type: 'PONG', tvId: myTvId.current });
+        }
+      } else if (e.data.type === 'PONG') {
+        activeTvs.current.add(e.data.tvId);
+      } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
+        if (!limitReached) handleSync(e.data);
+      } else if (e.data.type === 'MASTER_DISCONNECT') {
+        if (!limitReached) {
+          const activeP = getActivePlayer();
+          if (activeP && typeof activeP.pauseVideo === 'function') {
+            activeP.pauseVideo();
+          }
+          currentVideoIdRef.current = null;
+          setCurrentVideoId(null);
+          setStatus('Anfitrión desconectado. Esperando reconexión...');
+        }
+      }
     };
 
-    if (window.YT && window.YT.Player) {
-      setStatus('Conectado. Esperando música...');
-      initPlayers();
-    }
+    channelRef.current.addEventListener('message', handleMessage);
+
+    // 2. Enviar PING para contar cuántas pantallas existen
+    channelRef.current.postMessage({ type: 'PING', tvId: myTvId.current });
+
+    // 3. Esperar 500ms y tomar decisión
+    const timeoutId = setTimeout(() => {
+      if (activeTvs.current.size >= 10) {
+        setLimitReached(true);
+        setIsCheckingLimit(false);
+        setStatus('Límite máximo alcanzado (10 pantallas simultáneas)');
+      } else {
+        setIsCheckingLimit(false);
+        // Cargar API de YouTube
+        if (!window.YT) {
+          const tag = document.createElement('script');
+          tag.src = "https://www.youtube.com/iframe_api";
+          const firstScriptTag = document.getElementsByTagName('script')[0];
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onYouTubeIframeAPIReady = () => {
+          setStatus('Conectado. Esperando música...');
+          initPlayers();
+        };
+
+        if (window.YT && window.YT.Player) {
+          setStatus('Conectado. Esperando música...');
+          initPlayers();
+        }
+      }
+    }, 500);
 
     let readyCount = 0;
     function initPlayers() {
@@ -62,20 +102,6 @@ export default function TVDisplayPage() {
         event.target.mute();
         readyCount++;
         if (readyCount === 2) {
-          channelRef.current.onmessage = (e) => {
-            if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
-              handleSync(e.data);
-            } else if (e.data.type === 'MASTER_DISCONNECT') {
-              const activeP = getActivePlayer();
-              if (activeP && typeof activeP.pauseVideo === 'function') {
-                activeP.pauseVideo();
-              }
-              currentVideoIdRef.current = null;
-              setCurrentVideoId(null);
-              setStatus('Anfitrión desconectado. Esperando reconexión...');
-            }
-          };
-
           // Pedir al anfitrión el estado actual por si nos conectamos tarde
           channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
         }
@@ -136,6 +162,8 @@ export default function TVDisplayPage() {
     document.addEventListener('MSFullscreenChange', handleFsChange);
 
     return () => {
+      clearTimeout(timeoutId);
+      channelRef.current.removeEventListener('message', handleMessage);
       if (channelRef.current) channelRef.current.close();
       if (player1Ref.current) player1Ref.current.destroy();
       if (player2Ref.current) player2Ref.current.destroy();
