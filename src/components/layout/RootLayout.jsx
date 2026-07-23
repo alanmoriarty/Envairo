@@ -293,11 +293,20 @@ export function RootLayout() {
       </div>
 
       {/* DEBUG OVERLAY - TEMPORAL */}
-      <div className="fixed bottom-0 left-0 bg-red-900 text-white p-2 text-xs z-[9999] opacity-75">
+      <div className="fixed bottom-0 left-0 bg-red-900 text-white p-2 text-xs z-[9999] opacity-90 flex flex-col gap-1">
         <div>User ID: {user?.id}</div>
         <div>Session ID: {useSettingsStore.getState().sessionId}</div>
         <div>Is Admin: {isAdminMode ? 'TRUE' : 'FALSE'}</div>
         <div>Email: {user?.email}</div>
+        <button 
+          onClick={() => {
+            console.log("Forcing sessionId to", user?.id);
+            useSettingsStore.getState().setSessionId(user?.id);
+          }}
+          className="bg-white text-red-900 px-2 py-1 rounded font-bold mt-1"
+        >
+          FORCE FIX SESSION ID
+        </button>
       </div>
       
       {/* 2. Visualizador y Fondo Reactivo (Z-index base) */}
