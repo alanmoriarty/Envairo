@@ -60,18 +60,18 @@ export default function TVDisplayPage() {
         event.target.mute();
         readyCount++;
         if (readyCount === 2) {
-           channelRef.current.onmessage = (e) => {
-             if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
-               handleSync(e.data);
-             } else if (e.data.type === 'MASTER_DISCONNECT') {
-               const activeP = getActivePlayer();
-               if (activeP && typeof activeP.pauseVideo === 'function') {
-                 activeP.pauseVideo();
-               }
-               setCurrentVideoId(null);
-               setStatus('Anfitrión desconectado. Esperando reconexión...');
-             }
-           };
+          channelRef.current.onmessage = (e) => {
+            if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
+              handleSync(e.data);
+            } else if (e.data.type === 'MASTER_DISCONNECT') {
+              const activeP = getActivePlayer();
+              if (activeP && typeof activeP.pauseVideo === 'function') {
+                activeP.pauseVideo();
+              }
+              setCurrentVideoId(null);
+              setStatus('Anfitrión desconectado. Esperando reconexión...');
+            }
+          };
         }
       };
 
@@ -182,7 +182,7 @@ export default function TVDisplayPage() {
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
         // Tolerancia estricta de 0.5s gracias a la nueva precisión del reloj del master
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.6) {
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
           activeP.seekTo(data.time, true);
         }
       }
