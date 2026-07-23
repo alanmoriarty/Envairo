@@ -93,26 +93,24 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
+        // loadVideoById automáticamente le da PLAY al video según la API de YouTube
         player.loadVideoById({ videoId: data.videoId, startSeconds: data.time || 0 });
-        if (data.isPlaying) {
-          player.playVideo();
-        } else {
-          player.pauseVideo();
-        }
         return;
       }
 
-      // Si es el mismo video, procesar Play/Pause
-      if (data.isPlaying && !isCurrentlyPlaying) {
-        player.playVideo();
-      } else if (!data.isPlaying && isCurrentlyPlaying) {
-        player.pauseVideo();
+      // Si es el mismo video, procesar comandos
+      if (data.type === 'SYNC') {
+        if (data.isPlaying && !isCurrentlyPlaying) {
+          player.playVideo();
+        } else if (!data.isPlaying && isCurrentlyPlaying) {
+          player.pauseVideo();
+        }
       }
 
-      // Sincronizar tiempo si hay un desfase grande (más de 3 segundos)
+      // Sincronizar tiempo
       if (data.type === 'SYNC_TIME' && data.time > 0) {
         const currentTime = player.getCurrentTime();
-        if (Math.abs(currentTime - data.time) > 3) {
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 2) {
           player.seekTo(data.time, true);
         }
       }
