@@ -292,7 +292,15 @@ export function RootLayout() {
         </main>
       </div>
 
-      {/* Visualizer Background */}
+      {/* DEBUG OVERLAY - TEMPORAL */}
+      <div className="fixed bottom-0 left-0 bg-red-900 text-white p-2 text-xs z-[9999] opacity-75">
+        <div>User ID: {user?.id}</div>
+        <div>Session ID: {useSettingsStore.getState().sessionId}</div>
+        <div>Is Admin: {isAdminMode ? 'TRUE' : 'FALSE'}</div>
+        <div>Email: {user?.email}</div>
+      </div>
+      
+      {/* 2. Visualizador y Fondo Reactivo (Z-index base) */}
       <VisualizerBackground />
 
       {/* Footer Player */}
