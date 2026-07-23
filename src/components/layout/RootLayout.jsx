@@ -57,7 +57,9 @@ export function RootLayout() {
     if (user?.id) {
       useSettingsStore.getState().setSessionId(user.id);
     }
+  }, [user?.id]);
 
+  useEffect(() => {
     // Sincronizar configuraciones e historial de la nube al montar
     const hydrateSettings = async () => {
       try {
