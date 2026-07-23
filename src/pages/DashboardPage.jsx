@@ -147,6 +147,7 @@ export default function DashboardPage() {
   const { t } = useTranslation();
 
   const {
+    alwaysAvailable, setAlwaysAvailable,
     enairoPrompt, setEnairoPrompt,
     enairoTrackCount, setEnairoTrackCount,
     enairoTestMode, setEnairoTestMode
@@ -506,10 +507,35 @@ export default function DashboardPage() {
                       <span className="badge bg-accent text-white">{pendingRequests.length}</span>
                     )}
                   </h2>
-                  <div className="flex items-center gap-2" title="Auto-DJ">
-                    <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-                    <span className="text-xs font-medium text-text-muted hidden sm:inline">Auto-DJ</span>
-                    <Toggle checked={autoDJ} onChange={setAutoDJ} />
+                  <div className="flex items-center gap-4">
+                    {/* Aceptar Peticiones Toggle */}
+                    <div className="flex items-center gap-2" title={t('settings.always_available') || 'Aceptar peticiones'}>
+                      <span className="text-xs font-medium text-text-muted hidden sm:inline">
+                        {t('settings.always_available') || 'Peticiones'}
+                      </span>
+                      <Toggle 
+                        checked={alwaysAvailable} 
+                        onChange={async (val) => {
+                          setAlwaysAvailable(val);
+                          if (isAdminMode) {
+                            await supabase.rpc('sync_host_config', { 
+                              p_session_id: sessionId, 
+                              p_secret: hostSecret, 
+                              p_updates: { active: val } 
+                            });
+                          }
+                        }} 
+                      />
+                    </div>
+                    
+                    <div className="w-px h-4 bg-white/10 hidden sm:block" />
+
+                    {/* Auto-DJ Toggle */}
+                    <div className="flex items-center gap-2" title="Auto-DJ">
+                      <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
+                      <span className="text-xs font-medium text-text-muted hidden sm:inline">Auto-DJ</span>
+                      <Toggle checked={autoDJ} onChange={setAutoDJ} />
+                    </div>
                   </div>
                 </div>
 
@@ -668,10 +694,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-center text-white mb-2">
-                Configuración envAIro
+                Configuración envAIro Selector
               </h3>
               <p className="text-sm text-center text-text-muted mb-6">
-                Asegúrate de haber configurado correctamente el prompt. Una vez generado, EnvAIro no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
+                Asegúrate de haber escrito correctamente el contexto de tu evento. Una vez generado, envAIro Selector no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
               </p>
 
               {/* Ajustes movidos desde SettingsPage */}

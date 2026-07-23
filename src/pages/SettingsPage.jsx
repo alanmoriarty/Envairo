@@ -269,15 +269,6 @@ export default function SettingsPage() {
               Se mostrará a tus invitados en la página web: "Pide tu canción para..."
             </p>
           </div>
-          <div className="border-t border-white/5 pt-4">
-            <Toggle
-              checked={alwaysAvailable}
-              onChange={setAlwaysAvailable}
-              label={t('settings.always_available')}
-              description={t('settings.always_available_desc')}
-            />
-          </div>
-
           <div className="border-t border-white/5 pt-4 space-y-4">
             <div className="flex items-center gap-2 mb-1">
               <MonitorPlay size={16} className="text-text-muted" />
