@@ -7,8 +7,5 @@
   "title": "envAIro TV Display",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
-  "bgImage": "bg.png",
-  "splashBackground": "#000000",
-  "requiredMemory": 64,
-  "handlesNeedBiggerMemory": true
+  "requiredMemory": 64
 }
