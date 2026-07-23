@@ -93,10 +93,15 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        // Compensamos el retraso natural de red/buffering (aprox 0.8s) sumándolo al tiempo de inicio
-        const bufferingOffset = 0.8;
+        // Compensamos el retraso natural de red/buffering (aprox 0.9s) sumándolo al tiempo de inicio
+        const bufferingOffset = 0.9;
         const start = data.time ? data.time + bufferingOffset : 0;
-        player.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        
+        if (data.isPlaying) {
+          player.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        } else {
+          player.cueVideoById({ videoId: data.videoId, startSeconds: start });
+        }
         return;
       }
 
