@@ -93,8 +93,10 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        // loadVideoById automáticamente le da PLAY al video según la API de YouTube
-        player.loadVideoById({ videoId: data.videoId, startSeconds: data.time || 0 });
+        // Compensamos el retraso natural de red/buffering (aprox 0.8s) sumándolo al tiempo de inicio
+        const bufferingOffset = 0.8;
+        const start = data.time ? data.time + bufferingOffset : 0;
+        player.loadVideoById({ videoId: data.videoId, startSeconds: start });
         return;
       }
 
@@ -110,7 +112,8 @@ export default function TVDisplayPage() {
       // Sincronizar tiempo
       if (data.type === 'SYNC_TIME' && data.time > 0) {
         const currentTime = player.getCurrentTime();
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 2) {
+        // Tolerancia reducida a 1.5s para forzar sincronizaciones más precisas sin tartamudeo constante
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 1.5) {
           player.seekTo(data.time, true);
         }
       }
