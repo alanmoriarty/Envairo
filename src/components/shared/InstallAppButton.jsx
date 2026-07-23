@@ -8,7 +8,7 @@ export function InstallAppButton({ className = '', text = 'Instalar App', varian
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
       import('sonner').then(({ toast }) => {
-        toast.info("Abre el menú de tu navegador y busca 'Instalar app' o 'Añadir a inicio'.");
+        toast.info("Si usas Brave o iOS, la instalación automática está bloqueada. Abre el menú del navegador y elige 'Instalar app' o 'Añadir a inicio'.", { duration: 8000 });
       });
       return;
     }
