@@ -116,6 +116,27 @@ export async function evaluateTrack(track, settings) {
     }
   }
 
+  // 5. DeepSeek AI Prompt Filter for Auto-DJ
+  if (settings.autoDjPrompt && settings.autoDjPrompt.trim() !== '') {
+    try {
+      const { supabase } = await import('./supabase');
+      const { data: promptData, error: promptError } = await supabase.functions.invoke('enairo-selector', {
+        body: {
+          action_mode: 'check_single_prompt',
+          trackName: `${track.name} - ${track.artists}`,
+          prompt: settings.autoDjPrompt
+        }
+      });
+      if (!promptError && promptData) {
+        if (!promptData.approved) {
+          return { approved: false, reason: promptData.reason || 'No encaja con el prompt del Auto DJ' };
+        }
+      }
+    } catch (err) {
+      console.error('Auto-DJ Prompt check failed', err);
+    }
+  }
+
   // Si pasó todas las pruebas
   return { approved: true, reason: 'Aprobada por Auto DJ' };
 }

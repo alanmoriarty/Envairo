@@ -190,6 +190,14 @@ Responde "YES" si la canción, su letra, su título o su contexto cultural conti
 Responde "NO" solo si estás 100% seguro de que es una canción totalmente limpia y apta para todo público.
 DEBES responder ÚNICAMENTE con un JSON válido en este formato exacto: {"isExplicit": true} o {"isExplicit": false}. NO agregues ningún otro texto.`;
       finalData = await askDeepSeek(singlePrompt) || { isExplicit: false };
+    } else if (action_mode === 'check_single_prompt') {
+      const trackName = reqBody.trackName || '';
+      const filterPrompt = reqBody.prompt || '';
+      const singlePrompt = `Eres un selector musical estricto (Auto DJ). Analiza la siguiente canción: "${trackName}".
+El usuario ha establecido el siguiente filtro/prompt estricto para la música que desea que suene: "${filterPrompt}".
+¿Esta canción encaja bien con este filtro? 
+DEBES responder ÚNICAMENTE con un JSON válido en este formato exacto: {"approved": true, "reason": "Breve razón"} o {"approved": false, "reason": "Breve razón"}. NO agregues ningún otro texto.`;
+      finalData = await askDeepSeek(singlePrompt) || { approved: false, reason: "Error en la IA" };
     } else {
       // Para 'reorder' hacemos una sola pasada con Gemini
       finalData = await askGemini(prompt);

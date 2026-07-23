@@ -143,12 +143,14 @@ export default function DashboardPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
+  const [isAutoDjModalOpen, setIsAutoDjModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
 
   const {
     alwaysAvailable, setAlwaysAvailable,
     enairoPrompt, setEnairoPrompt,
+    autoDjPrompt, setAutoDjPrompt,
     enairoTrackCount, setEnairoTrackCount,
     enairoTestMode, setEnairoTestMode
   } = useSettingsStore();
@@ -534,7 +536,16 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2" title="Auto-DJ">
                       <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
                       <span className="text-xs font-medium text-text-muted hidden sm:inline">Auto-DJ</span>
-                      <Toggle checked={autoDJ} onChange={setAutoDJ} />
+                      <Toggle 
+                        checked={autoDJ} 
+                        onChange={(val) => {
+                          if (val) {
+                            setIsAutoDjModalOpen(true);
+                          } else {
+                            setAutoDJ(false);
+                          }
+                        }} 
+                      />
                     </div>
                   </div>
                 </div>
@@ -700,7 +711,6 @@ export default function DashboardPage() {
                 Asegúrate de haber escrito correctamente el contexto de tu evento. Una vez generado, envAIro Selector no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
               </p>
 
-              {/* Ajustes movidos desde SettingsPage */}
               <div className="space-y-4 mb-6 text-left">
                 <div className="pt-2">
                   <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
@@ -752,6 +762,63 @@ export default function DashboardPage() {
                   className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white bg-accent hover:bg-accent-hover transition-colors shadow-glow-sm"
                 >
                   Sí, Generar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-DJ Configuration Modal */}
+      {isAutoDjModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
+            <div className="p-5">
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-accent/20 rounded-full">
+                  <Sparkles size={32} className="text-accent" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center text-white mb-2">
+                Activar Auto-DJ (IA)
+              </h3>
+              <p className="text-sm text-center text-text-muted mb-6">
+                El Auto-DJ elegirá automáticamente las siguientes canciones basándose en tu historial y el contexto que definas aquí.
+              </p>
+
+              <div className="space-y-4 mb-6 text-left">
+                <div className="pt-2">
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto del Auto-DJ (Opcional)</label>
+                  <textarea
+                    value={autoDjPrompt}
+                    onChange={(e) => setAutoDjPrompt(e.target.value)}
+                    placeholder="Ej: Solo canciones suaves de bachata y salsa vieja..."
+                    className="input-field w-full h-24 resize-none"
+                  />
+                  <p className="text-xs text-text-muted mt-2">
+                    Si lo dejas en blanco, el Auto-DJ usará solo los filtros de géneros (sin IA).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsAutoDjModalOpen(false);
+                    setAutoDJ(false); // cancel activation
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-text-primary bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAutoDjModalOpen(false);
+                    setAutoDJ(true);
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white bg-accent hover:bg-accent-hover transition-colors shadow-glow-sm"
+                >
+                  Activar
                 </button>
               </div>
             </div>

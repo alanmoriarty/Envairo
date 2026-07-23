@@ -53,6 +53,7 @@ export const useSettingsStore = create(
         mode: 'party',
         eventName: '',
         autoDJ: false,
+        autoDjPrompt: '',
         alwaysAvailable: true,
         startTime: '19:00',
         endTime: '03:00',
@@ -146,6 +147,10 @@ export const useSettingsStore = create(
       setEnairoIsThinking: (v) => set({ enairoIsThinking: v }),
       enairoTestMode: false,
       setEnairoTestMode: (v) => set({ enairoTestMode: v }),
+
+      autoDjPrompt: '',
+      setAutoDjPrompt: (v) => set({ autoDjPrompt: v }),
+
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),
       removeWhitelistGenre: (g) =>
