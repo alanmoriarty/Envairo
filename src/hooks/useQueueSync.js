@@ -335,6 +335,7 @@ export function useQueueSync() {
             p_session_id: sessionId,
             p_secret: useSettingsStore.getState().hostSecret,
             p_updates: {
+              active: true,
               ...(useSettingsStore.getState().isAdminMode ? { active_remote_id: activeInstanceId } : {}),
               active: true,
               mode,
