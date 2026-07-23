@@ -195,28 +195,39 @@ export function useEnairoSelector() {
       const currentQueue = state.queue;
       const history = state.playHistory;
 
+      const settingsState = useSettingsStore.getState();
+
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
           action_mode: 'reorder',
           history: history.slice(0, 5),
           queue: currentQueue,
-          settings: { isInitialReorder: isInitial } // Mandamos el flag de primer reorden
+          settings: { 
+            isInitialReorder: isInitial,
+            enairoPrompt: settingsState.enairoPrompt,
+            whitelistGenres: settingsState.whitelistGenres,
+            blacklistGenres: settingsState.blacklistGenres,
+            blacklistSongs: settingsState.blacklistSongs,
+            blacklistArtists: settingsState.blacklistArtists
+          }
         }
       });
 
       if (error) throw error;
 
-      const { actions = [], reasoning } = data;
+      const { actions = [], reasoning, tracksToAdd = [] } = data;
 
       if (reasoning) {
         console.log("envAIro Auto-Reorder Reasoning:", reasoning);
       }
 
+      let removedCount = 0;
+
       if (actions.length > 0) {
         actions.forEach(action => {
           if (action.type === 'remove' && action.queueId) {
             state.removeFromQueue(action.queueId);
-            toast.success(`envAIro eliminó una petición que no encajaba con el ambiente.`);
+            removedCount++;
           } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
             const latestQueue = usePlayerStore.getState().queue;
             const oldIndex = latestQueue.findIndex(t => t.queueId === action.queueId);
@@ -225,7 +236,45 @@ export function useEnairoSelector() {
             }
           }
         });
-        toast.info(`envAIro ha reordenado la lista para mejorar las transiciones.`);
+      }
+
+      // Procesar nuevas canciones de reemplazo
+      if (tracksToAdd.length > 0) {
+        let foundTracks = [];
+        try {
+          const { data: searchData, error: searchError } = await supabase.functions.invoke('search-spotify', {
+            body: { queries: tracksToAdd, type: 'track', limit: 1, filterExplicit: useSettingsStore.getState().explicitFilter }
+          });
+
+          if (!searchError && searchData && searchData.results) {
+            foundTracks = searchData.results.map((res) => {
+              if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
+                const spotifyTrack = res.tracks.items[0];
+                return {
+                  id: spotifyTrack.id,
+                  name: spotifyTrack.name,
+                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
+                  image: spotifyTrack.album?.images?.[0]?.url || '',
+                  duration_ms: spotifyTrack.duration_ms,
+                  uri: spotifyTrack.uri,
+                  source: 'spotify',
+                  addedBy: 'EnvAIro Selector'
+                };
+              }
+              return null;
+            }).filter(Boolean);
+          }
+        } catch (err) {
+          console.error("Error buscando canciones de reemplazo:", err);
+        }
+
+        foundTracks.forEach(track => state.addToQueue(track));
+      }
+
+      if (removedCount > 0) {
+        toast.success(`envAIro eliminó ${removedCount} peticiones fuera de vibra y añadió reemplazos perfectos.`);
+      } else if (actions.length > 0 || tracksToAdd.length > 0) {
+        toast.info(`envAIro ha ajustado la lista para mantener la mejor vibra.`);
       }
 
     } catch (err) {
