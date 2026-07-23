@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>envAIro TV Display</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="tvFrame" src="https://envairo.app/tv" allow="autoplay; fullscreen; encrypted-media"></iframe>
+    <script>
+        if (window.webOS && window.webOS.service) {
+            window.webOS.service.request("luna://com.webos.service.tv.power", {
+                method: "turnOffScreen",
+                parameters: { "standbyMode": "normal" }
+            });
+        }
+    </script>
+</body>
+</html>

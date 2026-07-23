@@ -339,7 +339,7 @@ export default function TVDisplayPage() {
           </h1>
 
           {/* Tarjeta de Vinculación */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-3xl">
             {/* Columna QR */}
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
@@ -354,10 +354,10 @@ export default function TVDisplayPage() {
             </div>
 
             {/* Columna PIN */}
-            <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8">
+            <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 w-full min-w-0">
               <span className="text-xs font-semibold text-accent uppercase tracking-widest">O ingresa este PIN</span>
-              <div className="bg-black/40 border border-white/10 rounded-2xl px-6 py-4 font-mono text-4xl md:text-5xl font-black text-white tracking-[0.25em] shadow-inner">
-                {tvPin.slice(0, 3)}-{tvPin.slice(3)}
+              <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
+                {tvPin.slice(0, 3)} - {tvPin.slice(3)}
               </div>
               <p className="text-xs text-text-muted text-center md:text-left leading-relaxed">
                 Ingresa a tu panel de control de envAIro, presiona <strong className="text-white">Vincular TV</strong> e introduce este código de 6 dígitos.

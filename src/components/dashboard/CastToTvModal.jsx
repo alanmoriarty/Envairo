@@ -199,10 +199,10 @@ export function CastToTvModal({ isOpen, onClose }) {
               </div>
             </div>
             <button
-              onClick={() => window.open('/tv', '_blank')}
+              onClick={() => window.open(`/tv?session=${activeSessionId}`, '_blank')}
               className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
             >
-              Abrir Pestaña de Monitor (Silenciada)
+              Abrir Pestaña de Monitor (Conexión Directa)
             </button>
           </div>
         </div>
