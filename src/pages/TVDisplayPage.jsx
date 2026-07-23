@@ -131,7 +131,7 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        const bufferingOffset = 1; // Compensar retraso natural de red/buffering
+        const bufferingOffset = 0.5; // Reducido gracias a la nueva precisión de tiempo verdadero
         const start = data.time ? data.time + bufferingOffset : 0;
 
         if (isCurrentlyPlaying && data.isPlaying) {
@@ -160,7 +160,8 @@ export default function TVDisplayPage() {
 
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 1.5) {
+        // Tolerancia estricta de 0.8s gracias a la nueva precisión del reloj del master
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.8) {
           activeP.seekTo(data.time, true);
         }
       }
@@ -195,7 +196,7 @@ export default function TVDisplayPage() {
       
       {/* Overlay status if no video */}
       {!currentVideoId && (
-        <div className="relative z-10 flex flex-col items-center gap-6 animate-pulse">
+        <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
           <div className="bg-white/10 p-6 rounded-full backdrop-blur-sm border border-white/20">
             <Tv size={64} className="text-white opacity-80" />
           </div>

@@ -21,12 +21,17 @@ export function useTVBroadcast() {
 
       if (currentYtId !== lastStateRef.current.videoId || isPlaying !== lastStateRef.current.isPlaying) {
         lastStateRef.current = { videoId: currentYtId, isPlaying };
+        let trueTime = (state.progress || 0) / 1000;
+        if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
+          const ytTime = state.youtubePlayer.getCurrentTime();
+          if (ytTime !== undefined) trueTime = ytTime;
+        }
         
         channelRef.current.postMessage({
           type: 'SYNC',
           videoId: currentYtId,
           isPlaying: isPlaying,
-          time: (state.progress || 0) / 1000
+          time: trueTime
         });
       }
     });
@@ -35,11 +40,16 @@ export function useTVBroadcast() {
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
       if (state.playbackEngine === 'youtube' && state.isPlaying && channelRef.current && state.currentYtId) {
-        const currentYtId = state.currentYtId;
+        let trueTime = (state.progress || 0) / 1000;
+        if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
+          const ytTime = state.youtubePlayer.getCurrentTime();
+          if (ytTime !== undefined) trueTime = ytTime;
+        }
+
         channelRef.current.postMessage({
           type: 'SYNC_TIME',
           videoId: currentYtId,
-          time: (state.progress || 0) / 1000
+          time: trueTime
         });
       }
     }, 5000); // Every 5 seconds
