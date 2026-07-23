@@ -26,7 +26,7 @@ export function useTVBroadcast() {
           type: 'SYNC',
           videoId: currentYtId,
           isPlaying: isPlaying,
-          time: state.progress || 0
+          time: (state.progress || 0) / 1000
         });
       }
     });
@@ -39,7 +39,7 @@ export function useTVBroadcast() {
         channelRef.current.postMessage({
           type: 'SYNC_TIME',
           videoId: currentYtId,
-          time: state.progress || 0
+          time: (state.progress || 0) / 1000
         });
       }
     }, 5000); // Every 5 seconds
