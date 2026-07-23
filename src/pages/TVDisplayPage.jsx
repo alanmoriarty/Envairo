@@ -263,7 +263,7 @@ export default function TVDisplayPage() {
       )}
 
       {/* Controles flotantes */}
-      <div className="absolute bottom-6 right-6 z-30 opacity-30 hover:opacity-100 transition-opacity duration-300">
+      <div className="absolute bottom-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
         <button
           onClick={toggleFullscreen}
           className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
@@ -275,7 +275,7 @@ export default function TVDisplayPage() {
 
       {/* Botón extra X arriba si está en full screen */}
       {isFullscreen && (
-        <div className="absolute top-6 right-6 z-30 opacity-30 hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={toggleFullscreen}
             className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"

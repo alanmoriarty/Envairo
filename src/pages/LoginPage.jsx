@@ -17,8 +17,30 @@ export default function LoginPage() {
   const { user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    // Si ya estamos autenticados, redirigir automáticamente al reproductor
+    // 1. Interceptar parámetros de "QR de Administrador" para control remoto (tiene máxima prioridad)
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get('session');
+    const admin = params.get('admin');
+
+    if (session && admin) {
+      const { setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore.getState();
+      setSessionId(session);
+      setHostSecret(admin);
+      setIsAdminMode(true);
+      
+      // Limpiar cualquier estado del reproductor local para no interferir
+      usePlayerStore.getState().clearPlayerState();
+      
+      import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
+      // Redirigir directamente al dashboard
+      navigate('/app/dashboard');
+      return;
+    }
+
+    // 2. Si no hay parámetros de admin y ya estamos autenticados, redirigir al reproductor de nuestro propio anfitrión
     if (user || isAuthenticated) {
+      // Nos aseguramos de no estar en modo admin si entramos normal
+      useSettingsStore.getState().setIsAdminMode(false);
       navigate('/app/dashboard');
     }
   }, [user, isAuthenticated, navigate]);
@@ -138,22 +160,7 @@ export default function LoginPage() {
     }
   };
 
-  useEffect(() => {
-    // Interceptar parámetros de "QR de Administrador" para control remoto
-    const params = new URLSearchParams(window.location.search);
-    const session = params.get('session');
-    const admin = params.get('admin');
 
-    if (session && admin) {
-      const { setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore.getState();
-      setSessionId(session);
-      setHostSecret(admin);
-      setIsAdminMode(true);
-      import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
-      // Redirigir directamente al dashboard sin pedir login
-      navigate('/app/dashboard');
-    }
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
