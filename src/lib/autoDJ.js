@@ -1,3 +1,5 @@
+import { sanitizePrompt } from '../utils/security';
+
 /**
  * Normaliza textos (ej. "Reggaetón" -> "reggaeton")
  */
@@ -124,7 +126,7 @@ export async function evaluateTrack(track, settings) {
         body: {
           action_mode: 'check_single_prompt',
           trackName: `${track.name} - ${track.artists}`,
-          prompt: settings.autoDjPrompt
+          prompt: sanitizePrompt(settings.autoDjPrompt)
         }
       });
       if (!promptError && promptData) {

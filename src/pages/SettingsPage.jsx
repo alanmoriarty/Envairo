@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
+import { sanitizeUrl, MAX_URL_LENGTH } from '../utils/security';
 
 const filterMusicEmojis = (text) => {
   if (!window.Intl || !Intl.Segmenter) return text;
@@ -285,12 +286,18 @@ export default function SettingsPage() {
             </div>
 
             {visualizerEnabled && (
-              <div className="pt-2 animate-fade-in">
-                <label className="block text-sm font-semibold text-text-primary mb-1.5">Enlace de YouTube (Video o Playlist)</label>
+              <div className="pt-2 animate-fade-in space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-semibold text-text-primary">Enlace de YouTube (Video o Playlist)</label>
+                  <span className={`text-xs font-mono ${visualizerUrl.length >= MAX_URL_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                    {visualizerUrl.length} / {MAX_URL_LENGTH}
+                  </span>
+                </div>
                 <input
                   type="text"
+                  maxLength={MAX_URL_LENGTH}
                   value={visualizerUrl}
-                  onChange={(e) => setVisualizerUrl(e.target.value)}
+                  onChange={(e) => setVisualizerUrl(sanitizeUrl(e.target.value))}
                   placeholder="https://www.youtube.com/watch?v=... o &list=..."
                   className="input-field w-full text-sm font-mono placeholder:font-sans"
                 />

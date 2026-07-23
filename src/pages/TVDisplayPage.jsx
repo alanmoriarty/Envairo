@@ -1,10 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tv, Activity, Maximize, Minimize, X, Smartphone, Sparkles, Unlink } from 'lucide-react';
+import { Tv, Activity, Maximize, Minimize, X, Unlink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
 
 function generate6DigitPin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function safeDestroyPlayer(playerRef, containerId, childId) {
+  if (playerRef.current) {
+    try {
+      if (typeof playerRef.current.destroy === 'function') {
+        playerRef.current.destroy();
+      }
+    } catch (e) {
+      console.warn(`Advertencia al destruir reproductor ${childId}:`, e);
+    }
+    playerRef.current = null;
+  }
+  const container = document.getElementById(containerId);
+  if (container && !document.getElementById(childId)) {
+    container.innerHTML = `<div id="${childId}"></div>`;
+  }
 }
 
 export default function TVDisplayPage() {
@@ -176,13 +193,17 @@ export default function TVDisplayPage() {
             const activeContainer = document.getElementById(`tv-yt-container-${activePlayerIndex.current}`);
             const bufferContainer = document.getElementById(`tv-yt-container-${nextIndex}`);
 
-            bufferContainer.style.opacity = '1';
-            bufferContainer.style.zIndex = '2';
+            if (activeContainer && bufferContainer) {
+              bufferContainer.style.opacity = '1';
+              bufferContainer.style.zIndex = '2';
 
-            activeContainer.style.opacity = '0';
-            activeContainer.style.zIndex = '1';
+              activeContainer.style.opacity = '0';
+              activeContainer.style.zIndex = '1';
+            }
 
-            activeP.pauseVideo();
+            if (activeP && typeof activeP.pauseVideo === 'function') {
+              activeP.pauseVideo();
+            }
             activePlayerIndex.current = nextIndex;
           }
         }
@@ -220,8 +241,8 @@ export default function TVDisplayPage() {
       if (sbSyncChannelRef.current) {
         supabase.removeChannel(sbSyncChannelRef.current);
       }
-      if (player1Ref.current) player1Ref.current.destroy();
-      if (player2Ref.current) player2Ref.current.destroy();
+      safeDestroyPlayer(player1Ref, 'tv-yt-container-1', 'tv-youtube-player-1');
+      safeDestroyPlayer(player2Ref, 'tv-yt-container-2', 'tv-youtube-player-2');
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       document.removeEventListener('fullscreenchange', handleFsChange);
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
@@ -269,7 +290,7 @@ export default function TVDisplayPage() {
 
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 1.5) {
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
           activeP.seekTo(data.time, true);
         }
       }
@@ -314,88 +335,32 @@ export default function TVDisplayPage() {
   };
 
   const handleUnpair = () => {
+    safeDestroyPlayer(player1Ref, 'tv-yt-container-1', 'tv-youtube-player-1');
+    safeDestroyPlayer(player2Ref, 'tv-yt-container-2', 'tv-youtube-player-2');
     localStorage.removeItem('bq-tv-session-id');
     setSessionId(null);
     setCurrentVideoId(null);
   };
 
-  // RENDERIZADO: 1. Modo Sin Emparejar (Pantalla de Vinculación con QR y PIN)
-  if (!sessionId) {
-    return (
-      <div className="fixed inset-0 bg-bg-card z-[9999] flex flex-col items-center justify-center p-8 select-none text-white overflow-hidden">
-        {/* Fondo decorativo con luces de neón */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col items-center max-w-2xl w-full text-center space-y-8 animate-fade-in">
-          {/* Header */}
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-3 rounded-full backdrop-blur-md">
-            <Tv size={24} className="text-accent" />
-            <span className="text-sm font-semibold tracking-wider uppercase text-text-muted">envAIro TV Display</span>
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-            Vincular esta pantalla
-          </h1>
-
-          {/* Tarjeta de Vinculación */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-3xl">
-            {/* Columna QR */}
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
-                <QRCodeSVG
-                  value={`${window.location.origin}/tv?pin=${tvPin}`}
-                  size={160}
-                  level="H"
-                  includeMargin={false}
-                />
-              </div>
-              <p className="text-xs text-text-muted font-medium">Escanea desde el celular del Anfitrión</p>
-            </div>
-
-            {/* Columna PIN */}
-            <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 w-full min-w-0">
-              <span className="text-xs font-semibold text-accent uppercase tracking-widest">O ingresa este PIN</span>
-              <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
-                {tvPin.slice(0, 3)} - {tvPin.slice(3)}
-              </div>
-              <p className="text-xs text-text-muted text-center md:text-left leading-relaxed">
-                Ingresa a tu panel de control de envAIro, presiona <strong className="text-white">Vincular TV</strong> e introduce este código de 6 dígitos.
-              </p>
-            </div>
-          </div>
-
-          {/* Status footer */}
-          <div className="flex items-center gap-3 text-white/60 bg-white/5 px-5 py-2.5 rounded-full text-xs">
-            <Activity size={16} className="animate-spin-slow text-accent" />
-            <span>Esperando vinculación en tiempo real...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // RENDERIZADO: 2. Modo Emparejado (Pantalla Esclava de Reproducción)
   return (
     <div
       className={`fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden ${isIdle ? 'cursor-none' : ''}`}
       onMouseMove={handleMouseMove}
       onClick={handleMouseMove}
     >
-      {/* Reproductor 1 (Activo Inicial) */}
+      {/* 1. Contenedores permanentes de reproductores YouTube (Para evitar errores de reconciliación DOM en React) */}
       <div
         id="tv-yt-container-1"
-        className="absolute inset-0 z-[2] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out"
-        style={{ width: '100vw', height: '100vh', opacity: 1 }}
+        className={`absolute inset-0 z-[2] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
+        style={{ width: '100vw', height: '100vh' }}
       >
         <div id="tv-youtube-player-1"></div>
       </div>
 
-      {/* Reproductor 2 (Buffer Secundario) */}
       <div
         id="tv-yt-container-2"
-        className="absolute inset-0 z-[1] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out"
-        style={{ width: '100vw', height: '100vh', opacity: 0 }}
+        className={`absolute inset-0 z-[1] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
+        style={{ width: '100vw', height: '100vh' }}
       >
         <div id="tv-youtube-player-2"></div>
       </div>
@@ -403,8 +368,62 @@ export default function TVDisplayPage() {
       {/* Click-blocking overlay */}
       <div className="absolute inset-0 z-10 cursor-default"></div>
 
-      {/* Overlay status if no video */}
-      {!currentVideoId && (
+      {/* Modo Sin Emparejar (Pantalla de Vinculación con QR y PIN) */}
+      {!sessionId && (
+        <div className="absolute inset-0 z-40 bg-bg-card flex flex-col items-center justify-center p-8 select-none text-white overflow-hidden">
+          {/* Fondo decorativo con luces de neón */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
+
+          <div className="relative z-10 flex flex-col items-center max-w-2xl w-full text-center space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-3 rounded-full backdrop-blur-md">
+              <Tv size={24} className="text-accent" />
+              <span className="text-sm font-semibold tracking-wider uppercase text-text-muted">envAIro TV Display</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
+              Vincular esta pantalla
+            </h1>
+
+            {/* Tarjeta de Vinculación */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-3xl">
+              {/* Columna QR */}
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/tv?pin=${tvPin}`}
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <p className="text-xs text-text-muted font-medium">Escanea desde el celular del Anfitrión</p>
+              </div>
+
+              {/* Columna PIN */}
+              <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 w-full min-w-0">
+                <span className="text-xs font-semibold text-accent uppercase tracking-widest">O ingresa este PIN</span>
+                <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
+                  {tvPin.slice(0, 3)} - {tvPin.slice(3)}
+                </div>
+                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed">
+                  Ingresa a tu panel de control de envAIro, presiona <strong className="text-white">Vincular TV</strong> e introduce este código de 6 dígitos.
+                </p>
+              </div>
+            </div>
+
+            {/* Status footer */}
+            <div className="flex items-center gap-3 text-white/60 bg-white/5 px-5 py-2.5 rounded-full text-xs">
+              <Activity size={16} className="animate-spin-slow text-accent" />
+              <span>Esperando vinculación en tiempo real...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modo Emparejado: Overlay status si no hay video activo */}
+      {sessionId && !currentVideoId && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
           <div className="bg-white/10 p-6 rounded-full border border-white/20">
             <Tv size={64} className="text-white opacity-80" />
@@ -419,23 +438,25 @@ export default function TVDisplayPage() {
         </div>
       )}
 
-      {/* Controles flotantes */}
-      <div className={`absolute bottom-6 right-6 z-30 flex items-center gap-3 transition-opacity duration-300 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
-        <button
-          onClick={handleUnpair}
-          className="bg-black/50 hover:bg-danger/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
-          title="Desvincular esta pantalla TV"
-        >
-          <Unlink size={24} />
-        </button>
-        <button
-          onClick={toggleFullscreen}
-          className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
-          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla Completa"}
-        >
-          {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
-        </button>
-      </div>
+      {/* Modo Emparejado: Controles flotantes */}
+      {sessionId && (
+        <div className={`absolute bottom-6 right-6 z-30 flex items-center gap-3 transition-opacity duration-300 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
+          <button
+            onClick={handleUnpair}
+            className="bg-black/50 hover:bg-danger/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
+            title="Desvincular esta pantalla TV"
+          >
+            <Unlink size={24} />
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
+            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla Completa"}
+          >
+            {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
+          </button>
+        </div>
+      )}
 
       {/* Botón extra X arriba si está en full screen */}
       {isFullscreen && (

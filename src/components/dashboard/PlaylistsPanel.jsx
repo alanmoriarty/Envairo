@@ -5,6 +5,7 @@ import { getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeAp
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
+import { sanitizeUrl, MAX_URL_LENGTH } from '../../utils/security';
 
 // Función auxiliar para formatear la fecha como "Hoy", "Ayer", o "DD/MM/YYYY"
 function formatDateLabel(dateString) {
@@ -287,24 +288,35 @@ export function PlaylistsPanel() {
           <ListMusic size={16} className="text-accent" />
           {t('dashboard.playlists_import')}
         </h2>
-        <form onSubmit={handleLinkImport} className="flex gap-2">
-          <div className="relative flex-1">
-            <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input
-              type="text"
-              placeholder=""
-              value={playlistLink}
-              onChange={(e) => setPlaylistLink(e.target.value)}
-              className="input-field w-full pl-9 py-2 text-sm"
-            />
+        <form onSubmit={handleLinkImport} className="space-y-1.5">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="text"
+                maxLength={MAX_URL_LENGTH}
+                placeholder="https://www.youtube.com/playlist?list=..."
+                value={playlistLink}
+                onChange={(e) => setPlaylistLink(sanitizeUrl(e.target.value))}
+                className="input-field w-full pl-9 py-2 text-sm font-mono placeholder:font-sans"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!playlistLink || importing}
+              className="btn-primary px-4 py-2 text-sm"
+            >
+              {importing ? <Loader2 size={16} className="animate-spin" /> : t('dashboard.playlists_import_btn')}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={!playlistLink || importing}
-            className="btn-primary px-4 py-2 text-sm"
-          >
-            {importing ? <Loader2 size={16} className="animate-spin" /> : t('dashboard.playlists_import_btn')}
-          </button>
+          {playlistLink.length > 0 && (
+            <div className="flex justify-between items-center text-[10px] px-1 text-text-muted">
+              <span>Límite de seguridad de enlace activo</span>
+              <span className={`font-mono ${playlistLink.length >= MAX_URL_LENGTH ? 'text-danger font-bold' : ''}`}>
+                {playlistLink.length} / {MAX_URL_LENGTH}
+              </span>
+            </div>
+          )}
         </form>
       </div>
 

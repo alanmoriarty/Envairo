@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { sanitizePrompt, MAX_PROMPT_LENGTH } from '../utils/security';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -281,15 +282,15 @@ export default function DashboardPage() {
     const vol = parseInt(e.target.value, 10);
     if (vol > 0) previousVolume.current = vol;
     setVolume(vol); // Actualiza la UI local del remote para fluidez
-    
+
     clearTimeout(volumeDebounce.current);
     volumeDebounce.current = setTimeout(() => {
-      supabase.rpc('sync_host_config', { 
-        p_session_id: sessionId, 
-        p_secret: hostSecret, 
-        p_updates: { 
-          playback_command: { action: 'set_volume', value: vol, ts: Date.now() } 
-        } 
+      supabase.rpc('sync_host_config', {
+        p_session_id: sessionId,
+        p_secret: hostSecret,
+        p_updates: {
+          playback_command: { action: 'set_volume', value: vol, ts: Date.now() }
+        }
       }).then();
     }, 300);
   };
@@ -564,14 +565,14 @@ export default function DashboardPage() {
                       onClick={async () => {
                         const newVal = !alwaysAvailable;
                         setAlwaysAvailable(newVal);
-                        
+
                         // Force immediate sync to user_metadata to avoid race condition on refresh
                         const currentState = useSettingsStore.getState();
                         const settingsObj = {};
                         const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
                         allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
                         settingsObj.alwaysAvailable = newVal; // Ensure the new value is explicitly set
-                        
+
                         supabase.auth.updateUser({
                           data: { host_settings: JSON.stringify(settingsObj) }
                         }).catch(console.error);
@@ -580,18 +581,17 @@ export default function DashboardPage() {
                         const sessionId = currentState.sessionId;
                         const hostSecret = currentState.hostSecret;
                         if (sessionId && hostSecret) {
-                          await supabase.rpc('sync_host_config', { 
-                            p_session_id: sessionId, 
-                            p_secret: hostSecret, 
-                            p_updates: { active: newVal, updated_at: new Date().toISOString() } 
+                          await supabase.rpc('sync_host_config', {
+                            p_session_id: sessionId,
+                            p_secret: hostSecret,
+                            p_updates: { active: newVal, updated_at: new Date().toISOString() }
                           });
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        alwaysAvailable 
-                          ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm' 
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
+                          ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
                           : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
-                      }`}
+                        }`}
                       title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
                     >
                       {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
@@ -599,7 +599,7 @@ export default function DashboardPage() {
                         {alwaysAvailable ? 'Abierto' : 'Cerrado'}
                       </span>
                     </button>
-                    
+
                     <div className="w-px h-4 bg-white/10 hidden sm:block" />
 
                     {/* envAIro Filter Button */}
@@ -611,11 +611,10 @@ export default function DashboardPage() {
                           setIsAutoDjModalOpen(true);
                         }
                       }}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        autoDJ 
-                          ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm' 
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
+                          ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
                           : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
-                      }`}
+                        }`}
                       title="envAIro Filter"
                     >
                       <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
@@ -770,15 +769,15 @@ export default function DashboardPage() {
 
       {/* EnvAIro Confirmation Modal */}
       {isEnairoModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => setIsEnairoModalOpen(false)}
         >
-          <div 
+          <div
             className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button 
+            <button
               onClick={() => setIsEnairoModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
             >
@@ -799,10 +798,16 @@ export default function DashboardPage() {
 
               <div className="space-y-4 mb-6 text-left">
                 <div className="pt-2">
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-sm font-semibold text-text-primary">{t('settings.envairo_prompt_label')}</label>
+                    <span className={`text-xs font-mono ${enairoPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                      {enairoPrompt.length} / {MAX_PROMPT_LENGTH}
+                    </span>
+                  </div>
                   <textarea
+                    maxLength={MAX_PROMPT_LENGTH}
                     value={enairoPrompt}
-                    onChange={(e) => setEnairoPrompt(e.target.value)}
+                    onChange={(e) => setEnairoPrompt(sanitizePrompt(e.target.value))}
                     placeholder={t('settings.envairo_prompt_placeholder')}
                     className="input-field w-full h-24 resize-none"
                   />
@@ -857,18 +862,18 @@ export default function DashboardPage() {
 
       {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => {
             setIsAutoDjModalOpen(false);
             setAutoDJ(false); // cancel activation
           }}
         >
-          <div 
+          <div
             className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button 
+            <button
               onClick={() => {
                 setIsAutoDjModalOpen(false);
                 setAutoDJ(false);
@@ -892,15 +897,21 @@ export default function DashboardPage() {
 
               <div className="space-y-4 mb-6 text-left">
                 <div className="pt-2">
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto de envAIro Filter (Opcional)</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-sm font-semibold text-text-primary">Contexto de envAIro Filter (Opcional)</label>
+                    <span className={`text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                      {autoDjPrompt.length} / {MAX_PROMPT_LENGTH}
+                    </span>
+                  </div>
                   <textarea
+                    maxLength={MAX_PROMPT_LENGTH}
                     value={autoDjPrompt}
-                    onChange={(e) => setAutoDjPrompt(e.target.value)}
+                    onChange={(e) => setAutoDjPrompt(sanitizePrompt(e.target.value))}
                     placeholder="Ej: Solo canciones suaves de bachata y salsa vieja..."
                     className="input-field w-full h-24 resize-none"
                   />
                   <p className="text-xs text-text-muted mt-2">
-                    Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros (sin IA).
+                    Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros (sin IA) en la configuración.
                   </p>
                 </div>
 

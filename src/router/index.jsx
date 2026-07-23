@@ -13,8 +13,8 @@ import TermsPage from '../pages/TermsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import TVDisplayPage from '../pages/TVDisplayPage';
 import { RootLayout } from '../components/layout/RootLayout';
+import { ErrorBoundary } from '../components/shared/ErrorBoundary';
 import { useAuthStore } from '../store/useAuthStore';
-
 import { useSettingsStore } from '../store/useSettingsStore';
 
 function RequireAuth({ children }) {
@@ -35,20 +35,35 @@ function RequireAuth({ children }) {
 }
 
 const router = createBrowserRouter([
-  { path: '/', element: <LoginPage /> },
+  { path: '/', element: <LoginPage />, errorElement: <ErrorBoundary /> },
   { path: '/privacy', element: <PrivacyPage /> },
   { path: '/terms', element: <TermsPage /> },
 
   { path: '/reset-password', element: <ResetPasswordPage /> },
-  { path: '/guest/:sessionId', element: <GuestPage /> },
-  { path: '/tv', element: <TVDisplayPage /> },
+  { path: '/guest/:sessionId', element: <GuestPage />, errorElement: <ErrorBoundary /> },
+  {
+    path: '/tv',
+    element: (
+      <ErrorBoundary>
+        <TVDisplayPage />
+      </ErrorBoundary>
+    ),
+    errorElement: (
+      <ErrorBoundary>
+        <TVDisplayPage />
+      </ErrorBoundary>
+    )
+  },
   {
     path: '/app',
     element: (
-      <RequireAuth>
-        <RootLayout />
-      </RequireAuth>
+      <ErrorBoundary>
+        <RequireAuth>
+          <RootLayout />
+        </RequireAuth>
+      </ErrorBoundary>
     ),
+    errorElement: <ErrorBoundary />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },

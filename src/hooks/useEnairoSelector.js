@@ -3,6 +3,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { getSecureServerTime, getSecureServerDateString } from '../utils/timeUtils';
+import { sanitizePrompt } from '../utils/security';
 import { toast } from 'sonner';
 
 let isEnairoTimerRunning = false;
@@ -73,7 +74,7 @@ export function useEnairoSelector() {
           history: playHistory.slice(0, 5), // últimas 5 canciones
           queue: queue,
           settings: {
-            enairoPrompt,
+            enairoPrompt: sanitizePrompt(enairoPrompt),
             whitelistGenres,
             blacklistGenres,
             blacklistSongs,

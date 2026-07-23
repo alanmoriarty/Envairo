@@ -10,26 +10,33 @@ export function useTVBroadcast() {
   const lastStateRef = useRef({ videoId: null, isPlaying: false });
   const lastProgressRef = useRef(0);
 
+  const user = useAuthStore((s) => s.user);
+  const settingsSessionId = useSettingsStore((s) => s.sessionId);
+  const activeSessionId = user?.id || settingsSessionId;
+
   useEffect(() => {
-    // 1. Initialize local BroadcastChannel
+    // 1. Inicializar canal BroadcastChannel local para ventanas en la misma máquina
     channelRef.current = new BroadcastChannel('envairo_tv_sync');
 
-    // 2. Initialize Supabase Realtime Broadcast for Remote Smart TVs over Internet
-    const user = useAuthStore.getState().user;
-    const settingsSessionId = useSettingsStore.getState().sessionId;
-    const activeSessionId = user?.id || settingsSessionId;
-
+    // 2. Inicializar Supabase Realtime Broadcast para Smart TVs remotas sobre Internet
     if (activeSessionId) {
+      if (sbChannelRef.current) {
+        supabase.removeChannel(sbChannelRef.current);
+      }
       sbChannelRef.current = supabase.channel(`tv-sync-${activeSessionId}`);
       sbChannelRef.current.subscribe();
     }
 
     const broadcastMessage = (data) => {
-      // Local BroadcastChannel
+      // BroadcastChannel Local (Mismo equipo)
       if (channelRef.current) {
-        channelRef.current.postMessage(data);
+        try {
+          channelRef.current.postMessage(data);
+        } catch (e) {
+          console.warn('Error en postMessage local:', e);
+        }
       }
-      // Supabase Realtime Broadcast (Internet)
+      // Supabase Realtime Broadcast (Smart TVs en Internet)
       if (sbChannelRef.current && sbChannelRef.current.state === 'joined') {
         sbChannelRef.current.send({
           type: 'broadcast',
@@ -39,9 +46,9 @@ export function useTVBroadcast() {
       }
     };
 
-    // Escuchar peticiones de sincronización de esclavas recién conectadas (Local)
+    // Escuchar peticiones de sincronización de esclavas recién conectadas
     channelRef.current.onmessage = (e) => {
-      if (e.data.type === 'REQUEST_SYNC') {
+      if (e.data?.type === 'REQUEST_SYNC') {
         sendCurrentSync();
       }
     };
@@ -63,12 +70,11 @@ export function useTVBroadcast() {
       }
     };
 
-    // Subscribe to Player Store changes
+    // Suscribirse a cambios en el reproductor del Host
     const unsub = usePlayerStore.subscribe((state) => {
       const currentYtId = state.currentYtId;
       const isPlaying = state.isPlaying;
       
-      // We only care about YouTube playback for the TV display and valid YouTube IDs
       if (state.playbackEngine !== 'youtube' || !currentYtId) return;
 
       if (currentYtId !== lastStateRef.current.videoId || isPlaying !== lastStateRef.current.isPlaying) {
@@ -87,9 +93,9 @@ export function useTVBroadcast() {
         });
         lastProgressRef.current = state.progress || 0;
       } else if (state.progress !== undefined) {
-        // Detectar saltos manuales (scrubbing) en la barra de progreso
+        // Detectar saltos manuales (scrubbing)
         const progressDiff = Math.abs(state.progress - lastProgressRef.current);
-        if (progressDiff > 2000) { // Si salta más de 2 segundos de golpe
+        if (progressDiff > 1500) {
           let trueTime = state.progress / 1000;
           if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
             const ytTime = state.youtubePlayer.getCurrentTime();
@@ -105,7 +111,7 @@ export function useTVBroadcast() {
       }
     });
 
-    // Also broadcast progress periodically to keep slaves in sync if they drift
+    // Transmitir progreso periódicamente (cada 2 segundos) para corregir cualquier desvío entre pantallas
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
       if (state.playbackEngine === 'youtube' && state.isPlaying && state.currentYtId) {
@@ -121,7 +127,7 @@ export function useTVBroadcast() {
           time: trueTime
         });
       }
-    }, 5000); // Every 5 seconds
+    }, 2000);
 
     const handleUnload = () => {
       broadcastMessage({ type: 'MASTER_DISCONNECT' });
@@ -139,5 +145,5 @@ export function useTVBroadcast() {
         supabase.removeChannel(sbChannelRef.current);
       }
     };
-  }, []);
+  }, [activeSessionId]);
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { sanitizePrompt } from '../utils/security';
 
 export const useSettingsStore = create(
   persist(
@@ -142,14 +143,14 @@ export const useSettingsStore = create(
       setEnairoSweepCount: (count, date) => set({ enairoSweepCount: count, enairoSweepDate: date }),
       resetEnairoSweepUsage: () => set({ enairoSweepCount: 0, enairoSweepDate: '' }),
       enairoPrompt: '',
-      setEnairoPrompt: (v) => set({ enairoPrompt: v }),
+      setEnairoPrompt: (v) => set({ enairoPrompt: sanitizePrompt(v) }),
       enairoIsThinking: false,
       setEnairoIsThinking: (v) => set({ enairoIsThinking: v }),
       enairoTestMode: false,
       setEnairoTestMode: (v) => set({ enairoTestMode: v }),
 
       autoDjPrompt: '',
-      setAutoDjPrompt: (v) => set({ autoDjPrompt: v }),
+      setAutoDjPrompt: (v) => set({ autoDjPrompt: sanitizePrompt(v) }),
 
       addWhitelistGenre: (g) =>
         set((s) => ({ whitelistGenres: [...new Set([...s.whitelistGenres, g])] })),

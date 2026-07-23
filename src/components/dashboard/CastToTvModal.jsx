@@ -191,7 +191,7 @@ export function CastToTvModal({ isOpen, onClose }) {
                   <Monitor size={20} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-white text-sm">Monitor Esclavo (PC Local)</h4>
+                  <h4 className="font-semibold text-white text-sm">Monitor Local</h4>
                   <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
                     Abre una pestaña silenciada para arrastrar a un monitor o TV conectado por cable HDMI.
                   </p>
