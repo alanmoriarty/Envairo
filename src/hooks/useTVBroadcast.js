@@ -54,9 +54,17 @@ export function useTVBroadcast() {
       }
     }, 5000); // Every 5 seconds
 
+    const handleUnload = () => {
+      if (channelRef.current) {
+        channelRef.current.postMessage({ type: 'MASTER_DISCONNECT' });
+      }
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
     return () => {
       unsub();
       clearInterval(syncInterval);
+      window.removeEventListener('beforeunload', handleUnload);
       if (channelRef.current) {
         channelRef.current.close();
       }

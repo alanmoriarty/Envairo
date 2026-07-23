@@ -60,11 +60,18 @@ export default function TVDisplayPage() {
         event.target.mute();
         readyCount++;
         if (readyCount === 2) {
-          channelRef.current.onmessage = (e) => {
-            if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
-              handleSync(e.data);
-            }
-          };
+           channelRef.current.onmessage = (e) => {
+             if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
+               handleSync(e.data);
+             } else if (e.data.type === 'MASTER_DISCONNECT') {
+               const activeP = getActivePlayer();
+               if (activeP && typeof activeP.pauseVideo === 'function') {
+                 activeP.pauseVideo();
+               }
+               setCurrentVideoId(null);
+               setStatus('Anfitrión desconectado. Esperando reconexión...');
+             }
+           };
         }
       };
 
@@ -116,7 +123,7 @@ export default function TVDisplayPage() {
     const handleFsChange = () => {
       setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement));
     };
-    
+
     document.addEventListener('fullscreenchange', handleFsChange);
     document.addEventListener('webkitfullscreenchange', handleFsChange);
     document.addEventListener('mozfullscreenchange', handleFsChange);
@@ -145,7 +152,7 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        const bufferingOffset = 0.5; // Reducido gracias a la nueva precisión de tiempo verdadero
+        const bufferingOffset = 0.4; // Reducido gracias a la nueva precisión de tiempo verdadero
         const start = data.time ? data.time + bufferingOffset : 0;
 
         if (isCurrentlyPlaying && data.isPlaying) {
@@ -174,8 +181,8 @@ export default function TVDisplayPage() {
 
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
-        // Tolerancia estricta de 0.6s gracias a la nueva precisión del reloj del master
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.8) {
+        // Tolerancia estricta de 0.5s gracias a la nueva precisión del reloj del master
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.6) {
           activeP.seekTo(data.time, true);
         }
       }
@@ -187,7 +194,7 @@ export default function TVDisplayPage() {
   const toggleFullscreen = () => {
     const docElm = document.documentElement;
     const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-    
+
     if (!isFs) {
       if (docElm.requestFullscreen) {
         docElm.requestFullscreen().catch(console.error);
