@@ -68,6 +68,7 @@ export default function TVDisplayPage() {
               if (activeP && typeof activeP.pauseVideo === 'function') {
                 activeP.pauseVideo();
               }
+              currentVideoIdRef.current = null;
               setCurrentVideoId(null);
               setStatus('Anfitrión desconectado. Esperando reconexión...');
             }
