@@ -11,6 +11,7 @@ import SupportPage from '../pages/SupportPage';
 import PrivacyPage from '../pages/PrivacyPage';
 import TermsPage from '../pages/TermsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
+import TVDisplayPage from '../pages/TVDisplayPage';
 import { RootLayout } from '../components/layout/RootLayout';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
 
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/guest/:sessionId', element: <GuestPage /> },
+  { path: '/tv', element: <TVDisplayPage /> },
   {
     path: '/app',
     element: (

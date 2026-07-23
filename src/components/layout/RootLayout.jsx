@@ -11,6 +11,7 @@ import { useQueueSync } from '../../hooks/useQueueSync';
 import { supabase } from '../../lib/supabase';
 import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
+import { useTVBroadcast } from '../../hooks/useTVBroadcast';
 import { useAutoQueue } from '../../hooks/useAutoQueue';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
@@ -24,6 +25,7 @@ export function RootLayout() {
 
   useQueueSync();
   useEnairoSelector();
+  useTVBroadcast();
   useAutoQueue();
 
 
