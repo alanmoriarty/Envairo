@@ -73,6 +73,9 @@ export default function TVDisplayPage() {
               setStatus('Anfitrión desconectado. Esperando reconexión...');
             }
           };
+
+          // Pedir al anfitrión el estado actual por si nos conectamos tarde
+          channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
         }
       };
 
