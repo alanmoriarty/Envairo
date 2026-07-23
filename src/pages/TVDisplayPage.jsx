@@ -7,6 +7,7 @@ export default function TVDisplayPage() {
   const channelRef = useRef(null);
   const [status, setStatus] = useState('Esperando conexión...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
+  const currentVideoIdRef = useRef(null);
 
   useEffect(() => {
     // 1. Cargar API de YouTube IFrame
@@ -85,7 +86,8 @@ export default function TVDisplayPage() {
       const isCurrentlyPlaying = player.getPlayerState() === window.YT.PlayerState.PLAYING;
       
       // Si el video cambió
-      if (data.videoId && data.videoId !== currentVideoId) {
+      if (data.videoId && data.videoId !== currentVideoIdRef.current) {
+        currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
         player.loadVideoById({ videoId: data.videoId, startSeconds: data.time || 0 });
