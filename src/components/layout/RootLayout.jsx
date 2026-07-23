@@ -53,11 +53,12 @@ export function RootLayout() {
 
 
   useEffect(() => {
-    // Unificar el sessionId en todos los dispositivos usando el ID de Spotify
-    if (user?.id) {
+    // Unificar el sessionId en todos los dispositivos usando el ID del usuario
+    // EXCEPTO si estamos en modo control remoto (isAdminMode), en cuyo caso respetamos el sessionId de la URL
+    if (user?.id && !isAdminMode) {
       useSettingsStore.getState().setSessionId(user.id);
     }
-  }, [user?.id]);
+  }, [user?.id, isAdminMode]);
 
   useEffect(() => {
     // Sincronizar configuraciones e historial de la nube al montar
