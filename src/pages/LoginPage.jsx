@@ -106,8 +106,8 @@ export default function LoginPage() {
 
         if (data.session) {
           const prevSessionId = useSettingsStore.getState().sessionId;
-          // Si había una sesión previa de OTRO usuario en esta misma PC, limpiamos los datos viejos
-          if (prevSessionId && !prevSessionId.includes('session-') && prevSessionId !== data.user.id) {
+          // Si había una sesión previa, siempre la limpiamos al iniciar sesión con otro usuario
+          if (prevSessionId && prevSessionId !== data.user.id) {
             usePlayerStore.getState().clearPlayerState();
             useSettingsStore.getState().clearSettingsState();
           }
