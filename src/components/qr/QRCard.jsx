@@ -47,7 +47,7 @@ export function QRCard() {
     await supabase.rpc('sync_host_config', { 
       p_session_id: sessionId, 
       p_secret: hostSecret, 
-      p_updates: { active: false } 
+      p_updates: { active: false, secret: 'regenerated' } 
     });
     // Generar nueva sesión
     regenerateSession();

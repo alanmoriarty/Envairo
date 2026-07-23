@@ -29,7 +29,7 @@ export const useAuthStore = create(
             await supabase.rpc('sync_host_config', { 
               p_session_id: sessionIdToClose, 
               p_secret: hostSecret, 
-              p_updates: { active: false } 
+              p_updates: { active: false, secret: 'logged_out' } 
             });
             await supabase.auth.signOut();
           } catch (err) {

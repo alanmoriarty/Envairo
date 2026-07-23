@@ -117,16 +117,18 @@ export function PersistentPlayer() {
 
         // Configurar acciones (botones de la notificación)
         navigator.mediaSession.setActionHandler('play', () => {
-          if (controls?.play) controls.play();
+          const state = usePlayerStore.getState();
+          if (state.youtubePlayer) state.youtubePlayer.playVideo();
         });
         navigator.mediaSession.setActionHandler('pause', () => {
-          if (controls?.pause) controls.pause();
+          const state = usePlayerStore.getState();
+          if (state.youtubePlayer) state.youtubePlayer.pauseVideo();
         });
         navigator.mediaSession.setActionHandler('nexttrack', () => {
-          if (controls?.next) controls.next();
+          if (controls?.skipNext) controls.skipNext();
         });
         navigator.mediaSession.setActionHandler('previoustrack', () => {
-          if (controls?.previous) controls.previous();
+          if (controls?.skipPrev) controls.skipPrev();
         });
       } else {
         navigator.mediaSession.metadata = null;

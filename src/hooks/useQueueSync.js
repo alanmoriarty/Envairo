@@ -158,6 +158,16 @@ export function useQueueSync() {
             return;
           }
 
+          // Kickout Logic (Remoto): Si el anfitrión cerró sesión o regeneró el QR, el secret cambia y nos expulsa
+          if (isAdminMode && newSession.secret && newSession.secret !== useSettingsStore.getState().hostSecret) {
+            import('sonner').then(({ toast }) => {
+              toast.error('La sesión del anfitrión ha expirado o se ha cerrado.', { duration: 8000 });
+            });
+            useSettingsStore.getState().clearSettingsState();
+            window.location.href = '/';
+            return;
+          }
+
           // Procesar Comandos de Reproducción (Solo el Host principal los ejecuta)
 
           if (!isAdminMode && newSession.playback_command) {
