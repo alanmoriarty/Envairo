@@ -515,11 +515,26 @@ export default function DashboardPage() {
                       onClick={async () => {
                         const newVal = !alwaysAvailable;
                         setAlwaysAvailable(newVal);
-                        if (isAdminMode) {
+                        
+                        // Force immediate sync to user_metadata to avoid race condition on refresh
+                        const currentState = useSettingsStore.getState();
+                        const settingsObj = {};
+                        const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+                        allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
+                        settingsObj.alwaysAvailable = newVal; // Ensure the new value is explicitly set
+                        
+                        supabase.auth.updateUser({
+                          data: { host_settings: JSON.stringify(settingsObj) }
+                        }).catch(console.error);
+
+                        // Sync to sessions table for guests and remotes
+                        const sessionId = currentState.sessionId;
+                        const hostSecret = currentState.hostSecret;
+                        if (sessionId && hostSecret) {
                           await supabase.rpc('sync_host_config', { 
                             p_session_id: sessionId, 
                             p_secret: hostSecret, 
-                            p_updates: { active: newVal } 
+                            p_updates: { active: newVal, updated_at: new Date().toISOString() } 
                           });
                         }
                       }}
@@ -644,7 +659,7 @@ export default function DashboardPage() {
                         disabled={isThinking}
                         className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
                       >
-                        {isThinking ? 'Generando...' : 'envAIro'}
+                        {isThinking ? 'Generando...' : 'envAIro Selector'}
                       </button>
                     )}
                   </div>
