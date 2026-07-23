@@ -5,12 +5,12 @@ import { useTranslation } from '../../store/useLanguageStore';
 import { toast } from 'sonner';
 
 export const STOCK_AVATARS = [
-  { id: 'avatar1', url: 'https://images.unsplash.com/photo-1516280440502-8598922097e9?w=150&h=150&fit=crop&q=80', label: 'DJ Neon' },
-  { id: 'avatar2', url: 'https://images.unsplash.com/photo-1598387993441-a3637e056bfc?w=150&h=150&fit=crop&q=80', label: 'Turntable' },
+  { id: 'avatar1', url: 'https://images.unsplash.com/photo-1520092323030-9eb7617b0754?w=150&h=150&fit=crop&q=80', label: 'DJ Mixer' },
+  { id: 'avatar2', url: 'https://images.unsplash.com/photo-1550928431-ee0ecb00c733?w=150&h=150&fit=crop&q=80', label: 'Turntable' },
   { id: 'avatar3', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&h=150&fit=crop&q=80', label: 'Microphone' },
   { id: 'avatar4', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&h=150&fit=crop&q=80', label: 'Festival' },
   { id: 'avatar5', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&h=150&fit=crop&q=80', label: 'Concert' },
-  { id: 'avatar6', url: 'https://images.unsplash.com/photo-1493225457284-06f25ce78e7e?w=150&h=150&fit=crop&q=80', label: 'Headphones' },
+  { id: 'avatar6', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=150&h=150&fit=crop&q=80', label: 'Headphones' },
 ];
 
 export function ProfileModal({ onClose }) {
