@@ -60,11 +60,11 @@ export default function TVDisplayPage() {
         event.target.mute();
         readyCount++;
         if (readyCount === 2) {
-           channelRef.current.onmessage = (e) => {
-             if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
-               handleSync(e.data);
-             }
-           };
+          channelRef.current.onmessage = (e) => {
+            if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
+              handleSync(e.data);
+            }
+          };
         }
       };
 
@@ -72,12 +72,12 @@ export default function TVDisplayPage() {
         event.target.mute();
         const activeP = getActivePlayer();
         const bufferP = getBufferPlayer();
-        
+
         // Manejo del Swap Visual (Crossfade)
         if (isTransitioning.current && event.target === bufferP) {
           if (event.data === window.YT.PlayerState.PLAYING) {
             isTransitioning.current = false;
-            
+
             const nextIndex = activePlayerIndex.current === 1 ? 2 : 1;
             const activeContainer = document.getElementById(`tv-yt-container-${activePlayerIndex.current}`);
             const bufferContainer = document.getElementById(`tv-yt-container-${nextIndex}`);
@@ -85,10 +85,10 @@ export default function TVDisplayPage() {
             // Transición cruzada
             bufferContainer.style.opacity = '1';
             bufferContainer.style.zIndex = '2';
-            
+
             activeContainer.style.opacity = '0';
             activeContainer.style.zIndex = '1';
-            
+
             activeP.pauseVideo(); // Detener el viejo reproductor
             activePlayerIndex.current = nextIndex;
           }
@@ -101,7 +101,7 @@ export default function TVDisplayPage() {
         // Regresamos a la pantalla de carga para ocultar el error visual feo de YouTube
         setCurrentVideoId(null);
         setStatus('Buscando alternativa...');
-        
+
         // El Master se encargará de buscar el siguiente video y enviará el nuevo SYNC cuando lo encuentre.
       };
 
@@ -114,15 +114,22 @@ export default function TVDisplayPage() {
     }
 
     const handleFsChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement));
     };
+    
     document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    document.addEventListener('mozfullscreenchange', handleFsChange);
+    document.addEventListener('MSFullscreenChange', handleFsChange);
 
     return () => {
       if (channelRef.current) channelRef.current.close();
       if (player1Ref.current) player1Ref.current.destroy();
       if (player2Ref.current) player2Ref.current.destroy();
       document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      document.removeEventListener('mozfullscreenchange', handleFsChange);
+      document.removeEventListener('MSFullscreenChange', handleFsChange);
     };
   }, []);
 
@@ -159,15 +166,15 @@ export default function TVDisplayPage() {
 
       if (data.type === 'SYNC') {
         if (data.isPlaying && !isCurrentlyPlaying) {
-           activeP.playVideo();
+          activeP.playVideo();
         } else if (!data.isPlaying && isCurrentlyPlaying) {
-           activeP.pauseVideo();
+          activeP.pauseVideo();
         }
       }
 
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
-        // Tolerancia estricta de 0.8s gracias a la nueva precisión del reloj del master
+        // Tolerancia estricta de 0.6s gracias a la nueva precisión del reloj del master
         if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.8) {
           activeP.seekTo(data.time, true);
         }
@@ -178,22 +185,37 @@ export default function TVDisplayPage() {
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error("Error intentando poner pantalla completa:", err);
-      });
+    const docElm = document.documentElement;
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    
+    if (!isFs) {
+      if (docElm.requestFullscreen) {
+        docElm.requestFullscreen().catch(console.error);
+      } else if (docElm.webkitRequestFullscreen) {
+        docElm.webkitRequestFullscreen();
+      } else if (docElm.mozRequestFullScreen) {
+        docElm.mozRequestFullScreen();
+      } else if (docElm.msRequestFullscreen) {
+        docElm.msRequestFullscreen();
+      }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
       }
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden">
-      
+
       {/* Reproductor 1 (Activo Inicial) */}
-      <div 
+      <div
         id="tv-yt-container-1"
         className="absolute inset-0 z-[2] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out"
         style={{ width: '100vw', height: '100vh', opacity: 1 }}
@@ -202,7 +224,7 @@ export default function TVDisplayPage() {
       </div>
 
       {/* Reproductor 2 (Buffer Secundario) */}
-      <div 
+      <div
         id="tv-yt-container-2"
         className="absolute inset-0 z-[1] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out"
         style={{ width: '100vw', height: '100vh', opacity: 0 }}
@@ -212,7 +234,7 @@ export default function TVDisplayPage() {
 
       {/* Click-blocking overlay */}
       <div className="absolute inset-0 z-10 cursor-default"></div>
-      
+
       {/* Overlay status if no video */}
       {!currentVideoId && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
@@ -230,25 +252,25 @@ export default function TVDisplayPage() {
       )}
 
       {/* Controles flotantes */}
-      <div className="absolute bottom-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
-        <button 
+      <div className="absolute bottom-6 right-6 z-30 opacity-30 hover:opacity-100 transition-opacity duration-300">
+        <button
           onClick={toggleFullscreen}
-          className="bg-black/50 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center justify-center"
+          className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
           title={isFullscreen ? "Salir de pantalla completa" : "Pantalla Completa"}
         >
-          {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+          {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
         </button>
       </div>
-      
-      {/* Botón extra X arriba si está en full screen, igual oculto hasta hover */}
+
+      {/* Botón extra X arriba si está en full screen */}
       {isFullscreen && (
-        <div className="absolute top-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
-          <button 
+        <div className="absolute top-6 right-6 z-30 opacity-30 hover:opacity-100 transition-opacity duration-300">
+          <button
             onClick={toggleFullscreen}
-            className="bg-black/50 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center justify-center"
+            className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
             title="Salir (o presiona ESC)"
           >
-            <X size={24} />
+            <X size={28} />
           </button>
         </div>
       )}
