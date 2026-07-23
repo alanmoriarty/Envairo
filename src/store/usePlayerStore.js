@@ -45,13 +45,14 @@ export const usePlayerStore = create(
 
       clearPlayerState: () => set({
         queue: [],
-        currentQueueIndex: -1,
         playHistory: [],
         pendingRequests: [],
         requestHistory: [],
         currentTrack: null,
         isPlaying: false,
         progress: 0,
+        duration: 0,
+        currentQueueIndex: -1,
         failedYouTubeIds: [],
         currentYtId: null
       }),
