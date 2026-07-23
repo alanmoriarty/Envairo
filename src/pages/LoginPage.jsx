@@ -110,6 +110,8 @@ export default function LoginPage() {
           if (prevSessionId && prevSessionId !== data.user.id) {
             usePlayerStore.getState().clearPlayerState();
             useSettingsStore.getState().clearSettingsState();
+            localStorage.removeItem('bq-player');
+            localStorage.removeItem('bq-settings');
           }
 
           setUser(data.user);

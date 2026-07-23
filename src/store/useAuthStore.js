@@ -47,6 +47,11 @@ export const useAuthStore = create(
         set({ user: null, isAuthenticated: false });
         usePlayerStore.getState().clearPlayerState();
         useSettingsStore.getState().clearSettingsState();
+        
+        // Limpiar el almacenamiento local explícitamente para evitar cualquier fuga de estado
+        localStorage.removeItem('bq-player');
+        localStorage.removeItem('bq-settings');
+        localStorage.removeItem('bq-auth');
       },
     }),
     { 

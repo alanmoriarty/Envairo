@@ -125,10 +125,10 @@ export function RootLayout() {
       let currentActive = state.alwaysAvailable;
 
       if (lastActiveState !== currentActive) {
-        lastActiveState = currentActive;
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(state.sessionId);
         
         if (state.sessionId && state.hostSecret && isUuid) {
+          lastActiveState = currentActive; // Solo actualizar si realmente disparamos la orden
           supabase.rpc('sync_host_config', {
             p_session_id: state.sessionId,
             p_secret: state.hostSecret,
