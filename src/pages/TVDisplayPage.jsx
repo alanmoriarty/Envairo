@@ -156,7 +156,7 @@ export default function TVDisplayPage() {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        const bufferingOffset = 0.4; // Reducido gracias a la nueva precisión de tiempo verdadero
+        const bufferingOffset = 0.2; // Reducido gracias a la nueva precisión de tiempo verdadero
         const start = data.time ? data.time + bufferingOffset : 0;
 
         if (isCurrentlyPlaying && data.isPlaying) {
@@ -186,7 +186,7 @@ export default function TVDisplayPage() {
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
         const currentTime = activeP.getCurrentTime();
         // Tolerancia estricta de 0.5s gracias a la nueva precisión del reloj del master
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
+        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.3) {
           activeP.seekTo(data.time, true);
         }
       }
