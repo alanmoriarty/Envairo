@@ -1,0 +1,14 @@
+{
+  "id": "app.envairo.tv",
+  "version": "1.0.0",
+  "vendor": "envAIro",
+  "type": "web",
+  "main": "index.html",
+  "title": "envAIro TV Display",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgImage": "bg.png",
+  "splashBackground": "#000000",
+  "requiredMemory": 64,
+  "handlesNeedBiggerMemory": true
+}

@@ -1,11 +1,96 @@
-import React from 'react';
-import { Monitor, X, Tv, Laptop, Cast, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Monitor, X, Tv, Cast, QrCode, Trash2, CheckCircle2, Sparkles, Wifi } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 export function CastToTvModal({ isOpen, onClose }) {
+  const [pinInput, setPinInput] = useState('');
+  const [isPairing, setIsPairing] = useState(false);
+  const { sessionId, hostSecret, isAdminMode } = useSettingsStore();
+  const user = useAuthStore(s => s.user);
+  const activeSessionId = user?.id || sessionId;
+
+  // TV vinculadas guardadas
+  const [pairedTvs, setPairedTvs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('bq-paired-tvs') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
   if (!isOpen) return null;
 
-  const { isAdminMode } = useSettingsStore();
+  const handlePair = async (e) => {
+    e?.preventDefault();
+    const cleanPin = pinInput.replace(/\D/g, '');
+    if (cleanPin.length !== 6) {
+      toast.error('El código PIN debe tener 6 dígitos (ej: 482910)');
+      return;
+    }
+
+    setIsPairing(true);
+    try {
+      // Broadcast la aprobación de emparejamiento a la TV en el canal tv-pair-{cleanPin}
+      const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
+      await pairChannel.subscribe();
+
+      await pairChannel.send({
+        type: 'broadcast',
+        event: 'pairing_result',
+        payload: {
+          type: 'PAIRED',
+          sessionId: activeSessionId,
+          hostSecret
+        }
+      });
+
+      // Guardar la TV en el registro local
+      const newTv = {
+        id: cleanPin,
+        name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
+        linkedAt: new Date().toISOString()
+      };
+
+      const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
+      setPairedTvs(updatedList);
+      localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+
+      toast.success(`¡TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada con éxito!`);
+      setPinInput('');
+
+      setTimeout(() => {
+        supabase.removeChannel(pairChannel);
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al vincular la TV. Verifica el código e intenta nuevamente.');
+    } finally {
+      setIsPairing(false);
+    }
+  };
+
+  const handleUnpair = (tvId) => {
+    // Transmitir desconexión a esa TV
+    const pairChannel = supabase.channel(`tv-pair-${tvId}`);
+    pairChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await pairChannel.send({
+          type: 'broadcast',
+          event: 'pairing_result',
+          payload: { type: 'UNPAIRED' }
+        });
+        supabase.removeChannel(pairChannel);
+      }
+    });
+
+    const updatedList = pairedTvs.filter(t => t.id !== tvId);
+    setPairedTvs(updatedList);
+    localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+    toast.success('Pantalla TV desvinculada');
+  };
 
   return (
     <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
@@ -25,9 +110,9 @@ export function CastToTvModal({ isOpen, onClose }) {
               <Cast size={28} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Transmitir a TV</h2>
+              <h2 className="text-xl font-bold text-white">Transmitir a Pantallas TV</h2>
               <p className="text-text-muted text-sm mt-1">
-                Lleva la experiencia de envAIro a la pantalla grande
+                Conecta Smart TVs por Internet o monitores locales
               </p>
             </div>
           </div>
@@ -35,50 +120,97 @@ export function CastToTvModal({ isOpen, onClose }) {
 
         {/* Content */}
         <div className="p-6 space-y-6 overflow-y-auto">
-          {isAdminMode ? (
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10 flex gap-4">
-              <Laptop className="text-accent shrink-0" size={24} />
+          {/* Opción 1: Smart TV por Internet (QR / PIN) */}
+          <div className="bg-white/5 rounded-2xl p-5 border border-white/10 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-accent/20 text-accent">
+                <Tv size={22} />
+              </div>
               <div>
-                <h3 className="font-semibold text-white mb-2">Instrucción para el Anfitrión</h3>
-                <p className="text-sm text-text-muted leading-relaxed">
-                  Dado que estás usando el <strong>Control Remoto</strong>, la transmisión debe hacerse desde el dispositivo principal (la PC o laptop que está reproduciendo la música).
-                </p>
+                <h3 className="font-bold text-white text-base">Vincular Smart TV (Vía Internet)</h3>
+                <p className="text-xs text-text-muted">Abre envairo.app/tv en tu Smart TV y copia el PIN</p>
               </div>
             </div>
-          ) : null}
 
-          <div className="space-y-4">
-            <h3 className="font-semibold text-white">Gestor de Múltiples Pantallas</h3>
+            <form onSubmit={handlePair} className="flex gap-2 pt-2">
+              <input
+                type="text"
+                maxLength={6}
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="482910"
+                className="input-field text-center font-mono text-lg tracking-[0.25em] font-bold uppercase py-2.5 border-white/20 focus:border-accent flex-1"
+              />
+              <button
+                type="submit"
+                disabled={isPairing || pinInput.length !== 6}
+                className="btn-accent px-5 font-semibold text-sm flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
+              >
+                {isPairing ? 'Vinculando...' : 'Vincular TV'}
+              </button>
+            </form>
 
-            <div className="flex flex-col gap-2 p-4 bg-accent/10 rounded-xl border border-accent/20 mt-4">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <div className="bg-accent p-2 rounded-lg text-black">
-                    <Monitor size={18} />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-accent text-sm mb-0">Monitor Esclavo</h4>
-                    <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                      Abre una pestaña "Esclava" en silencio que muestra el video en pantalla completa, perfecta para arrastrarla a otros televisores conectados a esta misma PC. Puedes abrir tantas como necesites.
-                    </p>
-                  </div>
+            {/* Lista de Smart TVs vinculadas */}
+            {pairedTvs.length > 0 && (
+              <div className="pt-3 border-t border-white/10">
+                <h4 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
+                  TVs Vinculadas ({pairedTvs.length})
+                </h4>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {pairedTvs.map((tv) => (
+                    <div
+                      key={tv.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-black/30 border border-white/5"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Wifi size={16} className="text-accent" />
+                        <div>
+                          <p className="text-xs font-semibold text-white">{tv.name}</p>
+                          <p className="text-[10px] text-text-muted">Sincronización por Internet activa</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleUnpair(tv.id)}
+                        className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                        title="Desvincular TV"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <button 
-                onClick={() => window.open('/tv', '_blank')}
-                className="mt-4 btn-secondary bg-white/5 hover:bg-white/10 w-full py-3 text-sm font-semibold"
-              >
-                Abrir Pestaña de Monitor (Silenciada)
-              </button>
+            )}
+          </div>
+
+          {/* Opción 2: Monitor Local (Pestaña Silenciada) */}
+          <div className="flex flex-col gap-2 p-4 bg-white/5 rounded-2xl border border-white/10">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/10 p-2.5 rounded-xl text-white">
+                  <Monitor size={20} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white text-sm">Monitor Esclavo (PC Local)</h4>
+                  <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                    Abre una pestaña silenciada para arrastrar a un monitor o TV conectado por cable HDMI.
+                  </p>
+                </div>
+              </div>
             </div>
-            
+            <button
+              onClick={() => window.open('/tv', '_blank')}
+              className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
+            >
+              Abrir Pestaña de Monitor (Silenciada)
+            </button>
           </div>
         </div>
 
         {/* Footer */}
         <div className="p-6 pt-0 shrink-0">
           <button onClick={onClose} className="btn-primary w-full py-3">
-            ¡Entendido!
+            Listo
           </button>
         </div>
 
