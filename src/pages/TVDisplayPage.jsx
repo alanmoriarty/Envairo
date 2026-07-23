@@ -8,6 +8,7 @@ export default function TVDisplayPage() {
   const [status, setStatus] = useState('Esperando conexión...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const currentVideoIdRef = useRef(null);
+  const isPlayingRef = useRef(false);
 
   useEffect(() => {
     // 1. Cargar API de YouTube IFrame
@@ -34,7 +35,7 @@ export default function TVDisplayPage() {
 
     function initPlayer() {
       if (playerRef.current) return;
-      
+
       playerRef.current = new window.YT.Player('tv-youtube-player', {
         height: '100%',
         width: '100%',
@@ -55,7 +56,7 @@ export default function TVDisplayPage() {
           onReady: (event) => {
             // SILENCIO ABSOLUTO PARA NO DUPLICAR AUDIO
             event.target.mute();
-            
+
             // Escuchar comandos del Dashboard
             channelRef.current.onmessage = (e) => {
               const data = e.data;
@@ -65,8 +66,14 @@ export default function TVDisplayPage() {
             };
           },
           onStateChange: (event) => {
-            // Asegurar que siempre esté muteado, incluso si cambia de estado
+            // Asegurar que siempre esté muteado
             event.target.mute();
+
+            // Si el video empieza a reproducirse automáticamente pero el anfitrión está pausado,
+            // lo pausamos inmediatamente para respetar el estado.
+            if (event.data === window.YT.PlayerState.PLAYING && !isPlayingRef.current) {
+              event.target.pauseVideo();
+            }
           }
         }
       });
@@ -87,21 +94,23 @@ export default function TVDisplayPage() {
 
     try {
       const isCurrentlyPlaying = player.getPlayerState() === window.YT.PlayerState.PLAYING;
-      
+
+      // Actualizar ref global de estado de reproducción
+      if (data.type === 'SYNC') {
+        isPlayingRef.current = data.isPlaying;
+      }
+
       // Si el video cambió
       if (data.videoId && data.videoId !== currentVideoIdRef.current) {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
-        // Compensamos el retraso natural de red/buffering (aprox 0.9s) sumándolo al tiempo de inicio
-        const bufferingOffset = 0.9;
+        // Compensamos el retraso natural de red/buffering (aprox 1s) sumándolo al tiempo de inicio
+        const bufferingOffset = 1;
         const start = data.time ? data.time + bufferingOffset : 0;
-        
-        if (data.isPlaying) {
-          player.loadVideoById({ videoId: data.videoId, startSeconds: start });
-        } else {
-          player.cueVideoById({ videoId: data.videoId, startSeconds: start });
-        }
+
+        // Siempre usamos loadVideoById porque cueVideoById bloquea la API exigiendo un clic del usuario
+        player.loadVideoById({ videoId: data.videoId, startSeconds: start });
         return;
       }
 
@@ -129,10 +138,10 @@ export default function TVDisplayPage() {
 
   return (
     <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden">
-      
+
       {/* Player Container */}
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         className="absolute inset-0 z-0 flex items-center justify-center bg-black"
         style={{ width: '100vw', height: '100vh' }}
       >
@@ -141,7 +150,7 @@ export default function TVDisplayPage() {
 
       {/* Click-blocking overlay */}
       <div className="absolute inset-0 z-10 cursor-default"></div>
-      
+
       {/* Overlay status if no video */}
       {!currentVideoId && (
         <div className="relative z-10 flex flex-col items-center gap-6 animate-pulse">
