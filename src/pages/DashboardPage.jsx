@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
-  CheckCircle2, XCircle, GripVertical, Trash2,
+  CheckCircle2, XCircle, GripVertical, Trash2, X,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
   SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw, Monitor
 } from 'lucide-react';
@@ -152,7 +152,8 @@ export default function DashboardPage() {
     enairoPrompt, setEnairoPrompt,
     autoDjPrompt, setAutoDjPrompt,
     enairoTrackCount, setEnairoTrackCount,
-    enairoTestMode, setEnairoTestMode
+    enairoTestMode, setEnairoTestMode,
+    explicitFilter, setExplicitFilter
   } = useSettingsStore();
 
   const { user } = useAuthStore.getState();
@@ -721,10 +722,22 @@ export default function DashboardPage() {
 
       {/* EnvAIro Confirmation Modal */}
       {isEnairoModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col">
-            <div className="p-5 flex-1 overflow-y-auto custom-scrollbar">
-              <div className="flex justify-center mb-4">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsEnairoModalOpen(false)}
+        >
+          <div 
+            className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setIsEnairoModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <div className="p-5 flex-1 overflow-y-auto custom-scrollbar pt-6">
+              <div className="flex justify-center mb-4 mt-2">
                 <div className="p-3 bg-accent/20 rounded-full">
                   <Sparkles size={32} className="text-accent" />
                 </div>
@@ -796,10 +809,28 @@ export default function DashboardPage() {
 
       {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
-            <div className="p-5">
-              <div className="flex justify-center mb-4">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => {
+            setIsAutoDjModalOpen(false);
+            setAutoDJ(false); // cancel activation
+          }}
+        >
+          <div 
+            className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => {
+                setIsAutoDjModalOpen(false);
+                setAutoDJ(false);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <div className="p-5 pt-6">
+              <div className="flex justify-center mb-4 mt-2">
                 <div className="p-3 bg-accent/20 rounded-full">
                   <Sparkles size={32} className="text-accent" />
                 </div>
@@ -823,6 +854,15 @@ export default function DashboardPage() {
                   <p className="text-xs text-text-muted mt-2">
                     Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros (sin IA).
                   </p>
+                </div>
+
+                <div className="border-t border-white/5 pt-4">
+                  <Toggle
+                    checked={explicitFilter}
+                    onChange={setExplicitFilter}
+                    label={t('settings.explicit_filter_title') || 'Filtro Explícito'}
+                    description={t('settings.explicit_filter_desc') || 'Evita que se agreguen canciones con contenido explícito.'}
+                  />
                 </div>
               </div>
 

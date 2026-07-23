@@ -357,15 +357,6 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-t border-white/5 pt-4">
-              <Toggle
-                checked={explicitFilter}
-                onChange={setExplicitFilter}
-                label={t('settings.explicit_filter_title')}
-                description={t('settings.explicit_filter_desc')}
-              />
-            </div>
-
-            <div className="border-t border-white/5 pt-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
