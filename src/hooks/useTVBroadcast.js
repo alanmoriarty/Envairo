@@ -13,11 +13,11 @@ export function useTVBroadcast() {
     const unsub = usePlayerStore.subscribe((state) => {
       if (!channelRef.current) return;
 
-      const currentYtId = state.currentYtId || (state.currentTrack?.id);
+      const currentYtId = state.currentYtId;
       const isPlaying = state.isPlaying;
       
-      // We only care about YouTube playback for the TV display
-      if (state.playbackEngine !== 'youtube') return;
+      // We only care about YouTube playback for the TV display and valid YouTube IDs
+      if (state.playbackEngine !== 'youtube' || !currentYtId) return;
 
       if (currentYtId !== lastStateRef.current.videoId || isPlaying !== lastStateRef.current.isPlaying) {
         lastStateRef.current = { videoId: currentYtId, isPlaying };
@@ -34,8 +34,8 @@ export function useTVBroadcast() {
     // Also broadcast progress periodically to keep slaves in sync if they drift
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
-      if (state.playbackEngine === 'youtube' && state.isPlaying && channelRef.current) {
-        const currentYtId = state.currentYtId || (state.currentTrack?.id);
+      if (state.playbackEngine === 'youtube' && state.isPlaying && channelRef.current && state.currentYtId) {
+        const currentYtId = state.currentYtId;
         channelRef.current.postMessage({
           type: 'SYNC_TIME',
           videoId: currentYtId,
