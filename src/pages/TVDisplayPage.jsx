@@ -222,13 +222,13 @@ export default function TVDisplayPage() {
         }
       }
 
-      if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
-        const currentTime = activeP.getCurrentTime();
-        // Tolerancia estricta de 0.5s gracias a la nueva precisión del reloj del master
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.2) {
-          activeP.seekTo(data.time, true);
+        if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
+          const currentTime = activeP.getCurrentTime();
+          // Tolerancia ajustada a 1.5s para evitar bucles de seek (deteniendo y dando play) en pantallas esclavas por variaciones de buffer al hacer crossfade
+          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 1.5) {
+            activeP.seekTo(data.time, true);
+          }
         }
-      }
     } catch (err) {
       console.error("Error sincronizando TV Display:", err);
     }
