@@ -113,7 +113,7 @@ const ES = {
     queue_title: 'Cola de Reproducción',
     queue_empty: 'La cola está vacía',
     queue_empty_sub: 'Aprueba peticiones o carga una playlist para comenzar',
-    requests_title: 'Peticiones Pendientes',
+    requests_title: 'Peticiones',
     requests_empty: 'No hay peticiones pendientes',
     requests_empty_sub: 'Cuando los invitados envíen canciones aparecerán aquí',
     approve: 'Aprobar',

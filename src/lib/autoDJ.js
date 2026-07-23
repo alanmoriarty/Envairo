@@ -129,7 +129,7 @@ export async function evaluateTrack(track, settings) {
       });
       if (!promptError && promptData) {
         if (!promptData.approved) {
-          return { approved: false, reason: promptData.reason || 'No encaja con el prompt del Auto DJ' };
+          return { approved: false, reason: promptData.reason || 'No encaja con el prompt de envAIro Filter' };
         }
       }
     } catch (err) {
@@ -138,7 +138,7 @@ export async function evaluateTrack(track, settings) {
   }
 
   // Si pasó todas las pruebas
-  return { approved: true, reason: 'Aprobada por Auto DJ' };
+  return { approved: true, reason: 'Aprobada por envAIro Filter' };
 }
 
 /**
@@ -182,11 +182,11 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
   // Convertimos a array
   let tracksPool = Array.from(pool.values());
 
-  // NUEVO FILTRO ESTRICTO: Solo permitir canciones pedidas por invitados reales (ignorar Auto DJ, Playlists e Historial importado)
+  // NUEVO FILTRO ESTRICTO: Solo permitir canciones pedidas por invitados reales (ignorar envAIro Filter, Playlists e Historial importado)
   tracksPool = tracksPool.filter(track => {
     if (!track.requestedBy) return false;
     const rb = track.requestedBy;
-    return rb !== 'Auto DJ' && !rb.includes('Playlist') && !rb.includes('Historial') && rb !== 'Host';
+    return rb !== 'envAIro Filter' && rb !== 'Auto DJ' && !rb.includes('Playlist') && !rb.includes('Historial') && rb !== 'Host';
   });
 
   // 4. Filtrar: No queremos repetir canciones que han sonado muy recientemente

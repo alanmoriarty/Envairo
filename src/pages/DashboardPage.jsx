@@ -510,43 +510,53 @@ export default function DashboardPage() {
                     )}
                   </h2>
                   <div className="flex items-center gap-4">
-                    {/* Aceptar Peticiones Toggle */}
-                    <div className="flex items-center gap-2" title={t('settings.always_available') || 'Aceptar peticiones'}>
-                      <span className="text-xs font-medium text-text-muted hidden sm:inline">
-                        {t('settings.always_available') || 'Peticiones'}
+                    {/* Aceptar Peticiones Button */}
+                    <button
+                      onClick={async () => {
+                        const newVal = !alwaysAvailable;
+                        setAlwaysAvailable(newVal);
+                        if (isAdminMode) {
+                          await supabase.rpc('sync_host_config', { 
+                            p_session_id: sessionId, 
+                            p_secret: hostSecret, 
+                            p_updates: { active: newVal } 
+                          });
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        alwaysAvailable 
+                          ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm' 
+                          : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
+                      }`}
+                      title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
+                    >
+                      {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                      <span className="hidden sm:inline">
+                        {alwaysAvailable ? 'Abierto' : 'Cerrado'}
                       </span>
-                      <Toggle 
-                        checked={alwaysAvailable} 
-                        onChange={async (val) => {
-                          setAlwaysAvailable(val);
-                          if (isAdminMode) {
-                            await supabase.rpc('sync_host_config', { 
-                              p_session_id: sessionId, 
-                              p_secret: hostSecret, 
-                              p_updates: { active: val } 
-                            });
-                          }
-                        }} 
-                      />
-                    </div>
+                    </button>
                     
                     <div className="w-px h-4 bg-white/10 hidden sm:block" />
 
-                    {/* Auto-DJ Toggle */}
-                    <div className="flex items-center gap-2" title="Auto-DJ">
+                    {/* envAIro Filter Button */}
+                    <button
+                      onClick={() => {
+                        if (autoDJ) {
+                          setAutoDJ(false);
+                        } else {
+                          setIsAutoDjModalOpen(true);
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        autoDJ 
+                          ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm' 
+                          : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
+                      }`}
+                      title="envAIro Filter"
+                    >
                       <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-                      <span className="text-xs font-medium text-text-muted hidden sm:inline">Auto-DJ</span>
-                      <Toggle 
-                        checked={autoDJ} 
-                        onChange={(val) => {
-                          if (val) {
-                            setIsAutoDjModalOpen(true);
-                          } else {
-                            setAutoDJ(false);
-                          }
-                        }} 
-                      />
-                    </div>
+                      <span className="hidden sm:inline">envAIro Filter</span>
+                    </button>
                   </div>
                 </div>
 
@@ -657,7 +667,7 @@ export default function DashboardPage() {
                 <Music2 size={40} className="text-text-subtle mx-auto mb-4" />
                 <p className="text-text-muted">{t('dashboard.queue_empty')}</p>
                 {autoDJ ? (
-                  <p className="text-text-subtle text-sm mt-2">Auto-DJ {t('dashboard.queue_empty_sub')}</p>
+                  <p className="text-text-subtle text-sm mt-2">envAIro Filter {t('dashboard.queue_empty_sub')}</p>
                 ) : (
                   <p className="text-text-subtle text-sm mt-2">{t('dashboard.queue_empty_sub')}</p>
                 )}
@@ -769,7 +779,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Auto-DJ Configuration Modal */}
+      {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
@@ -780,15 +790,15 @@ export default function DashboardPage() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-center text-white mb-2">
-                Activar Auto-DJ (IA)
+                Activar envAIro Filter
               </h3>
               <p className="text-sm text-center text-text-muted mb-6">
-                El Auto-DJ elegirá automáticamente las siguientes canciones basándose en tu historial y el contexto que definas aquí.
+                envAIro Filter elegirá automáticamente las siguientes canciones basándose en tu historial y el contexto que definas aquí.
               </p>
 
               <div className="space-y-4 mb-6 text-left">
                 <div className="pt-2">
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto del Auto-DJ (Opcional)</label>
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Contexto de envAIro Filter (Opcional)</label>
                   <textarea
                     value={autoDjPrompt}
                     onChange={(e) => setAutoDjPrompt(e.target.value)}
@@ -796,7 +806,7 @@ export default function DashboardPage() {
                     className="input-field w-full h-24 resize-none"
                   />
                   <p className="text-xs text-text-muted mt-2">
-                    Si lo dejas en blanco, el Auto-DJ usará solo los filtros de géneros (sin IA).
+                    Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros (sin IA).
                   </p>
                 </div>
               </div>

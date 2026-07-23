@@ -29,9 +29,9 @@ export function useAutoQueue() {
           if (recommendedTrack) {
             usePlayerStore.getState().addToQueue({
               ...recommendedTrack,
-              requestedBy: 'Auto DJ'
+              requestedBy: 'envAIro Filter'
             });
-            toast.success(`Auto DJ añadió: ${recommendedTrack.name}`);
+            toast.success(`envAIro Filter añadió: ${recommendedTrack.name}`);
           }
         } catch (err) {
           console.error('Auto DJ failed to fetch recommendations:', err);
