@@ -148,6 +148,8 @@ export const useSettingsStore = create(
       setEnairoIsThinking: (v) => set({ enairoIsThinking: v }),
       enairoTestMode: false,
       setEnairoTestMode: (v) => set({ enairoTestMode: v }),
+      enairoAutoIntervalEnabled: false,
+      setEnairoAutoIntervalEnabled: (v) => set({ enairoAutoIntervalEnabled: v }),
 
       autoDjPrompt: '',
       setAutoDjPrompt: (v) => set({ autoDjPrompt: sanitizePrompt(v) }),

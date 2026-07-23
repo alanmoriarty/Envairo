@@ -8,6 +8,36 @@ import { toast } from 'sonner';
 
 let isEnairoTimerRunning = false;
 
+function isTrackAlreadyPlayedOrInQueue(trackName, artistName, history = [], currentQueue = []) {
+  if (!trackName) return false;
+  const normName = trackName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const normArtist = (artistName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  const isPlayed = history.some(h => {
+    const hName = (h.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const hArtist = (typeof h.artists === 'string' ? h.artists : (h.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (hName === normName) {
+      if (!normArtist || !hArtist) return true;
+      return hArtist.includes(normArtist) || normArtist.includes(hArtist);
+    }
+    return false;
+  });
+
+  if (isPlayed) return true;
+
+  const isInQueue = currentQueue.some(q => {
+    const qName = (q.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const qArtist = (typeof q.artists === 'string' ? q.artists : (q.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (qName === normName) {
+      if (!normArtist || !qArtist) return true;
+      return qArtist.includes(normArtist) || normArtist.includes(qArtist);
+    }
+    return false;
+  });
+
+  return isInQueue;
+}
+
 export function useEnairoSelector() {
   const {
     enairoEnabled,
@@ -67,17 +97,32 @@ export function useEnairoSelector() {
     setEnairoCooldown(now + cooldownDuration, currentUsageCount + 1, today);
     setEnairoEnabled(true);
 
+    // Filtrar el historial para considerar ÚNICAMENTE las canciones reproducidas HOY
+    const todayPlayHistory = (playHistory || []).filter(track => {
+      if (!track.playedAt) return false;
+      try {
+        const trackDateStr = new Date(track.playedAt).toISOString().split('T')[0];
+        return trackDateStr === today;
+      } catch {
+        return false;
+      }
+    });
+
+    const playedSongNames = todayPlayHistory.map(t => `${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map(a => a.name || a).join(', ')}`);
+    const combinedBlacklistSongs = Array.from(new Set([...(blacklistSongs || []), ...playedSongNames]));
+
     try {
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
           action_mode: 'generate',
-          history: playHistory.slice(0, 5), // últimas 5 canciones
+          history: todayPlayHistory.slice(0, 10),
+          playedHistory: playedSongNames,
           queue: queue,
           settings: {
             enairoPrompt: sanitizePrompt(enairoPrompt),
             whitelistGenres,
             blacklistGenres,
-            blacklistSongs,
+            blacklistSongs: combinedBlacklistSongs,
             blacklistArtists,
             trackCount: enairoTrackCount
           }
@@ -140,9 +185,33 @@ export function useEnairoSelector() {
           console.error("Error buscando canciones recomendadas en lote:", err);
         }
 
-        foundTracks.forEach(track => addToQueue(track));
+        const currentFullHistory = usePlayerStore.getState().playHistory || [];
+        const currentTodayHistory = currentFullHistory.filter(track => {
+          if (!track.playedAt) return false;
+          try {
+            const trackDateStr = new Date(track.playedAt).toISOString().split('T')[0];
+            return trackDateStr === today;
+          } catch {
+            return false;
+          }
+        });
+        const currentQueueState = usePlayerStore.getState().queue || [];
 
-        toast.success(`EnvAIro añadió ${foundTracks.length} canciones al ambiente.`);
+        const nonRepeatedTracks = foundTracks.filter(track => {
+          const isDuplicate = isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentTodayHistory, currentQueueState);
+          if (isDuplicate) {
+            console.log(`[envAIro Selector] Canción omitida por ya haber sonado hoy o estar en cola: ${track.name} - ${track.artists}`);
+          }
+          return !isDuplicate;
+        });
+
+        nonRepeatedTracks.forEach(track => addToQueue(track));
+
+        if (nonRepeatedTracks.length > 0) {
+          toast.success(`envAIro añadió ${nonRepeatedTracks.length} canciones únicas al ambiente.`);
+        } else if (foundTracks.length > 0) {
+          toast.info(`envAIro omitió canciones sugeridas que ya habían sonado previamente.`);
+        }
       }
 
       // Ejecutar el primer barrido de contenido explícito inmediatamente después de la generación
@@ -269,7 +338,11 @@ export function useEnairoSelector() {
           console.error("Error buscando canciones de reemplazo:", err);
         }
 
-        foundTracks.forEach(track => state.addToQueue(track));
+        const currentHistory = usePlayerStore.getState().playHistory || [];
+        const currentQueueState = usePlayerStore.getState().queue || [];
+
+        const nonRepeatedTracks = foundTracks.filter(track => !isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentHistory, currentQueueState));
+        nonRepeatedTracks.forEach(track => state.addToQueue(track));
       }
 
       if (removedCount > 0) {
@@ -402,6 +475,27 @@ export function useEnairoSelector() {
         } else {
           autoReorderQueue();
         }
+      }
+
+      // Chequeo de Auto-Ejecución cada 2 horas para envAIro Selector
+      const settings = useSettingsStore.getState();
+      if (settings.enairoAutoIntervalEnabled && !settings.enairoIsThinking) {
+        getSecureServerTime().then(async (now) => {
+          const today = await getSecureServerDateString();
+          let currentUsageCount = settings.enairoUsageCount || 0;
+          if (settings.enairoLastUsedDate !== today) {
+            settings.resetEnairoUsage();
+            currentUsageCount = 0;
+          }
+
+          // Si pasaron 2 horas desde el último trigger y aún no alcanza el límite de 3 usos diarios
+          if (now >= (settings.enairoCooldownUntil || 0)) {
+            if (currentUsageCount < 3) {
+              toast.info(`⚡ Ejecutando envAIro Selector automáticamente (${currentUsageCount + 1}/3 de hoy)`, { icon: '🤖' });
+              triggerEnairo();
+            }
+          }
+        }).catch(() => {});
       }
     }, 60000);
 

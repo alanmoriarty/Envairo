@@ -156,6 +156,7 @@ export default function DashboardPage() {
     autoDjPrompt, setAutoDjPrompt,
     enairoTrackCount, setEnairoTrackCount,
     enairoTestMode, setEnairoTestMode,
+    enairoAutoIntervalEnabled, setEnairoAutoIntervalEnabled,
     explicitFilter, setExplicitFilter
   } = useSettingsStore();
 
@@ -824,6 +825,31 @@ export default function DashboardPage() {
                     onChange={(e) => setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 35)))}
                     className="input-field w-full text-center"
                   />
+                </div>
+
+                <div className="border-t border-white/10 pt-4 space-y-3">
+                  <Toggle
+                    checked={enairoAutoIntervalEnabled}
+                    onChange={setEnairoAutoIntervalEnabled}
+                    label="Ejecutar automáticamente cada 2 horas"
+                    description="envAIro Selector se volverá a ejecutar solo usando este mismo contexto (máximo 3 veces al día)."
+                  />
+
+                  <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 text-xs text-text-muted flex items-start gap-2.5">
+                    <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-white">Límite de Ejecución Automática</p>
+                      <p className="mt-0.5 text-text-muted leading-relaxed">
+                        Se ejecutará automáticamente cada 2 horas <strong className="text-white">únicamente 3 veces al día</strong> para conservar la cuota de tu cuenta.
+                      </p>
+                      <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                        <span className="font-mono text-accent font-semibold">Ejecuciones de hoy:</span>
+                        <span className="font-mono font-bold text-white bg-accent/20 px-2 py-0.5 rounded-md">
+                          {enairoUsageCount || 0} / 3
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {canSeeTestMode && (
