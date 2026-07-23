@@ -39,7 +39,7 @@ export default function TVDisplayPage() {
         height: '100%',
         width: '100%',
         playerVars: {
-          autoplay: 1,
+          autoplay: 0,
           mute: 1,
           controls: 0,
           disablekb: 1,
@@ -47,7 +47,9 @@ export default function TVDisplayPage() {
           modestbranding: 1,
           rel: 0,
           showinfo: 0,
-          iv_load_policy: 3
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          origin: window.location.origin
         },
         events: {
           onReady: (event) => {
