@@ -20,7 +20,7 @@ import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
 export function RootLayout() {
 
   const { isAuthenticated, user } = useAuthStore();
-  const { isAdminMode, themeColor } = useSettingsStore();
+  const { isAdminMode, themeColor, sessionId } = useSettingsStore();
   const location = useLocation();
 
   useQueueSync();
@@ -53,12 +53,12 @@ export function RootLayout() {
 
 
   useEffect(() => {
-    // Unificar el sessionId en todos los dispositivos usando el ID del usuario
-    // EXCEPTO si estamos en modo control remoto (isAdminMode), en cuyo caso respetamos el sessionId de la URL
-    if (user?.id && !isAdminMode) {
+    // Autocorrección blindada: Si el sessionId se desincroniza (por ej. Zustand rehidratando), lo forzamos de vuelta
+    if (user?.id && !isAdminMode && sessionId !== user.id) {
+      console.log('Self-correcting sessionId to:', user.id);
       useSettingsStore.getState().setSessionId(user.id);
     }
-  }, [user?.id, isAdminMode]);
+  }, [user?.id, isAdminMode, sessionId]);
 
   useEffect(() => {
     // Sincronizar configuraciones e historial de la nube al montar
@@ -290,23 +290,6 @@ export function RootLayout() {
             <Outlet />
           </div>
         </main>
-      </div>
-
-      {/* DEBUG OVERLAY - TEMPORAL */}
-      <div className="fixed bottom-0 left-0 bg-red-900 text-white p-2 text-xs z-[9999] opacity-90 flex flex-col gap-1">
-        <div>User ID: {user?.id}</div>
-        <div>Session ID: {useSettingsStore.getState().sessionId}</div>
-        <div>Is Admin: {isAdminMode ? 'TRUE' : 'FALSE'}</div>
-        <div>Email: {user?.email}</div>
-        <button 
-          onClick={() => {
-            console.log("Forcing sessionId to", user?.id);
-            useSettingsStore.getState().setSessionId(user?.id);
-          }}
-          className="bg-white text-red-900 px-2 py-1 rounded font-bold mt-1"
-        >
-          FORCE FIX SESSION ID
-        </button>
       </div>
       
       {/* 2. Visualizador y Fondo Reactivo (Z-index base) */}
