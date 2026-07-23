@@ -8,7 +8,6 @@ export default function TVDisplayPage() {
   const [status, setStatus] = useState('Esperando conexión...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const currentVideoIdRef = useRef(null);
-  const isPlayingRef = useRef(false);
 
   useEffect(() => {
     // 1. Cargar API de YouTube IFrame
@@ -68,12 +67,6 @@ export default function TVDisplayPage() {
           onStateChange: (event) => {
             // Asegurar que siempre esté muteado
             event.target.mute();
-
-            // Si el video empieza a reproducirse automáticamente pero el anfitrión está pausado,
-            // lo pausamos inmediatamente para respetar el estado.
-            if (event.data === window.YT.PlayerState.PLAYING && !isPlayingRef.current) {
-              event.target.pauseVideo();
-            }
           }
         }
       });
@@ -95,11 +88,6 @@ export default function TVDisplayPage() {
     try {
       const isCurrentlyPlaying = player.getPlayerState() === window.YT.PlayerState.PLAYING;
 
-      // Actualizar ref global de estado de reproducción
-      if (data.type === 'SYNC') {
-        isPlayingRef.current = data.isPlaying;
-      }
-
       // Si el video cambió
       if (data.videoId && data.videoId !== currentVideoIdRef.current) {
         currentVideoIdRef.current = data.videoId;
@@ -109,8 +97,11 @@ export default function TVDisplayPage() {
         const bufferingOffset = 1;
         const start = data.time ? data.time + bufferingOffset : 0;
 
-        // Siempre usamos loadVideoById porque cueVideoById bloquea la API exigiendo un clic del usuario
-        player.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        if (data.isPlaying) {
+          player.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        } else {
+          player.cueVideoById({ videoId: data.videoId, startSeconds: start });
+        }
         return;
       }
 
