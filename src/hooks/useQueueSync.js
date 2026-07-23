@@ -144,8 +144,11 @@ export function useQueueSync() {
               }
             } catch (err) {}
 
-            logout();
-            window.location.href = '/';
+            // Esperar a que el logout limpie el estado local ANTES de redirigir,
+            // y pasar `true` para no desactivar la sesión en la base de datos (ya que pertenece al nuevo dispositivo)
+            logout(true).then(() => {
+              window.location.href = '/';
+            });
             return;
           }
 

@@ -17,13 +17,13 @@ export const useAuthStore = create(
       isAuthenticated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
-      logout: async () => {
+      logout: async (skipDbUpdate = false) => {
         const { hostSecret } = useSettingsStore.getState();
         const currentUser = get().user;
         const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
         
         // Disparar el apagado de la sesión en la base de datos de inmediato
-        if (sessionIdToClose && hostSecret) {
+        if (sessionIdToClose && hostSecret && !skipDbUpdate) {
           try {
             const { supabase } = await import('../lib/supabase');
             await supabase.rpc('sync_host_config', { 
