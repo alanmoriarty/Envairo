@@ -55,11 +55,26 @@ CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (
 
 -- Funciones RPC Seguras para el Host (Bypass RLS si conocen el host_secret)
 
--- 1. Actualizar estado de la sesión (Renombrado para evitar bloqueadores de anuncios)
+-- 1. Actualizar estado de la sesión (Bulletproof UPSERT)
 CREATE OR REPLACE FUNCTION sync_host_config(p_session_id TEXT, p_secret UUID, p_updates JSONB)
 RETURNS VOID AS $$
+DECLARE
+  v_real_secret UUID;
+  v_exists BOOLEAN;
 BEGIN
-  IF p_secret = (SELECT host_secret FROM sessions WHERE id = p_session_id) THEN
+  -- Verificar si la sesión existe
+  SELECT host_secret INTO v_real_secret FROM sessions WHERE id = p_session_id;
+  
+  IF v_real_secret IS NULL THEN
+    -- Si no existe, la creamos (UPSERT)
+    INSERT INTO sessions (id, host_secret, supabase_user_id, active)
+    VALUES (p_session_id, COALESCE(p_secret, gen_random_uuid()), auth.uid(), true);
+    
+    v_real_secret := p_secret;
+  END IF;
+
+  -- Validar secreto (O si somos el dueño autenticado, forzamos bypass)
+  IF p_secret = v_real_secret OR p_session_id = auth.uid()::text THEN
     UPDATE sessions SET
       active = COALESCE((p_updates->>'active')::BOOLEAN, active),
       mode = COALESCE((p_updates->>'mode')::TEXT, mode),
