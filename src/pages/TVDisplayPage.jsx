@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tv, Activity } from 'lucide-react';
+import { Tv, Activity, Maximize, Minimize, X } from 'lucide-react';
 
 export default function TVDisplayPage() {
   const channelRef = useRef(null);
@@ -9,6 +9,7 @@ export default function TVDisplayPage() {
   const isTransitioning = useRef(false);
   const [status, setStatus] = useState('Esperando conexión...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const currentVideoIdRef = useRef(null);
 
   const getActivePlayer = () => activePlayerIndex.current === 1 ? player1Ref.current : player2Ref.current;
@@ -112,10 +113,16 @@ export default function TVDisplayPage() {
       });
     }
 
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+
     return () => {
       if (channelRef.current) channelRef.current.close();
       if (player1Ref.current) player1Ref.current.destroy();
       if (player2Ref.current) player2Ref.current.destroy();
+      document.removeEventListener('fullscreenchange', handleFsChange);
     };
   }, []);
 
@@ -170,6 +177,18 @@ export default function TVDisplayPage() {
     }
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error("Error intentando poner pantalla completa:", err);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden">
       
@@ -197,7 +216,7 @@ export default function TVDisplayPage() {
       {/* Overlay status if no video */}
       {!currentVideoId && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
-          <div className="bg-white/10 p-6 rounded-full backdrop-blur-sm border border-white/20">
+          <div className="bg-white/10 p-6 rounded-full border border-white/20">
             <Tv size={64} className="text-white opacity-80" />
           </div>
           <div className="flex flex-col items-center gap-2">
@@ -207,6 +226,30 @@ export default function TVDisplayPage() {
               <p className="text-xl font-medium">{status}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Controles flotantes */}
+      <div className="absolute bottom-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <button 
+          onClick={toggleFullscreen}
+          className="bg-black/50 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center justify-center"
+          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla Completa"}
+        >
+          {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+        </button>
+      </div>
+      
+      {/* Botón extra X arriba si está en full screen, igual oculto hasta hover */}
+      {isFullscreen && (
+        <div className="absolute top-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
+          <button 
+            onClick={toggleFullscreen}
+            className="bg-black/50 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center justify-center"
+            title="Salir (o presiona ESC)"
+          >
+            <X size={24} />
+          </button>
         </div>
       )}
     </div>
