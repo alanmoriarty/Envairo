@@ -154,7 +154,7 @@ export function RootLayout() {
     let prevState = useSettingsStore.getState();
     const unsubSettings = useSettingsStore.subscribe((state) => {
       // Auto-sync solo para opciones rápidas y estado crítico
-      const autoSyncKeys = ['djName', 'djAvatar', 'mode', 'enairoEnabled', 'enairoTestMode', 'explicitFilter'];
+      const autoSyncKeys = ['djName', 'djAvatar', 'mode', 'enairoEnabled', 'enairoTestMode', 'explicitFilter', 'alwaysAvailable'];
       const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
 
       if (changed) {
