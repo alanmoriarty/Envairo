@@ -352,7 +352,7 @@ export function useQueueSync() {
           });
         }
       } else {
-        await supabase.from('sessions').insert({
+        const { error: insertError } = await supabase.from('sessions').insert({
           id: sessionId,
           host_secret: secret, // Guardar el secreto admin inicial
           active_instance_id: activeInstanceId,
@@ -374,6 +374,10 @@ export function useQueueSync() {
           active_device_id: activeDeviceId,
           updated_at: new Date().toISOString()
         });
+        if (insertError) {
+          console.error("Critical: Failed to insert session!", insertError);
+          import('sonner').then(({ toast }) => toast.error('Error al crear la sala: ' + insertError.message));
+        }
       }
     };
     syncSession();
