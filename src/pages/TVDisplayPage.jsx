@@ -118,12 +118,18 @@ export default function TVDisplayPage() {
 
   return (
     <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden">
+      
+      {/* Player Container */}
       <div 
         ref={containerRef} 
-        className="absolute inset-0 w-full h-full pointer-events-none"
+        className="absolute inset-0 z-0 flex items-center justify-center bg-black"
+        style={{ width: '100vw', height: '100vh' }}
       >
-        <div id="tv-youtube-player" className="w-full h-full object-cover"></div>
+        <div id="tv-youtube-player" style={{ width: '100%', height: '100%' }}></div>
       </div>
+
+      {/* Click-blocking overlay */}
+      <div className="absolute inset-0 z-10 cursor-default"></div>
       
       {/* Overlay status if no video */}
       {!currentVideoId && (
