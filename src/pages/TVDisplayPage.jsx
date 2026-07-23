@@ -10,6 +10,8 @@ export default function TVDisplayPage() {
   const [status, setStatus] = useState('Esperando conexión...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
+  const idleTimerRef = useRef(null);
   const currentVideoIdRef = useRef(null);
 
   const getActivePlayer = () => activePlayerIndex.current === 1 ? player1Ref.current : player2Ref.current;
@@ -137,12 +139,21 @@ export default function TVDisplayPage() {
       if (channelRef.current) channelRef.current.close();
       if (player1Ref.current) player1Ref.current.destroy();
       if (player2Ref.current) player2Ref.current.destroy();
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       document.removeEventListener('fullscreenchange', handleFsChange);
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
       document.removeEventListener('mozfullscreenchange', handleFsChange);
       document.removeEventListener('MSFullscreenChange', handleFsChange);
     };
   }, []);
+
+  const handleMouseMove = () => {
+    setIsIdle(false);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setIsIdle(true);
+    }, 3000); // Ocultar después de 3 segundos sin movimiento
+  };
 
   const handleSync = (data) => {
     const activeP = getActivePlayer();
@@ -223,7 +234,11 @@ export default function TVDisplayPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden">
+    <div 
+      className={`fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden ${isIdle ? 'cursor-none' : ''}`}
+      onMouseMove={handleMouseMove}
+      onClick={handleMouseMove}
+    >
 
       {/* Reproductor 1 (Activo Inicial) */}
       <div
@@ -263,7 +278,7 @@ export default function TVDisplayPage() {
       )}
 
       {/* Controles flotantes */}
-      <div className="absolute bottom-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
+      <div className={`absolute bottom-6 right-6 z-30 transition-opacity duration-300 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
         <button
           onClick={toggleFullscreen}
           className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
@@ -275,7 +290,7 @@ export default function TVDisplayPage() {
 
       {/* Botón extra X arriba si está en full screen */}
       {isFullscreen && (
-        <div className="absolute top-6 right-6 z-30 opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <div className={`absolute top-6 right-6 z-30 transition-opacity duration-300 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
           <button
             onClick={toggleFullscreen}
             className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
