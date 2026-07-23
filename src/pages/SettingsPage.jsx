@@ -315,54 +315,7 @@ export default function SettingsPage() {
 
       {activeTab === 'custom' && (
         <div className="space-y-6 animate-fade-in">
-          {/* EnvAIro Selector (IA) */}
-          <section className="card p-5 space-y-4 border border-accent/20">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <Sparkles size={16} className="text-accent shrink-0" />
-              <h2 className="font-bold text-text-primary shrink-0">{t('settings.envairo_title')}</h2>
-            </div>
-
-            <p className="text-xs text-text-muted mb-2">{t('settings.envairo_desc')}</p>
-
-            <div className="pt-2">
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
-              <textarea
-                value={enairoPrompt}
-                onChange={(e) => setEnairoPrompt(e.target.value)}
-                placeholder={t('settings.envairo_prompt_placeholder')}
-                className="input-field w-full h-24 resize-none"
-              />
-            </div>
-
-            <div className="pt-2">
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">Cantidad de sugerencias a generar</label>
-              <p className="text-xs text-text-muted mb-2">Máximo 50 canciones por generación.</p>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={store.enairoTrackCount}
-                onChange={(e) => store.setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 35)))}
-                className="input-field w-full sm:w-24 text-center"
-              />
-            </div>
-
-            {canSeeTestMode && (
-              <div className="border-t border-white/5 pt-4">
-                <Toggle
-                  checked={enairoTestMode}
-                  onChange={setEnairoTestMode}
-                  label={t('settings.envairo_test_label')}
-                  description={t('settings.envairo_test_desc')}
-                />
-              </div>
-            )}
-          </section>
-
-
-
-
-
+          {/* EnvAIro Selector (IA) section removed and moved to Dashboard modal */}
           {/* General filters */}
           <section className="card p-5 space-y-4">
             <div className="flex items-center gap-2 mb-1">

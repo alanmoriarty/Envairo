@@ -33,6 +33,8 @@ import { CastToTvModal } from '../components/dashboard/CastToTvModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
+import { useAuthStore } from '../store/useAuthStore';
+import { Toggle } from '../components/ui/Toggle';
 
 const formatArtists = (artists) => {
   if (typeof artists === 'string') return artists;
@@ -146,6 +148,21 @@ export default function DashboardPage() {
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
+
+  const {
+    enairoPrompt, setEnairoPrompt,
+    enairoTrackCount, setEnairoTrackCount,
+    enairoTestMode, setEnairoTestMode
+  } = useSettingsStore();
+
+  const { user } = useAuthStore.getState();
+  const ALLOWED_EMAILS = [
+    'aliriopina04@gmail.com',
+    'aliriopina05@gmail.com',
+    'estebant3006@gmail.com',
+    'carlospina1003@gmail.com',
+  ];
+  const canSeeTestMode = ALLOWED_EMAILS.includes(user?.email);
 
   useEffect(() => {
     const timer = setInterval(() => setLocalTime(Date.now()), 60000); // update every minute
@@ -646,19 +663,56 @@ export default function DashboardPage() {
       {/* EnvAIro Confirmation Modal */}
       {isEnairoModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
-            <div className="p-5">
+          <div className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="p-5 flex-1 overflow-y-auto custom-scrollbar">
               <div className="flex justify-center mb-4">
                 <div className="p-3 bg-accent/20 rounded-full">
                   <Sparkles size={32} className="text-accent" />
                 </div>
               </div>
               <h3 className="text-xl font-bold text-center text-white mb-2">
-                ¿Generar Ambiente?
+                Configuración envAIro
               </h3>
               <p className="text-sm text-center text-text-muted mb-6">
-                Asegúrate de haber configurado correctamente el prompt y los géneros en los Ajustes. Una vez generado, EnvAIro no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
+                Asegúrate de haber configurado correctamente el prompt. Una vez generado, EnvAIro no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
               </p>
+
+              {/* Ajustes movidos desde SettingsPage */}
+              <div className="space-y-4 mb-6 text-left">
+                <div className="pt-2">
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.envairo_prompt_label')}</label>
+                  <textarea
+                    value={enairoPrompt}
+                    onChange={(e) => setEnairoPrompt(e.target.value)}
+                    placeholder={t('settings.envairo_prompt_placeholder')}
+                    className="input-field w-full h-24 resize-none"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Cantidad de sugerencias a generar</label>
+                  <p className="text-xs text-text-muted mb-2">Máximo 50 canciones por generación.</p>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={enairoTrackCount}
+                    onChange={(e) => setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 35)))}
+                    className="input-field w-full text-center"
+                  />
+                </div>
+
+                {canSeeTestMode && (
+                  <div className="border-t border-white/5 pt-4">
+                    <Toggle
+                      checked={enairoTestMode}
+                      onChange={setEnairoTestMode}
+                      label={t('settings.envairo_test_label')}
+                      description={t('settings.envairo_test_desc')}
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3">
                 <button
