@@ -97,6 +97,49 @@ export function PersistentPlayer() {
       }
   };
 
+  // Integración con MediaSession API para controles en segundo plano (notificaciones y pantalla de bloqueo)
+  React.useEffect(() => {
+    if ('mediaSession' in navigator) {
+      if (currentTrack) {
+        // Formatear portada
+        const artworkUrl = currentTrack.album?.images?.[0]?.url || currentTrack.albumArt || 'https://envairoqr.com/pwa-512x512.png';
+        
+        navigator.mediaSession.metadata = new window.MediaMetadata({
+          title: currentTrack.name || 'Pista desconocida',
+          artist: formatArtists(currentTrack.artists),
+          album: currentTrack.album?.name || 'Envairo',
+          artwork: [
+            { src: artworkUrl, sizes: '512x512', type: 'image/png' },
+            { src: artworkUrl, sizes: '256x256', type: 'image/png' },
+            { src: artworkUrl, sizes: '128x128', type: 'image/png' }
+          ]
+        });
+
+        // Configurar acciones (botones de la notificación)
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (controls?.play) controls.play();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          if (controls?.pause) controls.pause();
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          if (controls?.next) controls.next();
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          if (controls?.previous) controls.previous();
+        });
+      } else {
+        navigator.mediaSession.metadata = null;
+      }
+    }
+  }, [currentTrack, controls]);
+
+  React.useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [isPlaying]);
+
   return (
     <>
       {/* Resume Prompt Overlay */}
