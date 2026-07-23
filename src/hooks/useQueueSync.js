@@ -311,12 +311,14 @@ export function useQueueSync() {
     let initReqTimeout;
 
     const syncSession = async () => {
-      const { mode, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, requestsPerHour, requestsPerGuest, cooldownEnabled, cooldownMinutes, tableCount } = useSettingsStore.getState();
+      const authStore = useAuthStore.getState();
+      const secret = useSettingsStore.getState().hostSecret;
+      if (!authStore.user && !secret) return; 
+
+      const { mode, alwaysAvailable, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, cooldownEnabled, cooldownMinutes, tableCount, requestsPerHour, requestsPerGuest } = useSettingsStore.getState();
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
 
-      const secret = useSettingsStore.getState().hostSecret;
       const activeInstanceId = getInstanceId();
-      const authStore = useAuthStore.getState();
       const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).maybeSingle();
       
       const { data: { user: sbUser } } = await supabase.auth.getUser();
@@ -345,9 +347,8 @@ export function useQueueSync() {
             p_session_id: sessionId,
             p_secret: useSettingsStore.getState().hostSecret,
             p_updates: {
-              active: true,
+              active: alwaysAvailable,
               ...(useSettingsStore.getState().isAdminMode ? { active_remote_id: activeInstanceId } : {}),
-              active: true,
               mode,
               blacklist_genres: blacklistGenres,
               blacklist_songs: blacklistSongs,
@@ -368,7 +369,7 @@ export function useQueueSync() {
           host_secret: secret, // Guardar el secreto admin inicial
           active_instance_id: activeInstanceId,
           supabase_user_id: sbUser?.id,
-          active: true,
+          active: alwaysAvailable,
           mode,
           blacklist_genres: blacklistGenres,
           blacklist_songs: blacklistSongs,
