@@ -151,10 +151,10 @@ export function useYouTubeSDK() {
           const { sessionId, hostSecret } = useSettingsStore.getState();
           if (state.isPlaying) {
             state.setIsPlaying(false);
-            import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
+            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
           } else {
             state.setIsPlaying(true);
-            import('../lib/supabase').then(m => m.supabase.rpc('update_session_state', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
+            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
           }
         }
       });

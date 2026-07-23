@@ -44,7 +44,7 @@ export function QRCard() {
   
   const handleRegenerate = async () => {
     // Cerrar la sesión actual para que el QR anterior deje de funcionar
-    await supabase.rpc('update_session_state', { 
+    await supabase.rpc('sync_host_config', { 
       p_session_id: sessionId, 
       p_secret: hostSecret, 
       p_updates: { active: false } 

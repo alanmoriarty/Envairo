@@ -126,11 +126,14 @@ export function RootLayout() {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(state.sessionId);
         
         if (state.sessionId && state.hostSecret && isUuid) {
-          supabase.rpc('update_session_state', {
+          supabase.rpc('sync_host_config', {
             p_session_id: state.sessionId,
             p_secret: state.hostSecret,
             p_updates: { active: currentActive }
-          }).then();
+          }).then().catch(err => {
+            // Ignorar errores de red o adblockers que eliminan el apikey
+            console.debug('Network/Adblock ignored:', err?.message);
+          });
         }
       }
     };
@@ -173,7 +176,7 @@ export function RootLayout() {
           const sessionId = state.sessionId;
           const hostSecret = state.hostSecret;
           if (sessionId && hostSecret) {
-            supabase.rpc('update_session_state', {
+            supabase.rpc('sync_host_config', {
               p_session_id: sessionId,
               p_secret: hostSecret,
               p_updates: {

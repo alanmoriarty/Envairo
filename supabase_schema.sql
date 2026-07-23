@@ -55,8 +55,8 @@ CREATE POLICY "Anyone can insert a request." ON requests FOR INSERT WITH CHECK (
 
 -- Funciones RPC Seguras para el Host (Bypass RLS si conocen el host_secret)
 
--- 1. Actualizar estado de la sesión
-CREATE OR REPLACE FUNCTION update_session_state(p_session_id TEXT, p_secret UUID, p_updates JSONB)
+-- 1. Actualizar estado de la sesión (Renombrado para evitar bloqueadores de anuncios)
+CREATE OR REPLACE FUNCTION sync_host_config(p_session_id TEXT, p_secret UUID, p_updates JSONB)
 RETURNS VOID AS $$
 BEGIN
   IF p_secret = (SELECT host_secret FROM sessions WHERE id = p_session_id) THEN

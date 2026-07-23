@@ -85,7 +85,7 @@ export function AddSongModal({ onClose }) {
     usePlayerStore.setState({ queue: newQueue });
 
     if (isAdminMode) {
-      import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
+      import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { 
         p_session_id: sessionId, 
         p_secret: hostSecret, 
         p_updates: { 
@@ -98,7 +98,7 @@ export function AddSongModal({ onClose }) {
     if (isQueueEmpty) {
       const firstTrack = usePlayerStore.getState().shiftQueue();
       if (firstTrack && isAdminMode) {
-        import('../../lib/supabase').then(m => m.supabase.rpc('update_session_state', { 
+        import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { 
           p_session_id: sessionId, 
           p_secret: hostSecret, 
           p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 

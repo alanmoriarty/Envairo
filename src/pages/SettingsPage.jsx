@@ -172,7 +172,7 @@ export default function SettingsPage() {
         // Calcular disponibilidad
         let currentActive = state.alwaysAvailable;
 
-        await supabase.rpc('update_session_state', {
+        await supabase.rpc('sync_host_config', {
           p_session_id: sessionId,
           p_secret: hostSecret,
           p_updates: {

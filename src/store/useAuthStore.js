@@ -26,13 +26,21 @@ export const useAuthStore = create(
         if (sessionIdToClose && hostSecret) {
           try {
             const { supabase } = await import('../lib/supabase');
-            await supabase.rpc('update_session_state', { 
+            await supabase.rpc('sync_host_config', { 
               p_session_id: sessionIdToClose, 
               p_secret: hostSecret, 
               p_updates: { active: false } 
             });
+            await supabase.auth.signOut();
           } catch (err) {
             console.error(err);
+          }
+        } else {
+          try {
+            const { supabase } = await import('../lib/supabase');
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.error(e);
           }
         }
 

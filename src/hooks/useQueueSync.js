@@ -50,7 +50,7 @@ export function useQueueSync() {
         if (!authStore.user && !secret) return; // Si no hay usuario ni secreto admin, no intentar empujar estado (solo invitados)
 
         supabase
-          .rpc('update_session_state', {
+          .rpc('sync_host_config', {
             p_session_id: sessionId,
             p_secret: secret,
             p_updates: {
@@ -331,7 +331,7 @@ export function useQueueSync() {
                console.error("Error al tomar control de la sesión:", err);
              }
           }
-          await supabase.rpc('update_session_state', {
+          await supabase.rpc('sync_host_config', {
             p_session_id: sessionId,
             p_secret: useSettingsStore.getState().hostSecret,
             p_updates: {
