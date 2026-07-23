@@ -33,8 +33,6 @@ import { CastToTvModal } from '../components/dashboard/CastToTvModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
-import { useAuthStore } from '../store/useAuthStore';
-import { Toggle } from '../components/ui/Toggle';
 
 const formatArtists = (artists) => {
   if (typeof artists === 'string') return artists;
@@ -132,8 +130,7 @@ export default function DashboardPage() {
     visualizerEnabled,
     karaokeEnabled, setKaraokeEnabled,
     lyricsEnabled, setLyricsEnabled,
-    isAdminMode, sessionId, hostSecret,
-    enairoTestMode
+    isAdminMode, sessionId, hostSecret
   } = useSettingsStore();
 
   const {
