@@ -18,7 +18,7 @@ export function useTVBroadcast() {
           let trueTime = (state.progress || 0) / 1000;
           if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
             const ytTime = state.youtubePlayer.getCurrentTime();
-            if (ytTime !== undefined) trueTime = ytTime;
+            if (ytTime > 0) trueTime = ytTime;
           }
           channelRef.current.postMessage({
             type: 'SYNC',
@@ -45,7 +45,7 @@ export function useTVBroadcast() {
         let trueTime = (state.progress || 0) / 1000;
         if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
           const ytTime = state.youtubePlayer.getCurrentTime();
-          if (ytTime !== undefined) trueTime = ytTime;
+          if (ytTime > 0) trueTime = ytTime;
         }
         
         channelRef.current.postMessage({
@@ -62,7 +62,7 @@ export function useTVBroadcast() {
           let trueTime = state.progress / 1000;
           if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
             const ytTime = state.youtubePlayer.getCurrentTime();
-            if (ytTime !== undefined) trueTime = ytTime;
+            if (ytTime > 0) trueTime = ytTime;
           }
           channelRef.current.postMessage({
             type: 'SYNC_TIME',
@@ -81,12 +81,12 @@ export function useTVBroadcast() {
         let trueTime = (state.progress || 0) / 1000;
         if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
           const ytTime = state.youtubePlayer.getCurrentTime();
-          if (ytTime !== undefined) trueTime = ytTime;
+          if (ytTime > 0) trueTime = ytTime;
         }
 
         channelRef.current.postMessage({
           type: 'SYNC_TIME',
-          videoId: currentYtId,
+          videoId: state.currentYtId,
           time: trueTime
         });
       }
