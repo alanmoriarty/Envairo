@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2, X,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
-  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw, Monitor
+  SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw, Monitor,
+  Volume2, VolumeX
 } from 'lucide-react';
 import {
   DndContext,
@@ -136,7 +137,8 @@ export default function DashboardPage() {
   const {
     queue, currentQueueIndex, pendingRequests,
     reorderQueue, removeFromQueue, approveRequest, rejectRequest,
-    currentTrack, sdkReady, playbackEngine
+    currentTrack, sdkReady, playbackEngine,
+    volume, setVolume
   } = usePlayerStore();
 
   const { isThinking, triggerEnairo } = useEnairoSelector();
@@ -269,7 +271,36 @@ export default function DashboardPage() {
 
   const handleRemoveQueue = (queueId) => {
     removeFromQueue(queueId);
-    toast(t('dashboard.toast_removed'));
+    toast.success(t('dashboard.toast_removed'));
+  };
+
+  const volumeDebounce = React.useRef(null);
+  const previousVolume = React.useRef(volume || 100);
+
+  const handleRemoteVolumeChange = (e) => {
+    const vol = parseInt(e.target.value, 10);
+    if (vol > 0) previousVolume.current = vol;
+    setVolume(vol); // Actualiza la UI local del remote para fluidez
+    
+    clearTimeout(volumeDebounce.current);
+    volumeDebounce.current = setTimeout(() => {
+      supabase.rpc('sync_host_config', { 
+        p_session_id: sessionId, 
+        p_secret: hostSecret, 
+        p_updates: { 
+          playback_command: { action: 'set_volume', value: vol, ts: Date.now() } 
+        } 
+      }).then();
+    }, 300);
+  };
+
+  const toggleRemoteMute = () => {
+    if (volume > 0) {
+      previousVolume.current = volume;
+      handleRemoteVolumeChange({ target: { value: 0 } });
+    } else {
+      handleRemoteVolumeChange({ target: { value: previousVolume.current || 100 } });
+    }
   };
 
   return (
@@ -491,6 +522,23 @@ export default function DashboardPage() {
           >
             <SkipForward size={24} />
           </button>
+
+          {/* Remote Volume Control */}
+          <div className="relative group flex items-center ml-2">
+            <button onClick={toggleRemoteMute} className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors">
+              {volume === 0 ? <VolumeX size={24} /> : <Volume2 size={24} />}
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={handleRemoteVolumeChange}
+                className="w-24 h-1 bg-white/20 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full cursor-pointer -rotate-90 origin-center"
+              />
+            </div>
+          </div>
         </div>
       )}
 

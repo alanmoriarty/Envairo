@@ -199,6 +199,11 @@ export function useQueueSync() {
                       currentState.youtubePlayer.seekTo(0, true);
                       currentState.youtubePlayer.playVideo();
                     }
+                  } else if (cmd.action === 'set_volume') {
+                    usePlayerStore.getState().setVolume(cmd.value);
+                    if (currentState.youtubePlayer) {
+                      currentState.youtubePlayer.setVolume(cmd.value);
+                    }
                   } else if (cmd.action === 'toggle_karaoke') {
                     useSettingsStore.getState().setKaraokeEnabled(cmd.value);
                     if (currentState.currentTrack) {
