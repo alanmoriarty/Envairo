@@ -40,6 +40,7 @@ export default function TVDisplayPage() {
         width: '100%',
         playerVars: {
           autoplay: 1,
+          mute: 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
