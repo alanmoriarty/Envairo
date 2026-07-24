@@ -43,6 +43,16 @@ const router = createBrowserRouter([
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/guest/:sessionId', element: <GuestPage />, errorElement: <ErrorBoundary /> },
   {
+    path: '/onboarding',
+    element: (
+      <ErrorBoundary>
+        <RequireAuth>
+          <OnboardingPage />
+        </RequireAuth>
+      </ErrorBoundary>
+    )
+  },
+  {
     path: '/tv',
     element: (
       <ErrorBoundary>
@@ -67,7 +77,6 @@ const router = createBrowserRouter([
     errorElement: <ErrorBoundary />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'onboarding', element: <OnboardingPage /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'metrics', element: <MetricsPage /> },
       { path: 'activities', element: <ActivitiesPage /> },

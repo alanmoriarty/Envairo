@@ -14,13 +14,7 @@ import HCaptcha from '@hcaptcha/react-hcaptcha';
 // Lista de correos con suscripción activa (Beta)
 export const ALLOWED_EMAILS = [
   'aliriopina04@gmail.com',
-  'aliriopina05@gmail.com',
-  'javiercardonaaudiovisual@gmail.com',
-  'alextascvers@gmail.com',
-  'bernabeite@gmail.com',
-  'camiloardila.1803@gmail.com',
-  'julian.10barrera@gmail.com',
-  'envairoqr@gmail.com'
+  'javiercardonaaudiovisual@gmail.com'
 ];
 
 export default function LoginPage() {
@@ -72,7 +66,7 @@ export default function LoginPage() {
         if (isSubscribed) {
           navigate('/app/dashboard');
         } else {
-          navigate('/app/onboarding');
+          navigate('/onboarding');
         }
       }
     };
@@ -160,7 +154,7 @@ export default function LoginPage() {
           if (isSubscribed) {
             navigate('/app/dashboard');
           } else {
-            navigate('/app/onboarding');
+            navigate('/onboarding');
           }
         }
       }
