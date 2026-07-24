@@ -280,18 +280,23 @@ export default function TVDisplayPage() {
         return;
       }
 
-      if (data.type === 'SYNC') {
-        if (data.isPlaying && !isCurrentlyPlaying) {
-          activeP.playVideo();
-        } else if (!data.isPlaying && isCurrentlyPlaying) {
+      // Sincronizar inmediatamente el estado de reproducción/pausa con el anfitrión
+      if (typeof data.isPlaying === 'boolean') {
+        if (!data.isPlaying && isCurrentlyPlaying) {
           activeP.pauseVideo();
+        } else if (data.isPlaying && !isCurrentlyPlaying) {
+          activeP.playVideo();
         }
       }
 
       if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
-        const currentTime = activeP.getCurrentTime();
-        if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
-          activeP.seekTo(data.time, true);
+        const playerState = activeP.getPlayerState();
+        // Solo ajustar seekTo si el desvío es mayor a 3.0 segundos y el reproductor no está en buffer
+        if (playerState !== window.YT.PlayerState.BUFFERING) {
+          const currentTime = activeP.getCurrentTime();
+          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 3.0) {
+            activeP.seekTo(data.time, true);
+          }
         }
       }
     } catch (err) {
@@ -392,7 +397,7 @@ export default function TVDisplayPage() {
               <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
                   <QRCodeSVG
-                    value={`${window.location.origin}/tv?pin=${tvPin}`}
+                    value={`${window.location.origin}/app/dashboard?pair_pin=${tvPin}`}
                     size={160}
                     level="H"
                     includeMargin={false}

@@ -75,7 +75,18 @@ export function useTVBroadcast() {
       const currentYtId = state.currentYtId;
       const isPlaying = state.isPlaying;
       
-      if (state.playbackEngine !== 'youtube' || !currentYtId) return;
+      if (state.playbackEngine !== 'youtube' || !currentYtId) {
+        if (lastStateRef.current.isPlaying) {
+          lastStateRef.current.isPlaying = false;
+          broadcastMessage({
+            type: 'SYNC',
+            videoId: lastStateRef.current.videoId,
+            isPlaying: false,
+            time: 0
+          });
+        }
+        return;
+      }
 
       if (currentYtId !== lastStateRef.current.videoId || isPlaying !== lastStateRef.current.isPlaying) {
         lastStateRef.current = { videoId: currentYtId, isPlaying };
@@ -104,6 +115,7 @@ export function useTVBroadcast() {
           broadcastMessage({
             type: 'SYNC_TIME',
             videoId: currentYtId,
+            isPlaying: isPlaying,
             time: trueTime
           });
         }
@@ -111,10 +123,10 @@ export function useTVBroadcast() {
       }
     });
 
-    // Transmitir progreso periódicamente (cada 2 segundos) para corregir cualquier desvío entre pantallas
+    // Transmitir progreso periódicamente (cada 4 segundos) para corregir desvíos remotos sin saturar la TV
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
-      if (state.playbackEngine === 'youtube' && state.isPlaying && state.currentYtId) {
+      if (state.playbackEngine === 'youtube' && state.currentYtId) {
         let trueTime = (state.progress || 0) / 1000;
         if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
           const ytTime = state.youtubePlayer.getCurrentTime();
@@ -124,10 +136,11 @@ export function useTVBroadcast() {
         broadcastMessage({
           type: 'SYNC_TIME',
           videoId: state.currentYtId,
+          isPlaying: state.isPlaying,
           time: trueTime
         });
       }
-    }, 2000);
+    }, 4000);
 
     const handleUnload = () => {
       broadcastMessage({ type: 'MASTER_DISCONNECT' });

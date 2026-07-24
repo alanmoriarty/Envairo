@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useQueueSync } from '../../hooks/useQueueSync';
 import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 import { useTVBroadcast } from '../../hooks/useTVBroadcast';
@@ -31,6 +32,57 @@ export function RootLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [kickedOut, setKickedOut] = useState(false);
+
+  // Vinculación automática por escaneo de código QR (URL ?pair_pin=XXXXXX)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pairPin = urlParams.get('pair_pin');
+    if (!pairPin) return;
+
+    const cleanPin = pairPin.replace(/\D/g, '');
+    if (cleanPin.length !== 6) return;
+
+    const activeSessionId = user?.id || sessionId;
+    const hostSecret = useSettingsStore.getState().hostSecret;
+
+    const doPairFromQr = async () => {
+      try {
+        const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
+        await pairChannel.subscribe();
+        await pairChannel.send({
+          type: 'broadcast',
+          event: 'pairing_result',
+          payload: {
+            type: 'PAIRED',
+            sessionId: activeSessionId,
+            hostSecret
+          }
+        });
+
+        const pairedTvs = JSON.parse(localStorage.getItem('bq-paired-tvs') || '[]');
+        const newTv = {
+          id: cleanPin,
+          name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
+          linkedAt: new Date().toISOString()
+        };
+        const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
+        localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+
+        toast.success(`¡Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada por código QR!`, { icon: '📺' });
+
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+
+        setTimeout(() => {
+          supabase.removeChannel(pairChannel);
+        }, 2000);
+      } catch (err) {
+        console.error('Error al vincular TV por escaneo QR:', err);
+      }
+    };
+
+    doPairFromQr();
+  }, [user?.id, sessionId]);
 
   useEffect(() => {
     // Evitar múltiples pestañas
