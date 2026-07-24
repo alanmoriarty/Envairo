@@ -146,26 +146,37 @@ export function CastToTvModal({ isOpen, onClose }) {
             </div>
 
             {/* Toggle de sonido en la TV */}
-            <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2.5">
-                {tvWithSound ? <Volume2 size={16} className="text-accent" /> : <VolumeX size={16} className="text-text-muted" />}
-                <div>
-                  <p className="text-xs font-semibold text-white">Reproducir sonido en la TV</p>
-                  <p className="text-[10px] text-text-muted">Por defecto la TV transmite sin sonido (solo video)</p>
+            <button
+              type="button"
+              onClick={() => setTvWithSound(v => !v)}
+              className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                tvWithSound
+                  ? 'bg-accent/10 border-accent/40 hover:bg-accent/15'
+                  : 'bg-black/20 border-white/10 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-1.5 rounded-lg transition-colors ${tvWithSound ? 'bg-accent/20 text-accent' : 'bg-white/10 text-text-muted'}`}>
+                  {tvWithSound ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                </div>
+                <div className="text-left">
+                  <p className={`text-xs font-semibold leading-tight ${tvWithSound ? 'text-accent' : 'text-white'}`}>
+                    Sonido en la TV
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {tvWithSound ? 'La TV reproducirá audio' : 'La TV transmite solo video (silenciada)'}
+                  </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setTvWithSound(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
-                  tvWithSound ? 'bg-accent' : 'bg-white/15'
-                }`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                  tvWithSound ? 'translate-x-5' : 'translate-x-0'
+              {/* Switch */}
+              <div className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 ${
+                tvWithSound ? 'bg-accent' : 'bg-white/20'
+              }`}>
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
+                  tvWithSound ? 'left-[22px]' : 'left-0.5'
                 }`} />
-              </button>
-            </div>
+              </div>
+            </button>
 
             <form onSubmit={handlePair} className="flex gap-2 pt-2">
               <input
