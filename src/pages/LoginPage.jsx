@@ -11,6 +11,18 @@ import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { toast } from 'sonner';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 
+// Lista de correos con suscripción activa (Beta)
+export const ALLOWED_EMAILS = [
+  'aliriopina04@gmail.com',
+  'aliriopina05@gmail.com',
+  'javiercardonaaudiovisual@gmail.com',
+  'alextascvers@gmail.com',
+  'bernabeite@gmail.com',
+  'camiloardila.1803@gmail.com',
+  'julian.10barrera@gmail.com',
+  'envairoqr@gmail.com'
+];
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -27,22 +39,45 @@ export default function LoginPage() {
       setSessionId(session);
       setHostSecret(admin);
       setIsAdminMode(true);
-      
+
       // Limpiar cualquier estado del reproductor local para no interferir
       usePlayerStore.getState().clearPlayerState();
-      
+
       import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
       // Redirigir directamente al dashboard
       navigate('/app/dashboard');
       return;
     }
 
-    // 2. Si no hay parámetros de admin y ya estamos autenticados, redirigir al reproductor de nuestro propio anfitrión
-    if (user || isAuthenticated) {
-      // Nos aseguramos de no estar en modo admin si entramos normal
-      useSettingsStore.getState().setIsAdminMode(false);
-      navigate('/app/dashboard');
-    }
+    const checkSubscriptionAndRedirect = async (currentUser) => {
+      // 2. Si no hay parámetros de admin y ya estamos autenticados, redirigir
+      if (currentUser || isAuthenticated) {
+        useSettingsStore.getState().setIsAdminMode(false);
+
+        const userEmail = currentUser?.email || '';
+        let isSubscribed = ALLOWED_EMAILS.length === 0 || ALLOWED_EMAILS.includes(userEmail.toLowerCase().trim());
+
+        // Si no está en la lista de beta, comprobamos en la base de datos
+        if (!isSubscribed && currentUser?.id) {
+          const { data } = await supabase
+            .from('subscriptions')
+            .select('status')
+            .eq('user_id', currentUser.id)
+            .eq('status', 'active')
+            .single();
+
+          if (data) isSubscribed = true;
+        }
+
+        if (isSubscribed) {
+          navigate('/app/dashboard');
+        } else {
+          navigate('/app/onboarding');
+        }
+      }
+    };
+
+    checkSubscriptionAndRedirect(user);
   }, [user, isAuthenticated, navigate]);
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -65,12 +100,6 @@ export default function LoginPage() {
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-
-    // Si la lista tiene elementos, validamos. Si está vacía, dejamos pasar a todos (o puedes bloquearlo por defecto).
-    if (ALLOWED_EMAILS.length > 0 && !ALLOWED_EMAILS.includes(email.toLowerCase().trim())) {
-      toast.error('Acceso denegado: Tu correo no está en la lista de probadores Beta.');
-      return;
-    }
 
     if (!captchaToken) {
       toast.error('Por favor, resuelve el Captcha para verificar que eres humano.');
@@ -115,7 +144,24 @@ export default function LoginPage() {
           }
 
           setUser(data.user);
-          navigate('/app/dashboard');
+          let isSubscribed = ALLOWED_EMAILS.length === 0 || ALLOWED_EMAILS.includes(data.user.email.toLowerCase().trim());
+
+          if (!isSubscribed) {
+            const { data: subData } = await supabase
+              .from('subscriptions')
+              .select('status')
+              .eq('user_id', data.user.id)
+              .eq('status', 'active')
+              .single();
+
+            if (subData) isSubscribed = true;
+          }
+
+          if (isSubscribed) {
+            navigate('/app/dashboard');
+          } else {
+            navigate('/app/onboarding');
+          }
         }
       }
     } catch (err) {

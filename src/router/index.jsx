@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage';
 
 import GuestPage from '../pages/GuestPage';
 import DashboardPage from '../pages/DashboardPage';
+import OnboardingPage from '../pages/OnboardingPage';
 import SettingsPage from '../pages/SettingsPage';
 import MetricsPage from '../pages/MetricsPage';
 import ActivitiesPage from '../pages/ActivitiesPage';
@@ -66,6 +67,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorBoundary />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'onboarding', element: <OnboardingPage /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'metrics', element: <MetricsPage /> },
       { path: 'activities', element: <ActivitiesPage /> },
