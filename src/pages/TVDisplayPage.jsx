@@ -55,17 +55,27 @@ export default function TVDisplayPage() {
   const getActivePlayer = () => activePlayerIndex.current === 1 ? player1Ref.current : player2Ref.current;
   const getBufferPlayer = () => activePlayerIndex.current === 1 ? player2Ref.current : player1Ref.current;
 
-  // 1. Escuchar eventos de emparejamiento por Supabase Realtime si NO hay sessionId
+  // 1. Escuchar canal de emparejamiento SIEMPRE (tanto para PAIRED como para UNPAIRED)
   useEffect(() => {
-    if (sessionId) return;
-
     const pairChannel = supabase.channel(`tv-pair-${tvPin}`);
 
     pairChannel
       .on('broadcast', { event: 'pairing_result' }, (e) => {
         if (e.payload?.type === 'PAIRED' && e.payload.sessionId) {
+          // Vinculación inicial
           localStorage.setItem('bq-tv-session-id', e.payload.sessionId);
           setSessionId(e.payload.sessionId);
+        } else if (e.payload?.type === 'UNPAIRED') {
+          // Host desvinculó esta TV: detener reproducción y volver a pantalla de vinculación
+          const activeP = getActivePlayer();
+          if (activeP && typeof activeP.pauseVideo === 'function') {
+            activeP.pauseVideo();
+          }
+          currentVideoIdRef.current = null;
+          setCurrentVideoId(null);
+          localStorage.removeItem('bq-tv-session-id');
+          setSessionId(null);
+          setStatus('Pantalla desvinculada por el anfitrión.');
         }
       })
       .subscribe();
@@ -73,7 +83,7 @@ export default function TVDisplayPage() {
     return () => {
       supabase.removeChannel(pairChannel);
     };
-  }, [tvPin, sessionId]);
+  }, [tvPin]);
 
   // 2. Conectar a sincronización de reproducción (Local + Supabase Realtime Internet) cuando exista sessionId
   useEffect(() => {
@@ -120,6 +130,17 @@ export default function TVDisplayPage() {
             currentVideoIdRef.current = null;
             setCurrentVideoId(null);
             setStatus('Anfitrión desconectado. Esperando reconexión...');
+          } else if (e.payload.type === 'UNPAIRED') {
+            // El anfitrión desvinculó esta pantalla: detener música y volver a pantalla de vinculación
+            const activeP = getActivePlayer();
+            if (activeP && typeof activeP.pauseVideo === 'function') {
+              activeP.pauseVideo();
+            }
+            currentVideoIdRef.current = null;
+            setCurrentVideoId(null);
+            localStorage.removeItem('bq-tv-session-id');
+            setSessionId(null);
+            setStatus('Pantalla desvinculada por el anfitrión.');
           } else {
             handleSync(e.payload);
           }

@@ -72,19 +72,28 @@ export function CastToTvModal({ isOpen, onClose }) {
     }
   };
 
-  const handleUnpair = (tvId) => {
-    // Transmitir desconexión a esa TV
+  const handleUnpair = async (tvId) => {
+    // Canal 1: tv-pair-{PIN} — para TVs que aún están en pantalla de vinculación o la escuchan siempre
     const pairChannel = supabase.channel(`tv-pair-${tvId}`);
-    pairChannel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await pairChannel.send({
-          type: 'broadcast',
-          event: 'pairing_result',
-          payload: { type: 'UNPAIRED' }
-        });
-        supabase.removeChannel(pairChannel);
-      }
+    await pairChannel.subscribe();
+    await pairChannel.send({
+      type: 'broadcast',
+      event: 'pairing_result',
+      payload: { type: 'UNPAIRED' }
     });
+    supabase.removeChannel(pairChannel);
+
+    // Canal 2: tv-sync-{sessionId} — para TVs ya sincronizadas que escuchan el canal de reproducción
+    if (activeSessionId) {
+      const syncChannel = supabase.channel(`tv-sync-${activeSessionId}`);
+      await syncChannel.subscribe();
+      await syncChannel.send({
+        type: 'broadcast',
+        event: 'tv_sync',
+        payload: { type: 'UNPAIRED', tvId }
+      });
+      supabase.removeChannel(syncChannel);
+    }
 
     const updatedList = pairedTvs.filter(t => t.id !== tvId);
     setPairedTvs(updatedList);
