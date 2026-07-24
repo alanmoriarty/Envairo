@@ -158,6 +158,19 @@ export default function TVDisplayPage() {
     function initPlayers() {
       if (player1Ref.current && player2Ref.current) return;
 
+      const disableCaptions = (player) => {
+        try {
+          if (player && typeof player.unloadModule === 'function') {
+            player.unloadModule('captions');
+            player.unloadModule('cc');
+          }
+          if (player && typeof player.setOption === 'function') {
+            player.setOption('captions', 'track', {});
+            player.setOption('cc', 'track', {});
+          }
+        } catch (e) {}
+      };
+
       const playerVars = {
         autoplay: 0,
         mute: 1,
@@ -169,11 +182,13 @@ export default function TVDisplayPage() {
         showinfo: 0,
         iv_load_policy: 3,
         cc_load_policy: 0,
+        cc_lang_pref: 'none',
         origin: window.location.origin
       };
 
       const onReady = (event) => {
         event.target.mute();
+        disableCaptions(event.target);
         readyCount++;
         if (readyCount === 2) {
           channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
@@ -182,6 +197,7 @@ export default function TVDisplayPage() {
 
       const onStateChange = (event) => {
         event.target.mute();
+        disableCaptions(event.target);
         const activeP = getActivePlayer();
         const bufferP = getBufferPlayer();
 
