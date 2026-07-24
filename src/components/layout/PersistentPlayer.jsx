@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useYouTubeSDK } from '../../hooks/useYouTubeSDK';
@@ -97,50 +97,107 @@ export function PersistentPlayer() {
       }
   };
 
+  // ── MediaSession API: elemento audio dummy para activar controles del sistema ──
+  // Android/iOS necesitan un <audio> real activo para mostrar controles en notificaciones
+  const dummyAudioRef = useRef(null);
+
+  useEffect(() => {
+    // Crear un audio dummy silenciado con un tono de 1Hz en loop
+    const audio = new Audio();
+    audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    audio.loop = true;
+    audio.volume = 0.001; // Prácticamente silencioso pero "activo" para el OS
+    audio.muted = false;
+    dummyAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      dummyAudioRef.current = null;
+    };
+  }, []);
+
+  // Sincronizar el audio dummy con el estado real de reproducción
+  useEffect(() => {
+    const audio = dummyAudioRef.current;
+    if (!audio) return;
+    if (isPlaying && currentTrack) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, currentTrack]);
+
   // Integración con MediaSession API para controles en segundo plano (notificaciones y pantalla de bloqueo)
-  React.useEffect(() => {
-    if ('mediaSession' in navigator) {
-      if (currentTrack) {
-        // Formatear portada
-        const artworkUrl = currentTrack.album?.images?.[0]?.url || currentTrack.albumArt || 'https://envairoqr.com/pwa-512x512.png';
-        
-        navigator.mediaSession.metadata = new window.MediaMetadata({
-          title: currentTrack.name || 'Pista desconocida',
-          artist: formatArtists(currentTrack.artists),
-          album: currentTrack.album?.name || 'Envairo',
-          artwork: [
-            { src: artworkUrl, sizes: '512x512', type: 'image/png' },
-            { src: artworkUrl, sizes: '256x256', type: 'image/png' },
-            { src: artworkUrl, sizes: '128x128', type: 'image/png' }
-          ]
-        });
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
 
-        // Configurar acciones (botones de la notificación)
-        navigator.mediaSession.setActionHandler('play', () => {
-          const state = usePlayerStore.getState();
-          if (state.youtubePlayer) state.youtubePlayer.playVideo();
-        });
-        navigator.mediaSession.setActionHandler('pause', () => {
-          const state = usePlayerStore.getState();
-          if (state.youtubePlayer) state.youtubePlayer.pauseVideo();
-        });
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-          if (controls?.skipNext) controls.skipNext();
-        });
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-          if (controls?.skipPrev) controls.skipPrev();
-        });
-      } else {
-        navigator.mediaSession.metadata = null;
-      }
-    }
-  }, [currentTrack, controls]);
+    if (currentTrack) {
+      const artworkUrl = currentTrack.album?.images?.[0]?.url || currentTrack.albumArt || 'https://envairoqr.com/pwa-512x512.png';
 
-  React.useEffect(() => {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: currentTrack.name || 'Pista desconocida',
+        artist: formatArtists(currentTrack.artists),
+        album: currentTrack.album?.name || 'Envairo',
+        artwork: [
+          { src: artworkUrl, sizes: '512x512', type: 'image/png' },
+          { src: artworkUrl, sizes: '256x256', type: 'image/png' },
+          { src: artworkUrl, sizes: '128x128', type: 'image/png' }
+        ]
+      });
+
+      // Re-registrar handlers con estado fresco en cada cambio de canción
+      navigator.mediaSession.setActionHandler('play', () => {
+        const state = usePlayerStore.getState();
+        if (state.youtubePlayer) state.youtubePlayer.playVideo();
+        dummyAudioRef.current?.play().catch(() => {});
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        const state = usePlayerStore.getState();
+        if (state.youtubePlayer) state.youtubePlayer.pauseVideo();
+        dummyAudioRef.current?.pause();
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        const next = usePlayerStore.getState().shiftQueue();
+        if (next) usePlayerStore.getState().playEngineTrack(next);
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        const prev = usePlayerStore.getState().prevQueue();
+        if (prev) usePlayerStore.getState().playEngineTrack(prev);
+      });
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined) {
+          const state = usePlayerStore.getState();
+          if (state.youtubePlayer) {
+            state.youtubePlayer.seekTo(details.seekTime, true);
+            state.setProgress(Math.round(details.seekTime * 1000));
+          }
+        }
+      });
+    } else {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
     }
-  }, [isPlaying]);
+  }, [currentTrack]);
+
+  // Mantener sincronizado el playbackState y la posición de la barra de progreso de la notificación
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+    if (isPlaying && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration / 1000,
+          playbackRate: 1,
+          position: Math.min(progress / 1000, duration / 1000)
+        });
+      } catch (e) {}
+    }
+  }, [isPlaying, progress, duration]);
 
   return (
     <>
