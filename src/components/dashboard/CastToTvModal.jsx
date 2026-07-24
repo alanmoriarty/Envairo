@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Monitor, X, Tv, Cast, QrCode, Trash2, CheckCircle2, Sparkles, Wifi } from 'lucide-react';
+import { Monitor, X, Tv, Cast, QrCode, Trash2, CheckCircle2, Sparkles, Wifi, Volume2, VolumeX } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +20,9 @@ export function CastToTvModal({ isOpen, onClose }) {
       return [];
     }
   });
+
+  // Preferencia de sonido para la TV remota
+  const [tvWithSound, setTvWithSound] = useState(false);
 
   if (!isOpen) return null;
 
@@ -43,7 +46,8 @@ export function CastToTvModal({ isOpen, onClose }) {
         payload: {
           type: 'PAIRED',
           sessionId: activeSessionId,
-          hostSecret
+          hostSecret,
+          tvWithSound
         }
       });
 
@@ -139,6 +143,28 @@ export function CastToTvModal({ isOpen, onClose }) {
                 <h3 className="font-bold text-white text-base">Vincular Smart TV (Vía Internet)</h3>
                 <p className="text-xs text-text-muted">Abre envairo.app/tv en tu Smart TV y copia el PIN</p>
               </div>
+            </div>
+
+            {/* Toggle de sonido en la TV */}
+            <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2.5">
+                {tvWithSound ? <Volume2 size={16} className="text-accent" /> : <VolumeX size={16} className="text-text-muted" />}
+                <div>
+                  <p className="text-xs font-semibold text-white">Reproducir sonido en la TV</p>
+                  <p className="text-[10px] text-text-muted">Por defecto la TV transmite sin sonido (solo video)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTvWithSound(v => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                  tvWithSound ? 'bg-accent' : 'bg-white/15'
+                }`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                  tvWithSound ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
             </div>
 
             <form onSubmit={handlePair} className="flex gap-2 pt-2">

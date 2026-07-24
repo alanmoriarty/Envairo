@@ -40,6 +40,19 @@ export default function TVDisplayPage() {
     return localStorage.getItem('bq-tv-session-id') || null;
   });
 
+  // Sonido en la pantalla TV (por URL ?sound=1 o enviado por el anfitrión en el pairing)
+  const [tvWithSound, setTvWithSound] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sound') === '1') return true;
+    try {
+      return localStorage.getItem('bq-tv-sound') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const tvWithSoundRef = useRef(tvWithSound);
+  useEffect(() => { tvWithSoundRef.current = tvWithSound; }, [tvWithSound]);
+
   const [tvPin] = useState(() => generate6DigitPin());
   const [status, setStatus] = useState('Verificando disponibilidad...');
   const [currentVideoId, setCurrentVideoId] = useState(null);
@@ -65,6 +78,10 @@ export default function TVDisplayPage() {
           // Vinculación inicial
           localStorage.setItem('bq-tv-session-id', e.payload.sessionId);
           setSessionId(e.payload.sessionId);
+          // Leer preferencia de sonido enviada por el anfitrión
+          const withSound = !!e.payload.tvWithSound;
+          localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
+          setTvWithSound(withSound);
         } else if (e.payload?.type === 'UNPAIRED') {
           // Host desvinculó esta TV: detener reproducción y volver a pantalla de vinculación
           const activeP = getActivePlayer();
@@ -208,7 +225,12 @@ export default function TVDisplayPage() {
       };
 
       const onReady = (event) => {
-        event.target.mute();
+        if (tvWithSoundRef.current) {
+          event.target.unMute();
+          event.target.setVolume(100);
+        } else {
+          event.target.mute();
+        }
         disableCaptions(event.target);
         readyCount++;
         if (readyCount === 2) {
@@ -217,7 +239,12 @@ export default function TVDisplayPage() {
       };
 
       const onStateChange = (event) => {
-        event.target.mute();
+        if (tvWithSoundRef.current) {
+          event.target.unMute();
+          event.target.setVolume(100);
+        } else {
+          event.target.mute();
+        }
         disableCaptions(event.target);
         const activeP = getActivePlayer();
         const bufferP = getBufferPlayer();

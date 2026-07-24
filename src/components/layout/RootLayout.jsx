@@ -55,7 +55,8 @@ export function RootLayout() {
           payload: {
             type: 'PAIRED',
             sessionId: activeSessionId,
-            hostSecret
+            hostSecret,
+            tvWithSound: false // El QR vincula sin sonido por defecto; se puede cambiar en el modal
           }
         });
 
