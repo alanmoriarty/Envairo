@@ -144,6 +144,9 @@ export default function TVDisplayPage() {
             }
             setStatus('Anfitrión desconectado. Esperando reconexión...');
           } else if (e.payload.type === 'UNPAIRED') {
+            // Validar que el mensaje de desvinculación sea específicamente para esta TV
+            if (e.payload.tvId && e.payload.tvId !== tvPin) return;
+
             // El anfitrión desvinculó esta pantalla: detener música y volver a pantalla de vinculación
             const activeP = getActivePlayer();
             if (activeP && typeof activeP.pauseVideo === 'function') {
