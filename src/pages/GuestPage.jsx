@@ -575,14 +575,14 @@ export default function GuestPage() {
         </div>
       )}
 
-      {/* Botón de Instalar App */}
-      <div className="mt-6">
+      {/* Botón de Instalar App (Oculto temporalmente) */}
+      {/* <div className="mt-6">
         <InstallAppButton
           variant="custom"
           text={lang === 'es' ? 'Descarga Nuestra App' : 'Download Our App'}
           className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
         />
-      </div>
+      </div> */}
 
       {/* Bottom Banner Ad */}
       <div className="mt-8">
@@ -602,12 +602,12 @@ function ClosedScreen() {
         {t('guest.closed_sub')}
       </p>
       
-      <Link 
+      {/* <Link 
         to="/" 
         className="btn-primary py-3 px-8 rounded-xl font-bold shadow-glow text-lg mb-8"
       >
         {lang === 'es' ? '¡Conviértete en anfitrión!' : 'Become a host!'}
-      </Link>
+      </Link> */}
 
       <div className="w-20 h-1 rounded-full bg-accent/30 mx-auto mb-6" />
       <div>

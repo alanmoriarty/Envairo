@@ -118,7 +118,7 @@ const ES = {
     requests_empty_sub: 'Cuando los invitados envíen canciones aparecerán aquí',
     approve: 'Aprobar',
     reject: 'Rechazar',
-    playlists_title: 'Tus Playlists',
+    playlists_title: 'Tus Playlists de Youtube',
     add_song: 'Añadir canción',
     requested_by: 'por',
     now_playing: 'Reproduciendo',
