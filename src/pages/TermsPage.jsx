@@ -43,8 +43,9 @@ export default function TermsPage() {
               Nuestra plataforma interactúa con servicios de terceros. Al usar envAIro, también aceptas los Términos de Servicio de:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1 text-text-secondary">
-              <li><a href="https://www.spotify.com/legal/end-user-agreement/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Spotify</a></li>
+              <li><a href="https://www.apple.com/legal/internet-services/itunes/es/terms.html" target="_blank" rel="noreferrer" className="text-primary hover:underline">iTunes</a></li>
               <li><a href="https://www.youtube.com/t/terms" target="_blank" rel="noreferrer" className="text-primary hover:underline">YouTube</a></li>
+              <li><a href="https://www.deezer.com/legal/terms-and-conditions" target="_blank" rel="noreferrer" className="text-primary hover:underline">Deezer</a></li>
             </ul>
           </section>
 

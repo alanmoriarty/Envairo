@@ -124,8 +124,6 @@ export default function TVDisplayPage() {
           if (activeP && typeof activeP.pauseVideo === 'function') {
             activeP.pauseVideo();
           }
-          currentVideoIdRef.current = null;
-          setCurrentVideoId(null);
           setStatus('Anfitrión desconectado. Esperando reconexión...');
         }
       }
@@ -144,8 +142,6 @@ export default function TVDisplayPage() {
             if (activeP && typeof activeP.pauseVideo === 'function') {
               activeP.pauseVideo();
             }
-            currentVideoIdRef.current = null;
-            setCurrentVideoId(null);
             setStatus('Anfitrión desconectado. Esperando reconexión...');
           } else if (e.payload.type === 'UNPAIRED') {
             // El anfitrión desvinculó esta pantalla: detener música y volver a pantalla de vinculación

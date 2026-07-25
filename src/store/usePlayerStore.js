@@ -425,18 +425,23 @@ export const usePlayerStore = create(
             }
 
             // Cargar el nuevo video
-            const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
-            console.log('Final YouTube ID to play:', videoIdToPlay);
-            set({ currentYtId: videoIdToPlay });
-
-            if (autoplay) {
-              set({ isPlaying: true });
-              state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+            if (videoIdToPlay && videoIdToPlay !== 'null' && videoIdToPlay !== 'undefined' && videoIdToPlay.length === 11) {
+              set({ currentYtId: videoIdToPlay });
+              const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
+              if (autoplay) {
+                 state.youtubePlayer?.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+              } else {
+                 state.youtubePlayer?.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+              }
             } else {
-              state.youtubePlayer.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
-            }
-
-            // Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
+              import('sonner').then(({ toast }) => toast.error('No se pudo encontrar video de respaldo. Saltando...'));
+              const nextTrack = get().shiftQueue();
+              if (nextTrack) {
+                get().playEngineTrack(nextTrack);
+              } else {
+                set({ currentTrack: null, isPlaying: false });
+              }
+            }// Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
             try {
               const { useSettingsStore } = await import('./useSettingsStore');
               const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
