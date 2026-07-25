@@ -276,6 +276,7 @@ export default function TVDisplayPage() {
       const onError = (event) => {
         console.warn('Error en reproductor esclavo:', event.data);
         setCurrentVideoId(null);
+        currentVideoIdRef.current = null; // Fix: resetear la ref para forzar la recarga en el próximo SYNC
         setStatus('Buscando alternativa...');
       };
 
@@ -409,6 +410,7 @@ export default function TVDisplayPage() {
     localStorage.removeItem('bq-tv-session-id');
     setSessionId(null);
     setCurrentVideoId(null);
+    currentVideoIdRef.current = null;
   };
 
   return (
