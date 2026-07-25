@@ -403,6 +403,10 @@ export const usePlayerStore = create(
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
+        
+        const execId = Date.now() + Math.random();
+        set({ _currentPlayExecId: execId });
+
         get().queueAddToHistory(track);
         const state = get();
         if (state.playbackEngine === 'youtube') {
@@ -411,6 +415,12 @@ export const usePlayerStore = create(
             // Solo pausamos el estado si no estamos reproduciendo, pero la transición maneja esto internamente.
 
             const { videoIdToPlay, isSpotifyTrack } = await get().resolveYouTubeVideoId(track, forceMode);
+
+            // Evitar condición de carrera: si el usuario saltó rápido de canción mientras resolvíamos esta
+            if (get()._currentPlayExecId !== execId) {
+              console.warn("Se ignoró playEngineTrack porque hay una petición más reciente.");
+              return;
+            }
 
             // Validar estrictamente el ID antes de enviarlo al reproductor (YouTube requiere EXACTAMENTE 11 caracteres)
             if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack) || (track.source === 'youtube' && get().failedYouTubeIds.includes(track.id))) {
