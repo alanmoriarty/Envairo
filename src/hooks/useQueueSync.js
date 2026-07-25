@@ -349,6 +349,10 @@ export function useQueueSync() {
                }
              } catch (err) {
                console.error("Error al tomar control de la sesión:", err);
+             } finally {
+               // Fallback / Garantía: Asegurar que el ID de instancia se actualice en la base de datos 
+               // para evitar que este mismo dispositivo se auto-expulse al recibir cambios.
+               await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
              }
           }
           await supabase.rpc('sync_host_config', {
