@@ -10,6 +10,7 @@ export function useQueueSync() {
   const sessionId = authStore.user?.id || useSettingsStore((state) => state.sessionId);
   const isRemoteUpdate = useRef(false);
   const syncTimeoutRef = useRef(null);
+  const isTakingOverRef = useRef(false);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -128,7 +129,9 @@ export function useQueueSync() {
           const activeInstanceId = getInstanceId();
           const { user, logout } = useAuthStore.getState();
           const { isAdminMode } = useSettingsStore.getState();
-          let updates = {};
+
+          // Ignorar eventos de kickout si estamos en medio de tomar el control
+          if (isTakingOverRef.current) return;
 
           // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
           if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
@@ -325,6 +328,8 @@ export function useQueueSync() {
 
       const { mode, alwaysAvailable, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, cooldownEnabled, cooldownMinutes, tableCount, requestsPerHour, requestsPerGuest } = useSettingsStore.getState();
       const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
+
+      isTakingOverRef.current = true;
 
       const activeInstanceId = getInstanceId();
       const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).maybeSingle();
