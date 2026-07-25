@@ -38,8 +38,8 @@ export default function LoginPage() {
       usePlayerStore.getState().clearPlayerState();
 
       import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
-      // Redirigir directamente al dashboard
-      navigate('/app/dashboard');
+      // Redirigir directamente al dashboard, limpiando el secreto del historial para evitar fugas
+      navigate('/app/dashboard', { replace: true });
       return;
     }
 

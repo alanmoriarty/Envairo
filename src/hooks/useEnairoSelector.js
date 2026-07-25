@@ -133,10 +133,6 @@ export function useEnairoSelector() {
 
       const { tracksToAdd = [], actions = [], reasoning } = data;
 
-      if (reasoning) {
-        console.log("EnvAIro Selector Reasoning:", reasoning);
-      }
-
       // Ejecutar Acciones (Reorder / Remove)
       if (actions.length > 0) {
         actions.forEach(action => {
@@ -199,9 +195,7 @@ export function useEnairoSelector() {
 
         const nonRepeatedTracks = foundTracks.filter(track => {
           const isDuplicate = isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentTodayHistory, currentQueueState);
-          if (isDuplicate) {
-            console.log(`[envAIro Selector] Canción omitida por ya haber sonado hoy o estar en cola: ${track.name} - ${track.artists}`);
-          }
+          
           return !isDuplicate;
         });
 
@@ -286,10 +280,6 @@ export function useEnairoSelector() {
       if (error) throw error;
 
       const { actions = [], reasoning, tracksToAdd = [] } = data;
-
-      if (reasoning) {
-        console.log("envAIro Auto-Reorder Reasoning:", reasoning);
-      }
 
       let removedCount = 0;
 
@@ -392,10 +382,6 @@ export function useEnairoSelector() {
 
       if (error) throw error;
       const { tracksToAdd = [], actions = [], reasoning } = data;
-
-      if (reasoning) {
-        console.log("envAIro Sweep Reasoning:", reasoning);
-      }
 
       if (actions.length > 0) {
         actions.forEach(action => {
