@@ -364,23 +364,31 @@ export default function TVDisplayPage() {
         return;
       }
 
-      // Sincronizar inmediatamente el estado de reproducción/pausa con el anfitrión
+      // 1. Ajustar el tiempo (seekTo) si hay un desvío, antes de play/pause para evitar estado BUFFERING
+      let shouldSeek = false;
+      if (typeof data.time === 'number' && !isTransitioning.current) {
+        const playerState = activeP.getPlayerState();
+        const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
+        
+        // Forzar seek en SYNC (directo del host), o en SYNC_TIME si no está en buffer
+        if (data.type === 'SYNC' || (!isBuffering && data.type === 'SYNC_TIME')) {
+          const currentTime = activeP.getCurrentTime();
+          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 2.0) {
+            shouldSeek = true;
+          }
+        }
+      }
+
+      if (shouldSeek) {
+        activeP.seekTo(data.time, true);
+      }
+
+      // 2. Sincronizar inmediatamente el estado de reproducción/pausa con el anfitrión
       if (typeof data.isPlaying === 'boolean') {
         if (!data.isPlaying && isCurrentlyPlaying) {
           activeP.pauseVideo();
         } else if (data.isPlaying && !isCurrentlyPlaying) {
           activeP.playVideo();
-        }
-      }
-
-      if ((data.type === 'SYNC_TIME' || data.type === 'SYNC') && typeof data.time === 'number' && !isTransitioning.current) {
-        const playerState = activeP.getPlayerState();
-        // Solo ajustar seekTo si el desvío es mayor a 3.0 segundos y el reproductor no está en buffer
-        if (playerState !== window.YT.PlayerState.BUFFERING) {
-          const currentTime = activeP.getCurrentTime();
-          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 3.0) {
-            activeP.seekTo(data.time, true);
-          }
         }
       }
     } catch (err) {
