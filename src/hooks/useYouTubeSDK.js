@@ -202,33 +202,18 @@ export function useYouTubeSDK() {
 
       // Virtual Player Proxy para usePlayerStore
       const virtualPlayer = {
-        playVideo: () => {
-          if (isTransitioning.current) getBufferPlayer()?.playVideo();
-          else getActivePlayer()?.playVideo();
-        },
-        pauseVideo: () => {
-          if (isTransitioning.current) getBufferPlayer()?.pauseVideo();
-          else getActivePlayer()?.pauseVideo();
-        },
-        seekTo: (s, a) => { 
-          getActivePlayer()?.seekTo(s, a); 
-          getBufferPlayer()?.seekTo(s, a); 
-        },
+        playVideo: () => getActivePlayer()?.playVideo(),
+        pauseVideo: () => getActivePlayer()?.pauseVideo(),
+        seekTo: (s, a) => { getActivePlayer()?.seekTo(s, a); getBufferPlayer()?.seekTo(s, a); },
         setVolume: (v) => { player1Ref.current?.setVolume(v); player2Ref.current?.setVolume(v); },
-        getVolume: () => isTransitioning.current ? getBufferPlayer()?.getVolume() : getActivePlayer()?.getVolume(),
-        getPlayerState: () => isTransitioning.current ? getBufferPlayer()?.getPlayerState() : getActivePlayer()?.getPlayerState(),
-        getCurrentTime: () => isTransitioning.current ? getBufferPlayer()?.getCurrentTime() : getActivePlayer()?.getCurrentTime(),
-        getDuration: () => isTransitioning.current ? getBufferPlayer()?.getDuration() : getActivePlayer()?.getDuration(),
-        stopVideo: () => {
-          getActivePlayer()?.stopVideo();
-          getBufferPlayer()?.stopVideo();
-        },
+        getVolume: () => getActivePlayer()?.getVolume(),
+        getPlayerState: () => getActivePlayer()?.getPlayerState(),
+        getCurrentTime: () => getActivePlayer()?.getCurrentTime(),
+        getDuration: () => getActivePlayer()?.getDuration(),
+        stopVideo: () => getActivePlayer()?.stopVideo(),
         unloadModule: (m) => getActivePlayer()?.unloadModule(m),
         destroy: () => { player1Ref.current?.destroy(); player2Ref.current?.destroy(); },
-        cueVideoById: (args) => {
-          if (isTransitioning.current) getBufferPlayer()?.cueVideoById(args);
-          else getActivePlayer()?.cueVideoById(args);
-        },
+        cueVideoById: (args) => getActivePlayer()?.cueVideoById(args),
         
         loadVideoById: (args) => {
           // Evitar recargar si es el mismo video

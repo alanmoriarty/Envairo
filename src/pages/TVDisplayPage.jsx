@@ -371,9 +371,11 @@ export default function TVDisplayPage() {
         const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
         
         // Forzar seek en SYNC (directo del host), o en SYNC_TIME si no está en buffer
+        // Reducimos la tolerancia a 0.5s para asegurar que todas las pantallas esclavas
+        // estén sincronizadas casi perfectamente "entre sí".
         if (data.type === 'SYNC' || (!isBuffering && data.type === 'SYNC_TIME')) {
           const currentTime = activeP.getCurrentTime();
-          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 2.0) {
+          if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
             shouldSeek = true;
           }
         }
