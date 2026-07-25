@@ -52,6 +52,13 @@ export const useAuthStore = create(
         localStorage.removeItem('bq-player');
         localStorage.removeItem('bq-settings');
         localStorage.removeItem('bq-auth');
+        
+        // Asegurar que el token de Supabase se elimine localmente, incluso si signOut falló
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        });
       },
     }),
     { 
