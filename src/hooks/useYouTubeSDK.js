@@ -254,7 +254,8 @@ export function useYouTubeSDK() {
         showinfo: 0,
         iv_load_policy: 3,
         cc_load_policy: 0, 
-        mute: 0 
+        mute: 0,
+        origin: window.location.origin
       };
 
       let readyCount = 0;
