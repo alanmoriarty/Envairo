@@ -31,14 +31,14 @@ export const useAuthStore = create(
               p_secret: hostSecret, 
               p_updates: { active: false, secret: 'logged_out' } 
             });
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: 'local' });
           } catch (err) {
             console.error(err);
           }
         } else {
           try {
             const { supabase } = await import('../lib/supabase');
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: 'local' });
           } catch (e) {
             console.error(e);
           }
