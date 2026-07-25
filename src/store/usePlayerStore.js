@@ -413,8 +413,9 @@ export const usePlayerStore = create(
             const { videoIdToPlay, isSpotifyTrack } = await get().resolveYouTubeVideoId(track, forceMode);
 
             // Validar estrictamente el ID antes de enviarlo al reproductor (YouTube requiere EXACTAMENTE 11 caracteres)
-            if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack)) {
+            if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack) || (track.source === 'youtube' && get().failedYouTubeIds.includes(track.id))) {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
+              await new Promise(r => setTimeout(r, 1000));
               const nextTrack = get().shiftQueue();
               if (nextTrack) {
                 get().playEngineTrack(nextTrack);
@@ -435,6 +436,7 @@ export const usePlayerStore = create(
               }
             } else {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar video de respaldo. Saltando...'));
+              await new Promise(r => setTimeout(r, 1000));
               const nextTrack = get().shiftQueue();
               if (nextTrack) {
                 get().playEngineTrack(nextTrack);

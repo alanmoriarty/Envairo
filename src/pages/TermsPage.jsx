@@ -21,7 +21,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-3">2. Descripción del Servicio</h2>
             <p>
-              envAIro es una plataforma de música colaborativa que permite a los usuarios sincronizar listas de reproducción y gestionar colas musicales en tiempo real utilizando las APIs públicas de Spotify y YouTube.
+              envAIro es una rockola social impulsada por IA, que permite a los usuarios realizar peticiones de música en tiempo real.
             </p>
           </section>
 
