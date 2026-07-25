@@ -108,6 +108,14 @@ export default function GuestPage() {
   const cooldownMinutes = stateData.cooldown_minutes ?? sessionConfig?.cooldown_minutes ?? 10;
   const requestsPerHour = stateData.requests_per_hour ?? sessionConfig?.requests_per_hour ?? 15;
 
+  useEffect(() => {
+    if (eventName) {
+      document.title = `${eventName} | envAIro`;
+    } else {
+      document.title = 'envAIro | Pide tu Canción';
+    }
+  }, [eventName]);
+
   const [identifier, setIdentifier] = useState('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
