@@ -134,7 +134,7 @@ export default function SettingsPage() {
   } = useSettingsStore();
   const store = useSettingsStore();
   const { t } = useTranslation();
-  
+
   const user = useAuthStore(s => s.user);
   const userEmail = user?.email?.toLowerCase() || '';
   const ALLOWED_EMAILS = [
@@ -237,180 +237,180 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('simple')}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
-            Configuración Simple
+            Configuración General
           </button>
           <button
             onClick={() => setActiveTab('custom')}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
-            Configuración Personalizada
+            Filtros Personalizados
           </button>
         </div>
       </div>
 
       {activeTab === 'simple' && (
         <div className="space-y-6 animate-fade-in">
-        <section className="card p-5 space-y-4 animate-fade-in">
-          <h2 className="font-bold text-text-primary">General</h2>
+          <section className="card p-5 space-y-4 animate-fade-in">
+            <h2 className="font-bold text-text-primary">Visualización</h2>
 
-          <div className="mb-4">
-            <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descarga Nuestra App!" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
-            <input
-              type="text"
-              value={store.eventName}
-              onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
-              placeholder="Ej: La fiesta de Don Julian"
-              maxLength={40}
-              className="input-field w-full"
-            />
-            <p className="text-xs text-text-muted mt-1.5">
-              Se mostrará a tus invitados en la página web: "Pide tu canción para..."
-            </p>
-          </div>
-          <div className="border-t border-white/5 pt-4 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <MonitorPlay size={16} className="text-text-muted" />
-              <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+            <div className="mb-4">
+              <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descarga Nuestra App!" />
             </div>
 
-            <p className="text-xs text-text-muted mb-2">
-              Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
-            </p>
-
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
-              <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
-            </div>
-
-            {visualizerEnabled && (
-              <div className="pt-2 animate-fade-in space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="block text-sm font-semibold text-text-primary">Enlace de YouTube (Video o Playlist)</label>
-                  <span className={`text-xs font-mono ${visualizerUrl.length >= MAX_URL_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
-                    {visualizerUrl.length} / {MAX_URL_LENGTH}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  maxLength={MAX_URL_LENGTH}
-                  value={visualizerUrl}
-                  onChange={(e) => setVisualizerUrl(sanitizeUrl(e.target.value))}
-                  placeholder="https://www.youtube.com/watch?v=... o &list=..."
-                  className="input-field w-full text-sm font-mono placeholder:font-sans"
-                />
-                <p className="text-[10px] text-text-muted mt-1.5">
-                  Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. envAIro la reproducirá en bucle.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* General filters */}
-        <section className="card p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield size={16} className="text-accent" />
-            <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
             <div>
-              <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
-              <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
+              <input
+                type="text"
+                value={store.eventName}
+                onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
+                placeholder="Ej: La fiesta de Don Julian"
+                maxLength={40}
+                className="input-field w-full"
+              />
+              <p className="text-xs text-text-muted mt-1.5">
+                Se mostrará a tus invitados en la página web: "Pide tu canción para..."
+              </p>
             </div>
-            <select
-              value={repeatCooldown}
-              onChange={(e) => setRepeatCooldown(Number(e.target.value))}
-              className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
-            >
-              <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
-              <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
-              <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
-              <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
-              <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
-            </select>
-          </div>
+            <div className="border-t border-white/5 pt-4 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <MonitorPlay size={16} className="text-text-muted" />
+                <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+              </div>
 
-          <div className="border-t border-white/5 pt-4">
-            <Toggle
-              checked={cooldownEnabled}
-              onChange={setCooldownEnabled}
-              label={t('settings.cooldown_title')}
-              description={t('settings.cooldown_desc')}
-            />
-            {cooldownEnabled && (
-              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
+              <p className="text-xs text-text-muted mb-2">
+                Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
+              </p>
+
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
+                <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
+              </div>
+
+              {visualizerEnabled && (
+                <div className="pt-2 animate-fade-in space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-semibold text-text-primary">Enlace de YouTube (Video o Playlist)</label>
+                    <span className={`text-xs font-mono ${visualizerUrl.length >= MAX_URL_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                      {visualizerUrl.length} / {MAX_URL_LENGTH}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={MAX_URL_LENGTH}
+                    value={visualizerUrl}
+                    onChange={(e) => setVisualizerUrl(sanitizeUrl(e.target.value))}
+                    placeholder="https://www.youtube.com/watch?v=... o &list=..."
+                    className="input-field w-full text-sm font-mono placeholder:font-sans"
+                  />
+                  <p className="text-[10px] text-text-muted mt-1.5">
+                    Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. envAIro la reproducirá en bucle.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* General filters */}
+          <section className="card p-5 space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield size={16} className="text-accent" />
+              <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
+              <div>
+                <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
+                <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
+              </div>
+              <select
+                value={repeatCooldown}
+                onChange={(e) => setRepeatCooldown(Number(e.target.value))}
+                className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+              >
+                <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
+                <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
+                <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
+                <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
+                <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
+              </select>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <Toggle
+                checked={cooldownEnabled}
+                onChange={setCooldownEnabled}
+                label={t('settings.cooldown_title')}
+                description={t('settings.cooldown_desc')}
+              />
+              {cooldownEnabled && (
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
+                  <div>
+                    <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={cooldownMinutes}
+                    onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
+                    className="input-field w-24 text-center"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
                 </div>
                 <input
                   type="number"
                   min="1"
-                  max="120"
-                  value={cooldownMinutes}
-                  onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
-                  className="input-field w-24 text-center"
+                  max="100"
+                  value={requestsPerHour}
+                  onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
+                  className="input-field w-full sm:w-24 text-center"
                 />
               </div>
-            )}
-          </div>
-
-          <div className="border-t border-white/5 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
-                <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
-              </div>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                value={requestsPerHour}
-                onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
-                className="input-field w-full sm:w-24 text-center"
-              />
             </div>
-          </div>
 
-          <div className="border-t border-white/5 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
-                <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={requestsPerGuest}
+                  onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className="input-field w-full sm:w-24 text-center"
+                />
               </div>
-              <input
-                type="number"
-                min="0"
-                max="20"
-                value={requestsPerGuest}
-                onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="input-field w-full sm:w-24 text-center"
-              />
             </div>
-          </div>
 
-          <div className="border-t border-white/5 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
-                <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={tableCount}
+                  onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className="input-field w-full sm:w-24 text-center"
+                />
               </div>
-              <input
-                type="number"
-                min="0"
-                max="50"
-                value={tableCount}
-                onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="input-field w-full sm:w-24 text-center"
-              />
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
 
       )}
 
