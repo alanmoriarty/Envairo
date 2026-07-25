@@ -46,10 +46,33 @@ export function useTVBroadcast() {
       }
     };
 
-    // Escuchar peticiones de sincronización de esclavas recién conectadas
+    // Escuchar mensajes de las TVs esclavas (Local)
     channelRef.current.onmessage = (e) => {
       if (e.data?.type === 'REQUEST_SYNC') {
         sendCurrentSync();
+      } else if (e.data?.type === 'SLAVE_ERROR') {
+        handleSlaveError(e.data.videoId);
+      }
+    };
+
+    // Escuchar mensajes de las TVs esclavas (Internet)
+    if (sbChannelRef.current) {
+      sbChannelRef.current.on('broadcast', { event: 'tv_sync' }, (e) => {
+        if (e.payload?.type === 'REQUEST_SYNC') {
+          sendCurrentSync();
+        } else if (e.payload?.type === 'SLAVE_ERROR') {
+          handleSlaveError(e.payload.videoId);
+        }
+      });
+    }
+
+    const handleSlaveError = (failedVideoId) => {
+      const state = usePlayerStore.getState();
+      if (state.currentYtId === failedVideoId && state.currentTrack) {
+        console.warn(`Una TV esclava reportó error con el video ${failedVideoId}. Forzando alternativa...`);
+        state.addFailedYouTubeId(failedVideoId);
+        state.playEngineTrack(state.currentTrack, state.progress, null, 1);
+        import('sonner').then(({ toast }) => toast.error('TV no pudo reproducir el video. Buscando alternativa...'));
       }
     };
 

@@ -275,9 +275,32 @@ export default function TVDisplayPage() {
 
       const onError = (event) => {
         console.warn('Error en reproductor esclavo:', event.data);
+        const failedId = currentVideoIdRef.current;
+        
+        const bufferP = getBufferPlayer();
+        if (isTransitioning.current && event.target === bufferP) {
+          isTransitioning.current = false;
+        }
+
+        const activeP = getActivePlayer();
+        if (activeP && typeof activeP.pauseVideo === 'function') {
+          activeP.pauseVideo();
+        }
+
         setCurrentVideoId(null);
-        currentVideoIdRef.current = null; // Fix: resetear la ref para forzar la recarga en el próximo SYNC
+        currentVideoIdRef.current = null;
         setStatus('Buscando alternativa...');
+
+        // Notificar al anfitrión (Host) para que busque otra alternativa si es un error fatal
+        if (event.data === 150 || event.data === 101 || event.data === 100) {
+          const payload = { type: 'SLAVE_ERROR', videoId: failedId };
+          if (channelRef.current) {
+            channelRef.current.postMessage(payload);
+          }
+          if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+            sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload }).catch(() => {});
+          }
+        }
       };
 
       player1Ref.current = new window.YT.Player('tv-youtube-player-1', {
