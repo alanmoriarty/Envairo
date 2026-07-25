@@ -373,7 +373,7 @@ export default function TVDisplayPage() {
         }
       }
 
-      if (data.type === 'SYNC_TIME' && data.time > 0 && !isTransitioning.current) {
+      if ((data.type === 'SYNC_TIME' || data.type === 'SYNC') && typeof data.time === 'number' && !isTransitioning.current) {
         const playerState = activeP.getPlayerState();
         // Solo ajustar seekTo si el desvío es mayor a 3.0 segundos y el reproductor no está en buffer
         if (playerState !== window.YT.PlayerState.BUFFERING) {
