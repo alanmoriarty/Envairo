@@ -108,7 +108,7 @@ export function RootLayout() {
   useEffect(() => {
     // Autocorrección blindada: Si el sessionId se desincroniza (por ej. Zustand rehidratando), lo forzamos de vuelta
     if (user?.id && !isAdminMode && sessionId !== user.id) {
-      setSessionId(user.id);
+      useSettingsStore.getState().setSessionId(user.id);
     }
   }, [user?.id, isAdminMode, sessionId]);
 
