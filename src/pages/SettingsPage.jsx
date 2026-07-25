@@ -249,6 +249,7 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === 'simple' && (
+        <div className="space-y-6 animate-fade-in">
         <section className="card p-5 space-y-4 animate-fade-in">
           <h2 className="font-bold text-text-primary">General</h2>
 
@@ -309,111 +310,114 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* General filters */}
+        <section className="card p-5 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Shield size={16} className="text-accent" />
+            <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
+            <div>
+              <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
+              <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
+            </div>
+            <select
+              value={repeatCooldown}
+              onChange={(e) => setRepeatCooldown(Number(e.target.value))}
+              className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+            >
+              <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
+              <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
+              <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
+              <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
+              <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
+            </select>
+          </div>
+
+          <div className="border-t border-white/5 pt-4">
+            <Toggle
+              checked={cooldownEnabled}
+              onChange={setCooldownEnabled}
+              label={t('settings.cooldown_title')}
+              description={t('settings.cooldown_desc')}
+            />
+            {cooldownEnabled && (
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
+                <div>
+                  <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={cooldownMinutes}
+                  onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
+                  className="input-field w-24 text-center"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/5 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
+                <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
+              </div>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={requestsPerHour}
+                onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
+                className="input-field w-full sm:w-24 text-center"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
+                <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="20"
+                value={requestsPerGuest}
+                onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
+                className="input-field w-full sm:w-24 text-center"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
+                <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                value={tableCount}
+                onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
+                className="input-field w-full sm:w-24 text-center"
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+
       )}
 
       {activeTab === 'custom' && (
         <div className="space-y-6 animate-fade-in">
           {/* EnvAIro Selector (IA) section removed and moved to Dashboard modal */}
-          {/* General filters */}
-          <section className="card p-5 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield size={16} className="text-accent" />
-              <h2 className="font-bold text-text-primary">{t('settings.filters_title')}</h2>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
-              <div>
-                <p className="font-semibold text-text-primary text-sm">{t('settings.repeat_filter')}</p>
-                <p className="text-xs text-text-muted mt-0.5">{t('settings.repeat_filter_desc')}</p>
-              </div>
-              <select
-                value={repeatCooldown}
-                onChange={(e) => setRepeatCooldown(Number(e.target.value))}
-                className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
-              >
-                <option value="-1" className="bg-bg-root text-white">{t('settings.repeat_always')}</option>
-                <option value="30" className="bg-bg-root text-white">{t('settings.repeat_30')}</option>
-                <option value="60" className="bg-bg-root text-white">{t('settings.repeat_60')}</option>
-                <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
-                <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
-              </select>
-            </div>
-
-            <div className="border-t border-white/5 pt-4">
-              <Toggle
-                checked={cooldownEnabled}
-                onChange={setCooldownEnabled}
-                label={t('settings.cooldown_title')}
-                description={t('settings.cooldown_desc')}
-              />
-              {cooldownEnabled && (
-                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up sm:pl-12 pl-2">
-                  <div>
-                    <label className="text-sm font-medium text-text-primary">{t('settings.cooldown_minutes')}</label>
-                  </div>
-                  <input
-                    type="number"
-                    min="1"
-                    max="120"
-                    value={cooldownMinutes}
-                    onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
-                    className="input-field w-24 text-center"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-white/5 pt-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_hour_title')}</label>
-                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_hour_desc')}</p>
-                </div>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={requestsPerHour}
-                  onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
-                  className="input-field w-full sm:w-24 text-center"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-white/5 pt-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <label className="text-sm font-semibold text-text-primary">{t('settings.req_per_guest_title')}</label>
-                  <p className="text-xs text-text-muted mt-0.5">{t('settings.req_per_guest_desc')}</p>
-                </div>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={requestsPerGuest}
-                  onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
-                  className="input-field w-full sm:w-24 text-center"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-white/5 pt-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <label className="text-sm font-semibold text-text-primary">{t('settings.table_count_title')}</label>
-                  <p className="text-xs text-text-muted mt-0.5">{t('settings.table_count_desc')}</p>
-                </div>
-                <input
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={tableCount}
-                  onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
-                  className="input-field w-full sm:w-24 text-center"
-                />
-              </div>
-            </div>
-          </section>
+          {/* Removed General Filters from here */}
 
           {/* Genre filters */}
           <section className="card p-5 space-y-4 relative z-20">
