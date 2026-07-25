@@ -5,13 +5,17 @@ import { useSettingsStore } from '../store/useSettingsStore';
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack, currentTrack } = usePlayerStore();
   const player1Ref = useRef(null);
+  const player2Ref = useRef(null);
+  const activePlayerIndex = useRef(1); // 1 o 2
+  const isTransitioning = useRef(false);
   
   const currentYtIdRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
   const { visualizerEnabled, youtubeNativeCast } = useSettingsStore();
 
-  const getActivePlayer = () => player1Ref.current;
+  const getActivePlayer = () => activePlayerIndex.current === 1 ? player1Ref.current : player2Ref.current;
+  const getBufferPlayer = () => activePlayerIndex.current === 1 ? player2Ref.current : player1Ref.current;
 
   const applyStyles = (wrapper, isVis, isFs) => {
     if (!wrapper) return;
@@ -30,8 +34,9 @@ export function useYouTubeSDK() {
       wrapper.style.boxShadow = 'none';
       wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
       wrapper.style.zIndex = '9999';
+      wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'auto';
-    } else {
+    } else if (isVis) {
       wrapper.style.top = 'auto';
       wrapper.style.left = 'auto';
       wrapper.style.right = '16px';
@@ -43,9 +48,24 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'none';
       wrapper.style.borderRadius = '12px';
       wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
-      wrapper.style.opacity = currentTrack ? '1' : '0';
+      wrapper.style.opacity = currentTrack ? '0.6' : '0';
       wrapper.style.zIndex = '40';
-      wrapper.style.pointerEvents = 'auto';
+      wrapper.style.filter = 'none';
+      wrapper.style.pointerEvents = 'none';
+    } else {
+      wrapper.style.top = '50%';
+      wrapper.style.left = '50%';
+      wrapper.style.width = '100vw';
+      wrapper.style.height = '56.25vw';
+      wrapper.style.minHeight = '100vh';
+      wrapper.style.minWidth = '177.77vh';
+      wrapper.style.transform = 'translate(-50%, -50%)';
+      wrapper.style.borderRadius = '0';
+      wrapper.style.boxShadow = 'none';
+      wrapper.style.opacity = (currentTrack && wrapper.dataset.errorHidden !== 'true') ? '0.5' : '0';
+      wrapper.style.zIndex = '-1';
+      wrapper.style.filter = 'blur(4px) saturate(1.5)';
+      wrapper.style.pointerEvents = 'none';
     }
   };
 
@@ -73,7 +93,7 @@ export function useYouTubeSDK() {
     };
 
     const initPlayers = () => {
-      if (player1Ref.current) return;
+      if (player1Ref.current && player2Ref.current) return;
 
       const wrapper = document.createElement('div');
       wrapper.id = 'youtube-wrapper';
@@ -82,18 +102,63 @@ export function useYouTubeSDK() {
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
       document.body.appendChild(wrapper);
 
-      // Reproductor 1 (Único)
+      // Reproductor 1 (Activo por defecto)
       const container1 = document.createElement('div');
       container1.id = 'yt-container-1';
       container1.style.position = 'absolute';
       container1.style.inset = '0';
       container1.style.opacity = '1';
+      container1.style.transition = 'opacity 0.8s ease-in-out';
       container1.style.zIndex = '2';
       wrapper.appendChild(container1);
       
       const target1 = document.createElement('div');
       target1.id = 'youtube-player-target-1';
       container1.appendChild(target1);
+
+      // Reproductor 2 (Búfer por defecto)
+      const container2 = document.createElement('div');
+      container2.id = 'yt-container-2';
+      container2.style.position = 'absolute';
+      container2.style.inset = '0';
+      container2.style.opacity = '0';
+      container2.style.transition = 'opacity 0.8s ease-in-out';
+      container2.style.zIndex = '1';
+      wrapper.appendChild(container2);
+      
+      const target2 = document.createElement('div');
+      target2.id = 'youtube-player-target-2';
+      container2.appendChild(target2);
+
+      // Overlay to capture clicks
+      const overlay = document.createElement('div');
+      overlay.id = 'youtube-overlay';
+      overlay.style.position = 'absolute';
+      overlay.style.inset = '0';
+      overlay.style.zIndex = '10';
+      overlay.style.cursor = 'pointer';
+      overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
+
+      overlay.addEventListener('dblclick', () => {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => { });
+        }
+      });
+
+      overlay.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+          const state = usePlayerStore.getState();
+          const { sessionId, hostSecret } = useSettingsStore.getState();
+          if (state.isPlaying) {
+            state.setIsPlaying(false);
+            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
+          } else {
+            state.setIsPlaying(true);
+            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
+          }
+        }
+      });
+      wrapper.appendChild(overlay);
 
       // Botón flotante para salir de fullscreen
       const closeBtn = document.createElement('button');
@@ -139,20 +204,20 @@ export function useYouTubeSDK() {
       const virtualPlayer = {
         playVideo: () => getActivePlayer()?.playVideo(),
         pauseVideo: () => getActivePlayer()?.pauseVideo(),
-        seekTo: (s, a) => { getActivePlayer()?.seekTo(s, a); },
-        setVolume: (v) => { player1Ref.current?.setVolume(v); },
+        seekTo: (s, a) => { getActivePlayer()?.seekTo(s, a); getBufferPlayer()?.seekTo(s, a); },
+        setVolume: (v) => { player1Ref.current?.setVolume(v); player2Ref.current?.setVolume(v); },
         getVolume: () => getActivePlayer()?.getVolume(),
         getPlayerState: () => getActivePlayer()?.getPlayerState(),
         getCurrentTime: () => getActivePlayer()?.getCurrentTime(),
         getDuration: () => getActivePlayer()?.getDuration(),
         stopVideo: () => getActivePlayer()?.stopVideo(),
         unloadModule: (m) => getActivePlayer()?.unloadModule(m),
-        destroy: () => { player1Ref.current?.destroy(); },
+        destroy: () => { player1Ref.current?.destroy(); player2Ref.current?.destroy(); },
         cueVideoById: (args) => getActivePlayer()?.cueVideoById(args),
         
         loadVideoById: (args) => {
           // Evitar recargar si es el mismo video
-          if (args.videoId === currentYtIdRef.current) {
+          if (args.videoId === currentYtIdRef.current && !isTransitioning.current) {
             getActivePlayer()?.seekTo(args.startSeconds || 0, true);
             getActivePlayer()?.playVideo();
             return;
@@ -161,16 +226,27 @@ export function useYouTubeSDK() {
           currentYtIdRef.current = args.videoId;
 
           const activeP = getActivePlayer();
-          if (!activeP) return;
+          const bufferP = getBufferPlayer();
+          if (!bufferP || !activeP) return;
 
-          activeP.unMute();
-          activeP.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
+          // Si el reproductor activo ya está sonando, hacemos crossfade usando el búfer
+          const store = usePlayerStore.getState();
+          if (activeP.getPlayerState() === window.YT.PlayerState.PLAYING && store.isPlaying) {
+            isTransitioning.current = true;
+            bufferP.mute(); // Mutear mientras carga
+            bufferP.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
+            // El swap ocurrirá en onStateChange cuando el buffer reporte PLAYING
+          } else {
+            // Carga normal sin crossfade (ej. primera canción o estaba en pausa)
+            activeP.unMute();
+            activeP.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
+          }
         }
       };
 
       const playerVars = {
         autoplay: 0,
-        controls: 1,
+        controls: useSettingsStore.getState().youtubeNativeCast ? 1 : 0,
         disablekb: useSettingsStore.getState().youtubeNativeCast ? 0 : 1,
         fs: 0,
         modestbranding: 1,
@@ -193,6 +269,7 @@ export function useYouTubeSDK() {
           setYtReady(true);
           const store = usePlayerStore.getState();
           player1Ref.current.setVolume(store.volume);
+          player2Ref.current.setVolume(store.volume);
           store.setSdkReady(true);
           store.setDeviceId('youtube-device');
           store.setActiveDeviceId('youtube-device');
@@ -209,8 +286,52 @@ export function useYouTubeSDK() {
       const handleStateChange = (event) => {
         const yt = window.YT;
         const activeP = getActivePlayer();
+        const bufferP = getBufferPlayer();
 
-        if (event.target === activeP) {
+        // 1. Manejo del reproductor BÚFER (Cargando en segundo plano)
+        if (isTransitioning.current && event.target === bufferP) {
+          if (event.data === yt.PlayerState.PLAYING) {
+            // ¡El búfer está listo y sonando! Hacemos el Swap.
+            isTransitioning.current = false;
+            
+            const nextIndex = activePlayerIndex.current === 1 ? 2 : 1;
+            const activeContainer = document.getElementById(`yt-container-${activePlayerIndex.current}`);
+            const bufferContainer = document.getElementById(`yt-container-${nextIndex}`);
+
+            // Swap visual (Crossfade suave)
+            bufferP.unMute();
+            bufferContainer.style.opacity = '1';
+            bufferContainer.style.zIndex = '2';
+            
+            activeContainer.style.opacity = '0';
+            activeContainer.style.zIndex = '1';
+            
+            activeP.pauseVideo(); // Detener el viejo
+            activePlayerIndex.current = nextIndex; // Oficializar el cambio
+
+            const store = usePlayerStore.getState();
+            if (!store.isPlaying) {
+              bufferP.pauseVideo();
+            } else {
+              setIsPlaying(true);
+            }
+            
+            setDuration(Math.floor(bufferP.getDuration() * 1000));
+            startProgressTimer(bufferP);
+            try {
+              bufferP.unloadModule('captions');
+              bufferP.unloadModule('cc');
+              if (bufferP.setOption) {
+                bufferP.setOption('captions', 'track', {});
+                bufferP.setOption('cc', 'track', {});
+              }
+            } catch (e) { }
+          }
+          return; // Detener propagación de estado si es el búfer
+        }
+
+        // 2. Manejo del reproductor ACTIVO
+        if (event.target === activeP && !isTransitioning.current) {
           if (event.data === yt.PlayerState.PLAYING) {
             const wrapper = document.getElementById('youtube-wrapper');
             if (wrapper) wrapper.dataset.errorHidden = 'false';
@@ -239,6 +360,12 @@ export function useYouTubeSDK() {
       };
 
       const handleError = (event) => {
+        if (isTransitioning.current && event.target === getBufferPlayer()) {
+          console.warn('Crossfade Buffer falló. Abortando transición suave.');
+          isTransitioning.current = false;
+          // Volver a usar el reproductor activo principal y forzar recarga
+        }
+
         if (event.data === 150 || event.data === 101 || event.data === 100) {
           console.warn(`YouTube Error ${event.data}. Buscando alternativa...`);
           const store = usePlayerStore.getState();
@@ -271,6 +398,9 @@ export function useYouTubeSDK() {
       player1Ref.current = new window.YT.Player('youtube-player-target-1', {
         height: '100%', width: '100%', playerVars, events: { onReady, onStateChange: handleStateChange, onError: handleError }
       });
+      player2Ref.current = new window.YT.Player('youtube-player-target-2', {
+        height: '100%', width: '100%', playerVars, events: { onReady, onStateChange: handleStateChange, onError: handleError }
+      });
     };
 
     loadYouTubeAPI();
@@ -278,6 +408,7 @@ export function useYouTubeSDK() {
     return () => {
       stopProgressTimer();
       if (player1Ref.current) { player1Ref.current.destroy(); player1Ref.current = null; }
+      if (player2Ref.current) { player2Ref.current.destroy(); player2Ref.current = null; }
       const wrapper = document.getElementById('youtube-wrapper');
       if (wrapper) {
         if (wrapper._fsListener && wrapper._fsEvents) {
