@@ -63,11 +63,8 @@ export default function LoginPage() {
           if (data) isSubscribed = true;
         }
 
-        if (isSubscribed) {
-          navigate('/app/dashboard');
-        } else {
-          navigate('/onboarding');
-        }
+        // Por el momento, acceso directo
+        navigate('/app/dashboard');
       }
     };
 
@@ -151,11 +148,8 @@ export default function LoginPage() {
             if (subData) isSubscribed = true;
           }
 
-          if (isSubscribed) {
-            navigate('/app/dashboard');
-          } else {
-            navigate('/onboarding');
-          }
+          // Por el momento, acceso directo
+          navigate('/app/dashboard');
         }
       }
     } catch (err) {
