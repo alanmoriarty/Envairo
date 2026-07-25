@@ -251,7 +251,7 @@ export default function SettingsPage() {
       {activeTab === 'simple' && (
         <div className="space-y-6 animate-fade-in">
           <section className="card p-5 space-y-4 animate-fade-in">
-            <h2 className="font-bold text-text-primary">Visualización</h2>
+            <h2 className="font-bold text-text-primary">Visualización General</h2>
 
             <div className="mb-4">
               <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descarga Nuestra App!" />
