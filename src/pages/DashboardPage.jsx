@@ -163,9 +163,7 @@ export default function DashboardPage() {
   const { user } = useAuthStore.getState();
   const ALLOWED_EMAILS = [
     'aliriopina04@gmail.com',
-    'aliriopina05@gmail.com',
-    'estebant3006@gmail.com',
-    'carlospina1003@gmail.com',
+    'aliriopina05@gmail.com'
   ];
   const canSeeTestMode = ALLOWED_EMAILS.includes(user?.email);
 
@@ -590,8 +588,8 @@ export default function DashboardPage() {
                         }
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
-                          ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
-                          : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
+                        ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
+                        : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
                         }`}
                       title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
                     >
@@ -613,8 +611,8 @@ export default function DashboardPage() {
                         }
                       }}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
-                          ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
-                          : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
+                        ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
+                        : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
                         }`}
                       title="envAIro Filter"
                     >
