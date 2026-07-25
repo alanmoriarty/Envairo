@@ -408,6 +408,7 @@ export function useQueueSync() {
           import('sonner').then(({ toast }) => toast.error('Error al crear la sala: ' + insertError.message));
         }
       }
+      isTakingOverRef.current = false;
     };
     syncSession();
 
