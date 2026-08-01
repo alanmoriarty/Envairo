@@ -60,6 +60,28 @@ export function Sidebar({ isOpen, onClose }) {
         console.error('Error broadcasting disconnect', e);
       }
 
+      // Desvincular individualmente cada TV guardada
+      try {
+        const pairedTvs = useSettingsStore.getState().pairedTvs || [];
+        for (const tv of pairedTvs) {
+          const pairChannel = supabase.channel(`tv-pair-${tv.id}`);
+          pairChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await pairChannel.send({
+                type: 'broadcast',
+                event: 'pairing_result',
+                payload: { type: 'UNPAIRED' }
+              });
+              setTimeout(() => supabase.removeChannel(pairChannel), 500);
+            }
+          });
+        }
+        useSettingsStore.getState().setPairedTvs([]);
+        window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+      } catch (e) {
+        console.error('Error unpairing TVs on logout', e);
+      }
+
       // Limpiar cola local, peticiones e historial para no dejar rastro
       state.clearPlayerState();
       // NO llamar a clearSettingsState() aquí, ya se encarga useAuthStore.logout() al final.

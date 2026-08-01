@@ -56,19 +56,19 @@ export function RootLayout() {
           payload: {
             type: 'PAIRED',
             sessionId: activeSessionId,
-            hostSecret,
             tvWithSound: false // El QR vincula sin sonido por defecto; se puede cambiar en el modal
           }
         });
 
-        const pairedTvs = JSON.parse(localStorage.getItem('bq-paired-tvs') || '[]');
+        const pairedTvs = useSettingsStore.getState().pairedTvs || [];
         const newTv = {
           id: cleanPin,
           name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
           linkedAt: new Date().toISOString()
         };
         const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
-        localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+        useSettingsStore.getState().setPairedTvs(updatedList);
+        window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
         toast.success(t('layout.tv_linked_qr', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }), { icon: '📺' });
 
@@ -132,7 +132,16 @@ export function RootLayout() {
           });
           useSettingsStore.setState(validSettings);
 
-          const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+          const allKeys = [
+            'djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'autoDJ', 'autoDjPrompt', 
+            'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 
+            'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
+            'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter',
+            'themeColor', 'showRequests', 'showQR', 'showPlaylists', 'visualizerEnabled', 'visualizerUrl', 
+            'karaokeEnabled', 'lyricsEnabled', 'youtubeNativeCast', 'enairoTrackCount', 'enairoAutoIntervalEnabled',
+            'enairoUsageCount', 'enairoLastUsedDate', 'enairoCooldownUntil', 'enairoAutoReorderCount', 
+            'enairoAutoReorderDate', 'enairoSweepCount', 'enairoSweepDate', 'enairoLastRunAt'
+          ];
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
           useSettingsStore.getState().setLastSavedSignature(JSON.stringify(newSettingsObj));
@@ -141,25 +150,37 @@ export function RootLayout() {
           useSettingsStore.getState().clearSettingsState();
         }
 
-        // 2. Hidratar Cola e Historial (host_state)
-        const { data: hostState, error: hsError } = await supabase
-          .from('host_state')
-          .select('queue, play_history')
-          .eq('user_id', sbUser.id)
-          .maybeSingle();
 
-        if (!hsError && hostState) {
-          usePlayerStore.setState({
-            queue: hostState.queue || [],
-            playHistory: hostState.play_history || []
-          });
-        } else if (!hsError && !hostState) {
-          // Nueva cuenta sin host_state: limpiamos la cola heredada
-          usePlayerStore.getState().clearPlayerState();
-        }
 
         // Fetch global blocked YouTube IDs at startup
         usePlayerStore.getState().fetchGlobalBlockedYouTubeIds();
+
+        // 3. Migrate local bq-paired-tvs to Supabase
+        try {
+          const localTvs = localStorage.getItem('bq-paired-tvs');
+          if (localTvs) {
+            const parsedTvs = JSON.parse(localTvs);
+            if (parsedTvs.length > 0) {
+              const currentTvs = useSettingsStore.getState().pairedTvs || [];
+              const mergedTvs = [...currentTvs];
+              parsedTvs.forEach(tv => {
+                if (!mergedTvs.find(t => t.id === tv.id)) mergedTvs.push(tv);
+              });
+              useSettingsStore.getState().setPairedTvs(mergedTvs);
+              
+              // Push to Supabase immediately
+              supabase.rpc('sync_host_config', {
+                p_session_id: sbUser.id,
+                p_secret: useSettingsStore.getState().hostSecret,
+                p_updates: { paired_tvs: mergedTvs }
+              }).catch(console.error);
+            }
+            localStorage.removeItem('bq-paired-tvs');
+          }
+        } catch (e) {
+          console.error('Error migrating bq-paired-tvs', e);
+        }
+
       } catch (e) {
         console.error('Error hydrating settings on mount:', e);
       }
@@ -206,17 +227,23 @@ export function RootLayout() {
     let timeoutId;
     let prevState = useSettingsStore.getState();
     const unsubSettings = useSettingsStore.subscribe((state) => {
-      // Auto-sync solo para opciones rápidas y estado crítico
-      const autoSyncKeys = ['djName', 'djAvatar', 'mode', 'enairoEnabled', 'enairoTestMode', 'explicitFilter', 'alwaysAvailable'];
-      const changed = autoSyncKeys.some(k => state[k] !== prevState[k]);
+      const allKeys = [
+        'djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'autoDJ', 'autoDjPrompt', 
+        'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 
+        'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
+        'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter',
+        'themeColor', 'showRequests', 'showQR', 'showPlaylists', 'visualizerEnabled', 'visualizerUrl', 
+        'karaokeEnabled', 'lyricsEnabled', 'youtubeNativeCast', 'enairoTrackCount', 'enairoAutoIntervalEnabled',
+        'enairoUsageCount', 'enairoLastUsedDate', 'enairoCooldownUntil', 'enairoAutoReorderCount', 
+        'enairoAutoReorderDate', 'enairoSweepCount', 'enairoSweepDate', 'enairoLastRunAt'
+      ];
+      const changed = allKeys.some(k => state[k] !== prevState[k]);
 
       if (changed) {
         // 1. Sync to user_metadata (for host persistence across devices)
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           const settingsObj = {};
-          // Guardar estado de todas las llaves en metadatos (aunque el auto-sync sea solo por los toggles)
-          const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
           allKeys.forEach(k => { settingsObj[k] = state[k]; });
 
           supabase.auth.updateUser({
@@ -267,35 +294,7 @@ export function RootLayout() {
     };
   }, []);
 
-  // Sincronizar Cola e Historial a la base de datos host_state
-  useEffect(() => {
-    let playerTimeoutId;
-    let prevPlayerState = usePlayerStore.getState();
-    const unsubPlayer = usePlayerStore.subscribe((state) => {
-      const dbKeys = ['queue', 'playHistory'];
-      const changed = dbKeys.some(k => state[k] !== prevPlayerState[k]);
 
-      if (changed) {
-        clearTimeout(playerTimeoutId);
-        playerTimeoutId = setTimeout(async () => {
-          const { data: { user: sbUser } } = await supabase.auth.getUser();
-          if (sbUser) {
-            await supabase.from('host_state').upsert({
-              user_id: sbUser.id,
-              queue: state.queue,
-              play_history: state.playHistory
-            });
-          }
-        }, 3000); // 3 seconds debounce for queue/history
-      }
-      prevPlayerState = state;
-    });
-
-    return () => {
-      clearTimeout(playerTimeoutId);
-      unsubPlayer();
-    };
-  }, []);
 
   if (!isAuthenticated && !isAdminMode) {
     return <Navigate to="/" replace />;

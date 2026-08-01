@@ -20,6 +20,8 @@ CREATE TABLE sessions (
   queue JSONB DEFAULT '[]',
   current_queue_index INTEGER DEFAULT -1,
   current_track JSONB,
+  play_history JSONB DEFAULT '[]',
+  paired_tvs JSONB DEFAULT '[]',
   active_device_id TEXT,
   active_instance_id UUID, -- ID de la pestaña/navegador principal activo (para Kickout)
   supabase_user_id UUID, -- Enlace con Supabase Auth
@@ -90,6 +92,8 @@ BEGIN
       queue = COALESCE(p_updates->'queue', queue),
       current_queue_index = COALESCE((p_updates->>'current_queue_index')::INTEGER, current_queue_index),
       current_track = COALESCE(p_updates->'current_track', current_track),
+      play_history = COALESCE(p_updates->'play_history', play_history),
+      paired_tvs = COALESCE(p_updates->'paired_tvs', paired_tvs),
       active_device_id = COALESCE((p_updates->>'active_device_id')::TEXT, active_device_id),
       active_remote_id = COALESCE((p_updates->>'active_remote_id')::UUID, active_remote_id),
       playback_command = COALESCE(p_updates->'playback_command', playback_command),
@@ -104,19 +108,24 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 1.5 Toma de control por el Host Autenticado
-CREATE OR REPLACE FUNCTION host_takeover_session(p_session_id TEXT, p_active_instance_id UUID)
+CREATE OR REPLACE FUNCTION host_takeover_session(p_session_id TEXT, p_active_instance_id UUID, p_secret UUID DEFAULT NULL)
 RETURNS UUID AS $$
 DECLARE
   v_secret UUID;
 BEGIN
   -- Verificar si el usuario está autenticado y es el dueño de la sesión
-  -- Permitir si id coincide con auth.uid() (compatibilidad con sesiones antiguas) o supabase_user_id coincide
+  -- Permitir si id coincide con auth.uid(), supabase_user_id coincide, O si se provee el secreto correcto
   UPDATE sessions 
   SET active_instance_id = p_active_instance_id,
       active_device_id = NULL, -- Reseteamos el reproductor de Spotify para que el nuevo dispositivo lo reclame
-      supabase_user_id = auth.uid(), -- Auto-corregir el supabase_user_id faltante en sesiones antiguas
+      supabase_user_id = COALESCE(supabase_user_id, auth.uid()), -- Auto-corregir el supabase_user_id faltante en sesiones antiguas
       host_secret = COALESCE(host_secret, gen_random_uuid()) -- Auto-generar host_secret si estaba vacío en sesiones antiguas
-  WHERE id = p_session_id AND (supabase_user_id = auth.uid() OR id = auth.uid()::text)
+  WHERE id = p_session_id AND (
+    supabase_user_id = auth.uid() OR 
+    id = auth.uid()::text OR 
+    (p_secret IS NOT NULL AND host_secret = p_secret) OR
+    (supabase_user_id IS NULL AND auth.uid() IS NOT NULL) -- Si era huérfana, el primero autenticado se la queda
+  )
   RETURNING host_secret INTO v_secret;
   
   IF v_secret IS NULL THEN
@@ -146,3 +155,23 @@ BEGIN;
 COMMIT;
 ALTER PUBLICATION supabase_realtime ADD TABLE sessions;
 ALTER PUBLICATION supabase_realtime ADD TABLE requests;
+ALTER PUBLICATION supabase_realtime ADD TABLE playlists;
+
+-- Crear tabla de Listas de Reproducción (Playlists)
+CREATE TABLE IF NOT EXISTS playlists (
+  uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  source TEXT NOT NULL,
+  images JSONB DEFAULT '[]',
+  is_custom BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  UNIQUE(user_id, id)
+);
+
+ALTER TABLE playlists ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own playlists" 
+ON playlists FOR ALL 
+USING (auth.uid() = user_id);

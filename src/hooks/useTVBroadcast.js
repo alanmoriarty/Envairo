@@ -52,6 +52,8 @@ export function useTVBroadcast() {
         sendCurrentSync();
       } else if (e.data?.type === 'SLAVE_ERROR') {
         handleSlaveError(e.data.videoId);
+      } else if (e.data?.type === 'TV_STOLEN') {
+        handleTVStolen(e.data.tvId);
       }
     };
 
@@ -62,9 +64,23 @@ export function useTVBroadcast() {
           sendCurrentSync();
         } else if (e.payload?.type === 'SLAVE_ERROR') {
           handleSlaveError(e.payload.videoId);
+        } else if (e.payload?.type === 'TV_STOLEN') {
+          handleTVStolen(e.payload.tvId);
         }
       });
     }
+
+    const handleTVStolen = (tvId) => {
+      try {
+        const pairedTvs = useSettingsStore.getState().pairedTvs;
+        const updatedList = pairedTvs.filter(t => t.id !== tvId);
+        if (pairedTvs.length !== updatedList.length) {
+          useSettingsStore.getState().setPairedTvs(updatedList);
+          window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+          import('sonner').then(({ toast }) => toast.info(`La pantalla vinculada (${tvId}) fue conectada por otro usuario y se ha desvinculado de tu sesión.`));
+        }
+      } catch (err) {}
+    };
 
     const handleSlaveError = (failedVideoId) => {
       const state = usePlayerStore.getState();

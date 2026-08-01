@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tv, Activity, Maximize, Minimize, X, Unlink } from 'lucide-react';
+import { Tv, Activity, Maximize, Minimize, X, Unlink, Volume2, VolumeX } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
@@ -55,13 +55,21 @@ export default function TVDisplayPage() {
   const tvWithSoundRef = useRef(tvWithSound);
   useEffect(() => { tvWithSoundRef.current = tvWithSound; }, [tvWithSound]);
 
-  const [tvPin] = useState(() => generate6DigitPin());
+  const [tvPin] = useState(() => {
+    const saved = localStorage.getItem('bq-tv-pin');
+    if (saved) return saved;
+    const newPin = generate6DigitPin();
+    localStorage.setItem('bq-tv-pin', newPin);
+    return newPin;
+  });
   const [status, setStatus] = useState(t('tv.checking_availability'));
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [isCheckingLimit, setIsCheckingLimit] = useState(true);
+  const [localVolume, setLocalVolume] = useState(100);
+  const [localMuted, setLocalMuted] = useState(false);
   const myTvId = useRef(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString());
   const activeTvs = useRef(new Set());
   const idleTimerRef = useRef(null);
@@ -77,9 +85,31 @@ export default function TVDisplayPage() {
     pairChannel
       .on('broadcast', { event: 'pairing_result' }, (e) => {
         if (e.payload?.type === 'PAIRED' && e.payload.sessionId) {
+          
+          // Enviar ACK al Host para confirmar que la TV existe y recibió el comando
+          pairChannel.send({
+            type: 'broadcast',
+            event: 'pairing_ack',
+            payload: { success: true }
+          }).catch(()=>{});
+
+          const newSessionId = e.payload.sessionId;
+          const oldSessionId = localStorage.getItem('bq-tv-session-id');
+          
+          if (oldSessionId && oldSessionId !== newSessionId) {
+             // Notificar al anfitrión anterior que esta pantalla fue vinculada por otro usuario
+             const oldSync = supabase.channel(`tv-sync-${oldSessionId}`);
+             oldSync.subscribe(async (status) => {
+                 if (status === 'SUBSCRIBED') {
+                     await oldSync.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'TV_STOLEN', tvId: tvPin } });
+                     setTimeout(() => supabase.removeChannel(oldSync), 500);
+                 }
+             });
+          }
+
           // Vinculación inicial
-          localStorage.setItem('bq-tv-session-id', e.payload.sessionId);
-          setSessionId(e.payload.sessionId);
+          localStorage.setItem('bq-tv-session-id', newSessionId);
+          setSessionId(newSessionId);
           // Leer preferencia de sonido enviada por el anfitrión
           const withSound = !!e.payload.tvWithSound;
           localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
@@ -93,8 +123,10 @@ export default function TVDisplayPage() {
           currentVideoIdRef.current = null;
           setCurrentVideoId(null);
           localStorage.removeItem('bq-tv-session-id');
+          localStorage.removeItem('bq-tv-pin');
           setSessionId(null);
           setStatus(t('tv.unpaired_by_host'));
+          window.location.reload(); // Recargar para generar un nuevo PIN limpio
         }
       })
       .subscribe();
@@ -128,6 +160,8 @@ export default function TVDisplayPage() {
           }
           setStatus(t('tv.host_disconnected'));
         }
+      } else if (e.data.type === 'TOGGLE_SOUND') {
+        handleToggleSound(e.data.tvWithSound);
       }
     };
 
@@ -157,14 +191,38 @@ export default function TVDisplayPage() {
             currentVideoIdRef.current = null;
             setCurrentVideoId(null);
             localStorage.removeItem('bq-tv-session-id');
+            localStorage.removeItem('bq-tv-pin');
             setSessionId(null);
             setStatus(t('tv.unpaired_by_host'));
+            window.location.reload();
+          } else if (e.payload.type === 'TOGGLE_SOUND') {
+            if (e.payload.tvId && e.payload.tvId !== tvPin) return;
+            handleToggleSound(e.payload.tvWithSound);
           } else {
             handleSync(e.payload);
           }
         }
       })
       .subscribe();
+
+    const handleToggleSound = (withSoundVal) => {
+      const withSound = !!withSoundVal;
+      localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
+      setTvWithSound(withSound);
+      
+      const applySound = (player) => {
+        if (player && typeof player.unMute === 'function') {
+          if (withSound) {
+            player.unMute();
+            if (typeof player.setVolume === 'function') player.setVolume(100);
+          } else {
+            player.mute();
+          }
+        }
+      };
+      applySound(player1Ref.current);
+      applySound(player2Ref.current);
+    };
 
     // 2.c. Verificación de límite de pantallas
     const timeoutId = setTimeout(() => {
@@ -442,9 +500,43 @@ export default function TVDisplayPage() {
     safeDestroyPlayer(player1Ref, 'tv-yt-container-1', 'tv-youtube-player-1');
     safeDestroyPlayer(player2Ref, 'tv-yt-container-2', 'tv-youtube-player-2');
     localStorage.removeItem('bq-tv-session-id');
+    localStorage.removeItem('bq-tv-pin');
     setSessionId(null);
     setCurrentVideoId(null);
     currentVideoIdRef.current = null;
+    window.location.reload();
+  };
+
+  const handleLocalVolumeChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    setLocalVolume(val);
+    const applyVol = (player) => {
+      if (player && typeof player.setVolume === 'function') {
+        player.setVolume(val);
+        if (val > 0 && localMuted) {
+           setLocalMuted(false);
+           player.unMute();
+        }
+      }
+    };
+    applyVol(player1Ref.current);
+    applyVol(player2Ref.current);
+  };
+
+  const toggleLocalMute = () => {
+    const newMuted = !localMuted;
+    setLocalMuted(newMuted);
+    const applyMute = (player) => {
+      if (player && typeof player.unMute === 'function') {
+        if (newMuted) {
+          player.mute();
+        } else {
+          player.unMute();
+        }
+      }
+    };
+    applyMute(player1Ref.current);
+    applyMute(player2Ref.current);
   };
 
   return (
@@ -542,6 +634,25 @@ export default function TVDisplayPage() {
       {/* Modo Emparejado: Controles flotantes */}
       {sessionId && (
         <div className={`absolute bottom-6 right-6 z-30 flex items-center gap-3 transition-opacity duration-300 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
+          {tvWithSound && (
+            <div className="bg-black/50 p-1.5 rounded-full backdrop-blur-md flex items-center shadow-lg group hover:bg-black/70 transition-all border border-white/5">
+              <button
+                onClick={toggleLocalMute}
+                className="text-white p-2.5 rounded-full hover:bg-white/10 transition-colors"
+                title={localMuted ? "Quitar silencio" : "Silenciar"}
+              >
+                {localMuted || localVolume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={localVolume}
+                onChange={handleLocalVolumeChange}
+                className="w-0 opacity-0 group-hover:w-24 group-hover:opacity-100 transition-all duration-300 cursor-pointer mr-3 ml-1 accent-accent"
+              />
+            </div>
+          )}
           <button
             onClick={handleUnpair}
             className="bg-black/50 hover:bg-danger/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"

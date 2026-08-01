@@ -30,7 +30,8 @@ export function useQueueSync() {
         state.currentQueueIndex === prevState.currentQueueIndex &&
         state.currentTrack?.id === prevState.currentTrack?.id &&
         state.activeDeviceId === prevState.activeDeviceId &&
-        state.volume === prevState.volume
+        state.volume === prevState.volume &&
+        state.playHistory === prevState.playHistory
       ) {
         return;
       }
@@ -58,6 +59,8 @@ export function useQueueSync() {
               queue: state.queue,
               current_queue_index: state.currentQueueIndex,
               current_track: state.currentTrack,
+              play_history: state.playHistory,
+              paired_tvs: useSettingsStore.getState().pairedTvs,
               active_device_id: state.activeDeviceId,
               volume: state.volume
             }
@@ -105,6 +108,20 @@ export function useQueueSync() {
         updatesToApply.volume = newSessionData.volume;
       }
 
+      if (Array.isArray(newSessionData.play_history)) {
+        const historyChanged = JSON.stringify(newSessionData.play_history) !== JSON.stringify(currentState.playHistory);
+        if (historyChanged) updatesToApply.playHistory = newSessionData.play_history;
+      }
+
+      if (Array.isArray(newSessionData.paired_tvs)) {
+        const currentTvs = useSettingsStore.getState().pairedTvs;
+        const tvsChanged = JSON.stringify(newSessionData.paired_tvs) !== JSON.stringify(currentTvs);
+        if (tvsChanged) {
+          useSettingsStore.getState().setPairedTvs(newSessionData.paired_tvs);
+          window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+        }
+      }
+
       if (Object.keys(updatesToApply).length > 0) {
         isRemoteUpdate.current = true;
         usePlayerStore.setState(updatesToApply);
@@ -113,6 +130,35 @@ export function useQueueSync() {
         }
       }
     };
+
+    // Suscripción a cambios en useSettingsStore (para pairedTvs)
+    const unsubscribeSettings = useSettingsStore.subscribe((state, prevState) => {
+      if (state.pairedTvs === prevState.pairedTvs) return;
+      if (isRemoteUpdate.current) return;
+
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = setTimeout(() => {
+        const secret = useSettingsStore.getState().hostSecret;
+        if (!authStore.user && !secret) return;
+        
+        const playerState = usePlayerStore.getState();
+        supabase.rpc('sync_host_config', {
+          p_session_id: sessionId,
+          p_secret: secret,
+          p_updates: {
+            queue: playerState.queue,
+            current_queue_index: playerState.currentQueueIndex,
+            current_track: playerState.currentTrack,
+            play_history: playerState.playHistory,
+            paired_tvs: state.pairedTvs,
+            active_device_id: playerState.activeDeviceId,
+            volume: playerState.volume
+          }
+        }).then(({ error }) => {
+          if (error) console.error('Error syncing TV changes:', error);
+        });
+      }, 500);
+    });
 
     initSyncTimeout = setTimeout(() => {
       if (!isMounted) return;
@@ -280,16 +326,23 @@ export function useQueueSync() {
     // 3. Initial pull
     supabase
       .from('sessions')
-      .select('queue, current_queue_index, current_track, active_device_id, volume')
+      .select('queue, current_queue_index, current_track, play_history, paired_tvs, active_device_id, volume')
       .eq('id', sessionId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (!error && data) {
           isRemoteUpdate.current = true;
+          
+          if (Array.isArray(data.paired_tvs)) {
+            useSettingsStore.getState().setPairedTvs(data.paired_tvs);
+            window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+          }
+          
           usePlayerStore.setState({
             queue: data.queue || [],
             currentQueueIndex: data.current_queue_index ?? -1,
             currentTrack: data.current_track || null,
+            playHistory: data.play_history || [],
             activeDeviceId: data.active_device_id || null,
             ...(data.volume !== null ? { volume: data.volume } : {})
           });
@@ -302,6 +355,7 @@ export function useQueueSync() {
       isMounted = false;
       clearTimeout(initSyncTimeout);
       unsubscribe();
+      unsubscribeSettings();
       clearInterval(broadcastInterval);
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
@@ -326,8 +380,8 @@ export function useQueueSync() {
       const secret = useSettingsStore.getState().hostSecret;
       if (!authStore.user && !secret) return; 
 
-      const { mode, alwaysAvailable, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, cooldownEnabled, cooldownMinutes, tableCount, requestsPerHour, requestsPerGuest } = useSettingsStore.getState();
-      const { queue, currentQueueIndex, volume, activeDeviceId } = usePlayerStore.getState();
+      const { mode, alwaysAvailable, blacklistGenres, blacklistSongs, blacklistArtists, allowRepeats, repeatCooldown, cooldownEnabled, cooldownMinutes, tableCount, requestsPerHour, requestsPerGuest, pairedTvs } = useSettingsStore.getState();
+      const { queue, currentQueueIndex, volume, activeDeviceId, playHistory } = usePlayerStore.getState();
 
       isTakingOverRef.current = true;
 
@@ -343,7 +397,8 @@ export function useQueueSync() {
              try {
                const { data: newSecret, error: takeoverError } = await supabase.rpc('host_takeover_session', {
                  p_session_id: sessionId,
-                 p_active_instance_id: activeInstanceId
+                 p_active_instance_id: activeInstanceId,
+                 p_secret: secret
                });
                
                if (takeoverError) throw takeoverError;
@@ -354,9 +409,14 @@ export function useQueueSync() {
                }
              } catch (err) {
                console.error("Error al tomar control de la sesión:", err);
+               // Si no podemos tomar control (ej. no somos los dueños), regeneramos la sesión y abortamos
+               useSettingsStore.getState().regenerateSession();
+               isTakingOverRef.current = false;
+               return; 
              } finally {
                // Fallback / Garantía: Asegurar que el ID de instancia se actualice en la base de datos 
                // para evitar que este mismo dispositivo se auto-expulse al recibir cambios.
+               // Solo si no falló el takeover (si falló, ya hicimos return arriba)
                await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
              }
           }
@@ -399,6 +459,8 @@ export function useQueueSync() {
           requests_per_guest: requestsPerGuest,
           queue: queue || [],
           current_queue_index: currentQueueIndex ?? -1,
+          play_history: playHistory || [],
+          paired_tvs: pairedTvs || [],
           volume: volume ?? 70,
           active_device_id: activeDeviceId,
           updated_at: new Date().toISOString()
@@ -415,6 +477,39 @@ export function useQueueSync() {
     initReqTimeout = setTimeout(() => {
       if (!isMounted) return;
 
+      // 1. Fetch existing pending requests from Supabase first
+      supabase
+        .from('requests')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            const store = usePlayerStore.getState();
+            const pendings = [];
+            const history = [];
+            data.forEach(req => {
+              const formattedReq = {
+                reqId: req.id,
+                track: req.track,
+                requester: req.requester,
+                timestamp: req.created_at,
+                status: req.status
+              };
+              if (req.status === 'pending') {
+                pendings.push(formattedReq);
+              }
+              history.push(formattedReq);
+            });
+            // Sobreescribir el estado local con la verdad de la DB
+            usePlayerStore.setState({
+              pendingRequests: pendings,
+              requestHistory: history.slice(0, 500)
+            });
+          }
+        });
+
+      // 2. Escuchar nuevas peticiones
       requestsChannel = supabase
         .channel(`requests-${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `session_id=eq.${sessionId}` }, async (payload) => {

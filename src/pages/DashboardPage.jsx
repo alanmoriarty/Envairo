@@ -820,7 +820,13 @@ export default function DashboardPage() {
                     min="1"
                     max="50"
                     value={enairoTrackCount}
-                    onChange={(e) => setEnairoTrackCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 35)))}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === '') { setEnairoTrackCount(''); return; }
+                      const n = parseInt(v, 10);
+                      if (!isNaN(n)) setEnairoTrackCount(Math.min(50, Math.max(1, n)));
+                    }}
+                    onBlur={() => { if (enairoTrackCount === '') setEnairoTrackCount(35); }}
                     className="input-field w-full text-center"
                   />
                 </div>

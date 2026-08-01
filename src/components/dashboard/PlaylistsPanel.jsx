@@ -4,6 +4,8 @@ import { ListMusic, Play, Loader2, Link as LinkIcon, Search, Plus, MoreVertical,
 import { getYouTubePlaylistItems, getYouTubePlaylist } from '../../lib/youtubeApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../store/useLanguageStore';
 import { sanitizeUrl, MAX_URL_LENGTH } from '../../utils/security';
 
@@ -35,6 +37,7 @@ export function PlaylistsPanel() {
   const shiftQueue = usePlayerStore((s) => s.shiftQueue);
   const playHistory = usePlayerStore((s) => s.playHistory || []);
   const sessionId = useSettingsStore(s => s.sessionId);
+  const user = useAuthStore(s => s.user);
 
   const playbackEngine = usePlayerStore(s => s.playbackEngine);
 
@@ -87,9 +90,46 @@ export function PlaylistsPanel() {
     async function fetchPlaylists(showLoading = true) {
       if (showLoading) setLoading(true);
       try {
-        const customSaved = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-        // We only support YouTube playlists now
-        const customForEngine = customSaved.filter(p => p.source === 'youtube');
+        if (!user) return;
+        
+        // 1. Fetch from Supabase
+        const { data, error: fetchErr } = await supabase
+          .from('playlists')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (fetchErr) throw fetchErr;
+        
+        let fetchedPlaylists = data || [];
+
+        // 2. Migration logic: Check if local storage has playlists not in Supabase
+        const localPlaylists = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
+        if (localPlaylists.length > 0) {
+          const toInsert = localPlaylists.filter(lp => !fetchedPlaylists.find(fp => fp.id === lp.id));
+          if (toInsert.length > 0) {
+            const inserts = toInsert.map(p => ({
+              user_id: user.id,
+              id: p.id,
+              name: p.name,
+              source: p.source,
+              images: p.images || [],
+              is_custom: true
+            }));
+            const { data: inserted, error: insertErr } = await supabase
+              .from('playlists')
+              .upsert(inserts, { onConflict: 'user_id, id' })
+              .select();
+              
+            if (!insertErr && inserted) {
+               fetchedPlaylists = [...inserted, ...fetchedPlaylists];
+            }
+          }
+          // Clear local storage after successful migration check
+          localStorage.removeItem('envairo_custom_playlists');
+        }
+        
+        const customForEngine = fetchedPlaylists.filter(p => p.source === 'youtube');
         
         if (!isMounted) return;
         setPlaylists(customForEngine);
@@ -231,23 +271,29 @@ export function PlaylistsPanel() {
 
       if (!playlistData) throw new Error(t('dashboard.playlist_not_found'));
 
-      // Guardar playlist importada localmente
+      // Guardar playlist importada en Supabase
       playlistData.source = playbackEngine;
       playlistData.is_custom = true;
-      const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-      if (!existing.find(p => p.id === playlistData.id)) {
-        if (existing.length >= 10) {
-          toast.error(t('dashboard.playlist_limit'), { id: toastId });
-          setImporting(false);
-          return;
-        }
-        const newPlaylists = [playlistData, ...existing];
-        localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
-        setPlaylists(prev => {
-          const isAlreadyIn = prev.find(p => p.id === playlistData.id);
-          return isAlreadyIn ? prev : [playlistData, ...prev];
-        });
-      }
+      
+      const { data: inserted, error: insertErr } = await supabase
+        .from('playlists')
+        .upsert({
+          user_id: user.id,
+          id: playlistData.id,
+          name: playlistData.name,
+          source: playlistData.source,
+          images: playlistData.images || [],
+          is_custom: true
+        }, { onConflict: 'user_id, id' })
+        .select()
+        .single();
+        
+      if (insertErr) throw insertErr;
+
+      setPlaylists(prev => {
+        const isAlreadyIn = prev.find(p => p.id === playlistData.id);
+        return isAlreadyIn ? prev : [inserted, ...prev];
+      });
 
       toast.dismiss(toastId);
       await handleSelectPlaylist(playlistData);
@@ -361,13 +407,13 @@ export function PlaylistsPanel() {
               {pl.is_custom && (
                 <button
                   className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all shrink-0 mr-1"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-                    const newPlaylists = existing.filter(p => p.id !== pl.id);
-                    localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
-                    setPlaylists(prev => prev.filter(p => p.id !== pl.id));
-                    toast.success(t('dashboard.playlist_removed_saved'));
+                    const { error } = await supabase.from('playlists').delete().eq('user_id', user.id).eq('id', pl.id);
+                    if (!error) {
+                      setPlaylists(prev => prev.filter(p => p.id !== pl.id));
+                      toast.success(t('dashboard.playlist_removed_saved'));
+                    }
                   }}
                   title="Eliminar de guardados"
                 >
@@ -430,13 +476,13 @@ export function PlaylistsPanel() {
 
               <button
                 className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all shrink-0 mr-1"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
-                  const newPlaylists = existing.filter(p => p.id !== pl.id);
-                  localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
-                  setPlaylists(prev => prev.filter(p => p.id !== pl.id));
-                  toast.success(t('dashboard.playlist_removed'));
+                  const { error } = await supabase.from('playlists').delete().eq('user_id', user.id).eq('id', pl.id);
+                  if (!error) {
+                    setPlaylists(prev => prev.filter(p => p.id !== pl.id));
+                    toast.success(t('dashboard.playlist_removed'));
+                  }
                 }}
                 title="Eliminar playlist"
               >

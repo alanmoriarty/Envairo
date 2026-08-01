@@ -50,7 +50,21 @@ Aunque trabajan en conjunto para automatizar la música, son dos funcionalidades
 - `src/components/layout/PersistentPlayer.jsx`: Interfaz visual del reproductor inferior y puente entre los controles de la UI y el `usePlayerStore`.
 - `src/hooks/useYouTubeSDK.js`: Inicializa e interactúa directamente con la Iframe API de YouTube. Convierte las búsquedas o IDs a reproducción de video.
 
-## 7. Instrucciones para la IA (Tú)
+## 8. Persistencia y Migración de Estado (Nube vs Local)
+- **Regla de Oro:** Para garantizar una experiencia fluida entre dispositivos (ej. de PC a Celular como Anfitrión), **ningún dato crítico del Host ni sus configuraciones (UI, Filtros, Auto DJ) deben depender del caché local (`localStorage`)**. Todo debe persistir en la nube (Supabase).
+- **Playlists Personalizadas:** Se guardan en una tabla dedicada `playlists` en Supabase, asociadas al `user_id` con políticas RLS estrictas.
+- **Cola y Canción Actual:** Se guardan en tiempo real en la tabla `sessions` (`queue`, `current_track`). El sync es gestionado en `useQueueSync.js`. Las peticiones pendientes también se descargan directamente de la tabla `requests` al iniciar sesión.
+- **Historial y Dispositivos Vinculados (TVs):** `playHistory` y `pairedTvs` (antes en `bq-paired-tvs`) residen en la tabla `sessions` y se sincronizan vía RPC (`sync_host_config`).
+- **Configuraciones UI y Filtros (Auto DJ / Envairo Selector):** Absolutamente todas las preferencias del dashboard (tema, karaoke, limits, enairo filters) se guardan en el campo `user_metadata.host_settings` (vía `supabase.auth.updateUser`) para garantizar su portabilidad.
+- **Excepción para TVs (Pantallas esclavas):** Las Smart TVs que actúan como "Monitor Local" o "Pantalla Vinculada" sí utilizan `localStorage` (`bq-tv-session-id`, `bq-tv-sound`) dado que son navegadores anónimos sin cuenta de usuario, y necesitan recordar a qué sesión se conectaron si se recarga la página.
+
+## 9. Políticas Estrictas de Seguridad (Security Policies)
+1. **El Secreto del Host (`hostSecret`):** Es la llave maestra administrativa que permite ignorar las políticas RLS y modificar la tabla de sesiones/peticiones.
+2. **NUNCA TRANSMITIR EL SECRET POR BROADCAST:** El `hostSecret` jamás debe enviarse a través de canales en tiempo real (`supabase.channel().send(...)`), ya sean públicos o semiprivados (como `tv-pair-PIN`). Solo debe enviarse a través de llamadas RPC encriptadas y validadas directamente con la base de datos (ej. `sync_host_config`).
+3. **Validación de Identidad:** Toda función RPC que afecte el estado crítico (`manage_request`, `sync_host_config`) requiere que se provea el `hostSecret` correcto O que la petición sea ejecutada por el usuario autenticado (dueño) de la sesión (`auth.uid() = supabase_user_id`).
+4. **QR de Administrador:** La URL del QR de administrador incluye el `hostSecret` (`/?session=...&admin=...`) intencionalmente para la toma de control (Remote Takeover), pero la interfaz (UI) lo oculta por defecto detrás de advertencias visuales explícitas para evitar que el anfitrión lo muestre públicamente a los invitados.
+
+## 10. Instrucciones para la IA (Tú)
 1. Antes de modificar lógica de estado cruzado, revisa `useQueueSync.js` y `usePlayerStore.js`.
 2. Mantén los estilos consistentes usando las clases de Tailwind predefinidas y el modo "Glassmorphism" (`glass`, `card`, `btn-primary`, etc.).
 3. Si ocurre un error de compilación o ejecución, asume que puede ser un remanente de código antiguo (ej. librerías eliminadas) y usa `grep_search` para buscar referencias rotas antes de reescribir funciones completas.

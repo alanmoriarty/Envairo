@@ -352,7 +352,13 @@ export default function SettingsPage() {
                     min="1"
                     max="120"
                     value={cooldownMinutes}
-                    onChange={(e) => setCooldownMinutes(Math.min(120, Math.max(1, parseInt(e.target.value) || 10)))}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === '') { setCooldownMinutes(''); return; }
+                      const n = parseInt(v, 10);
+                      if (!isNaN(n)) setCooldownMinutes(Math.min(120, Math.max(1, n)));
+                    }}
+                    onBlur={() => { if (cooldownMinutes === '') setCooldownMinutes(10); }}
                     className="input-field w-24 text-center"
                   />
                 </div>
@@ -370,7 +376,13 @@ export default function SettingsPage() {
                   min="1"
                   max="100"
                   value={requestsPerHour}
-                  onChange={(e) => setRequestsPerHour(Math.min(100, Math.max(1, parseInt(e.target.value) || 15)))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') { setRequestsPerHour(''); return; }
+                    const n = parseInt(v, 10);
+                    if (!isNaN(n)) setRequestsPerHour(Math.min(100, Math.max(1, n)));
+                  }}
+                  onBlur={() => { if (requestsPerHour === '') setRequestsPerHour(15); }}
                   className="input-field w-full sm:w-24 text-center"
                 />
               </div>
@@ -387,7 +399,13 @@ export default function SettingsPage() {
                   min="0"
                   max="20"
                   value={requestsPerGuest}
-                  onChange={(e) => setRequestsPerGuest(Math.min(20, Math.max(0, parseInt(e.target.value) || 0)))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') { setRequestsPerGuest(''); return; }
+                    const n = parseInt(v, 10);
+                    if (!isNaN(n)) setRequestsPerGuest(Math.min(20, Math.max(0, n)));
+                  }}
+                  onBlur={() => { if (requestsPerGuest === '') setRequestsPerGuest(0); }}
                   className="input-field w-full sm:w-24 text-center"
                 />
               </div>
@@ -404,7 +422,13 @@ export default function SettingsPage() {
                   min="0"
                   max="50"
                   value={tableCount}
-                  onChange={(e) => setTableCount(Math.min(50, Math.max(0, parseInt(e.target.value) || 0)))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') { setTableCount(''); return; }
+                    const n = parseInt(v, 10);
+                    if (!isNaN(n)) setTableCount(Math.min(50, Math.max(0, n)));
+                  }}
+                  onBlur={() => { if (tableCount === '') setTableCount(0); }}
                   className="input-field w-full sm:w-24 text-center"
                 />
               </div>

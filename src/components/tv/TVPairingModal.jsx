@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tv, X, CheckCircle2, Trash2, Smartphone, Sparkles, MonitorPlay } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -14,14 +14,26 @@ export function TVPairingModal({ isOpen, onClose }) {
   const user = useAuthStore(s => s.user);
   const activeSessionId = user?.id || sessionId;
 
-  // TV vinculadas guardadas
-  const [pairedTvs, setPairedTvs] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('bq-paired-tvs') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const getPairedTvs = () => {
+    const tvs = useSettingsStore.getState().pairedTvs;
+    return Array.isArray(tvs) ? tvs : [];
+  };
+
+  const [pairedTvs, setPairedTvs] = useState(getPairedTvs);
+
+  useEffect(() => {
+    let mounted = true;
+    const handleUpdate = () => {
+      if (mounted) {
+        setPairedTvs(getPairedTvs());
+      }
+    };
+    window.addEventListener('bq-paired-tvs-updated', handleUpdate);
+    return () => {
+      mounted = false;
+      window.removeEventListener('bq-paired-tvs-updated', handleUpdate);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -35,19 +47,37 @@ export function TVPairingModal({ isOpen, onClose }) {
 
     setIsPairing(true);
     try {
-      // Broadcast la aprobación de emparejamiento a la TV en el canal tv-pair-{cleanPin}
+      let ackReceived = false;
       const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
-      await pairChannel.subscribe();
-      
-      await pairChannel.send({
-        type: 'broadcast',
-        event: 'pairing_result',
-        payload: {
-          type: 'PAIRED',
-          sessionId: activeSessionId,
-          hostSecret
+      pairChannel.on('broadcast', { event: 'pairing_ack' }, () => {
+        ackReceived = true;
+      });
+
+      await pairChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await pairChannel.send({
+            type: 'broadcast',
+            event: 'pairing_result',
+            payload: {
+              type: 'PAIRED',
+              sessionId: activeSessionId
+            }
+          });
         }
       });
+
+      // Esperar hasta 2 segundos para ver si la TV responde
+      for (let i = 0; i < 10; i++) {
+        if (ackReceived) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (!ackReceived) {
+        toast.error("No se encontró ninguna TV activa con ese PIN");
+        supabase.removeChannel(pairChannel);
+        setIsPairing(false);
+        return;
+      }
 
       // Guardar la TV en el registro local del anfitrión
       const newTv = {
@@ -56,9 +86,16 @@ export function TVPairingModal({ isOpen, onClose }) {
         linkedAt: new Date().toISOString()
       };
       
-      const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
-      setPairedTvs(updatedList);
-      localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+      const existing = getPairedTvs().find(t => t.id === newTv.id);
+      let updatedList = getPairedTvs();
+      if (!existing) {
+        updatedList = [...updatedList, newTv];
+      } else {
+        updatedList = updatedList.map(t => t.id === newTv.id ? newTv : t);
+      }
+      
+      useSettingsStore.getState().setPairedTvs(updatedList);
+      window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');
@@ -84,13 +121,13 @@ export function TVPairingModal({ isOpen, onClose }) {
           event: 'pairing_result',
           payload: { type: 'UNPAIRED' }
         });
-        supabase.removeChannel(pairChannel);
+        setTimeout(() => supabase.removeChannel(pairChannel), 500);
       }
     });
 
-    const updatedList = pairedTvs.filter(t => t.id !== tvId);
-    setPairedTvs(updatedList);
-    localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+    const updatedList = getPairedTvs().filter(t => t.id !== tvId);
+    useSettingsStore.getState().setPairedTvs(updatedList);
+    window.dispatchEvent(new Event('bq-paired-tvs-updated'));
     toast.success(t('cast.tv_unlinked'));
   };
 

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Monitor, X, Tv, Cast, QrCode, Trash2, CheckCircle2, Sparkles, Wifi, Volume2, VolumeX } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
+import { usePlayerStore } from '../../store/usePlayerStore';
 import { toast } from 'sonner';
 import { useTranslation } from '../../store/useLanguageStore';
 
@@ -13,18 +14,28 @@ export function CastToTvModal({ isOpen, onClose }) {
   const { sessionId, hostSecret, isAdminMode } = useSettingsStore();
   const user = useAuthStore(s => s.user);
   const activeSessionId = user?.id || sessionId;
+  const isPlaying = usePlayerStore(s => s.isPlaying);
 
-  // TV vinculadas guardadas
-  const [pairedTvs, setPairedTvs] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('bq-paired-tvs') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const getPairedTvs = () => {
+    const tvs = useSettingsStore.getState().pairedTvs;
+    return Array.isArray(tvs) ? tvs : [];
+  };
 
-  // Preferencia de sonido para la TV remota
-  const [tvWithSound, setTvWithSound] = useState(false);
+  const [pairedTvs, setPairedTvs] = useState(getPairedTvs);
+
+  useEffect(() => {
+    let mounted = true;
+    const handleUpdate = () => {
+      if (mounted) {
+        setPairedTvs(getPairedTvs());
+      }
+    };
+    window.addEventListener('bq-paired-tvs-updated', handleUpdate);
+    return () => {
+      mounted = false;
+      window.removeEventListener('bq-paired-tvs-updated', handleUpdate);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -38,31 +49,54 @@ export function CastToTvModal({ isOpen, onClose }) {
 
     setIsPairing(true);
     try {
-      // Broadcast la aprobación de emparejamiento a la TV en el canal tv-pair-{cleanPin}
+      let ackReceived = false;
       const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
-      await pairChannel.subscribe();
+      pairChannel.on('broadcast', { event: 'pairing_ack' }, () => {
+        ackReceived = true;
+      });
 
-      await pairChannel.send({
-        type: 'broadcast',
-        event: 'pairing_result',
-        payload: {
-          type: 'PAIRED',
-          sessionId: activeSessionId,
-          hostSecret,
-          tvWithSound
+      await pairChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await pairChannel.send({
+            type: 'broadcast',
+            event: 'pairing_result',
+            payload: {
+              type: 'PAIRED',
+              sessionId: activeSessionId,
+              tvWithSound: false
+            }
+          });
         }
       });
 
-      // Guardar la TV en el registro local
+      // Esperar hasta 2 segundos para ver si la TV responde
+      for (let i = 0; i < 10; i++) {
+        if (ackReceived) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (!ackReceived) {
+        toast.error("No se encontró ninguna TV activa con ese PIN");
+        supabase.removeChannel(pairChannel);
+        return;
+      }
+
       const newTv = {
         id: cleanPin,
         name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
-        linkedAt: new Date().toISOString()
+        linkedAt: new Date().toISOString(),
+        soundEnabled: false
       };
 
-      const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
-      setPairedTvs(updatedList);
-      localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+      const existing = getPairedTvs().find(t => t.id === newTv.id);
+      let updatedList = getPairedTvs();
+      if (!existing) {
+        updatedList = [...updatedList, newTv];
+      } else {
+        updatedList = updatedList.map(t => t.id === newTv.id ? newTv : t);
+      }
+      useSettingsStore.getState().setPairedTvs(updatedList);
+      window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');
@@ -79,32 +113,66 @@ export function CastToTvModal({ isOpen, onClose }) {
   };
 
   const handleUnpair = async (tvId) => {
-    // Canal 1: tv-pair-{PIN} — para TVs que aún están en pantalla de vinculación o la escuchan siempre
     const pairChannel = supabase.channel(`tv-pair-${tvId}`);
-    await pairChannel.subscribe();
-    await pairChannel.send({
-      type: 'broadcast',
-      event: 'pairing_result',
-      payload: { type: 'UNPAIRED' }
+    pairChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await pairChannel.send({
+          type: 'broadcast',
+          event: 'pairing_result',
+          payload: { type: 'UNPAIRED' }
+        });
+        setTimeout(() => supabase.removeChannel(pairChannel), 500);
+      }
     });
-    supabase.removeChannel(pairChannel);
 
-    // Canal 2: tv-sync-{sessionId} — para TVs ya sincronizadas que escuchan el canal de reproducción
     if (activeSessionId) {
       const syncChannel = supabase.channel(`tv-sync-${activeSessionId}`);
-      await syncChannel.subscribe();
-      await syncChannel.send({
-        type: 'broadcast',
-        event: 'tv_sync',
-        payload: { type: 'UNPAIRED', tvId }
+      syncChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await syncChannel.send({
+            type: 'broadcast',
+            event: 'tv_sync',
+            payload: { type: 'UNPAIRED', tvId }
+          });
+          setTimeout(() => supabase.removeChannel(syncChannel), 500);
+        }
       });
-      supabase.removeChannel(syncChannel);
     }
 
-    const updatedList = pairedTvs.filter(t => t.id !== tvId);
-    setPairedTvs(updatedList);
-    localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
+    const updatedList = getPairedTvs().filter(t => t.id !== tvId);
+    useSettingsStore.getState().setPairedTvs(updatedList);
+    window.dispatchEvent(new Event('bq-paired-tvs-updated'));
     toast.success(t('cast.tv_unlinked'));
+  };
+
+  const handleToggleTvSound = async (tvId, currentSoundState) => {
+    if (!isPlaying) {
+      toast.error("Solo puedes activar el sonido cuando hay música reproduciéndose.");
+      return;
+    }
+    const newVal = !currentSoundState;
+    const updatedList = getPairedTvs().map(t => t.id === tvId ? { ...t, soundEnabled: newVal } : t);
+    useSettingsStore.getState().setPairedTvs(updatedList);
+    window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+
+    // Enviar mensaje local a pantallas que estén en la misma PC
+    const localChannel = new BroadcastChannel('envairo_tv_sync');
+    localChannel.postMessage({ type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId });
+    setTimeout(() => localChannel.close(), 100);
+
+    if (activeSessionId) {
+      const syncChannel = supabase.channel(`tv-sync-${activeSessionId}`);
+      syncChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await syncChannel.send({
+            type: 'broadcast',
+            event: 'tv_sync',
+            payload: { type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId }
+          });
+          setTimeout(() => supabase.removeChannel(syncChannel), 500);
+        }
+      });
+    }
   };
 
   return (
@@ -147,39 +215,6 @@ export function CastToTvModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Toggle de sonido en la TV */}
-            <button
-              type="button"
-              onClick={() => setTvWithSound(v => !v)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                tvWithSound
-                  ? 'bg-accent/10 border-accent/40 hover:bg-accent/15'
-                  : 'bg-black/20 border-white/10 hover:bg-white/5'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`p-1.5 rounded-lg transition-colors ${tvWithSound ? 'bg-accent/20 text-accent' : 'bg-white/10 text-text-muted'}`}>
-                  {tvWithSound ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                </div>
-                <div className="text-left">
-                  <p className={`text-xs font-semibold leading-tight ${tvWithSound ? 'text-accent' : 'text-white'}`}>
-                    {t('cast.sound_title')}
-                  </p>
-                  <p className="text-[10px] text-text-muted mt-0.5">
-                    {tvWithSound ? t('cast.sound_on') : t('cast.sound_off')}
-                  </p>
-                </div>
-              </div>
-              {/* Switch */}
-              <div className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 ${
-                tvWithSound ? 'bg-accent' : 'bg-white/20'
-              }`}>
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
-                  tvWithSound ? 'left-[22px]' : 'left-0.5'
-                }`} />
-              </div>
-            </button>
-
             <form onSubmit={handlePair} className="flex gap-2 pt-2">
               <input
                 type="text"
@@ -217,13 +252,22 @@ export function CastToTvModal({ isOpen, onClose }) {
                           <p className="text-[10px] text-text-muted">{t('cast.sync_active')}</p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleUnpair(tv.id)}
-                        className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-                        title={t('cast.unlink_tv')}
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleTvSound(tv.id, tv.soundEnabled)}
+                          className={`p-1.5 rounded-lg transition-colors ${tv.soundEnabled ? 'text-accent hover:bg-accent/10' : 'text-text-muted hover:text-white hover:bg-white/10'} ${!isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title={tv.soundEnabled ? "Silenciar TV" : "Activar sonido en TV"}
+                        >
+                          {tv.soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                        </button>
+                        <button
+                          onClick={() => handleUnpair(tv.id)}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                          title={t('cast.unlink_tv')}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

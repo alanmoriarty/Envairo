@@ -23,6 +23,7 @@ export const useSettingsStore = create(
       requestsPerHour: 15,
       requestsPerGuest: 0,
       tableCount: 0,
+      pairedTvs: [],
       
       // DJ Profile
       djName: 'Dj Anfitrión',
@@ -174,6 +175,7 @@ export const useSettingsStore = create(
       removeBlacklistArtist: (a) =>
         set((s) => ({ blacklistArtists: s.blacklistArtists.filter((x) => x !== a) })),
       clearBlacklistArtists: () => set((s) => ({ blacklistArtists: [] })),
+      setPairedTvs: (tvs) => set({ pairedTvs: tvs }),
       regenerateSession: () => set({ sessionId: `session-${Date.now()}` }),
     }),
     { name: 'bq-settings' }
