@@ -17,9 +17,10 @@ import { useAutoQueue } from '../../hooks/useAutoQueue';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
+import { useTranslation } from '../../store/useLanguageStore';
 
 export function RootLayout() {
-
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuthStore();
   const { isAdminMode, themeColor, sessionId } = useSettingsStore();
   const location = useLocation();
@@ -69,7 +70,7 @@ export function RootLayout() {
         const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
         localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
 
-        toast.success(`¡Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada por código QR!`, { icon: '📺' });
+        toast.success(t('layout.tv_linked_qr', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }), { icon: '📺' });
 
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);

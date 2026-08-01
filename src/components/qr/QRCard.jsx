@@ -69,21 +69,21 @@ export function QRCard() {
           <button
             onClick={() => setShowAdminQR(!showAdminQR)}
             className={`btn-ghost p-2 ${showAdminQR ? 'text-danger hover:bg-danger/10' : ''}`}
-            title="Vincular Dispositivo Host"
+            title={t('dashboard.link_host_device')}
           >
             <SmartphoneNfc size={14} />
           </button>
           <button
             onClick={() => setShowConfirm(true)}
             className="btn-ghost p-2"
-            title="Regenerar sesión"
+            title={t('dashboard.regenerate_session')}
           >
             <RefreshCw size={14} />
           </button>
           <button
             onClick={openFullscreen}
             className="btn-ghost p-2"
-            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+            title={isFullscreen ? t('dashboard.exit_fullscreen') : t('dashboard.fullscreen')}
           >
             <Maximize2 size={14} />
           </button>
@@ -98,13 +98,13 @@ export function QRCard() {
             window.open(guestUrl, '_blank');
           }
         }}
-        title={!showAdminQR ? "Abrir vista de invitados" : ""}
+        title={!showAdminQR ? t('dashboard.open_guest_view') : ""}
       >
         {isFullscreen && (
           <button
             onClick={openFullscreen}
             className="absolute top-4 right-4 p-3 bg-danger text-white rounded-full shadow-lg z-50 flex items-center justify-center border-2 border-bg-root"
-            title="Cerrar pantalla completa"
+            title={t('dashboard.exit_fullscreen')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
@@ -163,22 +163,22 @@ export function QRCard() {
       {showConfirm && (
         <div className="absolute inset-0 bg-bg-root/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
           <RefreshCw size={32} className="text-danger mb-3" />
-          <h4 className="font-bold text-text-primary mb-2">¿Regenerar QR?</h4>
+          <h4 className="font-bold text-text-primary mb-2">{t('dashboard.regenerate_qr_title')}</h4>
           <p className="text-xs text-text-muted mb-6 leading-relaxed">
-            El código actual dejará de funcionar y todas las sesiones activas (invitados y control remoto) se cerrarán.
+            {t('dashboard.regenerate_qr_desc')}
           </p>
           <div className="flex gap-3 w-full">
             <button 
               onClick={() => setShowConfirm(false)} 
               className="px-4 py-2 flex-1 rounded-xl bg-bg-elevated text-text-primary hover:bg-white/10 transition-colors font-semibold"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button 
               onClick={handleRegenerate} 
               className="px-4 py-2 flex-1 rounded-xl bg-danger hover:bg-danger/80 text-white transition-colors font-semibold shadow-glow-sm"
             >
-              Regenerar
+              {t('common.retry')}
             </button>
           </div>
         </div>

@@ -4,8 +4,10 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { useTranslation } from '../../store/useLanguageStore';
 
 export function CastToTvModal({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const [pinInput, setPinInput] = useState('');
   const [isPairing, setIsPairing] = useState(false);
   const { sessionId, hostSecret, isAdminMode } = useSettingsStore();
@@ -30,7 +32,7 @@ export function CastToTvModal({ isOpen, onClose }) {
     e?.preventDefault();
     const cleanPin = pinInput.replace(/\D/g, '');
     if (cleanPin.length !== 6) {
-      toast.error('El código PIN debe tener 6 dígitos (ej: 482910)');
+      toast.error(t('cast.pin_length_error'));
       return;
     }
 
@@ -62,7 +64,7 @@ export function CastToTvModal({ isOpen, onClose }) {
       setPairedTvs(updatedList);
       localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
 
-      toast.success(`¡TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada con éxito!`);
+      toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');
 
       setTimeout(() => {
@@ -70,7 +72,7 @@ export function CastToTvModal({ isOpen, onClose }) {
       }, 2000);
     } catch (err) {
       console.error(err);
-      toast.error('Error al vincular la TV. Verifica el código e intenta nuevamente.');
+      toast.error(t('cast.link_error'));
     } finally {
       setIsPairing(false);
     }
@@ -102,7 +104,7 @@ export function CastToTvModal({ isOpen, onClose }) {
     const updatedList = pairedTvs.filter(t => t.id !== tvId);
     setPairedTvs(updatedList);
     localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
-    toast.success('Pantalla TV desvinculada');
+    toast.success(t('cast.tv_unlinked'));
   };
 
   return (
@@ -123,9 +125,9 @@ export function CastToTvModal({ isOpen, onClose }) {
               <Cast size={28} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Transmitir a Pantallas TV</h2>
+              <h2 className="text-xl font-bold text-white">{t('cast.title')}</h2>
               <p className="text-text-muted text-sm mt-1">
-                Conecta Smart TVs por Internet o monitores locales
+                {t('cast.subtitle')}
               </p>
             </div>
           </div>
@@ -140,8 +142,8 @@ export function CastToTvModal({ isOpen, onClose }) {
                 <Tv size={22} />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">Vincular Smart TV (Vía Internet)</h3>
-                <p className="text-xs text-text-muted">Abre envairo.app/tv en tu Smart TV y copia el PIN</p>
+                <h3 className="font-bold text-white text-base">{t('cast.smart_tv_title')}</h3>
+                <p className="text-xs text-text-muted">{t('cast.smart_tv_desc')}</p>
               </div>
             </div>
 
@@ -161,10 +163,10 @@ export function CastToTvModal({ isOpen, onClose }) {
                 </div>
                 <div className="text-left">
                   <p className={`text-xs font-semibold leading-tight ${tvWithSound ? 'text-accent' : 'text-white'}`}>
-                    Sonido en la TV
+                    {t('cast.sound_title')}
                   </p>
                   <p className="text-[10px] text-text-muted mt-0.5">
-                    {tvWithSound ? 'La TV reproducirá audio' : 'La TV transmite solo video (silenciada)'}
+                    {tvWithSound ? t('cast.sound_on') : t('cast.sound_off')}
                   </p>
                 </div>
               </div>
@@ -192,7 +194,7 @@ export function CastToTvModal({ isOpen, onClose }) {
                 disabled={isPairing || pinInput.length !== 6}
                 className="btn-accent px-5 font-semibold text-sm flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
               >
-                {isPairing ? 'Vinculando...' : 'Vincular TV'}
+                {isPairing ? t('cast.pairing_btn') : t('cast.pair_btn')}
               </button>
             </form>
 
@@ -200,7 +202,7 @@ export function CastToTvModal({ isOpen, onClose }) {
             {pairedTvs.length > 0 && (
               <div className="pt-3 border-t border-white/10">
                 <h4 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
-                  TVs Vinculadas ({pairedTvs.length})
+                  {t('cast.linked_tvs', { count: pairedTvs.length })}
                 </h4>
                 <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
                   {pairedTvs.map((tv) => (
@@ -212,13 +214,13 @@ export function CastToTvModal({ isOpen, onClose }) {
                         <Wifi size={16} className="text-accent" />
                         <div>
                           <p className="text-xs font-semibold text-white">{tv.name}</p>
-                          <p className="text-[10px] text-text-muted">Sincronización por Internet activa</p>
+                          <p className="text-[10px] text-text-muted">{t('cast.sync_active')}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => handleUnpair(tv.id)}
                         className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-                        title="Desvincular TV"
+                        title={t('cast.unlink_tv')}
                       >
                         <Trash2 size={15} />
                       </button>
@@ -237,9 +239,9 @@ export function CastToTvModal({ isOpen, onClose }) {
                   <Monitor size={20} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-white text-sm">Monitor Local</h4>
+                  <h4 className="font-semibold text-white text-sm">{t('cast.local_monitor_title')}</h4>
                   <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
-                    Abre una pestaña silenciada para arrastrar a un monitor o TV conectado por cable HDMI.
+                    {t('cast.local_monitor_desc')}
                   </p>
                 </div>
               </div>
@@ -248,7 +250,7 @@ export function CastToTvModal({ isOpen, onClose }) {
               onClick={() => window.open(`/tv?session=${activeSessionId}`, '_blank')}
               className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
             >
-              Abrir Pestaña de Monitor (Conexión Directa)
+              {t('cast.local_monitor_btn')}
             </button>
           </div>
         </div>
@@ -256,7 +258,7 @@ export function CastToTvModal({ isOpen, onClose }) {
         {/* Footer */}
         <div className="p-6 pt-0 shrink-0">
           <button onClick={onClose} className="btn-primary w-full py-3">
-            Listo
+            {t('cast.done_btn')}
           </button>
         </div>
 

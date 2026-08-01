@@ -26,13 +26,13 @@ export function ProfileModal({ onClose }) {
       .slice(0, 30); // Límite de 30 caracteres
 
     if (!sanitizedName) {
-      toast.error('El apodo no puede estar vacío');
+      toast.error(t('profile.empty_nickname'));
       return;
     }
 
     setDjName(sanitizedName);
     setDjAvatar(localAvatar);
-    toast.success('Perfil actualizado correctamente');
+    toast.success(t('profile.updated'));
     onClose();
   };
 
@@ -48,27 +48,27 @@ export function ProfileModal({ onClose }) {
 
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <UserCircle2 className="text-accent" />
-          Configurar Perfil de Anfitrión
+          {t('profile.title')}
         </h2>
 
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              Apodo (Máximo 30 caracteres)
+              {t('profile.nickname_label')}
             </label>
             <input
               type="text"
               value={localName}
               onChange={(e) => setLocalName(e.target.value.slice(0, 30))}
               maxLength={30}
-              placeholder="Ej: Dj Anfitrión"
+              placeholder={t('profile.nickname_placeholder')}
               className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-3">
-              Selecciona tu Avatar
+              {t('profile.avatar_label')}
             </label>
             <div className="grid grid-cols-3 gap-3">
               {STOCK_AVATARS.map((avatar) => (
@@ -99,14 +99,14 @@ export function ProfileModal({ onClose }) {
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-text-muted hover:text-white transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSave}
               className="flex items-center gap-2 px-6 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg transition-colors font-medium shadow-glow-sm"
             >
               <Save size={16} />
-              Guardar Perfil
+              {t('profile.save_btn')}
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Tv, Activity, Maximize, Minimize, X, Unlink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from '../store/useLanguageStore';
 
 function generate6DigitPin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -25,6 +26,7 @@ function safeDestroyPlayer(playerRef, containerId, childId) {
 }
 
 export default function TVDisplayPage() {
+  const { t } = useTranslation();
   const channelRef = useRef(null);
   const sbSyncChannelRef = useRef(null);
   const player1Ref = useRef(null);
@@ -54,7 +56,7 @@ export default function TVDisplayPage() {
   useEffect(() => { tvWithSoundRef.current = tvWithSound; }, [tvWithSound]);
 
   const [tvPin] = useState(() => generate6DigitPin());
-  const [status, setStatus] = useState('Verificando disponibilidad...');
+  const [status, setStatus] = useState(t('tv.checking_availability'));
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
@@ -92,7 +94,7 @@ export default function TVDisplayPage() {
           setCurrentVideoId(null);
           localStorage.removeItem('bq-tv-session-id');
           setSessionId(null);
-          setStatus('Pantalla desvinculada por el anfitrión.');
+          setStatus(t('tv.unpaired_by_host'));
         }
       })
       .subscribe();
@@ -124,7 +126,7 @@ export default function TVDisplayPage() {
           if (activeP && typeof activeP.pauseVideo === 'function') {
             activeP.pauseVideo();
           }
-          setStatus('Anfitrión desconectado. Esperando reconexión...');
+          setStatus(t('tv.host_disconnected'));
         }
       }
     };
@@ -142,7 +144,7 @@ export default function TVDisplayPage() {
             if (activeP && typeof activeP.pauseVideo === 'function') {
               activeP.pauseVideo();
             }
-            setStatus('Anfitrión desconectado. Esperando reconexión...');
+            setStatus(t('tv.host_disconnected'));
           } else if (e.payload.type === 'UNPAIRED') {
             // Validar que el mensaje de desvinculación sea específicamente para esta TV
             if (e.payload.tvId && e.payload.tvId !== tvPin) return;
@@ -156,7 +158,7 @@ export default function TVDisplayPage() {
             setCurrentVideoId(null);
             localStorage.removeItem('bq-tv-session-id');
             setSessionId(null);
-            setStatus('Pantalla desvinculada por el anfitrión.');
+            setStatus(t('tv.unpaired_by_host'));
           } else {
             handleSync(e.payload);
           }
@@ -169,7 +171,7 @@ export default function TVDisplayPage() {
       if (activeTvs.current.size >= 10) {
         setLimitReached(true);
         setIsCheckingLimit(false);
-        setStatus('Límite máximo alcanzado (10 pantallas simultáneas)');
+        setStatus(t('tv.max_limit_reached'));
       } else {
         setIsCheckingLimit(false);
         if (!window.YT) {
@@ -180,12 +182,12 @@ export default function TVDisplayPage() {
         }
 
         window.onYouTubeIframeAPIReady = () => {
-          setStatus('Conectado. Esperando música...');
+          setStatus(t('tv.connected_waiting'));
           initPlayers();
         };
 
         if (window.YT && window.YT.Player) {
-          setStatus('Conectado. Esperando música...');
+          setStatus(t('tv.connected_waiting'));
           initPlayers();
         }
       }
@@ -288,7 +290,7 @@ export default function TVDisplayPage() {
 
         setCurrentVideoId(null);
         currentVideoIdRef.current = null;
-        setStatus('Buscando alternativa...');
+        setStatus(t('tv.searching_alternative'));
 
         // Notificar al anfitrión (Host) para que busque otra alternativa si es un error fatal
         if (event.data === 150 || event.data === 101 || event.data === 100) {
@@ -485,9 +487,7 @@ export default function TVDisplayPage() {
               <span className="text-sm font-semibold tracking-wider uppercase text-text-muted">envAIro TV Display</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-              Vincular esta pantalla
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">{t('tv.link_this_screen')}</h1>
 
             {/* Tarjeta de Vinculación */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-3xl">
@@ -501,25 +501,23 @@ export default function TVDisplayPage() {
                     includeMargin={false}
                   />
                 </div>
-                <p className="text-xs text-text-muted font-medium">Escanea desde el celular del Anfitrión</p>
+                <p className="text-xs text-text-muted font-medium">{t('tv.scan_from_host')}</p>
               </div>
 
               {/* Columna PIN */}
               <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 w-full min-w-0">
-                <span className="text-xs font-semibold text-accent uppercase tracking-widest">O ingresa este PIN</span>
+                <span className="text-xs font-semibold text-accent uppercase tracking-widest">{t('tv.or_enter_pin')}</span>
                 <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
                   {tvPin.slice(0, 3)} - {tvPin.slice(3)}
                 </div>
-                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed">
-                  Ingresa a tu panel de control de envAIro, presiona <strong className="text-white">Vincular TV</strong> e introduce este código de 6 dígitos.
-                </p>
+                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed" dangerouslySetInnerHTML={{ __html: t('tv.pin_instructions') }} />
               </div>
             </div>
 
             {/* Status footer */}
             <div className="flex items-center gap-3 text-white/60 bg-white/5 px-5 py-2.5 rounded-full text-xs">
               <Activity size={16} className="animate-spin-slow text-accent" />
-              <span>Esperando vinculación en tiempo real...</span>
+              <span>{t('tv.waiting_realtime')}</span>
             </div>
           </div>
         </div>
@@ -547,14 +545,14 @@ export default function TVDisplayPage() {
           <button
             onClick={handleUnpair}
             className="bg-black/50 hover:bg-danger/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
-            title="Desvincular esta pantalla TV"
+            title={t('tv.unpair_tv')}
           >
             <Unlink size={24} />
           </button>
           <button
             onClick={toggleFullscreen}
             className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
-            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla Completa"}
+            title={isFullscreen ? t('tv.exit_fullscreen') : t('tv.fullscreen')}
           >
             {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
           </button>
@@ -567,7 +565,7 @@ export default function TVDisplayPage() {
           <button
             onClick={toggleFullscreen}
             className="bg-black/50 hover:bg-black/80 text-white p-4 rounded-full backdrop-blur-md transition-all flex items-center justify-center cursor-pointer shadow-lg"
-            title="Salir (o presiona ESC)"
+            title={t('tv.exit_esc')}
           >
             <X size={28} />
           </button>

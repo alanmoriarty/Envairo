@@ -37,7 +37,7 @@ export default function LoginPage() {
       // Limpiar cualquier estado del reproductor local para no interferir
       usePlayerStore.getState().clearPlayerState();
 
-      import('sonner').then(({ toast }) => toast.success('Vinculado como Control Remoto.'));
+      import('sonner').then(({ toast }) => toast.success(t('login.remote_linked')));
       // Redirigir directamente al dashboard, limpiando el secreto del historial para evitar fugas
       navigate('/app/dashboard', { replace: true });
       return;
@@ -93,7 +93,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (!captchaToken) {
-      toast.error('Por favor, resuelve el Captcha para verificar que eres humano.');
+      toast.error(t('login.captcha_required'));
       return;
     }
 
@@ -110,9 +110,9 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data?.user && data?.user?.identities?.length === 0) {
-          toast.error('Este correo ya está registrado.');
+          toast.error(t('login.email_exists'));
         } else {
-          toast.success('¡Registro exitoso! Por favor revisa tu correo para confirmar tu cuenta.', { duration: 6000 });
+          toast.success(t('login.register_success'), { duration: 6000 });
           setIsRegistering(false); // Switch to login view
         }
       } else {
@@ -155,11 +155,11 @@ export default function LoginPage() {
     } catch (err) {
       console.error('Auth error:', err);
       if (err.message === 'Email not confirmed') {
-        toast.error('Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        toast.error(t('login.confirm_email'));
       } else if (err.message === 'Invalid login credentials') {
-        toast.error('Correo o contraseña incorrectos.');
+        toast.error(t('login.invalid_credentials'));
       } else {
-        toast.error(err.message || 'Error en la autenticación');
+        toast.error(err.message || t('login.auth_error'));
       }
     } finally {
       setIsLoading(false);
@@ -172,11 +172,11 @@ export default function LoginPage() {
 
   const handleResetPassword = async () => {
     if (!email) {
-      toast.error('Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.');
+      toast.error(t('login.email_required'));
       return;
     }
     if (!captchaToken) {
-      toast.error('Por favor, resuelve el Captcha para verificar que eres humano.');
+      toast.error(t('login.captcha_required'));
       return;
     }
     try {
@@ -185,9 +185,9 @@ export default function LoginPage() {
         captchaToken
       });
       if (error) throw error;
-      toast.success('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.', { duration: 6000 });
+      toast.success(t('login.reset_link_sent'), { duration: 6000 });
     } catch (err) {
-      toast.error(err.message || 'Error al solicitar el restablecimiento');
+      toast.error(err.message || t('login.reset_error'));
     } finally {
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
@@ -225,12 +225,12 @@ export default function LoginPage() {
         {/* Auth Form */}
         <div className="card p-6 space-y-4 mb-6">
           <h2 className="text-lg font-semibold text-text-primary text-center mb-4">
-            {isRegistering ? 'Crear Cuenta' : t('login.access')}
+            {isRegistering ? t('login.create_account') : t('login.access')}
           </h2>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Correo Electrónico</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">{t('login.email_label')}</label>
               <input
                 type="email"
                 value={email}
@@ -238,15 +238,15 @@ export default function LoginPage() {
                 required
                 maxLength={100}
                 className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
-                placeholder="tu@correo.com"
+                placeholder={t('login.email_placeholder')}
               />
             </div>
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-text-secondary">Contraseña</label>
+                <label className="block text-sm font-medium text-text-secondary">{t('login.password_label')}</label>
                 {!isRegistering && (
                   <button type="button" onClick={handleResetPassword} className="text-xs text-accent hover:text-primary transition-colors">
-                    ¿Olvidaste tu contraseña?
+                    {t('login.forgot_password')}
                   </button>
                 )}
               </div>
@@ -267,14 +267,14 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors flex items-center justify-center"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-label={showPassword ? t('login.hide_password') : t('login.show_password')}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {isRegistering && (
                 <p className="text-[11px] text-text-muted mt-2 ml-1 leading-tight">
-                  Tu contraseña debe tener al menos 8 caracteres, e incluir una letra mayúscula, una minúscula y un número.
+                  {t('login.password_hint')}
                 </p>
               )}
             </div>
@@ -301,9 +301,9 @@ export default function LoginPage() {
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : isRegistering ? (
-                'Registrarse'
+                t('login.register_btn')
               ) : (
-                'Iniciar Sesión'
+                t('login.login_btn')
               )}
             </button>
           </form>
@@ -313,7 +313,7 @@ export default function LoginPage() {
               onClick={() => setIsRegistering(!isRegistering)}
               className="text-sm text-accent hover:text-primary transition-colors"
             >
-              {isRegistering ? '¿Ya tienes cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate'}
+              {isRegistering ? t('login.already_have_account') : t('login.dont_have_account')}
             </button>
           </div>
 
@@ -325,7 +325,7 @@ export default function LoginPage() {
           <div className="pt-2">
             <InstallAppButton
               variant="custom"
-              text="Descarga Nuestra App"
+              text={t('login.download_app')}
               className="w-full py-4 px-6 rounded-xl text-white font-semibold shadow-glow transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10"
             />
           </div>
@@ -333,9 +333,9 @@ export default function LoginPage() {
 
         {/* Footer with Legal Links */}
         <div className="mt-8 text-center text-sm text-text-secondary/70 flex justify-center gap-4">
-          <Link to="/privacy" className="hover:text-primary transition-colors">Política de Privacidad</Link>
+          <Link to="/privacy" className="hover:text-primary transition-colors">{t('login.privacy_policy')}</Link>
           <span>&bull;</span>
-          <Link to="/terms" className="hover:text-primary transition-colors">Términos y Condiciones</Link>
+          <Link to="/terms" className="hover:text-primary transition-colors">{t('login.terms_conditions')}</Link>
         </div>
       </div>
     </div>

@@ -4,8 +4,10 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { useTranslation } from '../../store/useLanguageStore';
 
 export function TVPairingModal({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const [pinInput, setPinInput] = useState('');
   const [isPairing, setIsPairing] = useState(false);
   const { sessionId, hostSecret } = useSettingsStore();
@@ -27,7 +29,7 @@ export function TVPairingModal({ isOpen, onClose }) {
     e?.preventDefault();
     const cleanPin = pinInput.replace(/\D/g, '');
     if (cleanPin.length !== 6) {
-      toast.error('El código PIN debe tener 6 dígitos (ej: 482910)');
+      toast.error(t('cast.pin_length_error'));
       return;
     }
 
@@ -58,7 +60,7 @@ export function TVPairingModal({ isOpen, onClose }) {
       setPairedTvs(updatedList);
       localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
 
-      toast.success(`¡TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada con éxito!`);
+      toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');
       
       setTimeout(() => {
@@ -66,7 +68,7 @@ export function TVPairingModal({ isOpen, onClose }) {
       }, 2000);
     } catch (err) {
       console.error(err);
-      toast.error('Error al vincular la TV. Verifica el código e intenta nuevamente.');
+      toast.error(t('cast.link_error'));
     } finally {
       setIsPairing(false);
     }
@@ -89,7 +91,7 @@ export function TVPairingModal({ isOpen, onClose }) {
     const updatedList = pairedTvs.filter(t => t.id !== tvId);
     setPairedTvs(updatedList);
     localStorage.setItem('bq-paired-tvs', JSON.stringify(updatedList));
-    toast.success('Pantalla TV desvinculada');
+    toast.success(t('cast.tv_unlinked'));
   };
 
   return (
@@ -108,8 +110,8 @@ export function TVPairingModal({ isOpen, onClose }) {
               <Tv size={22} />
             </div>
             <div>
-              <h3 className="font-bold text-lg leading-snug">Vincular Pantalla TV</h3>
-              <p className="text-xs text-text-muted">Conecta Smart TVs a través de Internet</p>
+              <h3 className="font-bold text-lg leading-snug">{t('cast.tv_pairing_title')}</h3>
+              <p className="text-xs text-text-muted">{t('cast.tv_pairing_subtitle')}</p>
             </div>
           </div>
           <button 
@@ -124,7 +126,7 @@ export function TVPairingModal({ isOpen, onClose }) {
         <form onSubmit={handlePair} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
-              Código PIN de la TV (6 dígitos)
+              {t('cast.pin_label')}
             </label>
             <div className="flex gap-2">
               <input
@@ -140,12 +142,10 @@ export function TVPairingModal({ isOpen, onClose }) {
                 disabled={isPairing || pinInput.length !== 6}
                 className="btn-accent px-5 font-semibold text-sm flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
               >
-                {isPairing ? 'Vinculando...' : 'Vincular TV'}
+                {isPairing ? t('cast.pairing_btn') : t('cast.pair_btn')}
               </button>
             </div>
-            <p className="text-[11px] text-text-muted mt-2 leading-relaxed">
-              Abre <span className="text-white font-medium">envairo.app/tv</span> en cualquier Smart TV. Copia el PIN que aparece en la pantalla y presiona Vincular.
-            </p>
+            <p className="text-[11px] text-text-muted mt-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('cast.pin_desc') }} />
           </div>
         </form>
 
@@ -153,7 +153,7 @@ export function TVPairingModal({ isOpen, onClose }) {
         {pairedTvs.length > 0 && (
           <div className="mt-6 pt-5 border-t border-white/10">
             <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
-              Pantallas Vinculadas ({pairedTvs.length})
+              {t('cast.linked_screens', { count: pairedTvs.length })}
             </h4>
             <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
               {pairedTvs.map((tv) => (
@@ -165,13 +165,13 @@ export function TVPairingModal({ isOpen, onClose }) {
                     <MonitorPlay size={18} className="text-accent" />
                     <div>
                       <p className="text-xs font-semibold">{tv.name}</p>
-                      <p className="text-[10px] text-text-muted">Conectado vía Realtime</p>
+                      <p className="text-[10px] text-text-muted">{t('cast.realtime_connected')}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleUnpair(tv.id)}
                     className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-                    title="Desvincular TV"
+                    title={t('cast.unlink_tv')}
                   >
                     <Trash2 size={16} />
                   </button>

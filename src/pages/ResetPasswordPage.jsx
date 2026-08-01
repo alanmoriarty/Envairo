@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Music2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from '../store/useLanguageStore';
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ export default function ResetPasswordPage() {
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres.');
+      toast.error(t('reset.password_short'));
       return;
     }
     
@@ -29,12 +31,12 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       
-      toast.success('¡Contraseña actualizada exitosamente! Inicia sesión con tu nueva contraseña.', { duration: 5000 });
+      toast.success(t('reset.password_success'), { duration: 5000 });
       await supabase.auth.signOut();
       navigate('/');
     } catch (err) {
       console.error('Error updating password:', err);
-      toast.error(err.message || 'Error al actualizar la contraseña');
+      toast.error(err.message || t('reset.password_error'));
     } finally {
       setIsLoading(false);
     }

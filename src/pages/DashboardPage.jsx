@@ -325,7 +325,7 @@ export default function DashboardPage() {
                   }
                 }}
                 className="p-1.5 text-text-muted hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:text-text-muted"
-                title="Video en pantalla completa"
+                title={t('dashboard.fullscreen_video')}
               >
                 <Maximize2 size={18} />
               </button>
@@ -333,7 +333,7 @@ export default function DashboardPage() {
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCastModalOpen(true); console.log("Abriendo Modal Cast"); }}
               className="p-1.5 text-text-muted hover:text-accent bg-white/5 hover:bg-accent/20 rounded-lg transition-colors"
-              title="Transmitir a TV"
+              title={t('dashboard.cast_tv')}
             >
               <Monitor size={18} />
             </button>
@@ -341,16 +341,16 @@ export default function DashboardPage() {
           <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
               {isAdminMode ? (
-                <span className="text-success">● Conectado al Host</span>
+                <span className="text-success">● {t('dashboard.connected_host')}</span>
               ) : sdkReady ? (
-                <span className="text-success">● SDK conectado</span>
+                <span className="text-success">● {t('dashboard.sdk_connected')}</span>
               ) : (
-                <span className="text-warning">● Esperando reproductor...</span>
+                <span className="text-warning">● {t('dashboard.waiting_player')}</span>
               )}
             </span>
             {isThinking && (
               <span className="text-accent flex items-center gap-1 animate-pulse">
-                <Sparkles size={14} /> envAIro Selector pensando...
+                <Sparkles size={14} /> {t('dashboard.envairo_thinking')}
               </span>
             )}
           </p>
@@ -472,7 +472,7 @@ export default function DashboardPage() {
               supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'restart', ts: Date.now() } } }).then();
             }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors hidden sm:block"
-            title="Reiniciar canción"
+            title={t('dashboard.restart_song')}
           >
             <RotateCcw size={24} />
           </button>
@@ -595,7 +595,7 @@ export default function DashboardPage() {
                     >
                       {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                       <span className="hidden sm:inline">
-                        {alwaysAvailable ? 'Abierto' : 'Cerrado'}
+                        {alwaysAvailable ? t('dashboard.open_requests') : t('dashboard.closed_requests')}
                       </span>
                     </button>
 
@@ -695,10 +695,10 @@ export default function DashboardPage() {
                     <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
 
                     {(!enairoTestMode && enairoUsageCount >= 3) ? (
-                      <span className="text-xs font-medium text-text-muted" title="Límite diario alcanzado">Límite Diario</span>
+                      <span className="text-xs font-medium text-text-muted" title={t('dashboard.daily_limit_reached')}>{t('dashboard.daily_limit')}</span>
                     ) : (!enairoTestMode && enairoCooldownUntil > localTime) ? (
                       <span className="text-xs font-medium text-text-muted">
-                        Disponible en {Math.ceil((enairoCooldownUntil - localTime) / 60000)} min
+                        {t('dashboard.available_in', { min: Math.ceil((enairoCooldownUntil - localTime) / 60000) })}
                       </span>
                     ) : (
                       <button
@@ -706,7 +706,7 @@ export default function DashboardPage() {
                         disabled={isThinking}
                         className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
                       >
-                        {isThinking ? 'Generando...' : 'envAIro Selector'}
+                        {isThinking ? t('dashboard.generating') : 'envAIro Selector'}
                       </button>
                     )}
                   </div>
@@ -716,7 +716,7 @@ export default function DashboardPage() {
                       onClick={() => usePlayerStore.getState().clearQueue()}
                       className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
                     >
-                      Vaciar
+                      {t('dashboard.empty_queue_btn')}
                     </button>
                   )}
                 </div>
@@ -789,10 +789,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-center text-white mb-2">
-                Configuración envAIro Selector
+                {t('dashboard.envairo_config_title')}
               </h3>
               <p className="text-sm text-center text-text-muted mb-6">
-                Asegúrate de haber escrito correctamente el contexto de tu evento. Una vez generado, envAIro Selector no podrá invocarse manualmente por las próximas <span className="font-bold text-white">2 horas</span>.
+                {t('dashboard.envairo_config_desc')}
               </p>
 
               <div className="space-y-4 mb-6 text-left">

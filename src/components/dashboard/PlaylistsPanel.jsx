@@ -62,7 +62,7 @@ export function PlaylistsPanel() {
     if (groups['Hoy']) {
       result.push({
         id: 'history-hoy',
-        name: 'Historial: Hoy',
+        name: t('dashboard.history_today'),
         isHistory: true,
         tracks: groups['Hoy'],
         images: groups['Hoy'].length > 0 && groups['Hoy'][0].image ? [{ url: groups['Hoy'][0].image }] : []
@@ -71,7 +71,7 @@ export function PlaylistsPanel() {
     if (groups['Ayer']) {
       result.push({
         id: 'history-ayer',
-        name: 'Historial: Ayer',
+        name: t('dashboard.history_yesterday'),
         isHistory: true,
         tracks: groups['Ayer'],
         images: groups['Ayer'].length > 0 && groups['Ayer'][0].image ? [{ url: groups['Ayer'][0].image }] : []
@@ -96,7 +96,7 @@ export function PlaylistsPanel() {
       } catch (err) {
         if (!isMounted) return;
         console.error('Error fetching playlists:', err);
-        if (showLoading) setError('No se pudieron cargar tus playlists.');
+        if (showLoading) setError(t('dashboard.playlists_error_load'));
       } finally {
         if (isMounted && showLoading) setLoading(false);
       }
@@ -229,7 +229,7 @@ export function PlaylistsPanel() {
         playlistData = await getPlaylist(playlistId);
       }
 
-      if (!playlistData) throw new Error('No se encontró la playlist');
+      if (!playlistData) throw new Error(t('dashboard.playlist_not_found'));
 
       // Guardar playlist importada localmente
       playlistData.source = playbackEngine;
@@ -237,7 +237,7 @@ export function PlaylistsPanel() {
       const existing = JSON.parse(localStorage.getItem('envairo_custom_playlists') || '[]');
       if (!existing.find(p => p.id === playlistData.id)) {
         if (existing.length >= 10) {
-          toast.error('Límite de playlists: Solo puedes guardar un máximo de 10 playlists.', { id: toastId });
+          toast.error(t('dashboard.playlist_limit'), { id: toastId });
           setImporting(false);
           return;
         }
@@ -367,7 +367,7 @@ export function PlaylistsPanel() {
                     const newPlaylists = existing.filter(p => p.id !== pl.id);
                     localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
                     setPlaylists(prev => prev.filter(p => p.id !== pl.id));
-                    toast.success('Playlist eliminada de tus guardados');
+                    toast.success(t('dashboard.playlist_removed_saved'));
                   }}
                   title="Eliminar de guardados"
                 >
@@ -436,7 +436,7 @@ export function PlaylistsPanel() {
                   const newPlaylists = existing.filter(p => p.id !== pl.id);
                   localStorage.setItem('envairo_custom_playlists', JSON.stringify(newPlaylists));
                   setPlaylists(prev => prev.filter(p => p.id !== pl.id));
-                  toast.success('Playlist eliminada');
+                  toast.success(t('dashboard.playlist_removed'));
                 }}
                 title="Eliminar playlist"
               >

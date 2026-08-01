@@ -3,7 +3,7 @@
 Este documento sirve como la fuente principal de la verdad (Single Source of Truth) para cualquier IA o desarrollador que se integre al proyecto envAIro. Contiene la arquitectura, el stack tecnológico, las reglas de negocio y las decisiones técnicas fundamentales.
 
 ## 1. Descripción General del Proyecto
-**envAIro** es una aplicación web (PWA) de música colaborativa tipo "Jukebox". Permite a un "Anfitrión" crear una sesión musical en su dispositivo (computadora o tablet) y proyectar un código QR. Los "Invitados" escanean el QR para unirse a la sesión desde sus teléfonos y solicitar canciones. La aplicación cuenta con un DJ de Inteligencia Artificial (Auto DJ / envAIro) que evalúa las peticiones de los usuarios en tiempo real.
+**envAIro** es una aplicación web (PWA) de música colaborativa tipo "Jukebox". Permite a un "Anfitrión" crear una sesión musical en su dispositivo (computadora o tablet) y proyectar un código QR. Los "Invitados" escanean el QR para unirse a la sesión desde sus teléfonos y solicitar canciones. La aplicación cuenta con un DJ de Inteligencia Artificial (envAIro Filter y Envairo Selector) que evalúa las peticiones de los usuarios en tiempo real.
 
 ## 2. Stack Tecnológico
 - **Frontend:** React + Vite
@@ -42,7 +42,7 @@ La lógica de negocio reside casi enteramente en hooks de Zustand:
 
 ## 5. Auto DJ vs envAIro Selector
 Aunque trabajan en conjunto para automatizar la música, son dos funcionalidades completamente distintas:
-- **Auto DJ (Filtro automatizado):** Se encarga de evaluar las peticiones de los invitados que entran a la tabla `requests` con estado `pending`. El Host ejecuta localmente el hook correspondiente (`useAutoQueue.js`) que invoca una Edge Function en Supabase (`evaluate-request`) para revisar si la canción cumple con las reglas (Whitelist, Blacklist) y la aprueba o rechaza automáticamente.
+- **Auto DJ (Envairo Filter, Filtro automatizado):** Se encarga de evaluar las peticiones de los invitados que entran a la tabla `requests` con estado `pending`. El Host ejecuta localmente el hook correspondiente (`useAutoQueue.js`) que invoca una Edge Function en Supabase (`evaluate-request`) para revisar si la canción cumple con las reglas (Whitelist, Blacklist) y la aprueba o rechaza automáticamente.
 - **envAIro Selector (IA proactiva):** Es la funcionalidad encargada de inyectar y sugerir nuevas canciones. Se ejecuta mediante el hook `useEnairoSelector.js` para añadir pistas a la cola automáticamente basándose en el contexto cuando el ambiente lo requiere (por ejemplo, cuando la cola se vacía).
 
 ## 6. Flujo de Archivos Clave

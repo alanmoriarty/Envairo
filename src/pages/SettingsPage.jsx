@@ -237,13 +237,13 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('simple')}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
-            Configuración General
+            {t('settings.tab_simple')}
           </button>
           <button
             onClick={() => setActiveTab('custom')}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
-            Filtros Personalizados
+            {t('settings.tab_custom')}
           </button>
         </div>
       </div>
@@ -251,45 +251,45 @@ export default function SettingsPage() {
       {activeTab === 'simple' && (
         <div className="space-y-6 animate-fade-in">
           <section className="card p-5 space-y-4 animate-fade-in">
-            <h2 className="font-bold text-text-primary">Visualización General</h2>
+            <h2 className="font-bold text-text-primary">{t('settings.general_visual')}</h2>
 
             <div className="mb-4">
-              <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text="Descarga Nuestra App!" />
+              <InstallAppButton className="w-full sm:w-auto py-2.5 px-5 rounded-lg text-sm" text={t('settings.download_app')} />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">Nombre del Evento o Establecimiento (opcional)</label>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('settings.event_name_label')}</label>
               <input
                 type="text"
                 value={store.eventName}
                 onChange={(e) => store.setEventName(filterMusicEmojis(e.target.value))}
-                placeholder="Ej: La fiesta de Don Julian"
+                placeholder={t('settings.event_name_placeholder')}
                 maxLength={40}
                 className="input-field w-full"
               />
               <p className="text-xs text-text-muted mt-1.5">
-                Se mostrará a tus invitados en la página web: "Pide tu canción para..."
+                {t('settings.event_name_desc')}
               </p>
             </div>
             <div className="border-t border-white/5 pt-4 space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <MonitorPlay size={16} className="text-text-muted" />
-                <h2 className="font-bold text-text-primary">Fondo Visualizador (YouTube)</h2>
+                <h2 className="font-bold text-text-primary">{t('settings.visualizer_title')}</h2>
               </div>
 
               <p className="text-xs text-text-muted mb-2">
-                Reproduce una lista de YouTube (o video largo) sin audio en el fondo, en lugar de mostrar los videos musicales de las canciones.
+                {t('settings.visualizer_desc')}
               </p>
 
               <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>Activar Fondo Visualizador</label>
+                <label className="text-sm font-semibold text-text-primary cursor-pointer" onClick={() => setVisualizerEnabled(!visualizerEnabled)}>{t('settings.visualizer_toggle')}</label>
                 <Toggle checked={visualizerEnabled} onChange={setVisualizerEnabled} />
               </div>
 
               {visualizerEnabled && (
                 <div className="pt-2 animate-fade-in space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="block text-sm font-semibold text-text-primary">Enlace de YouTube (Video o Playlist)</label>
+                    <label className="block text-sm font-semibold text-text-primary">{t('settings.visualizer_url_label')}</label>
                     <span className={`text-xs font-mono ${visualizerUrl.length >= MAX_URL_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
                       {visualizerUrl.length} / {MAX_URL_LENGTH}
                     </span>
@@ -299,11 +299,11 @@ export default function SettingsPage() {
                     maxLength={MAX_URL_LENGTH}
                     value={visualizerUrl}
                     onChange={(e) => setVisualizerUrl(sanitizeUrl(e.target.value))}
-                    placeholder="https://www.youtube.com/watch?v=... o &list=..."
+                    placeholder={t('settings.visualizer_url_placeholder')}
                     className="input-field w-full text-sm font-mono placeholder:font-sans"
                   />
                   <p className="text-[10px] text-text-muted mt-1.5">
-                    Si usas un enlace de playlist, pon el enlace que contenga <code>&list=</code>. envAIro la reproducirá en bucle.
+                    {t('settings.visualizer_url_desc')}
                   </p>
                 </div>
               )}
