@@ -594,48 +594,24 @@ const ES = {
     version_info: 'Envairo v1.0.0 · Construido con ❤️',
     faqs: [
       {
-        question: '¿Qué es envAIro QR?',
-        answer: 'Envairo QR es una plataforma interactiva que permite a los invitados de tus eventos o clientes de tu negocio pedir canciones escaneando un código QR, interactuar con actividades musicales y disfrutar de un ambiente personalizado en tiempo real.'
+        question: '¿Qué es envAIro y cómo funciona?',
+        answer: 'Envairo permite que tus invitados o clientes pidan canciones escaneando un código QR con sus teléfonos. ¡No necesitan descargar ninguna app! La música se organiza sola y suena sin interrupciones.'
       },
       {
-        question: '¿Cómo funciona el reproductor?',
-        answer: 'El reproductor se sincroniza directamente. Desde el panel principal de envAIro, puedes reproducir, pausar, saltar canciones y controlar el volumen. Además, muestra la canción actual y gestiona la cola de reproducción automáticamente basándose en las peticiones.'
+        question: '¿Cómo controlo la música y las peticiones?',
+        answer: 'Todo se maneja desde el panel principal. Ahí puedes ver las peticiones que llegan, aceptar o rechazar canciones, y controlar el volumen. Además, cuentas con herramientas como el "Auto-DJ" y listas de reproducción (playlists) para mantener el ambiente.'
       },
       {
-        question: '¿Cómo funcionan los QRs?',
-        answer: 'El código QR se genera automáticamente en tu panel de control. Tus invitados solo necesitan escanearlo con la cámara de sus teléfonos para abrir una página web (sin instalar aplicaciones) desde donde podrán buscar y pedir sus canciones favoritas.'
+        question: '¿Puedo filtrar qué tipo de música suena?',
+        answer: '¡Sí! Tienes el control total. Puedes bloquear artistas o géneros. También puedes usar "envAIro Selector", nuestra Inteligencia Artificial, para decirle qué tipo de ambiente quieres (por ejemplo, "fiesta de los 80s") y ella filtrará las peticiones por ti.'
       },
       {
-        question: '¿Cómo funcionan las peticiones?',
-        answer: 'Las peticiones enviadas por los invitados se añaden a una cola inteligente. envAIro revisa si la canción cumple con tus reglas (filtros de género, artistas bloqueados, límites por usuario) y la añade a la lista de reproducción en tiempo real.'
+        question: '¿Para qué sirven las Actividades y el Control Remoto?',
+        answer: 'Las Actividades (como el Juego de la Silla o trivias) animan tu evento usando la música actual. Con el Control Remoto (escaneando el QR de administrador), puedes manejar todo esto desde tu celular mientras caminas por la fiesta.'
       },
       {
-        question: '¿Puedo utilizar playlists?',
-        answer: '¡Sí! Desde el panel de control puedes buscar y cargar tus playlists. envAIro puede alternar entre las peticiones de los invitados y tu playlist para asegurar que la música nunca se detenga.'
-      },
-      {
-        question: '¿Cómo funciona el Auto-DJ?',
-        answer: 'El Auto-DJ es un sistema inteligente que se encarga de mantener la música sonando si no hay peticiones de los invitados. Selecciona canciones adecuadas basándose en los géneros permitidos y el ambiente del evento para que nunca haya silencios.'
-      },
-      {
-        question: '¿Cómo funciona envAIro Selector?',
-        answer: 'envAIro Selector utiliza Inteligencia Artificial para analizar el contexto de tu evento. Solo necesitas darle una breve descripción (ej. "Boda elegante y romántica") y la IA analizará cada petición para asegurarse de que encaja perfectamente con la vibra que has configurado.'
-      },
-      {
-        question: '¿Qué son las actividades interactivas?',
-        answer: 'envAIro incluye actividades divertidas para animar tu evento, como el Juego de la Silla, Trivia Musical y Retos personalizados. Estas dinámicas se activan desde la pestaña Actividades y utilizan la música en curso para crear experiencias memorables con tus invitados.'
-      },
-      {
-        question: '¿Qué diferencia hay entre el Modo Fiesta y el Modo Comercial?',
-        answer: 'El Modo Fiesta es ideal para eventos sociales, permitiendo a los invitados usar apodos divertidos. El Modo Comercial está pensado para bares o restaurantes, donde se requiere que el usuario introduzca su número de mesa para llevar un control preciso de dónde viene la petición.'
-      },
-      {
-        question: '¿Necesito pagar para utilizar la aplicación?',
-        answer: 'No, la aplicación es gratuita y no requiere suscripciones a servicios de terceros.'
-      },
-      {
-        question: '¿Cómo funciona el Control Remoto?',
-        answer: 'Puedes acceder al control remoto desde la pestaña correspondiente o escaneando el QR especial como administrador. Te permite gestionar la música, aprobar peticiones y activar las dinámicas interactivas desde tu teléfono móvil mientras te mueves por el evento.'
+        question: '¿Qué son los modos Fiesta y Comercial?',
+        answer: 'El "Modo Fiesta" es más libre y divertido (los invitados usan apodos). El "Modo Comercial" es perfecto para bares y restaurantes, ya que pide el número de mesa para saber de dónde viene cada petición. Ambas opciones son 100% gratuitas.'
       }
     ]
   },
@@ -1093,48 +1069,24 @@ const EN = {
     version_info: 'envAIro v1.0.0 · Built with ❤️',
     faqs: [
       {
-        question: 'What is envAIro QR?',
-        answer: 'envAIro QR is an interactive platform that allows your event guests or business customers to request songs by scanning a QR code, interact with musical activities, and enjoy a personalized environment in real time.'
+        question: 'What is envAIro and how does it work?',
+        answer: 'envAIro lets your guests or customers request songs by scanning a QR code with their phones. No app download needed! The music organizes itself and plays without interruptions.'
       },
       {
-        question: 'How does the player work?',
-        answer: 'The player syncs directly. From the main envAIro dashboard, you can play, pause, skip songs, and control the volume. It also displays the current song and automatically manages the playback queue based on requests.'
+        question: 'How do I control the music and requests?',
+        answer: 'Everything is managed from the main dashboard. There you can see incoming requests, accept or reject songs, and control the volume. You also have tools like "Auto-DJ" and playlists so there\'s never a silent moment.'
       },
       {
-        question: 'How do the QRs work?',
-        answer: 'The QR code is automatically generated in your dashboard. Your guests just need to scan it with their phone\'s camera to open a web page (no app installation required) from where they can search and request their favorite songs.'
+        question: 'Can I filter what kind of music plays?',
+        answer: 'Yes! You have total control. You can block artists or genres. You can also use "envAIro Selector," our AI, to describe the vibe you want (e.g., "80s party"), and it will filter requests for you.'
       },
       {
-        question: 'How do requests work?',
-        answer: 'Requests sent by guests are added to a smart queue. envAIro checks if the song complies with your rules (genre filters, blocked artists, user limits) and adds it to the playlist in real time.'
+        question: 'What are Activities and Remote Control for?',
+        answer: 'Activities (like Musical Chairs or trivia) liven up your event using the current music. With the Remote Control (scanning the admin QR), you can manage everything from your phone while walking around the party.'
       },
       {
-        question: 'Can I use playlists?',
-        answer: 'Yes! From the dashboard, you can search and load your existing playlists. envAIro can alternate between guest requests and your playlist to ensure the music never stops.'
-      },
-      {
-        question: 'How does Auto-DJ work?',
-        answer: 'Auto-DJ is a smart system that keeps the music playing if there are no guest requests. It selects appropriate songs based on the allowed genres and the atmosphere of the event so there are never any silences.'
-      },
-      {
-        question: 'How does envAIro Selector work?',
-        answer: 'envAIro Selector uses Artificial Intelligence to analyze the context of your event. You just need to give it a brief description (e.g., "Elegant and romantic wedding") and the AI will analyze each request to make sure it perfectly fits the vibe you\'ve set.'
-      },
-      {
-        question: 'What are the interactive activities?',
-        answer: 'envAIro includes fun activities to liven up your event, such as Musical Chairs, Musical Trivia, and personalized Challenges. These dynamics are activated from the Activities tab and use the current music to create memorable experiences with your guests.'
-      },
-      {
-        question: 'What is the difference between Party Mode and Commercial Mode?',
-        answer: 'Party Mode is ideal for social events, allowing guests to use fun nicknames. Commercial Mode is designed for bars or restaurants, where the user is required to enter their table number to keep precise track of where the request comes from.'
-      },
-      {
-        question: 'Do I need to pay to use the application?',
-        answer: 'No, the application is free and does not require third-party subscriptions.'
-      },
-      {
-        question: 'How does the Remote Control work?',
-        answer: 'You can access the remote control from the corresponding tab or by scanning the special admin QR code. It allows you to manage the music, approve requests, and activate interactive dynamics from your mobile phone while moving around the event.'
+        question: 'What are Party and Commercial modes?',
+        answer: '"Party Mode" is freer and more fun (guests use nicknames). "Commercial Mode" is perfect for bars and restaurants, as it asks for a table number to track where requests come from. Both options are 100% free.'
       }
     ]
   },
