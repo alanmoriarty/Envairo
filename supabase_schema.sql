@@ -22,6 +22,8 @@ CREATE TABLE sessions (
   current_track JSONB,
   play_history JSONB DEFAULT '[]',
   paired_tvs JSONB DEFAULT '[]',
+  event_name TEXT,
+  explicit_filter BOOLEAN DEFAULT true,
   active_device_id TEXT,
   active_instance_id UUID, -- ID de la pestaña/navegador principal activo (para Kickout)
   supabase_user_id UUID, -- Enlace con Supabase Auth
@@ -89,6 +91,8 @@ BEGIN
       table_count = COALESCE((p_updates->>'table_count')::INTEGER, table_count),
       requests_per_hour = COALESCE((p_updates->>'requests_per_hour')::INTEGER, requests_per_hour),
       requests_per_guest = COALESCE((p_updates->>'requests_per_guest')::INTEGER, requests_per_guest),
+      event_name = COALESCE((p_updates->>'event_name')::TEXT, event_name),
+      explicit_filter = COALESCE((p_updates->>'explicit_filter')::BOOLEAN, explicit_filter),
       queue = COALESCE(p_updates->'queue', queue),
       current_queue_index = COALESCE((p_updates->>'current_queue_index')::INTEGER, current_queue_index),
       current_track = COALESCE(p_updates->'current_track', current_track),

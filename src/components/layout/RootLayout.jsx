@@ -252,7 +252,7 @@ export function RootLayout() {
         }, 2000); // 2 second debounce
 
         // 2. Sync to sessions table (for Guest page validation)
-        const dbKeys = ['mode', 'alwaysAvailable', 'sessionId', 'explicitFilter']; // Sync crítico para Guests
+        const dbKeys = ['mode', 'alwaysAvailable', 'sessionId', 'explicitFilter', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest']; // Sync crítico para Guests
         const dbChanged = dbKeys.some(k => state[k] !== prevState[k]);
 
         if (dbChanged) {
