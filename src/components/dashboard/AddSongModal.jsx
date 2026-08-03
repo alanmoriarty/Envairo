@@ -70,44 +70,21 @@ export function AddSongModal({ onClose }) {
 
     // (El filtro explícito con DeepSeek ahora se evalúa en el Auto DJ, no en el cliente local)
 
-    const newQueue = [...queue];
-    
-    // Insertar 2 canciones adelante de la actual
-    // currentQueueIndex es la que está sonando. 
-    // +1 es la inmediatamente siguiente, +2 es 2 canciones adelante.
-    // Si la cola no tiene tantas canciones, se pone al final.
-    let insertIndex = queue.length;
-    if (currentQueueIndex >= -1) {
-      insertIndex = Math.min(queue.length, currentQueueIndex + 2);
-    }
-    
-    newQueue.splice(insertIndex, 0, newTrack);
-    usePlayerStore.setState({ queue: newQueue });
+    // Use the built-in addToQueue function which handles auto-play, queue index, and preloading automatically
+    usePlayerStore.getState().addToQueue(newTrack);
 
     if (isAdminMode) {
       import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { 
         p_session_id: sessionId, 
         p_secret: hostSecret, 
         p_updates: { 
-          queue: newQueue,
-          current_queue_index: currentQueueIndex
+          queue: usePlayerStore.getState().queue,
+          current_queue_index: usePlayerStore.getState().currentQueueIndex
         } 
       }).then());
     }
 
-    if (isQueueEmpty) {
-      const firstTrack = usePlayerStore.getState().shiftQueue();
-      if (firstTrack && isAdminMode) {
-        import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { 
-          p_session_id: sessionId, 
-          p_secret: hostSecret, 
-          p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } } 
-        }).then());
-      }
-      toast.success(t('dashboard.toast_added_playing', { name: track.name }));
-    } else {
-      toast.success(t('dashboard.toast_added', { name: track.name }));
-    }
+    toast.success(t('dashboard.toast_added', { name: track.name }));
     
     onClose();
   };

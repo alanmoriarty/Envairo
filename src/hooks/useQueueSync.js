@@ -125,8 +125,15 @@ export function useQueueSync() {
       if (Object.keys(updatesToApply).length > 0) {
         isRemoteUpdate.current = true;
         usePlayerStore.setState(updatesToApply);
-        if (updatesToApply.queue) {
-           usePlayerStore.getState().startQueuePreloadWorker();
+        usePlayerStore.getState().startQueuePreloadWorker();
+
+        // Auto-play if nothing is playing and the queue has unplayed tracks (from external changes like Guest additions or Request approvals)
+        const finalState = usePlayerStore.getState();
+        if (!finalState.currentTrack && finalState.queue.length > 0) {
+          const nextTrack = finalState.shiftQueue();
+          if (nextTrack) {
+            usePlayerStore.getState().playEngineTrack(nextTrack);
+          }
         }
       }
     };

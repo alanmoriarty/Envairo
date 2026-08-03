@@ -355,7 +355,11 @@ export function useYouTubeSDK() {
             stopProgressTimer();
             const store = usePlayerStore.getState();
             const nextTrack = store.shiftQueue();
-            if (nextTrack) store.playEngineTrack(nextTrack);
+            if (nextTrack) {
+               store.playEngineTrack(nextTrack);
+            } else {
+               usePlayerStore.setState({ currentTrack: null, isPlaying: false });
+            }
           }
         }
       };

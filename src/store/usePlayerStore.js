@@ -43,19 +43,25 @@ export const usePlayerStore = create(
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
 
-      clearPlayerState: () => set({
-        queue: [],
-        playHistory: [],
-        pendingRequests: [],
-        requestHistory: [],
-        currentTrack: null,
-        isPlaying: false,
-        progress: 0,
-        duration: 0,
-        currentQueueIndex: -1,
-        failedYouTubeIds: [],
-        currentYtId: null
-      }),
+      clearPlayerState: () => {
+        const state = get();
+        if (state.youtubePlayer) {
+          state.youtubePlayer.stopVideo();
+        }
+        set({
+          queue: [],
+          playHistory: [],
+          pendingRequests: [],
+          requestHistory: [],
+          currentTrack: null,
+          isPlaying: false,
+          progress: 0,
+          duration: 0,
+          currentQueueIndex: -1,
+          failedYouTubeIds: [],
+          currentYtId: null
+        });
+      },
 
       // ── SDK ──────────────────────────────────────────────────────────────
       setPlayer: (player) => set({ player }),
@@ -155,8 +161,15 @@ export const usePlayerStore = create(
 
         // Si el reproductor está completamente vacío (cola acabada y nada sonando), iniciar auto-reproducción
         const stateAfter = get();
+        console.log('[addToQueue] checking auto-play:', {
+          currentTrack: !!stateAfter.currentTrack,
+          queueLength: stateAfter.queue.length,
+          currentIndex: stateAfter.currentQueueIndex
+        });
+        
         if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
           const nextTrack = stateAfter.shiftQueue();
+          console.log('[addToQueue] auto-playing shifted track:', nextTrack?.name);
           if (nextTrack) {
             stateAfter.playEngineTrack(nextTrack);
           }
@@ -183,13 +196,20 @@ export const usePlayerStore = create(
         get().startQueuePreloadWorker();
       },
 
-      clearQueue: () =>
+      clearQueue: () => {
+        const state = get();
+        if (state.youtubePlayer) {
+          state.youtubePlayer.stopVideo();
+        }
         set(() => {
           return {
             queue: [],
-            currentQueueIndex: -1
+            currentQueueIndex: -1,
+            currentTrack: null,
+            isPlaying: false
           };
-        }),
+        });
+      },
 
       reorderQueue: (oldIndex, newIndex) => {
         set((state) => {
