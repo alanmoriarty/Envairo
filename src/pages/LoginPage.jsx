@@ -10,6 +10,7 @@ import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { toast } from 'sonner';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { AdSense } from '../components/ads/AdSense';
 
 // Lista de correos con suscripción activa (Beta)
 export const ALLOWED_EMAILS = [
@@ -200,6 +201,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <AdSense />
       {/* Background radial glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
