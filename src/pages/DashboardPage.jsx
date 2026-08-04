@@ -513,6 +513,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => {
+              if (!usePlayerStore.getState().checkSkipSpam()) return;
               const track = usePlayerStore.getState().shiftQueue();
               if (track) {
                 supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } }).then();

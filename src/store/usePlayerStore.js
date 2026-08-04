@@ -42,6 +42,32 @@ export const usePlayerStore = create(
       playbackMinutes: 0,
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
+      
+      // Anti-spam para saltar canciones
+      skipHistory: [],
+      skipCooldownUntil: null,
+      
+      checkSkipSpam: () => {
+        const state = get();
+        const now = Date.now();
+
+        if (state.skipCooldownUntil && now < state.skipCooldownUntil) {
+          const remainingMinutes = Math.ceil((state.skipCooldownUntil - now) / 60000);
+          import('sonner').then(({ toast }) => toast.error(`Límite de saltos excedido. Espera ${remainingMinutes} min.`));
+          return false;
+        }
+
+        const recentSkips = state.skipHistory.filter(t => now - t < 5 * 60 * 1000);
+        
+        if (recentSkips.length >= 5) {
+          set({ skipCooldownUntil: now + 10 * 60 * 1000, skipHistory: [] });
+          import('sonner').then(({ toast }) => toast.error(`Has saltado demasiadas canciones. Bloqueo de 10 minutos activado.`));
+          return false;
+        }
+
+        set({ skipHistory: [...recentSkips, now] });
+        return true;
+      },
 
       clearPlayerState: () => {
         const state = get();
