@@ -281,27 +281,15 @@ export function useYouTubeSDK() {
           setTimeout(() => {
             const freshStore = usePlayerStore.getState();
             if (freshStore.currentTrack && freshStore.currentTrack.id) {
-              // Load the video using loadVideoById (autoplay=true) so the video
-              // actually begins buffering. We then immediately pause it.
-              // This ensures the play button in the player bar works on first press.
+              // Resume playback from the saved position.
+              // loadVideoById (autoplay=true) is intentional: it buffers AND plays
+              // immediately, which is what we want on a page reload.
               freshStore.playEngineTrack(
                 freshStore.currentTrack,
                 freshStore.progress,
                 null,
                 true
-              ).then(() => {
-                // After a brief moment, pause — the video has been loaded into the
-                // player and the user can resume with the play button.
-                setTimeout(() => {
-                  const p = getActivePlayer();
-                  if (p && typeof p.getPlayerState === 'function') {
-                    if (p.getPlayerState() === window.YT?.PlayerState?.PLAYING) {
-                      p.pauseVideo();
-                      usePlayerStore.setState({ isPlaying: false });
-                    }
-                  }
-                }, 1500);
-              });
+              );
             }
           }, 800);
         }
