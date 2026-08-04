@@ -15,11 +15,22 @@ const formatArtists = (artists) => {
 };
 
 export function PersistentPlayer() {
-  const {
-    currentTrack, isPlaying, progress, duration, volume,
-    sdkReady, queue, pendingResume, setPendingResume,
-    setVolume, activeDeviceId, deviceId, playbackEngine
-  } = usePlayerStore();
+  // Granular selectors: PersistentPlayer MUST subscribe to progress/duration/isPlaying
+  // because it renders the progress bar. These are the only components that SHOULD
+  // re-render on every progress tick.
+  const currentTrack = usePlayerStore(s => s.currentTrack);
+  const isPlaying = usePlayerStore(s => s.isPlaying);
+  const progress = usePlayerStore(s => s.progress);
+  const duration = usePlayerStore(s => s.duration);
+  const volume = usePlayerStore(s => s.volume);
+  const sdkReady = usePlayerStore(s => s.sdkReady);
+  const queue = usePlayerStore(s => s.queue);
+  const pendingResume = usePlayerStore(s => s.pendingResume);
+  const setPendingResume = usePlayerStore(s => s.setPendingResume);
+  const setVolume = usePlayerStore(s => s.setVolume);
+  const activeDeviceId = usePlayerStore(s => s.activeDeviceId);
+  const deviceId = usePlayerStore(s => s.deviceId);
+  const playbackEngine = usePlayerStore(s => s.playbackEngine);
 
 
   const { controls: youtubeControls, ytReady } = useYouTubeSDK();
@@ -157,6 +168,7 @@ export function PersistentPlayer() {
         dummyAudioRef.current?.pause();
       });
       navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (!usePlayerStore.getState().checkSkipSpam()) return;
         const next = usePlayerStore.getState().shiftQueue();
         if (next) usePlayerStore.getState().playEngineTrack(next);
       });

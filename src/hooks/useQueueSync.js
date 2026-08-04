@@ -11,6 +11,7 @@ export function useQueueSync() {
   const isRemoteUpdate = useRef(false);
   const syncTimeoutRef = useRef(null);
   const isTakingOverRef = useRef(false);
+  const lastBroadcastPayload = useRef({ progress: -1, isPlaying: null });
 
   useEffect(() => {
     if (!sessionId) return;
@@ -32,6 +33,9 @@ export function useQueueSync() {
         state.activeDeviceId === prevState.activeDeviceId &&
         state.volume === prevState.volume &&
         state.playHistory === prevState.playHistory
+        // NOTE: `progress` is intentionally excluded here. Progress is synced
+        // via the broadcast channel below, not via a full DB write, which
+        // would be triggered 3600 times/hour and is very expensive.
       ) {
         return;
       }
@@ -300,20 +304,26 @@ export function useQueueSync() {
     }, 150);
 
     // Broadcast para sincronizar el progreso de la canción con controles remotos/invitados
+    // Interval at 5000ms (was 1000ms) and only sends if state actually changed.
     let broadcastInterval = setInterval(() => {
       const user = useAuthStore.getState().user;
       if (user && syncChannel && syncChannel.state === 'joined') {
          const store = usePlayerStore.getState();
-         syncChannel.send({
-           type: 'broadcast',
-           event: 'playback_sync',
-           payload: {
-             progress: store.progress,
-             isPlaying: store.isPlaying
-           }
-         }).catch(()=>{}); // ignorar errores si falla
+         const last = lastBroadcastPayload.current;
+         // Only broadcast if something meaningful changed
+         if (Math.abs(store.progress - last.progress) > 1000 || store.isPlaying !== last.isPlaying) {
+           lastBroadcastPayload.current = { progress: store.progress, isPlaying: store.isPlaying };
+           syncChannel.send({
+             type: 'broadcast',
+             event: 'playback_sync',
+             payload: {
+               progress: store.progress,
+               isPlaying: store.isPlaying
+             }
+           }).catch(()=>{}); // ignorar errores si falla
+         }
       }
-    }, 1000);
+    }, 5000);
 
     // 4. Reconectar y sincronizar cuando la pestaña vuelve a ser visible (para celulares)
     const handleVisibilityChange = async () => {
@@ -344,6 +354,10 @@ export function useQueueSync() {
             useSettingsStore.getState().setPairedTvs(data.paired_tvs);
             window.dispatchEvent(new Event('bq-paired-tvs-updated'));
           }
+
+          // Save the persisted progress BEFORE overwriting state from DB,
+          // so we can resume from the right position after the SDK is ready.
+          const persistedProgress = usePlayerStore.getState().progress;
           
           usePlayerStore.setState({
             queue: data.queue || [],
@@ -354,6 +368,14 @@ export function useQueueSync() {
             ...(data.volume !== null ? { volume: data.volume } : {})
           });
           usePlayerStore.getState().startQueuePreloadWorker();
+
+          // If the SDK is already initialized (rare but possible on fast loads),
+          // trigger playback immediately. Otherwise the onReady handler in
+          // useYouTubeSDK will pick up currentTrack and start from persistedProgress.
+          const playerState = usePlayerStore.getState();
+          if (data.current_track && playerState.sdkReady && playerState.youtubePlayer) {
+            playerState.playEngineTrack(data.current_track, persistedProgress, null, false);
+          }
         }
         usePlayerStore.getState().setInitialSyncDone(true);
       });

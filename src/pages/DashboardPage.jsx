@@ -124,23 +124,39 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
 }
 
 export default function DashboardPage() {
-  const {
-    mode, setMode, autoDJ, setAutoDJ,
-    enairoUsageCount, enairoCooldownUntil,
-    showRequests, setShowRequests,
-    showPlaylists, setShowPlaylists,
-    visualizerEnabled,
-    karaokeEnabled, setKaraokeEnabled,
-    lyricsEnabled, setLyricsEnabled,
-    isAdminMode, sessionId, hostSecret
-  } = useSettingsStore();
+  // Granular selectors: each hook only re-renders when ITS specific slice changes.
+  // Without this, every setProgress() call (1/sec) re-renders the entire Dashboard.
+  const mode = useSettingsStore(s => s.mode);
+  const setMode = useSettingsStore(s => s.setMode);
+  const autoDJ = useSettingsStore(s => s.autoDJ);
+  const setAutoDJ = useSettingsStore(s => s.setAutoDJ);
+  const enairoUsageCount = useSettingsStore(s => s.enairoUsageCount);
+  const enairoCooldownUntil = useSettingsStore(s => s.enairoCooldownUntil);
+  const showRequests = useSettingsStore(s => s.showRequests);
+  const setShowRequests = useSettingsStore(s => s.setShowRequests);
+  const showPlaylists = useSettingsStore(s => s.showPlaylists);
+  const setShowPlaylists = useSettingsStore(s => s.setShowPlaylists);
+  const visualizerEnabled = useSettingsStore(s => s.visualizerEnabled);
+  const karaokeEnabled = useSettingsStore(s => s.karaokeEnabled);
+  const setKaraokeEnabled = useSettingsStore(s => s.setKaraokeEnabled);
+  const lyricsEnabled = useSettingsStore(s => s.lyricsEnabled);
+  const setLyricsEnabled = useSettingsStore(s => s.setLyricsEnabled);
+  const isAdminMode = useSettingsStore(s => s.isAdminMode);
+  const sessionId = useSettingsStore(s => s.sessionId);
+  const hostSecret = useSettingsStore(s => s.hostSecret);
 
-  const {
-    queue, currentQueueIndex, pendingRequests,
-    reorderQueue, removeFromQueue, approveRequest, rejectRequest,
-    currentTrack, sdkReady, playbackEngine,
-    volume, setVolume
-  } = usePlayerStore();
+  const queue = usePlayerStore(s => s.queue);
+  const currentQueueIndex = usePlayerStore(s => s.currentQueueIndex);
+  const pendingRequests = usePlayerStore(s => s.pendingRequests);
+  const reorderQueue = usePlayerStore(s => s.reorderQueue);
+  const removeFromQueue = usePlayerStore(s => s.removeFromQueue);
+  const approveRequest = usePlayerStore(s => s.approveRequest);
+  const rejectRequest = usePlayerStore(s => s.rejectRequest);
+  const currentTrack = usePlayerStore(s => s.currentTrack);
+  const sdkReady = usePlayerStore(s => s.sdkReady);
+  const playbackEngine = usePlayerStore(s => s.playbackEngine);
+  const volume = usePlayerStore(s => s.volume);
+  const setVolume = usePlayerStore(s => s.setVolume);
 
   const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -252,6 +268,7 @@ export default function DashboardPage() {
   };
 
   const handlePlayNow = async (track) => {
+    if (!usePlayerStore.getState().checkSkipSpam()) return;
     const isAdminMode = useSettingsStore.getState().isAdminMode;
     if ((sdkReady || isAdminMode) && track.uri) {
       if (isAdminMode) {

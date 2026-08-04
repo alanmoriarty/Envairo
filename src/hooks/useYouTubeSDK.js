@@ -276,11 +276,22 @@ export function useYouTubeSDK() {
           store.setActiveDeviceId('youtube-device');
           setYoutubePlayer(virtualPlayer);
 
-          if (store.currentTrack && store.currentTrack.id) {
-            setTimeout(() => {
-              store.playEngineTrack(store.currentTrack, store.progress, null, store.isPlaying);
-            }, 500);
-          }
+          // Wait 800ms to ensure the initial DB pull from useQueueSync has settled
+          // before trying to resume. We read the store fresh inside the timeout.
+          setTimeout(() => {
+            const freshStore = usePlayerStore.getState();
+            if (freshStore.currentTrack && freshStore.currentTrack.id) {
+              // Load the video at the saved position but don't autoplay
+              // (browser autoplay policy often blocks it anyway).
+              // The user or the play button will trigger actual playback.
+              freshStore.playEngineTrack(
+                freshStore.currentTrack,
+                freshStore.progress,
+                null,
+                false // don't autoplay on reload — avoids browser policy blocks
+              );
+            }
+          }, 800);
         }
       };
 
@@ -358,7 +369,12 @@ export function useYouTubeSDK() {
             if (nextTrack) {
                store.playEngineTrack(nextTrack);
             } else {
+               // No more tracks: stop both players to free CPU/GPU resources
                usePlayerStore.setState({ currentTrack: null, isPlaying: false });
+               try {
+                 player1Ref.current?.stopVideo();
+                 player2Ref.current?.stopVideo();
+               } catch (e) {}
             }
           }
         }
