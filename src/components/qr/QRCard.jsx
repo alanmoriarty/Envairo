@@ -13,11 +13,23 @@ export function QRCard() {
   const containerRef = useRef(null);
   const [showAdminQR, setShowAdminQR] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const guestUrl = `${window.location.origin}/guest/${sessionId}`;
-  const adminUrl = `${window.location.origin}/?session=${sessionId}&admin=${hostSecret}`;
+  const [qrToken, setQrToken] = useState(null); // Token de acceso embebido en la URL del QR
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  // Cargar el token QR actual desde Supabase
+  useEffect(() => {
+    if (!sessionId) return;
+    supabase
+      .from('sessions')
+      .select('qr_token, qr_issued_at')
+      .eq('id', sessionId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.qr_token) setQrToken(data.qr_token);
+      });
+  }, [sessionId]);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -40,16 +52,28 @@ export function QRCard() {
   };
 
   const qrSize = isFullscreen ? Math.min(windowSize.w, windowSize.h) * 0.7 : 160;
+
+  // URL de invitado con token embebido (expira en 6h desde que se emitió el QR)
+  const guestUrl = qrToken
+    ? `${window.location.origin}/guest/${sessionId}?t=${qrToken}`
+    : `${window.location.origin}/guest/${sessionId}`;
+  const adminUrl = `${window.location.origin}/?session=${sessionId}&admin=${hostSecret}`;
   const currentUrl = showAdminQR ? adminUrl : guestUrl;
   
   const handleRegenerate = async () => {
-    // Cerrar la sesión actual para que el QR anterior deje de funcionar
+    // 1. Invalidar la sesión actual (QR anterior deja de funcionar)
     await supabase.rpc('sync_host_config', { 
       p_session_id: sessionId, 
       p_secret: hostSecret, 
       p_updates: { active: false, secret: 'regenerated' } 
     });
-    // Generar nueva sesión
+    // 2. Rotar el token QR → el QR anterior queda invalido inmediatamente
+    const { data: newToken } = await supabase.rpc('rotate_qr_token', {
+      p_session_id: sessionId,
+      p_secret: hostSecret
+    });
+    if (newToken) setQrToken(newToken);
+    // 3. Generar nueva sesión (nuevo sessionId)
     regenerateSession();
     setShowConfirm(false);
   };

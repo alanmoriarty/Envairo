@@ -169,26 +169,26 @@ export async function getUserYouTubePlaylists(limit = 50) {
  */
 export async function getYouTubePlaylist(playlistId) {
   const token = await ensureYouTubeToken();
+
+  // Se requiere autenticación OAuth para acceder a playlists.
+  // La API Key NO se usa en el cliente para evitar exponer secrets en el bundle.
+  if (!token) {
+    throw new Error('YOUTUBE_AUTH_REQUIRED');
+  }
+
   const url = new URL(`${BASE_URL}/playlists`);
   url.searchParams.append('part', 'snippet');
   url.searchParams.append('id', playlistId);
-  
-  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
 
-  if (!token && !apiKey) {
-    throw new Error('No YouTube auth available (OAuth token or API Key required)');
-  }
-
-  const headers = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else if (apiKey) {
-    url.searchParams.append('key', apiKey);
-  }
-
-  const response = await fetch(url.toString(), { headers });
+  const response = await fetch(url.toString(), {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
   
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('youtube_access_token');
+      throw new Error('YOUTUBE_AUTH_REQUIRED');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || 'Error fetching YouTube playlist');
   }
@@ -211,27 +211,27 @@ export async function getYouTubePlaylist(playlistId) {
  */
 export async function getYouTubePlaylistItems(playlistId, limit = 50) {
   const token = await ensureYouTubeToken();
+
+  // Se requiere autenticación OAuth para acceder a playlists.
+  // La API Key NO se usa en el cliente para evitar exponer secrets en el bundle.
+  if (!token) {
+    throw new Error('YOUTUBE_AUTH_REQUIRED');
+  }
+
   const url = new URL(`${BASE_URL}/playlistItems`);
   url.searchParams.append('part', 'snippet,contentDetails');
   url.searchParams.append('playlistId', playlistId);
-  url.searchParams.append('maxResults', limit.toString());
-  
-  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+  url.searchParams.append('maxResults', Math.min(limit, 50).toString()); // Cap at 50
 
-  if (!token && !apiKey) {
-    throw new Error('No YouTube auth available for fetching playlist items');
-  }
-
-  const headers = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else if (apiKey) {
-    url.searchParams.append('key', apiKey);
-  }
-
-  const response = await fetch(url.toString(), { headers });
+  const response = await fetch(url.toString(), {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
   
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('youtube_access_token');
+      throw new Error('YOUTUBE_AUTH_REQUIRED');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || 'Error fetching YouTube playlist items');
   }

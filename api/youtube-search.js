@@ -1,20 +1,28 @@
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
 
-// Proxy rotativo residencial proporcionado por Webshare
+// Proxy rotativo residencial - credencial en variable de entorno del servidor
 const PROXIES = [
-  'http://vskzegpk-rotate:qi5o4qxrnn38@p.webshare.io:80'
+  process.env.WEBSHARE_PROXY_URL || 'http://p.webshare.io:80'
+];
+
+// Orígenes permitidos para CORS
+const ALLOWED_ORIGINS = [
+  'https://envairoqr.com',
+  'https://www.envairoqr.com',
+  'http://localhost:5173',
+  'http://localhost:4173'
 ];
 
 export default async function handler(req, res) {
-  // CORS headers
+  // CORS headers - solo permitir orígenes de confianza
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Accept, Content-Type, Date');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -22,9 +30,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { q, limit = 5 } = req.query;
+    const { q } = req.query;
+    // Clamp limit between 1 and 20 to prevent abuse
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '5', 10), 1), 20);
 
-    if (!q) {
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
     }
 

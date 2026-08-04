@@ -59,6 +59,9 @@ export const useAuthStore = create(
             localStorage.removeItem(key);
           }
         });
+        // Limpiar token OAuth de YouTube de sessionStorage
+        sessionStorage.removeItem('youtube_access_token');
+        sessionStorage.removeItem('youtube_token_expires_at');
       },
     }),
     { 

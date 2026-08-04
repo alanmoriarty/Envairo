@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { Tv, Activity, Maximize, Minimize, X, Unlink, Volume2, VolumeX } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
@@ -602,7 +603,7 @@ export default function TVDisplayPage() {
                 <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
                   {tvPin.slice(0, 3)} - {tvPin.slice(3)}
                 </div>
-                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed" dangerouslySetInnerHTML={{ __html: t('tv.pin_instructions') }} />
+                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('tv.pin_instructions')) }} />
               </div>
             </div>
 

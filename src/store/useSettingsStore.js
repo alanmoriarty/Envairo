@@ -178,6 +178,17 @@ export const useSettingsStore = create(
       setPairedTvs: (tvs) => set({ pairedTvs: tvs }),
       regenerateSession: () => set({ sessionId: `session-${Date.now()}` }),
     }),
-    { name: 'bq-settings' }
+    { 
+      name: 'bq-settings',
+      // SECURITY: hostSecret is excluded from localStorage persistence.
+      // It's a sensitive auth secret; keeping it only in memory prevents
+      // AdSense scripts, browser extensions, or XSS from reading it.
+      // On page reload, it is securely recovered from Supabase via
+      // host_takeover_session() in useQueueSync.js.
+      partialize: (state) => {
+        const { hostSecret, ...rest } = state;
+        return rest;
+      }
+    }
   )
 );

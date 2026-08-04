@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X, Download } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
+import { sanitizePrompt } from '../utils/security';
 import { AdSense } from '../components/ads/AdSense';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { useTranslation } from '../store/useLanguageStore';
@@ -40,6 +41,53 @@ const formatArtists = (artists) => {
 
 export default function GuestPage() {
   const { sessionId } = useParams();
+  const location = useLocation();
+
+  // ── Sistema de acceso por token de invitado (6 horas desde el escaneo) ────────
+  //
+  // Flujo:
+  //  1. El QR del anfitrión contiene ?t={qr_token} (permanente, no expira solo).
+  //  2. El primer escaneo canjea el qr_token por un guest_access_token personal (6h).
+  //  3. El guest_access_token se guarda en localStorage del dispositivo.
+  //  4. Cada petición usa el guest_access_token (el servidor valida las 6h).
+  //  5. Si el host regenera el QR, el qr_token cambia y no se pueden obtener
+  //     nuevos guest_access_tokens con el QR anterior.
+  const [guestToken, setGuestToken] = useState(
+    () => localStorage.getItem(`gat_${sessionId}`) || null
+  );
+  const [qrAccessDenied, setQrAccessDenied] = useState(false);
+  const [isExchangingToken, setIsExchangingToken] = useState(false);
+
+  useEffect(() => {
+    const urlQrToken = new URLSearchParams(location.search).get('t');
+    if (!urlQrToken) return; // Sin token en la URL, nada que canjear
+
+    const storedToken = localStorage.getItem(`gat_${sessionId}`);
+    if (storedToken) {
+      // Ya tiene un token guardado del mismo dispositivo, no re-canjear
+      setGuestToken(storedToken);
+      return;
+    }
+
+    // Primera visita con QR: canjear qr_token por guest_access_token personal
+    setIsExchangingToken(true);
+    supabase
+      .rpc('create_guest_access', {
+        p_session_id: sessionId,
+        p_qr_token: urlQrToken
+      })
+      .then(({ data, error }) => {
+        if (error || !data) {
+          // QR inválido (quizás el host regeneró) → no bloquear, solo no hay token
+          console.warn('QR token no válido:', error?.message);
+        } else {
+          // Guardar el token personal en localStorage
+          localStorage.setItem(`gat_${sessionId}`, data);
+          setGuestToken(data);
+        }
+      })
+      .finally(() => setIsExchangingToken(false));
+  }, [sessionId]); // solo al montar
 
   // Real-time session config from Supabase
   const [sessionConfig, setSessionConfig] = useState(null);
@@ -296,21 +344,6 @@ export default function GuestPage() {
     }
 
     const sendRequest = async () => {
-      // Check global requests per hour limit against Supabase
-      const limit = requestsPerHour;
-      const oneHourAgoTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-
-      const { count: globalCount, error: countError } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('session_id', sessionId)
-        .gte('created_at', oneHourAgoTime);
-
-      if (!countError && globalCount >= limit) {
-        toast.error(t('guest.error_limit', { limit }));
-        return;
-      }
-
       let finalTrack = selected;
       if (selected.source === 'youtube' && selected.duration_ms === 0) {
         try {
@@ -320,15 +353,38 @@ export default function GuestPage() {
         } catch (e) { console.error('Failed to get youtube details', e); }
       }
 
-      const { data, error } = await supabase.from('requests').insert({
-        session_id: sessionId,
-        track: finalTrack,
-        requester: identifier.trim() || 'Anónimo',
-        status: 'pending'
-      }).select().maybeSingle();
+      // SECURITY: Use server-side RPC instead of direct insert.
+      // The RPC (submit_guest_request) runs with SECURITY DEFINER and validates:
+      //   - Session is active
+      //   - Global hourly request limit has not been exceeded
+      //   - QR token is valid and not older than 6 hours
+      // Direct INSERT on the requests table is blocked by RLS (policy removed).
+      const { data, error } = await supabase.rpc('submit_guest_request', {
+        p_session_id:  sessionId,
+        p_track:       finalTrack,
+        p_requester:   sanitizePrompt(identifier.trim()) || 'Anónimo',
+        p_guest_token: guestToken || null   // token personal del invitado (6h desde escaneo)
+      });
 
       if (error) {
-        toast.error(t('guest.error_send'));
+        const msg = error.message || '';
+        if (msg.includes('HOURLY_LIMIT_REACHED')) {
+          toast.error(t('guest.error_limit', { limit: requestsPerHour }));
+        } else if (msg.includes('TOKEN_EXPIRED')) {
+          localStorage.removeItem(`gat_${sessionId}`);
+          setGuestToken(null);
+          setQrAccessDenied(true);
+          toast.error('Tu acceso expiró (6 horas). Escanea el código QR de nuevo para continuar.');
+        } else if (msg.includes('INVALID_TOKEN')) {
+          localStorage.removeItem(`gat_${sessionId}`);
+          setGuestToken(null);
+          setQrAccessDenied(true);
+          toast.error('Tu acceso ya no es válido. Escanea el código QR de nuevo.');
+        } else if (msg.includes('SESSION_NOT_FOUND')) {
+          toast.error(t('guest.error_send'));
+        } else {
+          toast.error(t('guest.error_send'));
+        }
         return;
       }
 
@@ -364,6 +420,7 @@ export default function GuestPage() {
     };
 
     await sendRequest();
+
   };
 
 
@@ -379,6 +436,29 @@ export default function GuestPage() {
 
   if (!isAvailable) {
     return <ClosedScreen />;
+  }
+
+  // Pantalla de acceso expirado/inválido (token QR caducado o revocado)
+  if (qrAccessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%)' }}>
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-3xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h3"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Acceso expirado</h1>
+          <p className="text-white/60 leading-relaxed mb-2">
+            Tu acceso a este evento duró <strong className="text-orange-400">6 horas</strong> desde que escaneaste el QR.
+          </p>
+          <p className="text-white/40 text-sm">
+            Escanea el código QR del evento nuevamente para seguir pidiendo canciones.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

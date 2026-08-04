@@ -57,7 +57,7 @@ export async function openYouTubeAuthPopup() {
 }
 
 export function getYouTubeAccessToken() {
-  return localStorage.getItem('youtube_access_token');
+  return sessionStorage.getItem('youtube_access_token');
 }
 
 export async function refreshYouTubeToken() {
@@ -65,8 +65,10 @@ export async function refreshYouTubeToken() {
   if (error) throw error;
   
   if (data?.session?.provider_token) {
-    localStorage.setItem('youtube_access_token', data.session.provider_token);
-    localStorage.setItem('youtube_token_expires_at', (Date.now() + 3600 * 1000).toString());
+    // SECURITY: Use sessionStorage instead of localStorage so the token
+    // is automatically cleared when the tab closes.
+    sessionStorage.setItem('youtube_access_token', data.session.provider_token);
+    sessionStorage.setItem('youtube_token_expires_at', (Date.now() + 3600 * 1000).toString());
     return data.session;
   }
   
@@ -74,7 +76,7 @@ export async function refreshYouTubeToken() {
 }
 
 export function isYouTubeTokenExpired() {
-  const expiresAt = localStorage.getItem('youtube_token_expires_at');
-  if (!expiresAt) return true; // If no token, consider it expired to force re-auth or prevent API calls
+  const expiresAt = sessionStorage.getItem('youtube_token_expires_at');
+  if (!expiresAt) return true;
   return Date.now() > parseInt(expiresAt, 10) - 180000;
 }

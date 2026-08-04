@@ -1,14 +1,21 @@
 import fetch from 'node-fetch';
 
+const ALLOWED_ORIGINS = [
+  'https://envairoqr.com',
+  'https://www.envairoqr.com',
+  'http://localhost:5173',
+  'http://localhost:4173'
+];
+
 export default async function handler(req, res) {
-  // CORS headers
+  // CORS headers - solo permitir orígenes de confianza
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Accept, Content-Type, Date');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Tv, X, CheckCircle2, Trash2, Smartphone, Sparkles, MonitorPlay } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -182,7 +183,7 @@ export function TVPairingModal({ isOpen, onClose }) {
                 {isPairing ? t('cast.pairing_btn') : t('cast.pair_btn')}
               </button>
             </div>
-            <p className="text-[11px] text-text-muted mt-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('cast.pin_desc') }} />
+            <p className="text-[11px] text-text-muted mt-2 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('cast.pin_desc')) }} />
           </div>
         </form>
 
