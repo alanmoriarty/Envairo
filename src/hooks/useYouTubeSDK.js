@@ -369,8 +369,9 @@ export function useYouTubeSDK() {
             if (nextTrack) {
                store.playEngineTrack(nextTrack);
             } else {
-               // No more tracks: stop both players to free CPU/GPU resources
-               usePlayerStore.setState({ currentTrack: null, isPlaying: false });
+               // Queue exhausted: reset everything cleanly so pressing Play doesn't replay
+               currentYtIdRef.current = null; // ← clear so loadVideoById guard won't replay
+               usePlayerStore.setState({ currentTrack: null, isPlaying: false, progress: 0, duration: 0 });
                try {
                  player1Ref.current?.stopVideo();
                  player2Ref.current?.stopVideo();

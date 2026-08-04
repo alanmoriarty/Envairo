@@ -81,13 +81,27 @@ export function PersistentPlayer() {
 
   const handlePlayPause = () => {
     const state = usePlayerStore.getState();
-      if (state.youtubePlayer) {
-        if (isPlaying) {
-          state.youtubePlayer.pauseVideo();
-        } else {
-          state.youtubePlayer.playVideo();
-        }
+
+    // GUARD: If no current track, the queue has ended.
+    // Calling playVideo() directly would replay the last physical video
+    // still loaded in the YT player iframe, causing the visual bug.
+    if (!state.currentTrack) {
+      // Attempt to start the next track in the queue if available
+      const nextTrack = state.shiftQueue();
+      if (nextTrack) {
+        state.playEngineTrack(nextTrack);
       }
+      // If queue is truly empty, do nothing (user must add songs)
+      return;
+    }
+
+    if (state.youtubePlayer) {
+      if (isPlaying) {
+        state.youtubePlayer.pauseVideo();
+      } else {
+        state.youtubePlayer.playVideo();
+      }
+    }
   };
   const previousVolume = useRef(volume || 100);
 
