@@ -168,18 +168,23 @@ export function RootLayout() {
               });
               useSettingsStore.getState().setPairedTvs(mergedTvs);
               
-              // Push to Supabase immediately
-              supabase.rpc('sync_host_config', {
-                p_session_id: sbUser.id,
-                p_secret: useSettingsStore.getState().hostSecret,
-                p_updates: { paired_tvs: mergedTvs }
-              }).catch(console.error);
+              // Push to Supabase - using await inside try/catch (supabase.rpc returns
+              // a PostgrestBuilder which is thenable but does NOT have .catch() directly)
+              const { sessionId: currentSessionId, hostSecret: currentSecret } = useSettingsStore.getState();
+              if (currentSessionId && currentSecret) {
+                await supabase.rpc('sync_host_config', {
+                  p_session_id: currentSessionId,
+                  p_secret: currentSecret,
+                  p_updates: { paired_tvs: mergedTvs }
+                });
+              }
             }
             localStorage.removeItem('bq-paired-tvs');
           }
         } catch (e) {
           console.error('Error migrating bq-paired-tvs', e);
         }
+
 
       } catch (e) {
         console.error('Error hydrating settings on mount:', e);
