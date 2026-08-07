@@ -395,7 +395,7 @@ export const usePlayerStore = create(
           }
         }
 
-        return { videoIdToPlay, isSpotifyTrack };
+        return { videoIdToPlay, isSpotifyTrack, effectiveMode: mode };
       },
 
       // Worker en segundo plano para precargar IDs de toda la cola
@@ -411,25 +411,30 @@ export const usePlayerStore = create(
           const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
           const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
 
-          // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas para ahorrar cuota de API)
+          // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas)
           const startIndex = get().currentQueueIndex + 1;
           const endIndex = Math.min(get().queue.length, startIndex + 5);
 
           for (let i = startIndex; i < endIndex; i++) {
-            // Es posible que el motor cambie o la cola se limpie durante el proceso
             if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
 
             const track = get().queue[i];
             const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
 
-            if (isSpotifyTrack) {
+            // In karaoke/lyrics mode ALL tracks need a YouTube search (even native YT tracks
+            // need to be searched for the karaoke/lyrics version). In normal mode only
+            // Spotify tracks need it (native YT tracks already have their ID).
+            const needsPreload = isSpotifyTrack || (mode !== 'normal');
+
+            if (needsPreload) {
               const cacheKey = `yt_bridge_${track.id}_${mode}`;
               const cachedId = localStorage.getItem(cacheKey);
 
-              // Si no está en caché o falló, resolverlo
+              // Only search if not already cached or previously failed
               if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
-                await get().resolveYouTubeVideoId(track);
-                // Esperar 1 segundo entre búsquedas para no saturar la red o ser bloqueados por YouTube (429)
+                // Pass the correct mode so the cache key matches
+                await get().resolveYouTubeVideoId(track, mode);
+                // Wait 1s between searches to avoid rate-limiting (YouTube 429)
                 await new Promise(resolve => setTimeout(resolve, 1000));
               }
             }
@@ -454,7 +459,7 @@ export const usePlayerStore = create(
             // (No llamamos stopVideo() aquí para permitir que useYouTubeSDK haga el crossfade de doble búfer)
             // Solo pausamos el estado si no estamos reproduciendo, pero la transición maneja esto internamente.
 
-            const { videoIdToPlay, isSpotifyTrack } = await get().resolveYouTubeVideoId(track, forceMode);
+            const { videoIdToPlay, isSpotifyTrack, effectiveMode } = await get().resolveYouTubeVideoId(track, forceMode);
 
             // Evitar condición de carrera: si el usuario saltó rápido de canción mientras resolvíamos esta
             if (get()._currentPlayExecId !== execId) {
@@ -462,17 +467,28 @@ export const usePlayerStore = create(
               return;
             }
 
-            // Validar estrictamente el ID antes de enviarlo al reproductor (YouTube requiere EXACTAMENTE 11 caracteres)
+            // Validar estrictamente el ID antes de enviarlo al reproductor
             if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack) || (track.source === 'youtube' && get().failedYouTubeIds.includes(track.id))) {
-              import('sonner').then(({ toast }) => toast.error('No se pudo encontrar un video válido para esta canción. Saltando...'));
-              await new Promise(r => setTimeout(r, 1000));
-              const nextTrack = get().shiftQueue();
-              if (nextTrack) {
-                get().playEngineTrack(nextTrack);
+              // Cascade fallback: karaoke → lyrics → normal → skip
+              // This prevents skipping to the next song just because karaoke/lyrics wasn't found.
+              if (effectiveMode === 'karaoke') {
+                console.warn('Karaoke video not found. Trying lyrics fallback...');
+                return get().playEngineTrack(track, progressMs, 'lyrics', autoplay);
+              } else if (effectiveMode === 'lyrics') {
+                console.warn('Lyrics video not found. Trying normal fallback...');
+                return get().playEngineTrack(track, progressMs, 'normal', autoplay);
               } else {
-                set({ currentTrack: null, isPlaying: false });
+                // Normal mode failed: no video available at all. Skip to next.
+                import('sonner').then(({ toast }) => toast.error('Video no disponible para esta canción. Saltando...'));
+                await new Promise(r => setTimeout(r, 1000));
+                const nextTrack = get().shiftQueue();
+                if (nextTrack) {
+                  get().playEngineTrack(nextTrack);
+                } else {
+                  set({ currentTrack: null, isPlaying: false });
+                }
               }
-              return; // Abortar
+              return;
             }
 
             // Cargar el nuevo video

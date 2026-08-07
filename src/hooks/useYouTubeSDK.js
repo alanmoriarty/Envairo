@@ -48,7 +48,8 @@ export function useYouTubeSDK() {
       wrapper.style.transform = 'none';
       wrapper.style.borderRadius = '12px';
       wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
-      wrapper.style.opacity = currentTrack ? '0.6' : '0';
+      // Also hide in visualizer mode when errorHidden is true
+      wrapper.style.opacity = (currentTrack && wrapper.dataset.errorHidden !== 'true') ? '0.6' : '0';
       wrapper.style.zIndex = '40';
       wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'none';
@@ -385,7 +386,19 @@ export function useYouTubeSDK() {
         if (isTransitioning.current && event.target === getBufferPlayer()) {
           console.warn('Crossfade Buffer falló. Abortando transición suave.');
           isTransitioning.current = false;
-          // Volver a usar el reproductor activo principal y forzar recarga
+          // Buffer player errored: don't touch the active player, just abort the transition.
+          // The active player keeps playing normally. No need to hide or change anything.
+          return;
+        }
+
+        // Active player error: hide the wrapper immediately so the audience doesn't see
+        // YouTube's red error screen frame.
+        const wrapper = document.getElementById('youtube-wrapper');
+        if (wrapper) {
+          wrapper.dataset.errorHidden = 'true';
+          const isVisualizerOn = useSettingsStore.getState().visualizerEnabled;
+          const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+          applyStyles(wrapper, isVisualizerOn, isFs);
         }
 
         if (event.data === 150 || event.data === 101 || event.data === 100) {
@@ -401,10 +414,11 @@ export function useYouTubeSDK() {
               localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
             }
           }
+          // playEngineTrack will try fallback modes (karaoke → lyrics → normal) before skipping
           store.playEngineTrack(store.currentTrack, store.progress, null, 1);
-          import('sonner').then(({ toast }) => toast.error('Buscando alternativa...'));
+          import('sonner').then(({ toast }) => toast.error('Video no disponible. Buscando alternativa...'));
         } else if (event.data === 2 || event.data === 5) {
-          // Reintentos de glitch
+          // Reintentos de glitch transitorio
           const store = usePlayerStore.getState();
           const currentYtId = store.currentYtId || currentYtIdRef.current;
           if (currentYtId && getActivePlayer()) {
