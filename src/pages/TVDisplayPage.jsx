@@ -75,6 +75,10 @@ export default function TVDisplayPage() {
   const activeTvs = useRef(new Set());
   const idleTimerRef = useRef(null);
   const currentVideoIdRef = useRef(null);
+  // Loading overlay: shown while a new video is buffering between songs
+  // (prevents audience from seeing the old video playing during crossfade)
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const loadingTimerRef = useRef(null);
 
   const getActivePlayer = () => activePlayerIndex.current === 1 ? player1Ref.current : player2Ref.current;
   const getBufferPlayer = () => activePlayerIndex.current === 1 ? player2Ref.current : player1Ref.current;
@@ -329,6 +333,10 @@ export default function TVDisplayPage() {
               activeP.pauseVideo();
             }
             activePlayerIndex.current = nextIndex;
+
+            // Hide loading overlay now that the new video is playing
+            if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+            setIsLoadingVideo(false);
           }
         }
       };
@@ -340,6 +348,19 @@ export default function TVDisplayPage() {
         const bufferP = getBufferPlayer();
         if (isTransitioning.current && event.target === bufferP) {
           isTransitioning.current = false;
+          // Buffer failed: hide loading overlay, keep old video playing
+          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+          setIsLoadingVideo(false);
+          // Don't clear currentVideoId — the active player still has the old video
+          // Notify host to find an alternative without disrupting the audience
+          if (event.data === 150 || event.data === 101 || event.data === 100) {
+            const payload = { type: 'SLAVE_ERROR', videoId: failedId };
+            if (channelRef.current) channelRef.current.postMessage(payload);
+            if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+              sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload }).catch(() => {});
+            }
+          }
+          return;
         }
 
         const activeP = getActivePlayer();
@@ -347,16 +368,18 @@ export default function TVDisplayPage() {
           activeP.pauseVideo();
         }
 
+        // Audience-safe: clear video so the dark waiting screen shows (no error text)
         setCurrentVideoId(null);
         currentVideoIdRef.current = null;
-        setStatus(t('tv.searching_alternative'));
+        setIsLoadingVideo(false);
+        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+        // Status shows only generic waiting text — no mention of errors to the audience
+        setStatus(t('tv.connected_waiting'));
 
-        // Notificar al anfitrión (Host) para que busque otra alternativa si es un error fatal
+        // Notify host to find an alternative (fatal errors only)
         if (event.data === 150 || event.data === 101 || event.data === 100) {
           const payload = { type: 'SLAVE_ERROR', videoId: failedId };
-          if (channelRef.current) {
-            channelRef.current.postMessage(payload);
-          }
+          if (channelRef.current) channelRef.current.postMessage(payload);
           if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
             sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload }).catch(() => {});
           }
@@ -392,6 +415,8 @@ export default function TVDisplayPage() {
       safeDestroyPlayer(player1Ref, 'tv-yt-container-1', 'tv-youtube-player-1');
       safeDestroyPlayer(player2Ref, 'tv-yt-container-2', 'tv-youtube-player-2');
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+
       document.removeEventListener('fullscreenchange', handleFsChange);
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
       document.removeEventListener('mozfullscreenchange', handleFsChange);
@@ -416,9 +441,15 @@ export default function TVDisplayPage() {
 
         if (isCurrentlyPlaying && data.isPlaying) {
           isTransitioning.current = true;
+          // Show loading overlay so audience doesn't see the old video during buffering.
+          // Auto-dismiss after 8s as a safety net (in case PLAYING never fires).
+          setIsLoadingVideo(true);
+          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+          loadingTimerRef.current = setTimeout(() => setIsLoadingVideo(false), 8000);
           bufferP.loadVideoById({ videoId: data.videoId, startSeconds: start });
         } else {
           isTransitioning.current = false;
+          setIsLoadingVideo(false);
           if (data.isPlaying) {
             activeP.loadVideoById({ videoId: data.videoId, startSeconds: start });
           } else {
@@ -631,6 +662,34 @@ export default function TVDisplayPage() {
           </div>
         </div>
       )}
+
+      {/* Loading overlay during crossfade: hides old video while new one buffers.
+          The audience sees a subtle dark gradient instead of the previous song's video. */}
+      {sessionId && currentVideoId && isLoadingVideo && (
+        <div
+          className="absolute inset-0 z-15 flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0,0,0,0.92) 0%, rgba(10,5,25,0.95) 100%)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 15
+          }}
+        >
+          <div className="flex flex-col items-center gap-4 opacity-80">
+            {/* Pulsing music icon */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-accent/30 animate-ping" style={{ animationDuration: '1.5s' }} />
+              <div className="relative bg-white/10 border border-white/20 rounded-full p-5">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Modo Emparejado: Controles flotantes */}
       {sessionId && (
