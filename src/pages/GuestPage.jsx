@@ -155,6 +155,8 @@ export default function GuestPage() {
   const cooldownEnabled = stateData.cooldown_enabled ?? sessionConfig?.cooldown_enabled ?? true;
   const cooldownMinutes = stateData.cooldown_minutes ?? sessionConfig?.cooldown_minutes ?? 10;
   const requestsPerHour = stateData.requests_per_hour ?? sessionConfig?.requests_per_hour ?? 15;
+  // Guest version request feature (controlled by host in Settings)
+  const guestVersionRequestEnabled = stateData.guest_version_request ?? sessionConfig?.guest_version_request ?? false;
 
   useEffect(() => {
     if (eventName) {
@@ -168,13 +170,18 @@ export default function GuestPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Prevent double-submit
   const [selected, setSelected] = useState(null);
+  const [versionPreference, setVersionPreference] = useState('normal'); // 'normal' | 'lyrics' | 'karaoke'
+  const [lastSubmittedTrack, setLastSubmittedTrack] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);              // No-cooldown success
   const [cooldown, setCooldown] = useState(0);
   const [requestCount, setRequestCount] = useState({});
   const [userRequests, setUserRequests] = useState([]);
   const [myPendingRequests, setMyPendingRequests] = useState({});
   const debounceRef = useRef(null);
   const cooldownRef = useRef(null);
+  const successTimeoutRef = useRef(null);
 
   const isInCooldown = cooldown > 0;
 
@@ -189,8 +196,8 @@ export default function GuestPage() {
       setSearching(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { 
-            query, 
+          body: {
+            query,
             limit: 6,
             filterExplicit: stateData?.explicit_filter || false
           }
@@ -353,6 +360,11 @@ export default function GuestPage() {
         } catch (e) { console.error('Failed to get youtube details', e); }
       }
 
+      // Attach guest version preference so the player can use it as forceMode
+      if (guestVersionRequestEnabled && versionPreference !== 'normal') {
+        finalTrack = { ...finalTrack, version_preference: versionPreference };
+      }
+
       // SECURITY: Use server-side RPC instead of direct insert.
       // The RPC (submit_guest_request) runs with SECURITY DEFINER and validates:
       //   - Session is active
@@ -360,9 +372,9 @@ export default function GuestPage() {
       //   - QR token is valid and not older than 6 hours
       // Direct INSERT on the requests table is blocked by RLS (policy removed).
       const { data, error } = await supabase.rpc('submit_guest_request', {
-        p_session_id:  sessionId,
-        p_track:       finalTrack,
-        p_requester:   sanitizePrompt(identifier.trim()) || 'Anónimo',
+        p_session_id: sessionId,
+        p_track: finalTrack,
+        p_requester: sanitizePrompt(identifier.trim()) || 'Anónimo',
         p_guest_token: guestToken || null   // token personal del invitado (6h desde escaneo)
       });
 
@@ -409,18 +421,35 @@ export default function GuestPage() {
         localStorage.setItem(`my_tracks_${sessionId}`, JSON.stringify(myActiveIds));
       }
 
+      // Save submitted track for success card before clearing selection
+      setLastSubmittedTrack(selected);
       toast.success(t('guest.sent_success', { name: selected.name }));
       setSelected(null);
       setQuery('');
       setResults([]);
+      setVersionPreference('normal'); // Reset version preference for next request
 
       if (cooldownEnabled) {
         setCooldown(cooldownMinutes * 60);
+      } else {
+        // No cooldown: show brief success card that auto-dismisses after 3s
+        setShowSuccess(true);
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = setTimeout(() => {
+          setShowSuccess(false);
+          setLastSubmittedTrack(null);
+        }, 3000);
       }
     };
 
-    await sendRequest();
-
+    // Guard: prevent double-submit if already in progress
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await sendRequest();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -445,8 +474,8 @@ export default function GuestPage() {
         <div className="text-center max-w-sm">
           <div className="w-20 h-20 rounded-3xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mx-auto mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-              <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h3"/>
+              <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
+              <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h3" />
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">Acceso expirado</h1>
@@ -485,6 +514,59 @@ export default function GuestPage() {
       {/* Top Banner Ad */}
       <AdSense slot={import.meta.env.VITE_ADSENSE_SLOT_TOP} />
 
+      {/* ── NOW PLAYING ── */}
+      {sessionConfig?.current_track && (
+        <div
+          className="flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl animate-fade-in"
+          style={{
+            background: 'rgba(157,78,221,0.08)',
+            border: '1px solid rgba(157,78,221,0.2)'
+          }}
+        >
+          {/* Equalizer animated bars */}
+          <div className="flex items-end gap-[3px] h-5 flex-shrink-0" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-[3px] rounded-full origin-bottom"
+                style={{
+                  height: '100%',
+                  background: 'var(--color-accent)',
+                  animation: `eq-bar 0.8s ease-in-out infinite ${i * 0.2}s`,
+                  transform: 'scaleY(0.3)'
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Album art */}
+          {sessionConfig.current_track.image ? (
+            <img
+              src={sessionConfig.current_track.image}
+              alt=""
+              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0">
+              <Music2 size={14} className="text-text-muted" />
+            </div>
+          )}
+
+          {/* Track info */}
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-accent)' }}>
+              Sonando ahora
+            </p>
+            <p className="text-sm font-semibold text-text-primary truncate leading-tight">
+              {sessionConfig.current_track.name}
+            </p>
+            <p className="text-xs text-text-muted truncate">
+              {formatArtists(sessionConfig.current_track.artists)}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Identifier input */}
       <div className="card p-4 mb-4">
         <label className="block text-sm text-text-muted mb-2">
@@ -513,14 +595,33 @@ export default function GuestPage() {
             ))}
           </select>
         ) : (
-          <input
-            className="input-field"
-            placeholder={isCommercial ? t('guest.placeholder_table') : t('guest.placeholder_nickname')}
-            value={identifier}
-            maxLength={15}
-            onChange={(e) => setIdentifier(filterMusicEmojis(e.target.value).replace(/[<>]/g, ''))}
-            disabled={isInCooldown}
-          />
+          <div>
+            <input
+              className="input-field"
+              placeholder={isCommercial ? t('guest.placeholder_table') : t('guest.placeholder_nickname')}
+              value={identifier}
+              maxLength={15}
+              onChange={(e) => setIdentifier(filterMusicEmojis(e.target.value).replace(/[<>]/g, ''))}
+              disabled={isInCooldown}
+            />
+            {/* Character counter — only visible when the user has started typing */}
+            {identifier.length > 0 && (
+              <div className="flex justify-end mt-1">
+                <span
+                  className="text-[11px] font-medium tabular-nums transition-colors duration-200"
+                  style={{
+                    color: identifier.length >= 15
+                      ? '#f87171'       // red at limit
+                      : identifier.length >= 11
+                        ? '#fb923c'       // orange approaching limit
+                        : 'rgba(157,154,176,0.6)'  // muted default
+                  }}
+                >
+                  {identifier.length}/15
+                </span>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -580,20 +681,100 @@ export default function GuestPage() {
           </div>
         )}
 
-        {/* Selected track */}
+        {/* Selected track — prominent card */}
         {selected && (
-          <div className="mt-3 flex items-center gap-3 p-3 bg-accent/10 border border-accent/30 rounded-xl">
-            {selected.image && (
-              <img src={selected.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-accent truncate">{selected.name}</p>
-              <p className="text-xs text-text-muted truncate">{formatArtists(selected.artists)}</p>
+          <>
+            <div
+              className="mt-3 rounded-xl p-3 animate-slide-up-sm"
+              style={{
+                background: 'rgba(157,78,221,0.1)',
+                border: '1px solid rgba(157,78,221,0.4)',
+              }}
+            >
+              <div className="flex items-start gap-3">
+                {/* Album art — larger than search results */}
+                <div className="relative flex-shrink-0">
+                  {selected.image ? (
+                    <img
+                      src={selected.image}
+                      alt=""
+                      className="w-16 h-16 rounded-xl object-cover shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center">
+                      <Music2 size={20} className="text-text-muted" />
+                    </div>
+                  )}
+                  {/* Checkmark badge */}
+                  <div
+                    className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.4)' }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Track info */}
+                <div className="min-w-0 flex-1 pt-0.5">
+                  {/* "Selected" badge */}
+                  <span
+                    className="inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded mb-1"
+                    style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}
+                  >
+                    Seleccionada
+                  </span>
+                  <p className="text-sm font-bold text-text-primary truncate leading-tight">{selected.name}</p>
+                  <p className="text-xs text-text-muted truncate">{formatArtists(selected.artists)}</p>
+                  {selected.album && (
+                    <p className="text-[11px] text-text-subtle truncate mt-0.5">{selected.album}</p>
+                  )}
+                </div>
+
+                {/* Dismiss button */}
+                <button
+                  onClick={() => { setSelected(null); setQuery(''); }}
+                  className="text-text-muted hover:text-white transition-colors mt-0.5 flex-shrink-0"
+                  aria-label="Cambiar canción"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
-            <button onClick={() => { setSelected(null); setQuery(''); }} className="text-text-muted hover:text-white">
-              <X size={16} />
-            </button>
-          </div>
+            {/* Version preference selector — only shown when host enables this feature */}
+            {guestVersionRequestEnabled && (
+              <div className="mt-3 animate-slide-up-sm">
+                <p className="text-xs text-text-muted mb-2">¿Qué versión prefieres?</p>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'normal', label: 'Normal', emoji: '🎵' },
+                    { value: 'lyrics', label: 'Letra', emoji: '📝' },
+                    { value: 'karaoke', label: 'Karaoke', emoji: '🎤' },
+                  ].map(({ value, label, emoji }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setVersionPreference(value)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95"
+                      style={versionPreference === value ? {
+                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                        color: '#fff',
+                        boxShadow: '0 2px 12px rgba(157,78,221,0.35)',
+                      } : {
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'rgba(255,255,255,0.5)',
+                      }}
+                    >
+                      <span>{emoji}</span>
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -621,22 +802,94 @@ export default function GuestPage() {
       })()}
 
       {isInCooldown ? (
-        <div className="card p-5 text-center">
-          <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-3">
-            <Clock size={24} className="text-accent" />
+        /* ── SUCCESS + COOLDOWN WAITING CARD ── */
+        <div className="card p-5 animate-fade-in" style={{ borderColor: 'rgba(34,197,94,0.25)' }}>
+          {/* Song info row */}
+          {lastSubmittedTrack && (
+            <div className="flex items-center gap-3 mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {lastSubmittedTrack.image ? (
+                <img
+                  src={lastSubmittedTrack.image}
+                  alt=""
+                  className="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-lg"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-bg-elevated flex items-center justify-center flex-shrink-0">
+                  <Music2 size={20} className="text-text-muted" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-text-primary truncate">{lastSubmittedTrack.name}</p>
+                <p className="text-xs text-text-muted truncate">{formatArtists(lastSubmittedTrack.artists)}</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="w-3.5 h-3.5 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <span className="text-[10px] text-green-400 font-medium">Petición enviada</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Cooldown timer */}
+          <div className="text-center">
+            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-2">
+              <Clock size={20} className="text-accent" />
+            </div>
+            <p className="text-sm text-text-muted">{t('guest.cooldown_label')}</p>
+            <p className="text-3xl font-bold text-accent mt-1">{formatCooldown(cooldown)}</p>
+            {/* Progress bar showing time remaining */}
+            <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-1000 linear"
+                style={{
+                  width: `${(cooldown / (cooldownMinutes * 60)) * 100}%`,
+                  background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))'
+                }}
+              />
+            </div>
           </div>
-          <p className="font-semibold text-text-primary">{lang === 'es' ? '¡Canción enviada!' : 'Song sent!'}</p>
-          <p className="text-text-muted text-sm mt-1">{t('guest.cooldown_label')}</p>
-          <p className="text-3xl font-bold text-accent mt-2">{formatCooldown(cooldown)}</p>
+        </div>
+      ) : showSuccess && lastSubmittedTrack ? (
+        /* ── BRIEF SUCCESS CARD (no cooldown) ── */
+        <div className="card p-5 text-center animate-fade-in" style={{ borderColor: 'rgba(34,197,94,0.25)' }}>
+          <div className="relative mx-auto w-16 h-16 mb-4">
+            {lastSubmittedTrack.image ? (
+              <img src={lastSubmittedTrack.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center">
+                <Music2 size={24} className="text-text-muted" />
+              </div>
+            )}
+            {/* Green checkmark badge */}
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <p className="font-bold text-text-primary">{lastSubmittedTrack.name}</p>
+          <p className="text-xs text-text-muted mt-0.5 mb-3">{formatArtists(lastSubmittedTrack.artists)}</p>
+          <p className="text-sm text-green-400 font-medium">¡Petición enviada con éxito!</p>
         </div>
       ) : (
         <button
           onClick={handleSubmit}
-          disabled={!selected || (isCommercial && !identifier.trim())}
-          className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={isSubmitting || !selected || (isCommercial && !identifier.trim())}
+          className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
         >
-          <Send size={16} />
-          {t('guest.submit')}
+          {isSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Enviando...</span>
+            </>
+          ) : (
+            <>
+              <Send size={16} />
+              {t('guest.submit')}
+            </>
+          )}
         </button>
       )}
 
@@ -689,7 +942,7 @@ function ClosedScreen() {
       <p className="text-text-muted max-w-xs mb-8">
         {t('guest.closed_sub')}
       </p>
-      
+
       {/* <Link 
         to="/" 
         className="btn-primary py-3 px-8 rounded-xl font-bold shadow-glow text-lg mb-8"

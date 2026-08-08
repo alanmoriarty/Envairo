@@ -23,6 +23,7 @@ export const useSettingsStore = create(
       requestsPerHour: 15,
       requestsPerGuest: 0,
       tableCount: 0,
+      guestVersionRequest: false, // Allow guests to request Normal / Lyrics / Karaoke version
       pairedTvs: [],
       
       // DJ Profile
@@ -71,6 +72,7 @@ export const useSettingsStore = create(
         requestsPerHour: 15,
         requestsPerGuest: 0,
         tableCount: 0,
+        guestVersionRequest: false,
         djName: 'Dj Anfitrión',
         djAvatar: 'avatar1',
         lastSavedSignature: '',
@@ -118,6 +120,7 @@ export const useSettingsStore = create(
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       setRequestsPerGuest: (v) => set({ requestsPerGuest: v }),
       setTableCount: (v) => set({ tableCount: v }),
+      setGuestVersionRequest: (v) => set({ guestVersionRequest: v }),
 
       // envAIro Selector AI
       enairoEnabled: false,

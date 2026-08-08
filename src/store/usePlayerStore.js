@@ -304,7 +304,8 @@ export const usePlayerStore = create(
 
         const { useSettingsStore } = await import('./useSettingsStore');
         const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-        const mode = forceMode ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+        // Priority: 1) explicit forceMode, 2) guest's per-request preference, 3) host global setting
+        const mode = forceMode ?? track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
         const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
           : mode === 'lyrics' ? 'LYRICS NO COPYRIGHT'
             : null;
@@ -409,7 +410,8 @@ export const usePlayerStore = create(
         try {
           const { useSettingsStore } = await import('./useSettingsStore');
           const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-          const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+          // For the preload worker, respect per-track version_preference if set
+          // (falls back to global host setting)
 
           // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas)
           const startIndex = get().currentQueueIndex + 1;
@@ -419,21 +421,23 @@ export const usePlayerStore = create(
             if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
 
             const track = get().queue[i];
+            // Per-track mode: respect guest's version_preference, fallback to global host setting
+            const trackMode = track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
             const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
 
             // In karaoke/lyrics mode ALL tracks need a YouTube search (even native YT tracks
             // need to be searched for the karaoke/lyrics version). In normal mode only
             // Spotify tracks need it (native YT tracks already have their ID).
-            const needsPreload = isSpotifyTrack || (mode !== 'normal');
+            const needsPreload = isSpotifyTrack || (trackMode !== 'normal');
 
             if (needsPreload) {
-              const cacheKey = `yt_bridge_${track.id}_${mode}`;
+              const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
               const cachedId = localStorage.getItem(cacheKey);
 
               // Only search if not already cached or previously failed
               if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
                 // Pass the correct mode so the cache key matches
-                await get().resolveYouTubeVideoId(track, mode);
+                await get().resolveYouTubeVideoId(track, trackMode);
                 // Wait 1s between searches to avoid rate-limiting (YouTube 429)
                 await new Promise(resolve => setTimeout(resolve, 1000));
               }
@@ -513,7 +517,7 @@ export const usePlayerStore = create(
             try {
               const { useSettingsStore } = await import('./useSettingsStore');
               const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-              const currentMode = forceMode || (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+              const currentMode = forceMode || track.version_preference || (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
 
               const modesToCache = ['normal', 'karaoke', 'lyrics'].filter(m => m !== currentMode);
               modesToCache.forEach(m => {

@@ -120,6 +120,7 @@ export default function SettingsPage() {
     requestsPerHour, setRequestsPerHour,
     requestsPerGuest, setRequestsPerGuest,
     tableCount, setTableCount,
+    guestVersionRequest, setGuestVersionRequest,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre, clearWhitelistGenres,
     blacklistGenres, addBlacklistGenre, removeBlacklistGenre, clearBlacklistGenres,
     blacklistSongs, addBlacklistSong, removeBlacklistSong, clearBlacklistSongs,
@@ -150,7 +151,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('simple');
 
-  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'guestVersionRequest'];
   const currentSettingsObj = {};
   allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
   const currentSignature = JSON.stringify(currentSettingsObj);
@@ -189,6 +190,7 @@ export default function SettingsPage() {
             table_count: state.tableCount,
             requests_per_hour: state.requestsPerHour,
             requests_per_guest: state.requestsPerGuest,
+            guest_version_request: state.guestVersionRequest,
             active: currentActive,
             updated_at: new Date().toISOString()
           }
@@ -430,6 +432,23 @@ export default function SettingsPage() {
                   }}
                   onBlur={() => { if (tableCount === '') setTableCount(0); }}
                   className="input-field w-full sm:w-24 text-center"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+                    <span>🎤</span> Versión por petición del invitado
+                  </label>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Los invitados podrán elegir si quieren su canción en versión normal, con letra o karaoke.
+                  </p>
+                </div>
+                <Toggle
+                  checked={guestVersionRequest}
+                  onChange={setGuestVersionRequest}
                 />
               </div>
             </div>
