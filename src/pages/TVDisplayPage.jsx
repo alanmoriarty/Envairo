@@ -464,14 +464,25 @@ export default function TVDisplayPage() {
       if (typeof data.time === 'number' && !isTransitioning.current) {
         const playerState = activeP.getPlayerState();
         const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
+        const isEnded = playerState === window.YT.PlayerState.ENDED;
+        const duration = activeP.getDuration() || 0;
         
-        // Forzar seek en SYNC (directo del host), o en SYNC_TIME si no está en buffer
-        // Reducimos la tolerancia a 0.5s para asegurar que todas las pantallas esclavas
-        // estén sincronizadas casi perfectamente "entre sí".
-        if (data.type === 'SYNC' || (!isBuffering && data.type === 'SYNC_TIME')) {
+        // Forzar seek en SYNC (directo del host o scrub), o en SYNC_TIME con mayor tolerancia
+        if (data.type === 'SYNC') {
           const currentTime = activeP.getCurrentTime();
           if (currentTime !== undefined && Math.abs(currentTime - data.time) > 0.5) {
             shouldSeek = true;
+          }
+        } else if (!isBuffering && data.type === 'SYNC_TIME') {
+          const currentTime = activeP.getCurrentTime();
+          if (currentTime !== undefined) {
+             const diff = Math.abs(currentTime - data.time);
+             // Si ya terminó o está por terminar (últimos 3 segs), y el host está un poco atrás, no rebobinar
+             if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+               shouldSeek = false;
+             } else if (diff > 4) {
+               shouldSeek = true;
+             }
           }
         }
       }

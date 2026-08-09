@@ -152,7 +152,7 @@ export function useTVBroadcast() {
             if (ytTime > 0) trueTime = ytTime;
           }
           broadcastMessage({
-            type: 'SYNC_TIME',
+            type: 'SYNC',
             videoId: currentYtId,
             isPlaying: isPlaying,
             time: trueTime
