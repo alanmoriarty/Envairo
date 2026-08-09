@@ -450,10 +450,14 @@ export default function TVDisplayPage() {
         } else {
           isTransitioning.current = false;
           setIsLoadingVideo(false);
-          if (data.isPlaying) {
-            activeP.loadVideoById({ videoId: data.videoId, startSeconds: start });
-          } else {
-            activeP.cueVideoById({ videoId: data.videoId, startSeconds: start });
+          // Always use loadVideoById for new tracks to prevent getting stuck in CUED state
+          // if the subsequent playVideo command is missed or ignored by the iframe.
+          activeP.loadVideoById({ videoId: data.videoId, startSeconds: start });
+          if (!data.isPlaying) {
+             // If the host is genuinely paused, attempt to pause after loading
+             setTimeout(() => {
+                if (typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
+             }, 500);
           }
         }
         return;

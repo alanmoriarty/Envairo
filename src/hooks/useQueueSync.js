@@ -128,11 +128,22 @@ export function useQueueSync() {
 
       if (Object.keys(updatesToApply).length > 0) {
         isRemoteUpdate.current = true;
+        
+        // Check if currentTrack changed from a remote update
+        const trackChanged = updatesToApply.currentTrack !== undefined && 
+                             JSON.stringify(updatesToApply.currentTrack) !== JSON.stringify(currentState.currentTrack);
+        
         usePlayerStore.setState(updatesToApply);
         usePlayerStore.getState().startQueuePreloadWorker();
 
-        // Auto-play if nothing is playing and the queue has unplayed tracks (from external changes like Guest additions or Request approvals)
         const finalState = usePlayerStore.getState();
+        
+        // If the track changed remotely (e.g. Host auto-advanced), we MUST tell the local engine to play it!
+        if (trackChanged && finalState.currentTrack && finalState.youtubePlayer) {
+          finalState.playEngineTrack(finalState.currentTrack, finalState.progress, null, finalState.isPlaying);
+        }
+
+        // Auto-play if nothing is playing and the queue has unplayed tracks (from external changes like Guest additions or Request approvals)
         if (!finalState.currentTrack && finalState.queue.length > 0) {
           const nextTrack = finalState.shiftQueue();
           if (nextTrack) {
