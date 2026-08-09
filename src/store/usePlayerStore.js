@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { useSettingsStore } from './useSettingsStore';
 
 export const usePlayerStore = create(
   persist(
@@ -597,7 +598,17 @@ export const usePlayerStore = create(
           let insertIndex = newQueue.length;
 
           if (state.currentQueueIndex >= 0) {
-            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+            const mode = useSettingsStore.getState().mode;
+            
+            if (mode === 'party') {
+              // Insert immediately after the current song, but preserve FIFO for consecutive requests
+              insertIndex = state.currentQueueIndex + 1;
+              while (insertIndex < newQueue.length && newQueue[insertIndex].requestedBy) {
+                insertIndex++;
+              }
+            } else {
+              insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+            }
           }
 
           newQueue.splice(insertIndex, 0, newTrack);
