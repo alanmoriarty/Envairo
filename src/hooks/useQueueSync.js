@@ -433,7 +433,7 @@ export function useQueueSync() {
       if (data) {
         if (authStore.user || secret) {
           // Si somos el host autenticado (no un remote restrictivo), podemos tomar control de la sesión
-          if (authStore.user) {
+          if (authStore.user && !useSettingsStore.getState().isAdminMode) {
              try {
                const { data: newSecret, error: takeoverError } = await supabase.rpc('host_takeover_session', {
                  p_session_id: sessionId,
