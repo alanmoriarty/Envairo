@@ -54,8 +54,59 @@ export function useTVBroadcast() {
       }
     };
 
+    const handleMasterSync = (data) => {
+      const store = usePlayerStore.getState();
+      if (store.playbackEngine !== 'youtube' || !store.youtubePlayer) return;
+      
+      try {
+        const isCurrentlyPlaying = store.youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING;
+        const isEnded = store.youtubePlayer.getPlayerState() === window.YT.PlayerState.ENDED;
+        
+        // 1. Sync time
+        if (typeof data.time === 'number') {
+          const currentTime = store.youtubePlayer.getCurrentTime() || 0;
+          const diff = Math.abs(currentTime - data.time);
+          const duration = store.youtubePlayer.getDuration() || 0;
+          
+          let shouldSeek = false;
+          if (data.type === 'SYNC' && diff > 0.5) {
+            shouldSeek = true;
+          } else if (data.type === 'SYNC_TIME') {
+            if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+               shouldSeek = false;
+            } else if (diff > 4) {
+               shouldSeek = true;
+            }
+          }
+          if (shouldSeek) {
+            store.youtubePlayer.seekTo(data.time, true);
+          }
+        }
+        
+        // 2. Sync play state
+        if (typeof data.isPlaying === 'boolean') {
+          if (!data.isPlaying) {
+            store.youtubePlayer.pauseVideo();
+            store.setIsPlaying(false);
+          } else if (data.isPlaying && !isCurrentlyPlaying) {
+            store.youtubePlayer.playVideo();
+            store.setIsPlaying(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Error syncing slave dashboard:', err);
+      }
+    };
+
     // Escuchar mensajes de las TVs esclavas (Local)
     channelRef.current.onmessage = (e) => {
+      const state = usePlayerStore.getState();
+      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+
+      if (!isActiveMaster && (e.data?.type === 'SYNC' || e.data?.type === 'SYNC_TIME')) {
+        handleMasterSync(e.data);
+      }
+
       if (e.data?.type === 'REQUEST_SYNC') {
         sendCurrentSync();
       } else if (e.data?.type === 'SLAVE_ERROR') {
@@ -68,6 +119,13 @@ export function useTVBroadcast() {
     // Escuchar mensajes de las TVs esclavas (Internet)
     if (sbChannelRef.current) {
       sbChannelRef.current.on('broadcast', { event: 'tv_sync' }, (e) => {
+        const state = usePlayerStore.getState();
+        const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+
+        if (!isActiveMaster && (e.payload?.type === 'SYNC' || e.payload?.type === 'SYNC_TIME')) {
+          handleMasterSync(e.payload);
+        }
+
         if (e.payload?.type === 'REQUEST_SYNC') {
           sendCurrentSync();
         } else if (e.payload?.type === 'SLAVE_ERROR') {

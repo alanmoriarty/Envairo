@@ -495,12 +495,13 @@ export default function TVDisplayPage() {
         activeP.seekTo(data.time, true);
       }
 
-      // 2. Sincronizar inmediatamente el estado de reproducción/pausa con el anfitrión
+      // 2. Sincronizar inmediatamente el estado de reproducción/pausa
       if (typeof data.isPlaying === 'boolean') {
-        if (!data.isPlaying && isCurrentlyPlaying) {
-          activeP.pauseVideo();
-        } else if (data.isPlaying && !isCurrentlyPlaying) {
-          activeP.playVideo();
+        if (!data.isPlaying) {
+          if (typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
+          if (typeof bufferP.pauseVideo === 'function') bufferP.pauseVideo();
+        } else if (data.isPlaying && !isCurrentlyPlaying && !isTransitioning.current) {
+          if (typeof activeP.playVideo === 'function') activeP.playVideo();
         }
       }
     } catch (err) {
