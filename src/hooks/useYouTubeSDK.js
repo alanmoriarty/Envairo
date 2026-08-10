@@ -211,6 +211,8 @@ export function useYouTubeSDK() {
         getPlayerState: () => getActivePlayer()?.getPlayerState(),
         getCurrentTime: () => getActivePlayer()?.getCurrentTime(),
         getDuration: () => getActivePlayer()?.getDuration(),
+        setPlaybackRate: (rate) => { getActivePlayer()?.setPlaybackRate(rate); getBufferPlayer()?.setPlaybackRate(rate); },
+        getPlaybackRate: () => getActivePlayer()?.getPlaybackRate(),
         stopVideo: () => getActivePlayer()?.stopVideo(),
         unloadModule: (m) => getActivePlayer()?.unloadModule(m),
         destroy: () => { player1Ref.current?.destroy(); player2Ref.current?.destroy(); },

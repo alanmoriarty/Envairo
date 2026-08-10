@@ -10,6 +10,9 @@ export function useTVBroadcast() {
   const sbChannelRef = useRef(null);
   const lastStateRef = useRef({ videoId: null, isPlaying: false });
   const lastProgressRef = useRef(0);
+  const lastProgressTimeRef = useRef(Date.now());
+  const lastTimeRef = useRef(0);
+  const latencyRef = useRef(0);
 
   const user = useAuthStore((s) => s.user);
   const settingsSessionId = useSettingsStore((s) => s.sessionId);
@@ -32,7 +35,7 @@ export function useTVBroadcast() {
       // Only the active master device should send sync commands to the TV
       const state = usePlayerStore.getState();
       const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
-      if (!isActiveMaster && data.type !== 'REQUEST_SYNC' && data.type !== 'MASTER_DISCONNECT') {
+      if (!isActiveMaster && !['REQUEST_SYNC', 'MASTER_DISCONNECT', 'SYNC_PING'].includes(data.type)) {
         return;
       }
 
@@ -64,22 +67,41 @@ export function useTVBroadcast() {
         
         // 1. Sync time
         if (typeof data.time === 'number') {
+          const latencySec = latencyRef.current / 1000;
+          const targetTime = data.time + latencySec;
           const currentTime = store.youtubePlayer.getCurrentTime() || 0;
-          const diff = Math.abs(currentTime - data.time);
+          const diff = targetTime - currentTime;
           const duration = store.youtubePlayer.getDuration() || 0;
           
           let shouldSeek = false;
-          if (data.type === 'SYNC' && diff > 0.5) {
-            shouldSeek = true;
+          let newRate = 1.0;
+
+          if (data.type === 'SYNC') {
+            if (Math.abs(diff) > 1.5) {
+              shouldSeek = true;
+            } else if (diff > 0.2) {
+              newRate = 1.1;
+            } else if (diff < -0.2) {
+              newRate = 0.9;
+            }
           } else if (data.type === 'SYNC_TIME') {
             if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
                shouldSeek = false;
-            } else if (diff > 4) {
+               newRate = 1.0;
+            } else if (Math.abs(diff) > 1.5) {
                shouldSeek = true;
+            } else if (diff > 0.2) {
+               newRate = 1.05;
+            } else if (diff < -0.2) {
+               newRate = 0.95;
             }
           }
+          
           if (shouldSeek) {
-            store.youtubePlayer.seekTo(data.time, true);
+            store.youtubePlayer.seekTo(targetTime, true);
+            if (typeof store.youtubePlayer.setPlaybackRate === 'function') store.youtubePlayer.setPlaybackRate(1.0);
+          } else if (typeof store.youtubePlayer.setPlaybackRate === 'function') {
+            store.youtubePlayer.setPlaybackRate(newRate);
           }
         }
         
@@ -107,6 +129,12 @@ export function useTVBroadcast() {
         handleMasterSync(e.data);
       }
 
+      if (e.data?.type === 'SYNC_PING' && isActiveMaster) {
+        broadcastMessage({ type: 'SYNC_PONG', timestamp: e.data.timestamp });
+      } else if (e.data?.type === 'SYNC_PONG' && !isActiveMaster) {
+        latencyRef.current = (Date.now() - e.data.timestamp) / 2;
+      }
+
       if (e.data?.type === 'REQUEST_SYNC') {
         sendCurrentSync();
       } else if (e.data?.type === 'SLAVE_ERROR') {
@@ -126,6 +154,12 @@ export function useTVBroadcast() {
           handleMasterSync(e.payload);
         }
 
+        if (e.payload?.type === 'SYNC_PING' && isActiveMaster) {
+          broadcastMessage({ type: 'SYNC_PONG', timestamp: e.payload.timestamp });
+        } else if (e.payload?.type === 'SYNC_PONG' && !isActiveMaster) {
+          latencyRef.current = (Date.now() - e.payload.timestamp) / 2;
+        }
+
         if (e.payload?.type === 'REQUEST_SYNC') {
           sendCurrentSync();
         } else if (e.payload?.type === 'SLAVE_ERROR') {
@@ -135,6 +169,15 @@ export function useTVBroadcast() {
         }
       });
     }
+
+    // Ping periódico para Esclavos
+    const pingInterval = setInterval(() => {
+      const state = usePlayerStore.getState();
+      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+      if (!isActiveMaster) {
+        broadcastMessage({ type: 'SYNC_PING', timestamp: Date.now() });
+      }
+    }, 10000);
 
     const handleTVStolen = (tvId) => {
       try {
@@ -208,10 +251,17 @@ export function useTVBroadcast() {
           time: trueTime
         });
         lastProgressRef.current = state.progress || 0;
+        lastProgressTimeRef.current = Date.now();
       } else if (state.progress !== undefined) {
-        // Detectar saltos manuales (scrubbing)
-        const progressDiff = Math.abs(state.progress - lastProgressRef.current);
-        if (progressDiff > 1500) {
+        // Detectar saltos manuales (scrubbing) vs retrasos de pestañas en segundo plano (throttling)
+        const now = Date.now();
+        const timeElapsed = isPlaying ? (now - lastProgressTimeRef.current) : 0;
+        const expectedProgress = lastProgressRef.current + timeElapsed;
+        
+        // Si la diferencia entre el progreso real y el esperado es mayor a 1.5s, es un scrub manual
+        const scrubDiff = Math.abs(state.progress - expectedProgress);
+        
+        if (scrubDiff > 1500) {
           let trueTime = state.progress / 1000;
           if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
             const ytTime = state.youtubePlayer.getCurrentTime();
@@ -225,6 +275,7 @@ export function useTVBroadcast() {
           });
         }
         lastProgressRef.current = state.progress;
+        lastProgressTimeRef.current = now;
       }
     });
 
@@ -255,6 +306,7 @@ export function useTVBroadcast() {
     return () => {
       unsub();
       clearInterval(syncInterval);
+      clearInterval(pingInterval);
       window.removeEventListener('beforeunload', handleUnload);
       if (channelRef.current) {
         channelRef.current.close();
