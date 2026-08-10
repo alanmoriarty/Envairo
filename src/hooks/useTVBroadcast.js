@@ -3,6 +3,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
+import { getInstanceId } from '../lib/instanceId';
 
 export function useTVBroadcast() {
   const channelRef = useRef(null);
@@ -28,6 +29,13 @@ export function useTVBroadcast() {
     }
 
     const broadcastMessage = (data) => {
+      // Only the active master device should send sync commands to the TV
+      const state = usePlayerStore.getState();
+      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+      if (!isActiveMaster && data.type !== 'REQUEST_SYNC' && data.type !== 'MASTER_DISCONNECT') {
+        return;
+      }
+
       // BroadcastChannel Local (Mismo equipo)
       if (channelRef.current) {
         try {
