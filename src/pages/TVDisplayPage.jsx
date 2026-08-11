@@ -470,10 +470,9 @@ export default function TVDisplayPage() {
         const isEnded = playerState === window.YT.PlayerState.ENDED;
         const duration = activeP.getDuration() || 0;
 
-        // Estimate transit delay from embedded timestamp
-        const transitMs = data.sentAt ? Math.max(0, Date.now() - data.sentAt) : 0;
-        const transitSec = transitMs / 1000;
-        const targetTime = data.time + transitSec;
+        // Estimate target time (use host's reported time directly;
+        // smooth catch-up handles any small transit delay naturally)
+        const targetTime = data.time;
         const currentTime = activeP.getCurrentTime() || 0;
         const diff = targetTime - currentTime; // positive = TV is behind
 

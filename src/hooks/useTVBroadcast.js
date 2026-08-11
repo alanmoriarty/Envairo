@@ -78,11 +78,7 @@ export function useTVBroadcast() {
 
         // ── 2. Sync time (only for same video) ──
         if (typeof data.time === 'number' && data.videoId === store.currentYtId) {
-          // Estimate transit delay from the embedded timestamp
-          const transitMs = data.sentAt ? Math.max(0, Date.now() - data.sentAt) : 0;
-          const transitSec = transitMs / 1000;
-          const targetTime = data.time + transitSec;
-
+          const targetTime = data.time;
           const currentTime = player.getCurrentTime() || 0;
           const diff = targetTime - currentTime; // positive = slave is behind
           const duration = player.getDuration() || 0;
