@@ -140,7 +140,7 @@ export function useQueueSync() {
         
         // If the track changed remotely (e.g. Host auto-advanced), we MUST tell the local engine to play it!
         if (trackChanged && finalState.currentTrack && finalState.youtubePlayer) {
-          finalState.playEngineTrack(finalState.currentTrack, finalState.progress, null, finalState.isPlaying);
+          finalState.playEngineTrack(finalState.currentTrack, 0, null, finalState.isPlaying);
         }
 
         // Auto-play if nothing is playing and the queue has unplayed tracks (from external changes like Guest additions or Request approvals)

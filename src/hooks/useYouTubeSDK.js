@@ -417,7 +417,7 @@ export function useYouTubeSDK() {
             }
           }
           // playEngineTrack will try fallback modes (karaoke → lyrics → normal) before skipping
-          store.playEngineTrack(store.currentTrack, store.progress, null, 1);
+          store.playEngineTrack(store.currentTrack, 0, null, 1);
           import('sonner').then(({ toast }) => toast.error('Video no disponible. Buscando alternativa...'));
         } else if (event.data === 2 || event.data === 5) {
           // Reintentos de glitch transitorio
@@ -425,10 +425,10 @@ export function useYouTubeSDK() {
           const currentYtId = store.currentYtId || currentYtIdRef.current;
           if (currentYtId && getActivePlayer()) {
             setTimeout(() => {
-              getActivePlayer().loadVideoById({ videoId: currentYtId, startSeconds: store.progress > 0 ? store.progress / 1000 : 0 });
+              getActivePlayer().loadVideoById({ videoId: currentYtId, startSeconds: 0 });
             }, 1000);
           } else {
-            store.playEngineTrack(store.currentTrack, store.progress, null, 1);
+            store.playEngineTrack(store.currentTrack, 0, null, 1);
           }
         }
       };

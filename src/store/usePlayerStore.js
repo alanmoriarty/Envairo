@@ -455,7 +455,7 @@ export const usePlayerStore = create(
         if (!track) return;
         
         const execId = Date.now() + Math.random();
-        set({ _currentPlayExecId: execId });
+        set({ _currentPlayExecId: execId, progress: progressMs });
 
         get().queueAddToHistory(track);
         const state = get();

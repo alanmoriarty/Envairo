@@ -313,8 +313,12 @@ export default function TVDisplayPage() {
         const activeP = getActivePlayer();
         const bufferP = getBufferPlayer();
 
-        if (isTransitioning.current && event.target === bufferP) {
-          if (event.data === window.YT.PlayerState.PLAYING) {
+        if (event.data === window.YT.PlayerState.PLAYING) {
+          // Hide loading overlay now that video is playing
+          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+          setIsLoadingVideo(false);
+
+          if (isTransitioning.current && event.target === bufferP) {
             isTransitioning.current = false;
 
             const nextIndex = activePlayerIndex.current === 1 ? 2 : 1;
@@ -330,13 +334,9 @@ export default function TVDisplayPage() {
             }
 
             if (activeP && typeof activeP.pauseVideo === 'function') {
-              activeP.pauseVideo();
+              try { activeP.pauseVideo(); } catch (e) {}
             }
             activePlayerIndex.current = nextIndex;
-
-            // Hide loading overlay now that the new video is playing
-            if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-            setIsLoadingVideo(false);
           }
         }
       };
@@ -344,6 +344,12 @@ export default function TVDisplayPage() {
       const onError = (event) => {
         console.warn('Error en reproductor esclavo:', event.data);
         const failedId = currentVideoIdRef.current;
+
+        // Hide containers immediately so YouTube's error card iframe is never visible to the audience
+        const c1 = document.getElementById('tv-yt-container-1');
+        const c2 = document.getElementById('tv-yt-container-2');
+        if (c1) c1.style.opacity = '0';
+        if (c2) c2.style.opacity = '0';
         
         const bufferP = getBufferPlayer();
         if (isTransitioning.current && event.target === bufferP) {
@@ -365,7 +371,7 @@ export default function TVDisplayPage() {
 
         const activeP = getActivePlayer();
         if (activeP && typeof activeP.pauseVideo === 'function') {
-          activeP.pauseVideo();
+          try { activeP.pauseVideo(); } catch (e) {}
         }
 
         // Audience-safe: clear video so the dark waiting screen shows (no error text)
@@ -439,24 +445,20 @@ export default function TVDisplayPage() {
         const bufferingOffset = 0.1;
         const start = data.time ? data.time + bufferingOffset : 0;
 
+        setIsLoadingVideo(true);
+        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = setTimeout(() => setIsLoadingVideo(false), 8000);
+
         if (isCurrentlyPlaying && data.isPlaying) {
           isTransitioning.current = true;
-          // Show loading overlay so audience doesn't see the old video during buffering.
-          // Auto-dismiss after 8s as a safety net (in case PLAYING never fires).
-          setIsLoadingVideo(true);
-          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-          loadingTimerRef.current = setTimeout(() => setIsLoadingVideo(false), 8000);
           bufferP.loadVideoById({ videoId: data.videoId, startSeconds: start });
         } else {
           isTransitioning.current = false;
-          setIsLoadingVideo(false);
-          // Always use loadVideoById for new tracks to prevent getting stuck in CUED state
-          // if the subsequent playVideo command is missed or ignored by the iframe.
           activeP.loadVideoById({ videoId: data.videoId, startSeconds: start });
           if (!data.isPlaying) {
              // If the host is genuinely paused, attempt to pause after loading
              setTimeout(() => {
-                if (typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
+                if (activeP && typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
              }, 500);
           }
         }

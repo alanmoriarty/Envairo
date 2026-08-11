@@ -170,7 +170,7 @@ export function useTVBroadcast() {
       if (state.currentYtId === failedVideoId && state.currentTrack) {
         console.warn(`Una TV esclava reportó error con el video ${failedVideoId}. Forzando alternativa...`);
         usePlayerStore.setState(s => ({ failedYouTubeIds: [...s.failedYouTubeIds, failedVideoId] }));
-        state.playEngineTrack(state.currentTrack, state.progress, null, 1);
+        state.playEngineTrack(state.currentTrack, 0, null, 1);
         import('sonner').then(({ toast }) => toast.error('TV no pudo reproducir el video. Buscando alternativa...'));
       }
     };
