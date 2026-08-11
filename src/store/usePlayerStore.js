@@ -307,8 +307,8 @@ export const usePlayerStore = create(
         const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
         // Priority: 1) explicit forceMode, 2) guest's per-request preference, 3) host global setting
         const mode = forceMode ?? track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-        const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT'
-          : mode === 'lyrics' ? 'LYRICS NO COPYRIGHT'
+        const querySuffix = mode === 'karaoke' ? 'KARAOKE ORIGINAL WITH LYRICS LETRA NO COPYRIGHT'
+          : mode === 'lyrics' ? 'LETRA LYRICS NO COPYRIGHT'
             : null;
 
         const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
@@ -339,7 +339,7 @@ export const usePlayerStore = create(
               let results = await searchYouTubeVideos(query, 5);
 
               if ((!results || results.length === 0) && querySuffix) {
-                const relaxedQuery = `${queryBase} AUDIO`;
+                const relaxedQuery = `${queryBase} LETRA LYRICS`;
                 results = await searchYouTubeVideos(relaxedQuery, 5);
               }
 
