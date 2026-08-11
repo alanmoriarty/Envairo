@@ -46,7 +46,7 @@ export function useTVBroadcast() {
 
       // BroadcastChannel Local (Mismo equipo)
       if (channelRef.current) {
-        try { channelRef.current.postMessage(envelope); } catch (e) {}
+        try { channelRef.current.postMessage(envelope); } catch (e) { }
       }
       // Supabase Realtime Broadcast (Smart TVs en Internet)
       if (sbChannelRef.current && sbChannelRef.current.state === 'joined') {
@@ -54,7 +54,7 @@ export function useTVBroadcast() {
           type: 'broadcast',
           event: 'tv_sync',
           payload: envelope
-        }).catch(() => {});
+        }).catch(() => { });
       }
     };
 
@@ -90,10 +90,10 @@ export function useTVBroadcast() {
             // Large drift — hard seek
             player.seekTo(targetTime, true);
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
-          } else if (diff > 0.3) {
+          } else if (diff > 0.2) {
             // Slave is behind — speed up slightly
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.05);
-          } else if (diff < -0.3) {
+          } else if (diff < -0.2) {
             // Slave is ahead — slow down slightly
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.95);
           } else {
@@ -122,8 +122,11 @@ export function useTVBroadcast() {
       if (!data?.type) return;
       const master = isMaster();
 
-      // Slave dashboards consume SYNC / SYNC_TIME from master
+      // Slave dashboards and remote controls consume SYNC / SYNC_TIME from master
       if (!master && (data.type === 'SYNC' || data.type === 'SYNC_TIME')) {
+        if (typeof data.isPlaying === 'boolean') {
+          usePlayerStore.getState().setIsPlaying(data.isPlaying);
+        }
         handleMasterSync(data);
       }
 
@@ -159,7 +162,7 @@ export function useTVBroadcast() {
           window.dispatchEvent(new Event('bq-paired-tvs-updated'));
           import('sonner').then(({ toast }) => toast.info(`La pantalla vinculada (${tvId}) fue conectada por otro usuario y se ha desvinculado de tu sesión.`));
         }
-      } catch (err) {}
+      } catch (err) { }
     };
 
     const handleSlaveError = (failedVideoId) => {

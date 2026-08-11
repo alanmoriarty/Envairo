@@ -153,6 +153,7 @@ export default function DashboardPage() {
   const approveRequest = usePlayerStore(s => s.approveRequest);
   const rejectRequest = usePlayerStore(s => s.rejectRequest);
   const currentTrack = usePlayerStore(s => s.currentTrack);
+  const isPlaying = usePlayerStore(s => s.isPlaying);
   const sdkReady = usePlayerStore(s => s.sdkReady);
   const playbackEngine = usePlayerStore(s => s.playbackEngine);
   const volume = usePlayerStore(s => s.volume);
@@ -160,6 +161,8 @@ export default function DashboardPage() {
 
   const { isThinking, triggerEnairo } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showRemoteVolume, setShowRemoteVolume] = useState(false);
+  const remoteVolumeRef = React.useRef(null);
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [isAutoDjModalOpen, setIsAutoDjModalOpen] = useState(false);
@@ -186,6 +189,16 @@ export default function DashboardPage() {
   useEffect(() => {
     const timer = setInterval(() => setLocalTime(Date.now()), 60000); // update every minute
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (remoteVolumeRef.current && !remoteVolumeRef.current.contains(e.target)) {
+        setShowRemoteVolume(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   const sensors = useSensors(
@@ -506,7 +519,7 @@ export default function DashboardPage() {
             <SkipBack size={24} />
           </button>
 
-          {usePlayerStore.getState().isPlaying ? (
+          {isPlaying ? (
             <button
               onClick={() => {
                 usePlayerStore.getState().setIsPlaying(false);
@@ -542,11 +555,15 @@ export default function DashboardPage() {
           </button>
 
           {/* Remote Volume Control */}
-          <div className="relative group flex items-center ml-2">
-            <button onClick={toggleRemoteMute} className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors">
+          <div ref={remoteVolumeRef} className="relative group flex items-center ml-2">
+            <button
+              onClick={() => setShowRemoteVolume(prev => !prev)}
+              className={`p-3 rounded-full hover:bg-white/10 transition-colors ${showRemoteVolume ? 'bg-white/15 text-accent' : 'text-text-primary'}`}
+              title="Volumen"
+            >
               {volume === 0 ? <VolumeX size={24} /> : <Volume2 size={24} />}
             </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4">
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 ${showRemoteVolume ? 'flex' : 'hidden'} group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4`}>
               <input
                 type="range"
                 min={0}
