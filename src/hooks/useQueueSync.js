@@ -40,6 +40,11 @@ export function useQueueSync() {
         return;
       }
 
+      // Los controles remotos (isAdminMode) NUNCA deben empujar cambios locales de su player a la DB del host
+      if (useSettingsStore.getState().isAdminMode) {
+        return;
+      }
+
       if (isRemoteUpdate.current) {
         isRemoteUpdate.current = false;
         return;
@@ -459,13 +464,16 @@ export function useQueueSync() {
                isTakingOverRef.current = false;
                return; 
              }
+          } else if (isAdmin) {
+            // Para Control Remoto: Actualizar ÚNICAMENTE el active_remote_id (expulsa el remoto viejo sin tocar el Host)
+            await supabase.from('sessions').update({ active_remote_id: activeInstanceId }).eq('id', sessionId);
           }
           await supabase.rpc('sync_host_config', {
             p_session_id: sessionId,
             p_secret: useSettingsStore.getState().hostSecret,
             p_updates: {
               active: alwaysAvailable,
-              ...(useSettingsStore.getState().isAdminMode ? { active_remote_id: activeInstanceId } : {}),
+              active_remote_id: activeInstanceId,
               mode,
               blacklist_genres: blacklistGenres,
               blacklist_songs: blacklistSongs,
@@ -481,10 +489,12 @@ export function useQueueSync() {
           });
         }
       } else {
+        const isAdmin = useSettingsStore.getState().isAdminMode;
         const { error: insertError } = await supabase.from('sessions').insert({
           id: sessionId,
           host_secret: secret, // Guardar el secreto admin inicial
-          active_instance_id: activeInstanceId,
+          active_instance_id: isAdmin ? null : activeInstanceId,
+          active_remote_id: isAdmin ? activeInstanceId : null,
           supabase_user_id: sbUser?.id,
           active: alwaysAvailable,
           mode,
