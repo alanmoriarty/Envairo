@@ -359,20 +359,37 @@ export const usePlayerStore = create(
                 }
 
                 if (unblocked.length > 0) {
-                  let validResults = unblocked;
+                  const BAD_VIDEO_KEYWORDS = [
+                    'entrevista', 'interview', 'podcast', 'reaction', 'reaccion', 'reaccionando',
+                    'review', 'behind the scenes', 'making of', 'documental', 'documentary',
+                    'hablando de', 'talking about', 'opinion', 'analizando', 'analysis',
+                    'teaser', 'trailer', 'tráiler', 'snippet', 'avance', 'q&a', 'vlog', 'unboxing'
+                  ];
+
+                  // Filter out interviews, podcasts, reactions, and non-music videos
+                  const cleanUnblocked = unblocked.filter(r => {
+                    const t = (r.name || '').toLowerCase();
+                    return !BAD_VIDEO_KEYWORDS.some(kw => t.includes(kw));
+                  });
+
+                  const poolToUse = cleanUnblocked.length > 0 ? cleanUnblocked : unblocked;
+
                   if (mode === 'karaoke' || mode === 'lyrics') {
-                    validResults = unblocked.filter(r => {
+                    const validResults = poolToUse.filter(r => {
                       const t = (r.name || '').toLowerCase();
                       if (mode === 'karaoke') return t.includes('karaoke') || t.includes('instrumental') || t.includes('pista');
-                      if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra') || t.includes('karaoke');
+                      if (mode === 'lyrics') return t.includes('lyric') || t.includes('letra');
                       return true;
                     });
-                  }
 
-                  if (validResults.length > 0) {
-                    videoIdToPlay = validResults[0].id;
+                    if (validResults.length > 0) {
+                      videoIdToPlay = validResults[0].id;
+                    } else {
+                      // If no genuine lyrics/karaoke video was found, return null so playEngineTrack cascades to normal mode
+                      videoIdToPlay = null;
+                    }
                   } else {
-                    videoIdToPlay = unblocked[0].id;
+                    videoIdToPlay = poolToUse[0].id;
                   }
 
                   if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
