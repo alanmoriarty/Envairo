@@ -150,9 +150,6 @@ export async function evaluateTrack(track, settings) {
 export async function getAutoQueueRecommendations(playHistory = [], settings = {}) {
   const pool = new Map(); // Usamos un Map para evitar duplicados por ID
 
-  // 1. (Removido) Ya no se extraen canciones de Playlists Personalizadas guardadas localmente.
-
-  // Para evitar ciclos e importaciones circulares en el boot, importamos de forma dinámica el store
   let currentState = null;
   try {
     const { usePlayerStore } = await import('../store/usePlayerStore');
@@ -162,20 +159,11 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
   }
 
   if (currentState) {
-    // 2. Extraer de la Cola Completa (Incluye peticiones aprobadas pasadas y envAIro Selector)
+    // Solo extraer canciones de la cola actual (NO del historial de reproducción)
     if (Array.isArray(currentState.queue)) {
       currentState.queue.forEach(track => {
         if (track && track.id) {
           pool.set(track.id, { ...track, source: track.requestedBy || 'Queue' });
-        }
-      });
-    }
-
-    // 3. Extraer del Historial de Reproducción
-    if (Array.isArray(currentState.playHistory)) {
-      currentState.playHistory.forEach(track => {
-        if (track && track.id) {
-          pool.set(track.id, { ...track, source: 'History' });
         }
       });
     }
@@ -184,16 +172,21 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
   // Convertimos a array
   let tracksPool = Array.from(pool.values());
 
-  // NUEVO FILTRO ESTRICTO: Solo permitir canciones pedidas por invitados reales (ignorar envAIro Filter, Playlists e Historial importado)
+  // Solo permitir canciones pedidas por invitados reales (ignorar envAIro Filter, Auto DJ e Historial)
   tracksPool = tracksPool.filter(track => {
     if (!track.requestedBy) return false;
     const rb = track.requestedBy;
     return rb !== 'envAIro Filter' && rb !== 'Auto DJ' && !rb.includes('Playlist') && !rb.includes('Historial') && rb !== 'Host';
   });
 
-  // 4. Filtrar: No queremos repetir canciones que han sonado muy recientemente
-  const recentHistory = playHistory.slice(-20).map(t => t.id);
-  tracksPool = tracksPool.filter(track => !recentHistory.includes(track.id));
+  // FILTRO ESTRICTO: Excluir NINGUNA canción que ya haya sonado en el historial (playHistory)
+  const allPlayedIds = new Set((playHistory || []).map(t => t.id).filter(Boolean));
+  const allPlayedNames = new Set((playHistory || []).map(t => (t.name || '').toLowerCase().trim()).filter(Boolean));
+
+  tracksPool = tracksPool.filter(track => {
+    const normName = (track.name || '').toLowerCase().trim();
+    return !allPlayedIds.has(track.id) && !allPlayedNames.has(normName);
+  });
 
   // 5. Shuffle (Aleatorizar)
   tracksPool.sort(() => Math.random() - 0.5);
@@ -206,7 +199,64 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
     }
   }
 
-  // Si después de todo no encontramos nada válido (ej. primera canción de la fiesta sin playlists), 
-  // devolvemos null y esperamos a que el usuario añada algo.
+  // Si no hay canciones sin sonar en el pool local, generar una recomendación fresca vía IA (envAIro Selector)
+  try {
+    const { supabase } = await import('./supabase');
+    const todayPlayHistory = (playHistory || []).filter(t => t && t.id);
+    const playedSongNames = todayPlayHistory.map(t => `${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map(a => a.name || a).join(', ')}`);
+
+    const { data, error } = await supabase.functions.invoke('enairo-selector', {
+      body: {
+        action_mode: 'generate',
+        history: todayPlayHistory.slice(-5),
+        playedHistory: playedSongNames,
+        queue: currentState?.queue || [],
+        settings: {
+          enairoPrompt: settings.autoDjPrompt || settings.enairoPrompt || 'música variada según el ambiente',
+          whitelistGenres: settings.whitelistGenres || [],
+          blacklistGenres: settings.blacklistGenres || [],
+          blacklistSongs: Array.from(new Set([...(settings.blacklistSongs || []), ...playedSongNames])),
+          blacklistArtists: settings.blacklistArtists || [],
+          trackCount: 1
+        }
+      }
+    });
+
+    if (!error && data && data.tracksToAdd && data.tracksToAdd.length > 0) {
+      const { data: searchData } = await supabase.functions.invoke('search-spotify', {
+        body: { queries: data.tracksToAdd, type: 'track', limit: 1, filterExplicit: settings.explicitFilter }
+      });
+
+      if (searchData && searchData.results) {
+        const freshTracks = searchData.results.map((res) => {
+          if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
+            const spotifyTrack = res.tracks.items[0];
+            return {
+              id: spotifyTrack.id,
+              name: spotifyTrack.name,
+              artists: spotifyTrack.artists.map(a => a.name).join(', '),
+              image: spotifyTrack.album?.images?.[0]?.url || '',
+              duration_ms: spotifyTrack.duration_ms,
+              uri: spotifyTrack.uri,
+              source: 'spotify',
+              addedBy: 'envAIro Filter'
+            };
+          }
+          return null;
+        }).filter(Boolean);
+
+        const unplayedFresh = freshTracks.filter(track => !allPlayedIds.has(track.id) && !allPlayedNames.has((track.name || '').toLowerCase().trim()));
+        if (unplayedFresh.length > 0) {
+          const evaluation = await evaluateTrack(unplayedFresh[0], settings);
+          if (evaluation.approved) {
+            return unplayedFresh[0];
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error generando canción fresca para envAIro Filter:', err);
+  }
+
   return null;
 }

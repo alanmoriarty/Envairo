@@ -47,6 +47,8 @@ export async function getSecureServerTime() {
 export async function getSecureServerDateString() {
   const timestamp = await getSecureServerTime();
   const date = new Date(timestamp);
-  // YYYY-MM-DD local al huso horario del servidor o del navegador, usaremos UTC para evitar problemas de husos horarios locales
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

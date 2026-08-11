@@ -424,9 +424,16 @@ export function useEnairoSelector() {
           console.error("Error buscando reemplazos limpios:", err);
         }
 
-        foundTracks.forEach(track => state.addToQueue(track));
-        if (foundTracks.length > 0) {
-           toast.success(`Filtro de Contenido: envAIro añadió ${foundTracks.length} canciones limpias en reemplazo.`);
+        const currentFullHistory = usePlayerStore.getState().playHistory || [];
+        const currentQueueState = usePlayerStore.getState().queue || [];
+
+        const nonRepeatedTracks = foundTracks.filter(track => {
+          return !isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentFullHistory, currentQueueState);
+        });
+
+        nonRepeatedTracks.forEach(track => state.addToQueue(track));
+        if (nonRepeatedTracks.length > 0) {
+           toast.success(`Filtro de Contenido: envAIro añadió ${nonRepeatedTracks.length} canciones limpias en reemplazo.`);
         }
       }
 
@@ -440,11 +447,27 @@ export function useEnairoSelector() {
   };
 
   useEffect(() => {
+    // Auto-reset daily usage if calendar date changed
+    getSecureServerDateString().then((today) => {
+      const settings = useSettingsStore.getState();
+      if (settings.enairoLastUsedDate && settings.enairoLastUsedDate !== today) {
+        settings.resetEnairoUsage();
+      }
+    }).catch(() => {});
+
     if (isEnairoTimerRunning) return;
     isEnairoTimerRunning = true;
 
     const interval = setInterval(() => {
       const state = usePlayerStore.getState();
+
+      // Check date every minute to reset daily usage at midnight
+      getSecureServerDateString().then((today) => {
+        const settings = useSettingsStore.getState();
+        if (settings.enairoLastUsedDate && settings.enairoLastUsedDate !== today) {
+          settings.resetEnairoUsage();
+        }
+      }).catch(() => {});
 
       // Contar tiempo solo si está reproduciendo
       if (state.isPlaying) {
