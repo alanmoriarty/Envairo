@@ -417,7 +417,7 @@ export const usePlayerStore = create(
         return { videoIdToPlay, isSpotifyTrack, effectiveMode: mode };
       },
 
-      // Worker en segundo plano para precargar IDs de toda la cola
+      // Worker en segundo plano para precargar IDs de los siguientes temas de la cola (hasta 5 canciones adelantadas)
       startQueuePreloadWorker: async () => {
         const state = get();
         // Si ya está corriendo o no estamos en YouTube, abortar
@@ -428,12 +428,12 @@ export const usePlayerStore = create(
         try {
           const { useSettingsStore } = await import('./useSettingsStore');
           const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-          // For the preload worker, respect per-track version_preference if set
-          // (falls back to global host setting)
 
           // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas)
-          const startIndex = get().currentQueueIndex + 1;
-          const endIndex = Math.min(get().queue.length, startIndex + 5);
+          const queue = get().queue || [];
+          const currentIndex = get().currentQueueIndex;
+          const startIndex = Math.max(0, currentIndex + 1);
+          const endIndex = Math.min(queue.length, startIndex + 5);
 
           for (let i = startIndex; i < endIndex; i++) {
             if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
@@ -441,24 +441,14 @@ export const usePlayerStore = create(
             const track = get().queue[i];
             // Per-track mode: respect guest's version_preference, fallback to global host setting
             const trackMode = track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-            const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
+            const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
+            const cachedId = localStorage.getItem(cacheKey);
 
-            // In karaoke/lyrics mode ALL tracks need a YouTube search (even native YT tracks
-            // need to be searched for the karaoke/lyrics version). In normal mode only
-            // Spotify tracks need it (native YT tracks already have their ID).
-            const needsPreload = isSpotifyTrack || (trackMode !== 'normal');
-
-            if (needsPreload) {
-              const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
-              const cachedId = localStorage.getItem(cacheKey);
-
-              // Only search if not already cached or previously failed
-              if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
-                // Pass the correct mode so the cache key matches
-                await get().resolveYouTubeVideoId(track, trackMode);
-                // Wait 1s between searches to avoid rate-limiting (YouTube 429)
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
+            // Precargar y resolver cualquier canción próxima que no esté cacheada o que haya fallado previamente
+            if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
+              await get().resolveYouTubeVideoId(track, trackMode);
+              // Pequeña pausa de 300ms entre búsquedas para no saturar la API
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
           }
         } catch (error) {
@@ -531,7 +521,8 @@ export const usePlayerStore = create(
               } else {
                 set({ currentTrack: null, isPlaying: false });
               }
-            }// Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
+            }
+            // Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
             try {
               const { useSettingsStore } = await import('./useSettingsStore');
               const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
@@ -541,9 +532,10 @@ export const usePlayerStore = create(
               modesToCache.forEach(m => {
                 get().resolveYouTubeVideoId(track, m).catch(() => { });
               });
-            } catch (e) {
-              console.error('Error starting preload for alternate modes:', e);
-            }
+            } catch (e) { }
+
+            // Iniciar precarga de las siguientes canciones de la cola en segundo plano
+            get().startQueuePreloadWorker();
           }
         }
       },
@@ -598,7 +590,7 @@ export const usePlayerStore = create(
           pendingRequests: state.pendingRequests.filter((r) => r.reqId !== reqId)
         })),
 
-      approveRequest: (reqId) =>
+      approveRequest: (reqId) => {
         set((state) => {
           const req = state.pendingRequests.find((r) => r.reqId === reqId);
           if (!req) return {};
@@ -637,7 +629,9 @@ export const usePlayerStore = create(
             queue: newQueue,
             requestHistory: state.requestHistory.map(r => r.reqId === reqId ? { ...r, status: 'approved' } : r)
           };
-        }),
+        });
+        get().startQueuePreloadWorker();
+      },
 
       rejectRequest: (reqId) =>
         set((state) => ({
