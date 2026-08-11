@@ -11,8 +11,6 @@ export function useTVBroadcast() {
   const lastStateRef = useRef({ videoId: null, isPlaying: false });
   const lastProgressRef = useRef(0);
   const lastProgressTimeRef = useRef(Date.now());
-  const lastTimeRef = useRef(0);
-  const latencyRef = useRef(0);
 
   const user = useAuthStore((s) => s.user);
   const settingsSessionId = useSettingsStore((s) => s.sessionId);
@@ -31,87 +29,90 @@ export function useTVBroadcast() {
       sbChannelRef.current.subscribe();
     }
 
-    const broadcastMessage = (data) => {
-      // Only the active master device should send sync commands to the TV
+    // Helper: check if this instance is the active master
+    const isMaster = () => {
       const state = usePlayerStore.getState();
-      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
-      if (!isActiveMaster && !['REQUEST_SYNC', 'MASTER_DISCONNECT', 'SYNC_PING'].includes(data.type)) {
+      return !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+    };
+
+    const broadcastMessage = (data) => {
+      // Only the active master device should send sync commands
+      if (!isMaster() && data.type !== 'REQUEST_SYNC' && data.type !== 'MASTER_DISCONNECT') {
         return;
       }
 
+      // Embed server timestamp so receivers can estimate transit delay
+      const envelope = { ...data, sentAt: Date.now() };
+
       // BroadcastChannel Local (Mismo equipo)
       if (channelRef.current) {
-        try {
-          channelRef.current.postMessage(data);
-        } catch (e) {
-          console.warn('Error en postMessage local:', e);
-        }
+        try { channelRef.current.postMessage(envelope); } catch (e) {}
       }
       // Supabase Realtime Broadcast (Smart TVs en Internet)
       if (sbChannelRef.current && sbChannelRef.current.state === 'joined') {
         sbChannelRef.current.send({
           type: 'broadcast',
           event: 'tv_sync',
-          payload: data
+          payload: envelope
         }).catch(() => {});
       }
     };
 
+    // ── Slave Dashboard sync handler ──────────────────────────────────
     const handleMasterSync = (data) => {
       const store = usePlayerStore.getState();
       if (store.playbackEngine !== 'youtube' || !store.youtubePlayer) return;
-      
-      try {
-        const isCurrentlyPlaying = store.youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING;
-        const isEnded = store.youtubePlayer.getPlayerState() === window.YT.PlayerState.ENDED;
-        
-        // 1. Sync time
-        if (typeof data.time === 'number') {
-          const latencySec = latencyRef.current / 1000;
-          const targetTime = data.time + latencySec;
-          const currentTime = store.youtubePlayer.getCurrentTime() || 0;
-          const diff = targetTime - currentTime;
-          const duration = store.youtubePlayer.getDuration() || 0;
-          
-          let shouldSeek = false;
-          let newRate = 1.0;
 
-          if (data.type === 'SYNC') {
-            if (Math.abs(diff) > 1.5) {
-              shouldSeek = true;
-            } else if (diff > 0.2) {
-              newRate = 1.1;
-            } else if (diff < -0.2) {
-              newRate = 0.9;
-            }
-          } else if (data.type === 'SYNC_TIME') {
-            if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-               shouldSeek = false;
-               newRate = 1.0;
-            } else if (Math.abs(diff) > 1.5) {
-               shouldSeek = true;
-            } else if (diff > 0.2) {
-               newRate = 1.05;
-            } else if (diff < -0.2) {
-               newRate = 0.95;
-            }
-          }
-          
-          if (shouldSeek) {
-            store.youtubePlayer.seekTo(targetTime, true);
-            if (typeof store.youtubePlayer.setPlaybackRate === 'function') store.youtubePlayer.setPlaybackRate(1.0);
-          } else if (typeof store.youtubePlayer.setPlaybackRate === 'function') {
-            store.youtubePlayer.setPlaybackRate(newRate);
+      try {
+        const player = store.youtubePlayer;
+        const playerState = player.getPlayerState();
+        const isCurrentlyPlaying = playerState === window.YT.PlayerState.PLAYING;
+        const isEnded = playerState === window.YT.PlayerState.ENDED;
+
+        // ── 1. Sync video ID ──
+        if (data.videoId && data.videoId !== store.currentYtId) {
+          // The master switched tracks — let playEngineTrack handle it via
+          // useQueueSync postgres_changes. We just need to sync play state.
+          // Don't attempt to seekTo or change rate for a different video.
+        }
+
+        // ── 2. Sync time (only for same video) ──
+        if (typeof data.time === 'number' && data.videoId === store.currentYtId) {
+          // Estimate transit delay from the embedded timestamp
+          const transitMs = data.sentAt ? Math.max(0, Date.now() - data.sentAt) : 0;
+          const transitSec = transitMs / 1000;
+          const targetTime = data.time + transitSec;
+
+          const currentTime = player.getCurrentTime() || 0;
+          const diff = targetTime - currentTime; // positive = slave is behind
+          const duration = player.getDuration() || 0;
+
+          // Near end of track — don't fight the natural ending
+          if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
+          } else if (Math.abs(diff) > 2.0) {
+            // Large drift — hard seek
+            player.seekTo(targetTime, true);
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
+          } else if (diff > 0.3) {
+            // Slave is behind — speed up slightly
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.05);
+          } else if (diff < -0.3) {
+            // Slave is ahead — slow down slightly
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.95);
+          } else {
+            // In sync — restore normal speed
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
           }
         }
-        
-        // 2. Sync play state
+
+        // ── 3. Sync play/pause state ──
         if (typeof data.isPlaying === 'boolean') {
-          if (!data.isPlaying) {
-            store.youtubePlayer.pauseVideo();
+          if (!data.isPlaying && isCurrentlyPlaying) {
+            player.pauseVideo();
             store.setIsPlaying(false);
-          } else if (data.isPlaying && !isCurrentlyPlaying) {
-            store.youtubePlayer.playVideo();
+          } else if (data.isPlaying && !isCurrentlyPlaying && !isEnded) {
+            player.playVideo();
             store.setIsPlaying(true);
           }
         }
@@ -120,64 +121,38 @@ export function useTVBroadcast() {
       }
     };
 
-    // Escuchar mensajes de las TVs esclavas (Local)
-    channelRef.current.onmessage = (e) => {
-      const state = usePlayerStore.getState();
-      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+    // ── Message handlers ─────────────────────────────────────────────
+    const handleIncoming = (data) => {
+      if (!data?.type) return;
+      const master = isMaster();
 
-      if (!isActiveMaster && (e.data?.type === 'SYNC' || e.data?.type === 'SYNC_TIME')) {
-        handleMasterSync(e.data);
+      // Slave dashboards consume SYNC / SYNC_TIME from master
+      if (!master && (data.type === 'SYNC' || data.type === 'SYNC_TIME')) {
+        handleMasterSync(data);
       }
 
-      if (e.data?.type === 'SYNC_PING' && isActiveMaster) {
-        broadcastMessage({ type: 'SYNC_PONG', timestamp: e.data.timestamp });
-      } else if (e.data?.type === 'SYNC_PONG' && !isActiveMaster) {
-        latencyRef.current = (Date.now() - e.data.timestamp) / 2;
-      }
-
-      if (e.data?.type === 'REQUEST_SYNC') {
-        sendCurrentSync();
-      } else if (e.data?.type === 'SLAVE_ERROR') {
-        handleSlaveError(e.data.videoId);
-      } else if (e.data?.type === 'TV_STOLEN') {
-        handleTVStolen(e.data.tvId);
+      switch (data.type) {
+        case 'REQUEST_SYNC':
+          if (master) sendCurrentSync();
+          break;
+        case 'SLAVE_ERROR':
+          if (master) handleSlaveError(data.videoId);
+          break;
+        case 'TV_STOLEN':
+          handleTVStolen(data.tvId);
+          break;
       }
     };
 
-    // Escuchar mensajes de las TVs esclavas (Internet)
+    // Escuchar mensajes locales
+    channelRef.current.onmessage = (e) => handleIncoming(e.data);
+
+    // Escuchar mensajes de Internet
     if (sbChannelRef.current) {
       sbChannelRef.current.on('broadcast', { event: 'tv_sync' }, (e) => {
-        const state = usePlayerStore.getState();
-        const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
-
-        if (!isActiveMaster && (e.payload?.type === 'SYNC' || e.payload?.type === 'SYNC_TIME')) {
-          handleMasterSync(e.payload);
-        }
-
-        if (e.payload?.type === 'SYNC_PING' && isActiveMaster) {
-          broadcastMessage({ type: 'SYNC_PONG', timestamp: e.payload.timestamp });
-        } else if (e.payload?.type === 'SYNC_PONG' && !isActiveMaster) {
-          latencyRef.current = (Date.now() - e.payload.timestamp) / 2;
-        }
-
-        if (e.payload?.type === 'REQUEST_SYNC') {
-          sendCurrentSync();
-        } else if (e.payload?.type === 'SLAVE_ERROR') {
-          handleSlaveError(e.payload.videoId);
-        } else if (e.payload?.type === 'TV_STOLEN') {
-          handleTVStolen(e.payload.tvId);
-        }
+        if (e.payload) handleIncoming(e.payload);
       });
     }
-
-    // Ping periódico para Esclavos
-    const pingInterval = setInterval(() => {
-      const state = usePlayerStore.getState();
-      const isActiveMaster = !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
-      if (!isActiveMaster) {
-        broadcastMessage({ type: 'SYNC_PING', timestamp: Date.now() });
-      }
-    }, 10000);
 
     const handleTVStolen = (tvId) => {
       try {
@@ -218,11 +193,11 @@ export function useTVBroadcast() {
       }
     };
 
-    // Suscribirse a cambios en el reproductor del Host
+    // ── Host: subscribe to Zustand state changes ─────────────────────
     const unsub = usePlayerStore.subscribe((state) => {
       const currentYtId = state.currentYtId;
       const isPlaying = state.isPlaying;
-      
+
       if (state.playbackEngine !== 'youtube' || !currentYtId) {
         if (lastStateRef.current.isPlaying) {
           lastStateRef.current.isPlaying = false;
@@ -243,7 +218,7 @@ export function useTVBroadcast() {
           const ytTime = state.youtubePlayer.getCurrentTime();
           if (ytTime > 0) trueTime = ytTime;
         }
-        
+
         broadcastMessage({
           type: 'SYNC',
           videoId: currentYtId,
@@ -253,14 +228,12 @@ export function useTVBroadcast() {
         lastProgressRef.current = state.progress || 0;
         lastProgressTimeRef.current = Date.now();
       } else if (state.progress !== undefined) {
-        // Detectar saltos manuales (scrubbing) vs retrasos de pestañas en segundo plano (throttling)
+        // Detect manual scrubbing vs background-tab throttling
         const now = Date.now();
         const timeElapsed = isPlaying ? (now - lastProgressTimeRef.current) : 0;
         const expectedProgress = lastProgressRef.current + timeElapsed;
-        
-        // Si la diferencia entre el progreso real y el esperado es mayor a 1.5s, es un scrub manual
         const scrubDiff = Math.abs(state.progress - expectedProgress);
-        
+
         if (scrubDiff > 1500) {
           let trueTime = state.progress / 1000;
           if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
@@ -279,7 +252,7 @@ export function useTVBroadcast() {
       }
     });
 
-    // Transmitir progreso periódicamente (cada 4 segundos) para corregir desvíos remotos sin saturar la TV
+    // ── Periodic time sync (every 3s) ────────────────────────────────
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
       if (state.playbackEngine === 'youtube' && state.currentYtId) {
@@ -288,7 +261,6 @@ export function useTVBroadcast() {
           const ytTime = state.youtubePlayer.getCurrentTime();
           if (ytTime > 0) trueTime = ytTime;
         }
-
         broadcastMessage({
           type: 'SYNC_TIME',
           videoId: state.currentYtId,
@@ -296,7 +268,7 @@ export function useTVBroadcast() {
           time: trueTime
         });
       }
-    }, 4000);
+    }, 3000);
 
     const handleUnload = () => {
       broadcastMessage({ type: 'MASTER_DISCONNECT' });
@@ -306,7 +278,6 @@ export function useTVBroadcast() {
     return () => {
       unsub();
       clearInterval(syncInterval);
-      clearInterval(pingInterval);
       window.removeEventListener('beforeunload', handleUnload);
       if (channelRef.current) {
         channelRef.current.close();

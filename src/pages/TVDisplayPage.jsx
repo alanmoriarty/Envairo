@@ -155,8 +155,6 @@ export default function TVDisplayPage() {
         }
       } else if (e.data.type === 'PONG') {
         activeTvs.current.add(e.data.tvId);
-      } else if (e.data.type === 'SYNC_PONG') {
-        latencyRef.current = (Date.now() - e.data.timestamp) / 2;
       } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
         if (!limitReached) handleSync(e.data);
       } else if (e.data.type === 'MASTER_DISCONNECT') {
@@ -180,9 +178,7 @@ export default function TVDisplayPage() {
     sbSyncChannelRef.current
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
-          if (e.payload.type === 'SYNC_PONG') {
-            latencyRef.current = (Date.now() - e.payload.timestamp) / 2;
-          } else if (e.payload.type === 'MASTER_DISCONNECT') {
+          if (e.payload.type === 'MASTER_DISCONNECT') {
             const activeP = getActivePlayer();
             if (activeP && typeof activeP.pauseVideo === 'function') {
               activeP.pauseVideo();
@@ -232,19 +228,6 @@ export default function TVDisplayPage() {
       applySound(player1Ref.current);
       applySound(player2Ref.current);
     };
-
-    const pingInterval = setInterval(() => {
-      if (channelRef.current) {
-        channelRef.current.postMessage({ type: 'SYNC_PING', timestamp: Date.now() });
-      }
-      if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
-        sbSyncChannelRef.current.send({
-          type: 'broadcast',
-          event: 'tv_sync',
-          payload: { type: 'SYNC_PING', timestamp: Date.now() }
-        }).catch(() => {});
-      }
-    }, 10000);
 
     // 2.c. Verificación de límite de pantallas
     const timeoutId = setTimeout(() => {
@@ -429,7 +412,6 @@ export default function TVDisplayPage() {
       if (sbSyncChannelRef.current) {
         supabase.removeChannel(sbSyncChannelRef.current);
       }
-      clearInterval(pingInterval);
       safeDestroyPlayer(player1Ref, 'tv-yt-container-1', 'tv-youtube-player-1');
       safeDestroyPlayer(player2Ref, 'tv-yt-container-2', 'tv-youtube-player-2');
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -481,57 +463,48 @@ export default function TVDisplayPage() {
         return;
       }
 
-      // 1. Ajustar el tiempo (seekTo) si hay un desvío, antes de play/pause para evitar estado BUFFERING
-      let shouldSeek = false;
-      let newRate = 1.0;
+      // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up)
       if (typeof data.time === 'number' && !isTransitioning.current) {
         const playerState = activeP.getPlayerState();
         const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
         const isEnded = playerState === window.YT.PlayerState.ENDED;
         const duration = activeP.getDuration() || 0;
-        
-        const latencySec = latencyRef.current / 1000;
-        const targetTime = data.time + latencySec;
-        const currentTime = activeP.getCurrentTime() || 0;
-        const diff = targetTime - currentTime;
-        
-        // Forzar seek en SYNC (directo del host o scrub), o en SYNC_TIME con mayor tolerancia
-        if (data.type === 'SYNC') {
-          if (Math.abs(diff) > 1.5) {
-            shouldSeek = true;
-          } else if (diff > 0.2) {
-            newRate = 1.1;
-          } else if (diff < -0.2) {
-            newRate = 0.9;
-          }
-        } else if (!isBuffering && data.type === 'SYNC_TIME') {
-          if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-            shouldSeek = false;
-            newRate = 1.0;
-          } else if (Math.abs(diff) > 1.5) {
-            shouldSeek = true;
-          } else if (diff > 0.2) {
-            newRate = 1.05;
-          } else if (diff < -0.2) {
-            newRate = 0.95;
-          }
-        }
-      }
 
-      if (shouldSeek) {
-        activeP.seekTo(data.time + (latencyRef.current / 1000), true);
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-      } else if (typeof activeP.setPlaybackRate === 'function') {
-        activeP.setPlaybackRate(newRate);
+        // Estimate transit delay from embedded timestamp
+        const transitMs = data.sentAt ? Math.max(0, Date.now() - data.sentAt) : 0;
+        const transitSec = transitMs / 1000;
+        const targetTime = data.time + transitSec;
+        const currentTime = activeP.getCurrentTime() || 0;
+        const diff = targetTime - currentTime; // positive = TV is behind
+
+        // Near end of track — don't fight the natural ending
+        if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        } else if (isBuffering) {
+          // Don't seek or change rate while buffering — let it finish
+        } else if (Math.abs(diff) > 2.0) {
+          // Large drift — hard seek
+          activeP.seekTo(targetTime, true);
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        } else if (diff > 0.3) {
+          // TV is behind — speed up slightly
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.05);
+        } else if (diff < -0.3) {
+          // TV is ahead — slow down slightly
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.95);
+        } else {
+          // In sync — restore normal speed
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        }
       }
 
       // 2. Sincronizar inmediatamente el estado de reproducción/pausa
       if (typeof data.isPlaying === 'boolean') {
         if (!data.isPlaying) {
-          if (typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
-          if (typeof bufferP.pauseVideo === 'function') bufferP.pauseVideo();
+          if (activeP && typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
+          if (bufferP && typeof bufferP.pauseVideo === 'function') bufferP.pauseVideo();
         } else if (data.isPlaying && !isCurrentlyPlaying && !isTransitioning.current) {
-          if (typeof activeP.playVideo === 'function') activeP.playVideo();
+          if (activeP && typeof activeP.playVideo === 'function') activeP.playVideo();
         }
       }
     } catch (err) {
