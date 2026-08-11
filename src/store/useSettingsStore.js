@@ -13,7 +13,7 @@ export const useSettingsStore = create(
       endTime: '03:00',
       allowRepeats: true, // DEPRECATED: use repeatCooldown instead
       repeatCooldown: -1, // -1 = always allow, 0 = block forever, >0 = minutes
-      cooldownEnabled: true,
+      cooldownEnabled: false,
       cooldownMinutes: 10,
       explicitFilter: false,
       whitelistGenres: [],
@@ -63,7 +63,7 @@ export const useSettingsStore = create(
         endTime: '03:00',
         allowRepeats: true,
         repeatCooldown: -1,
-        cooldownEnabled: true,
+        cooldownEnabled: false,
         cooldownMinutes: 10,
         explicitFilter: false,
         whitelistGenres: [],

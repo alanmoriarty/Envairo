@@ -318,12 +318,12 @@ export default function TVDisplayPage() {
           if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
           setIsLoadingVideo(false);
 
+          const activeContainer = document.getElementById(`tv-yt-container-${activePlayerIndex.current}`);
+          const nextIndex = activePlayerIndex.current === 1 ? 2 : 1;
+          const bufferContainer = document.getElementById(`tv-yt-container-${nextIndex}`);
+
           if (isTransitioning.current && event.target === bufferP) {
             isTransitioning.current = false;
-
-            const nextIndex = activePlayerIndex.current === 1 ? 2 : 1;
-            const activeContainer = document.getElementById(`tv-yt-container-${activePlayerIndex.current}`);
-            const bufferContainer = document.getElementById(`tv-yt-container-${nextIndex}`);
 
             if (activeContainer && bufferContainer) {
               bufferContainer.style.opacity = '1';
@@ -337,6 +337,21 @@ export default function TVDisplayPage() {
               try { activeP.pauseVideo(); } catch (e) {}
             }
             activePlayerIndex.current = nextIndex;
+          } else {
+            // Fix: Ensure the playing player container is ALWAYS visible (opacity = 1) even after error recovery or direct load
+            const playingContainerId = event.target === player1Ref.current ? 'tv-yt-container-1' : 'tv-yt-container-2';
+            const otherContainerId = event.target === player1Ref.current ? 'tv-yt-container-2' : 'tv-yt-container-1';
+            const playingContainer = document.getElementById(playingContainerId);
+            const otherContainer = document.getElementById(otherContainerId);
+
+            if (playingContainer) {
+              playingContainer.style.opacity = '1';
+              playingContainer.style.zIndex = '2';
+            }
+            if (otherContainer) {
+              otherContainer.style.opacity = '0';
+              otherContainer.style.zIndex = '1';
+            }
           }
         }
       };

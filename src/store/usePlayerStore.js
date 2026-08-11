@@ -43,11 +43,11 @@ export const usePlayerStore = create(
       playbackMinutes: 0,
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
-      
+
       // Anti-spam para saltar canciones
       skipHistory: [],
       skipCooldownUntil: null,
-      
+
       checkSkipSpam: () => {
         const state = get();
         const now = Date.now();
@@ -59,7 +59,7 @@ export const usePlayerStore = create(
         }
 
         const recentSkips = state.skipHistory.filter(t => now - t < 5 * 60 * 1000);
-        
+
         if (recentSkips.length >= 5) {
           set({ skipCooldownUntil: now + 10 * 60 * 1000, skipHistory: [] });
           import('sonner').then(({ toast }) => toast.error(`Has saltado demasiadas canciones. Bloqueo de 10 minutos activado.`));
@@ -188,7 +188,7 @@ export const usePlayerStore = create(
 
         // Si el reproductor está completamente vacío (cola acabada y nada sonando), iniciar auto-reproducción
         const stateAfter = get();
-        
+
         if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
           const nextTrack = stateAfter.shiftQueue();
           if (nextTrack) {
@@ -363,7 +363,7 @@ export const usePlayerStore = create(
                     'entrevista', 'interview', 'podcast', 'reaction', 'reaccion', 'reaccionando',
                     'review', 'behind the scenes', 'making of', 'documental', 'documentary',
                     'hablando de', 'talking about', 'opinion', 'analizando', 'analysis',
-                    'teaser', 'trailer', 'tráiler', 'snippet', 'avance', 'q&a', 'vlog', 'unboxing'
+                    'teaser', 'trailer', 'tráiler', 'snippet', 'avance', 'q&a', 'vlog', 'unboxing', 'concert', 'live', 'onlive'
                   ];
 
                   // Filter out interviews, podcasts, reactions, and non-music videos
@@ -470,7 +470,7 @@ export const usePlayerStore = create(
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
         if (!track) return;
-        
+
         const execId = Date.now() + Math.random();
         set({ _currentPlayExecId: execId, progress: progressMs });
 
@@ -518,9 +518,9 @@ export const usePlayerStore = create(
               set({ currentYtId: videoIdToPlay });
               const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
               if (autoplay) {
-                 state.youtubePlayer?.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+                state.youtubePlayer?.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
               } else {
-                 state.youtubePlayer?.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+                state.youtubePlayer?.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
               }
             } else {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar video de respaldo. Saltando...'));
@@ -617,7 +617,7 @@ export const usePlayerStore = create(
           if (state.currentQueueIndex >= 0) {
             const mode = useSettingsStore.getState().mode;
             const partyOffset = Math.max(1, Math.min(20, useSettingsStore.getState().partyRequestOffset || 1));
-            
+
             if (mode === 'party') {
               // Insert at partyOffset songs ahead of current song, preserving FIFO for consecutive requests
               const targetBase = state.currentQueueIndex + partyOffset;

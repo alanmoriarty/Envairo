@@ -152,7 +152,7 @@ export default function GuestPage() {
   const blacklistArtists = stateData.blacklist_artists || sessionConfig?.blacklist_artists || [];
   const allowRepeats = stateData.allow_repeats ?? sessionConfig?.allow_repeats ?? true;
   const eventName = stateData.event_name || sessionConfig?.event_name || '';
-  const cooldownEnabled = stateData.cooldown_enabled ?? sessionConfig?.cooldown_enabled ?? true;
+  const cooldownEnabled = stateData.cooldown_enabled ?? sessionConfig?.cooldown_enabled ?? false;
   const cooldownMinutes = stateData.cooldown_minutes ?? sessionConfig?.cooldown_minutes ?? 10;
   const requestsPerHour = stateData.requests_per_hour ?? sessionConfig?.requests_per_hour ?? 15;
   // Guest version request feature (controlled by host in Settings)
