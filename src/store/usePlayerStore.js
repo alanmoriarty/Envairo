@@ -336,11 +336,12 @@ export const usePlayerStore = create(
               const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
               const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
               const query = `${queryBase} ${effectiveSuffix}`;
-              let results = await searchYouTubeVideos(query, 5);
+              // Fetch up to 12 results (increased from 5) to maximize chances of finding unblocked embedding-enabled videos
+              let results = await searchYouTubeVideos(query, 12);
 
               if ((!results || results.length === 0) && querySuffix) {
                 const relaxedQuery = `${queryBase} LETRA LYRICS`;
-                results = await searchYouTubeVideos(relaxedQuery, 5);
+                results = await searchYouTubeVideos(relaxedQuery, 12);
               }
 
               if (results && results.length > 0) {
@@ -349,7 +350,7 @@ export const usePlayerStore = create(
 
                 if (blockedCount >= 3 && mode === 'normal') {
                   const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
-                  const fallbackResults = await searchYouTubeVideos(fallbackQuery, 5);
+                  const fallbackResults = await searchYouTubeVideos(fallbackQuery, 12);
                   if (fallbackResults && fallbackResults.length > 0) {
                     const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
                     if (fallbackUnblocked.length > 0) {
@@ -384,17 +385,24 @@ export const usePlayerStore = create(
 
                     if (validResults.length > 0) {
                       videoIdToPlay = validResults[0].id;
+                    } else if (poolToUse.length > 0) {
+                      // Fallback to top clean result if no strict keyword match in title
+                      videoIdToPlay = poolToUse[0].id;
                     } else {
-                      // If no genuine lyrics/karaoke video was found, return null so playEngineTrack cascades to normal mode
                       videoIdToPlay = null;
                     }
                   } else {
                     videoIdToPlay = poolToUse[0].id;
                   }
 
-                  if (cacheKey) localStorage.setItem(cacheKey, videoIdToPlay);
+                  if (cacheKey && videoIdToPlay) localStorage.setItem(cacheKey, videoIdToPlay);
                 } else {
-                  videoIdToPlay = null;
+                  // If all search results were marked blocked, fallback to original track ID if YouTube source
+                  if (track.id && track.id.length === 11 && track.source !== 'spotify') {
+                    videoIdToPlay = track.id;
+                  } else {
+                    videoIdToPlay = null;
+                  }
                 }
               } else {
                 if (track.id && track.id.length === 11 && track.source !== 'spotify') {
