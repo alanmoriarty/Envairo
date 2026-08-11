@@ -432,8 +432,10 @@ export function useQueueSync() {
 
       if (data) {
         if (authStore.user || secret) {
-          // Si somos el host autenticado (no un remote restrictivo), podemos tomar control de la sesión
-          if (authStore.user && !useSettingsStore.getState().isAdminMode) {
+          // Si somos el host autenticado (no un remote/admin), podemos tomar control de la sesión.
+          // Re-read isAdminMode fresh to avoid race condition with LoginPage setting it.
+          const isAdmin = useSettingsStore.getState().isAdminMode;
+          if (authStore.user && !isAdmin) {
              try {
                const { data: newSecret, error: takeoverError } = await supabase.rpc('host_takeover_session', {
                  p_session_id: sessionId,
@@ -447,17 +449,15 @@ export function useQueueSync() {
                if (newSecret && newSecret !== secret) {
                  useSettingsStore.getState().setHostSecret(newSecret);
                }
+
+               // Update active_instance_id ONLY for genuine host takeover (never for remote/admin)
+               await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
              } catch (err) {
                console.error("Error al tomar control de la sesión:", err);
                // Si no podemos tomar control (ej. no somos los dueños), regeneramos la sesión y abortamos
                useSettingsStore.getState().regenerateSession();
                isTakingOverRef.current = false;
                return; 
-             } finally {
-               // Fallback / Garantía: Asegurar que el ID de instancia se actualice en la base de datos 
-               // para evitar que este mismo dispositivo se auto-expulse al recibir cambios.
-               // Solo si no falló el takeover (si falló, ya hicimos return arriba)
-               await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
              }
           }
           await supabase.rpc('sync_host_config', {
