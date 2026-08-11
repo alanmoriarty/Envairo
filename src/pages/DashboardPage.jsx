@@ -564,7 +564,7 @@ export default function DashboardPage() {
             >
               {volume === 0 ? <VolumeX size={24} /> : <Volume2 size={24} />}
             </button>
-            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 ${showRemoteVolume ? 'flex' : 'hidden'} group-hover:flex group-focus-within:flex flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4`}>
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 ${showRemoteVolume ? 'flex' : 'hidden'} flex-col items-center justify-center bg-bg-elevated rounded-xl border border-white/10 shadow-xl h-32 w-12 z-50 py-4`}>
               <input
                 type="range"
                 min={0}
