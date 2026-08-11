@@ -24,6 +24,7 @@ export const useSettingsStore = create(
       requestsPerGuest: 0,
       tableCount: 0,
       guestVersionRequest: false, // Allow guests to request Normal / Lyrics / Karaoke version
+      partyRequestOffset: 5,
       pairedTvs: [],
       
       // DJ Profile
@@ -72,7 +73,7 @@ export const useSettingsStore = create(
         requestsPerHour: 15,
         requestsPerGuest: 0,
         tableCount: 0,
-        partyRequestOffset: 1,
+        partyRequestOffset: 5,
         guestVersionRequest: false,
         djName: 'Dj Anfitrión',
         djAvatar: 'avatar1',
@@ -121,7 +122,7 @@ export const useSettingsStore = create(
       setRequestsPerHour: (v) => set({ requestsPerHour: v }),
       setRequestsPerGuest: (v) => set({ requestsPerGuest: v }),
       setTableCount: (v) => set({ tableCount: v }),
-      setPartyRequestOffset: (v) => set({ partyRequestOffset: Math.max(1, Math.min(20, parseInt(v, 10) || 1)) }),
+      setPartyRequestOffset: (v) => set({ partyRequestOffset: Math.max(1, Math.min(20, parseInt(v, 10) || 5)) }),
       setGuestVersionRequest: (v) => set({ guestVersionRequest: v }),
 
       // envAIro Selector AI

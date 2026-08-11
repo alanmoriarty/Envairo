@@ -929,120 +929,134 @@ export default function DashboardPage() {
       {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
           onClick={() => {
             setIsAutoDjModalOpen(false);
             setAutoDJ(false); // cancel activation
           }}
         >
           <div
-            className="bg-bg-elevated w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up relative"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header Close button */}
             <button
               onClick={() => {
                 setIsAutoDjModalOpen(false);
                 setAutoDJ(false);
               }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
-            <div className="p-5 pt-6">
-              <div className="flex justify-center mb-4 mt-2">
-                <div className="p-3 bg-accent/20 rounded-full">
-                  <Sparkles size={32} className="text-accent" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center text-white mb-2">
-                Activar envAIro Filter
-              </h3>
-              <p className="text-sm text-center text-text-muted mb-6">
-                envAIro Filter elegirá automáticamente las siguientes canciones basándose en tu historial y el contexto que definas aquí.
-              </p>
 
-              <div className="space-y-4 mb-6 text-left">
-                <div className="pt-2">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-sm font-semibold text-text-primary">Contexto de envAIro Filter (Opcional)</label>
-                    <span className={`text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
-                      {autoDjPrompt.length} / {MAX_PROMPT_LENGTH}
-                    </span>
-                  </div>
-                  <textarea
-                    maxLength={MAX_PROMPT_LENGTH}
-                    value={autoDjPrompt}
-                    onChange={(e) => setAutoDjPrompt(sanitizePrompt(e.target.value))}
-                    placeholder="Ej: Solo canciones suaves de bachata y salsa vieja..."
-                    className="input-field w-full h-24 resize-none"
-                  />
-                  <p className="text-xs text-text-muted mt-2">
-                    Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros (sin IA) en la configuración.
-                  </p>
+            {/* Scrollable Content Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+              <div className="flex items-center gap-3.5 pr-8">
+                <div className="p-3 bg-accent/20 border border-accent/30 rounded-2xl shrink-0">
+                  <Sparkles size={26} className="text-accent animate-pulse" />
                 </div>
-
-                <div className="border-t border-white/5 pt-4">
-                  <Toggle
-                    checked={explicitFilter}
-                    onChange={setExplicitFilter}
-                    label={t('settings.explicit_filter_title') || 'Filtro Explícito'}
-                    description={t('settings.explicit_filter_desc') || 'Evita que se agreguen canciones con contenido explícito.'}
-                  />
-                </div>
-
-                <div className="border-t border-white/5 pt-4">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-sm font-semibold text-text-primary">
-                      Posición de peticiones de invitados
-                    </label>
-                    <span className="text-xs font-mono text-accent font-bold">
-                      {partyRequestOffset === 1 ? 'Siguiente (+1)' : `+${partyRequestOffset} canciones`}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min={1}
-                      max={20}
-                      value={partyRequestOffset}
-                      onChange={(e) => setPartyRequestOffset(e.target.value)}
-                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent"
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={partyRequestOffset}
-                      onChange={(e) => setPartyRequestOffset(e.target.value)}
-                      className="w-16 py-1.5 px-2 text-center text-sm bg-black/40 border border-white/10 rounded-xl font-bold text-white"
-                    />
-                  </div>
-                  <p className="text-xs text-text-muted mt-1.5">
-                    Define a cuántas canciones de distancia (1 a 20) después de la actual se insertan las peticiones.
+                <div>
+                  <h3 className="text-xl font-bold text-white leading-snug">
+                    Activar envAIro Filter
+                  </h3>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    envAIro Filter seleccionará automáticamente las siguientes canciones según tus reglas.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setIsAutoDjModalOpen(false);
-                    setAutoDJ(false); // cancel activation
-                  }}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-text-primary bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAutoDjModalOpen(false);
-                    setAutoDJ(true);
-                  }}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white bg-accent hover:bg-accent-hover transition-colors shadow-glow-sm"
-                >
-                  Activar
-                </button>
+              {/* Contexto de la IA */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                    Contexto de envAIro Filter (Opcional)
+                  </label>
+                  <span className={`text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                    {autoDjPrompt.length} / {MAX_PROMPT_LENGTH}
+                  </span>
+                </div>
+                <textarea
+                  maxLength={MAX_PROMPT_LENGTH}
+                  value={autoDjPrompt}
+                  onChange={(e) => setAutoDjPrompt(sanitizePrompt(e.target.value))}
+                  placeholder="Ej: Solo canciones suaves de bachata, salsa vieja y pop latino..."
+                  className="input-field w-full h-20 resize-none text-sm leading-relaxed"
+                />
+                <p className="text-[11px] text-text-muted leading-tight">
+                  Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros en la configuración.
+                </p>
               </div>
+
+              {/* Filtro Explícito */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <Toggle
+                  checked={explicitFilter}
+                  onChange={setExplicitFilter}
+                  label="Filtro de Contenido Explícito"
+                  description="Bloquea automáticamente canciones con contenido o lenguaje explícito."
+                />
+              </div>
+
+              {/* Posición de peticiones */}
+              {(() => {
+                const currentOffset = (typeof partyRequestOffset === 'number' && !isNaN(partyRequestOffset) && partyRequestOffset > 0) ? partyRequestOffset : 5;
+                return (
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                        Posición de peticiones de invitados
+                      </label>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30 font-mono">
+                        {currentOffset === 1 ? 'Siguiente (+1)' : `+${currentOffset} canciones`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 pt-1">
+                      <input
+                        type="range"
+                        min={1}
+                        max={20}
+                        value={currentOffset}
+                        onChange={(e) => setPartyRequestOffset(e.target.value)}
+                        className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={currentOffset}
+                        onChange={(e) => setPartyRequestOffset(e.target.value)}
+                        className="w-16 py-1.5 px-2 text-center text-sm bg-black/50 border border-white/15 rounded-xl font-bold text-white focus:border-accent outline-none"
+                      />
+                    </div>
+                    <p className="text-[11px] text-text-muted leading-tight">
+                      Define a cuántas canciones de distancia (1 a 20) después de la actual se insertarán las peticiones de invitados.
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="p-4 px-6 bg-black/30 border-t border-white/10 shrink-0 flex gap-3">
+              <button
+                onClick={() => {
+                  setIsAutoDjModalOpen(false);
+                  setAutoDJ(false); // cancel activation
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setIsAutoDjModalOpen(false);
+                  setAutoDJ(true);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+              >
+                Activar
+              </button>
             </div>
           </div>
         </div>
