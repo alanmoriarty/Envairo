@@ -472,9 +472,10 @@ export default function TVDisplayPage() {
         const isEnded = playerState === window.YT.PlayerState.ENDED;
         const duration = activeP.getDuration() || 0;
 
-        // Estimate target time (use host's reported time directly;
-        // smooth catch-up handles any small transit delay naturally)
-        const targetTime = data.time;
+        const transitDelay = (data.sentAt && data.sentAt > 0)
+          ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
+          : 0;
+        const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
         const currentTime = activeP.getCurrentTime() || 0;
         const diff = targetTime - currentTime; // positive = TV is behind
 
@@ -483,18 +484,24 @@ export default function TVDisplayPage() {
           if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
         } else if (isBuffering) {
           // Don't seek or change rate while buffering — let it finish
-        } else if (Math.abs(diff) > 2.0) {
+        } else if (Math.abs(diff) > 1.8) {
           // Large drift — hard seek
           activeP.seekTo(targetTime, true);
           if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-        } else if (diff > 0.3) {
-          // TV is behind — speed up slightly
-          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.05);
-        } else if (diff < -0.3) {
-          // TV is ahead — slow down slightly
-          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.95);
+        } else if (diff > 0.4) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.07);
+        } else if (diff > 0.12) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.03);
+        } else if (diff > 0.04) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.01);
+        } else if (diff < -0.4) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.93);
+        } else if (diff < -0.12) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.97);
+        } else if (diff < -0.04) {
+          if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.99);
         } else {
-          // In sync — restore normal speed
+          // Ultra tight sync (< 40ms difference) — standard 1.0x speed
           if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
         }
       }

@@ -78,7 +78,10 @@ export function useTVBroadcast() {
 
         // ── 2. Sync time (only for same video) ──
         if (typeof data.time === 'number' && data.videoId === store.currentYtId) {
-          const targetTime = data.time;
+          const transitDelay = (data.sentAt && data.sentAt > 0)
+            ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
+            : 0;
+          const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
           const currentTime = player.getCurrentTime() || 0;
           const diff = targetTime - currentTime; // positive = slave is behind
           const duration = player.getDuration() || 0;
@@ -86,18 +89,24 @@ export function useTVBroadcast() {
           // Near end of track — don't fight the natural ending
           if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
-          } else if (Math.abs(diff) > 2.0) {
+          } else if (Math.abs(diff) > 1.8) {
             // Large drift — hard seek
             player.seekTo(targetTime, true);
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
-          } else if (diff > 0.2) {
-            // Slave is behind — speed up slightly
-            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.05);
-          } else if (diff < -0.2) {
-            // Slave is ahead — slow down slightly
-            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.95);
+          } else if (diff > 0.4) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.07);
+          } else if (diff > 0.12) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.03);
+          } else if (diff > 0.04) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.01);
+          } else if (diff < -0.4) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.93);
+          } else if (diff < -0.12) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.97);
+          } else if (diff < -0.04) {
+            if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(0.99);
           } else {
-            // In sync — restore normal speed
+            // Ultra tight sync — standard speed
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
           }
         }
@@ -251,7 +260,7 @@ export function useTVBroadcast() {
       }
     });
 
-    // ── Periodic time sync (every 3s) ────────────────────────────────
+    // ── High-precision periodic time sync (every 1s) ──────────────────
     const syncInterval = setInterval(() => {
       const state = usePlayerStore.getState();
       if (state.playbackEngine === 'youtube' && state.currentYtId) {
@@ -267,7 +276,7 @@ export function useTVBroadcast() {
           time: trueTime
         });
       }
-    }, 3000);
+    }, 1000);
 
     const handleUnload = () => {
       broadcastMessage({ type: 'MASTER_DISCONNECT' });
