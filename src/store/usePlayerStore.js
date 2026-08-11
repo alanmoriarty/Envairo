@@ -599,11 +599,13 @@ export const usePlayerStore = create(
 
           if (state.currentQueueIndex >= 0) {
             const mode = useSettingsStore.getState().mode;
+            const partyOffset = Math.max(1, Math.min(20, useSettingsStore.getState().partyRequestOffset || 1));
             
             if (mode === 'party') {
-              // Insert immediately after the current song, but preserve FIFO for consecutive requests
-              insertIndex = state.currentQueueIndex + 1;
-              while (insertIndex < newQueue.length && newQueue[insertIndex].requestedBy) {
+              // Insert at partyOffset songs ahead of current song, preserving FIFO for consecutive requests
+              const targetBase = state.currentQueueIndex + partyOffset;
+              insertIndex = Math.min(newQueue.length, targetBase);
+              while (insertIndex < newQueue.length && newQueue[insertIndex].requestedBy && insertIndex < targetBase + 20) {
                 insertIndex++;
               }
             } else {

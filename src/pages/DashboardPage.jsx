@@ -176,7 +176,8 @@ export default function DashboardPage() {
     enairoTrackCount, setEnairoTrackCount,
     enairoTestMode, setEnairoTestMode,
     enairoAutoIntervalEnabled, setEnairoAutoIntervalEnabled,
-    explicitFilter, setExplicitFilter
+    explicitFilter, setExplicitFilter,
+    partyRequestOffset, setPartyRequestOffset
   } = useSettingsStore();
 
   const { user } = useAuthStore.getState();
@@ -603,7 +604,7 @@ export default function DashboardPage() {
                         // Force immediate sync to user_metadata to avoid race condition on refresh
                         const currentState = useSettingsStore.getState();
                         const settingsObj = {};
-                        const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter'];
+                        const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset'];
                         allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
                         settingsObj.alwaysAvailable = newVal; // Ensure the new value is explicitly set
 
@@ -987,6 +988,38 @@ export default function DashboardPage() {
                     label={t('settings.explicit_filter_title') || 'Filtro Explícito'}
                     description={t('settings.explicit_filter_desc') || 'Evita que se agreguen canciones con contenido explícito.'}
                   />
+                </div>
+
+                <div className="border-t border-white/5 pt-4">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-sm font-semibold text-text-primary">
+                      Posición de peticiones de invitados
+                    </label>
+                    <span className="text-xs font-mono text-accent font-bold">
+                      {partyRequestOffset === 1 ? 'Siguiente (+1)' : `+${partyRequestOffset} canciones`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={1}
+                      max={20}
+                      value={partyRequestOffset}
+                      onChange={(e) => setPartyRequestOffset(e.target.value)}
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={partyRequestOffset}
+                      onChange={(e) => setPartyRequestOffset(e.target.value)}
+                      className="w-16 py-1.5 px-2 text-center text-sm bg-black/40 border border-white/10 rounded-xl font-bold text-white"
+                    />
+                  </div>
+                  <p className="text-xs text-text-muted mt-1.5">
+                    Define a cuántas canciones de distancia (1 a 20) después de la actual se insertan las peticiones.
+                  </p>
                 </div>
               </div>
 
