@@ -10,7 +10,7 @@ This document is the authoritative reference for any AI assistant or developer w
 
 The application features an AI DJ system (**envAIro Filter** + **envAIro Selector**) that evaluates incoming requests and autonomously manages the music queue.
 
-**Deployment:** Vercel (static SPA + API routes). Database & Auth: Supabase.
+**Deployment:** Vercel (static SPA + API routes). Database & Auth: Supabase..
 
 ---
 
