@@ -82,9 +82,8 @@ export function Sidebar({ isOpen, onClose }) {
         console.error('Error unpairing TVs on logout', e);
       }
 
-      // Limpiar cola local, peticiones e historial para no dejar rastro
-      state.clearPlayerState();
-      // NO llamar a clearSettingsState() aquí, ya se encarga useAuthStore.logout() al final.
+      // NO limpiar estado antes de logout — logout() guarda la cola en Supabase
+      // state.clearPlayerState() se mueve después de logout()
 
     } catch (err) {
       // Ignore errors during logout
@@ -96,6 +95,13 @@ export function Sidebar({ isOpen, onClose }) {
     }
 
     await logout();
+
+    // Limpiar cola local DESPUÉS de que logout() haya guardado en Supabase
+    try {
+      const { usePlayerStore } = await import('../../store/usePlayerStore');
+      usePlayerStore.getState().clearPlayerState();
+    } catch (e) {}
+
     navigate('/');
   };
 

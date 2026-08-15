@@ -50,6 +50,12 @@ export function useQueueSync() {
         return;
       }
 
+      // Guard: don't push to Supabase if the state is being cleared (logout)
+      // This prevents clearPlayerState() from wiping the server-side queue
+      if (prevState.queue.length > 0 && state.queue.length === 0 && state.currentTrack === null) {
+        return;
+      }
+
       // Limpiar el timeout anterior si existe
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
