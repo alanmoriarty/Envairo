@@ -92,11 +92,11 @@ export default async function handler(req, res) {
             };
           }).filter(i => i.id && i.id.length === 11);
 
-          if (items.length > 0 || name) {
+          if (items.length > 0) {
             return res.status(200).json({
               id: playlistId,
               name,
-              thumbnail,
+              thumbnail: thumbnail || `https://i.ytimg.com/vi/${items[0].id}/hqdefault.jpg`,
               items
             });
           }
@@ -107,9 +107,16 @@ export default async function handler(req, res) {
     }
 
     // --- 2. INTENTO VÍA SCRAPER (Webshare Proxy) ---
+    // Maneja playlists estándar (PL...), Mixes (RD...), y radio mixes de YouTube
     let html = null;
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = 3;
+
+    // Si es un mix tipo RD..., la URL principal es watch?v=...&list=RD...
+    const isMix = playlistId.startsWith('RD') || playlistId.startsWith('UL');
+    const targetUrl = isMix && playlistId.length > 2
+      ? `https://www.youtube.com/watch?v=${playlistId.slice(2, 13)}&list=${playlistId}`
+      : `https://www.youtube.com/playlist?list=${playlistId}`;
 
     while (attempts < maxAttempts) {
       try {
@@ -121,64 +128,115 @@ export default async function handler(req, res) {
           agent = new HttpsProxyAgent(randomProxy);
         }
 
-        const response = await fetchWithTimeout(`https://www.youtube.com/playlist?list=${playlistId}`, {
+        const response = await fetchWithTimeout(targetUrl, {
           agent,
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
             'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
           }
-        }, 5000);
+        }, 6000);
 
         if (response.ok) {
           html = await response.text();
-          if (html && html.includes('ytInitialData')) break;
+          if (html && (html.includes('ytInitialData') || html.includes('playlistVideoRenderer') || html.includes('playlistPanelVideoRenderer'))) break;
         }
       } catch (err) {
         // Retry
       }
     }
 
-    if (html && html.includes('ytInitialData')) {
+    if (html) {
       const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/s) || html.match(/var ytInitialData\s*=\s*({.+?});/s);
       if (match) {
         try {
           const json = JSON.parse(match[1]);
           const header = json.header?.playlistHeaderRenderer;
-          const name = header?.title?.simpleText || json.metadata?.playlistMetadataRenderer?.title || 'Playlist de YouTube';
-          const thumbnail = header?.playlistHeaderBanner?.heroPlaylistThumbnailRenderer?.thumbnail?.thumbnails?.[0]?.url || '';
-
-          const tabs = json.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
-          let rawContents = [];
-          for (const tab of tabs) {
-            const section = tab.tabRenderer?.content?.sectionListRenderer?.contents?.[0];
-            const plVideoList = section?.itemSectionRenderer?.contents?.[0]?.playlistVideoListRenderer?.contents;
-            if (plVideoList) {
-              rawContents = plVideoList;
-              break;
-            }
+          let name = header?.title?.simpleText || json.metadata?.playlistMetadataRenderer?.title;
+          
+          // Si es un Mix o no tiene header estándar
+          if (!name) {
+            const twoCol = json.contents?.twoColumnWatchNextResults?.playlist?.playlist;
+            name = twoCol?.title || 'Mix de YouTube';
           }
 
+          // Extractor recursivo de videos en cualquier nivel del JSON
           const items = [];
-          for (const c of rawContents) {
-            const renderer = c.playlistVideoRenderer;
-            if (renderer && renderer.videoId) {
-              const durationSec = parseInt(renderer.lengthSeconds || '0', 10);
-              items.push({
-                id: renderer.videoId,
-                title: renderer.title?.runs?.[0]?.text || renderer.title?.simpleText || 'Sin Título',
-                uploaderName: renderer.shortBylineText?.runs?.[0]?.text || 'YouTube',
-                thumbnail: renderer.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${renderer.videoId}/hqdefault.jpg`,
-                duration: durationSec
-              });
-            }
-          }
+          const seenIds = new Set();
 
-          return res.status(200).json({
-            id: playlistId,
-            name,
-            thumbnail,
-            items
-          });
+          const extractVideos = (obj) => {
+            if (!obj || typeof obj !== 'object') return;
+
+            // Formato 1: playlistVideoRenderer (Playlists estándar)
+            if (obj.playlistVideoRenderer && obj.playlistVideoRenderer.videoId) {
+              const r = obj.playlistVideoRenderer;
+              if (!seenIds.has(r.videoId)) {
+                seenIds.add(r.videoId);
+                const dur = parseInt(r.lengthSeconds || '0', 10);
+                items.push({
+                  id: r.videoId,
+                  title: r.title?.runs?.[0]?.text || r.title?.simpleText || 'Sin Título',
+                  uploaderName: r.shortBylineText?.runs?.[0]?.text || 'YouTube',
+                  thumbnail: r.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${r.videoId}/hqdefault.jpg`,
+                  duration: dur
+                });
+              }
+            }
+
+            // Formato 2: playlistPanelVideoRenderer (Mixes de YouTube RD...)
+            if (obj.playlistPanelVideoRenderer && obj.playlistPanelVideoRenderer.videoId) {
+              const r = obj.playlistPanelVideoRenderer;
+              if (!seenIds.has(r.videoId)) {
+                seenIds.add(r.videoId);
+                // Extraer duración de simpleText ej "3:45"
+                let dur = 0;
+                const durText = r.lengthText?.simpleText || r.lengthText?.runs?.[0]?.text;
+                if (durText) {
+                  const parts = durText.split(':').map(Number);
+                  if (parts.length === 2) dur = parts[0] * 60 + parts[1];
+                  else if (parts.length === 3) dur = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                }
+                items.push({
+                  id: r.videoId,
+                  title: r.title?.simpleText || r.title?.runs?.[0]?.text || 'Sin Título',
+                  uploaderName: r.shortBylineText?.simpleText || r.shortBylineText?.runs?.[0]?.text || 'YouTube',
+                  thumbnail: r.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${r.videoId}/hqdefault.jpg`,
+                  duration: dur
+                });
+              }
+            }
+
+            // Formato 3: compactVideoRenderer
+            if (obj.compactVideoRenderer && obj.compactVideoRenderer.videoId) {
+              const r = obj.compactVideoRenderer;
+              if (!seenIds.has(r.videoId)) {
+                seenIds.add(r.videoId);
+                items.push({
+                  id: r.videoId,
+                  title: r.title?.simpleText || r.title?.runs?.[0]?.text || 'Sin Título',
+                  uploaderName: r.shortBylineText?.runs?.[0]?.text || 'YouTube',
+                  thumbnail: r.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${r.videoId}/hqdefault.jpg`,
+                  duration: 0
+                });
+              }
+            }
+
+            for (const key of Object.keys(obj)) {
+              extractVideos(obj[key]);
+            }
+          };
+
+          extractVideos(json);
+
+          if (items.length > 0) {
+            const thumbnail = header?.playlistHeaderBanner?.heroPlaylistThumbnailRenderer?.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${items[0].id}/hqdefault.jpg`;
+
+            return res.status(200).json({
+              id: playlistId,
+              name: name || 'Playlist de YouTube',
+              thumbnail,
+              items
+            });
+          }
         } catch (parseErr) {
           console.error('Error parsing playlist scraper JSON:', parseErr);
         }
