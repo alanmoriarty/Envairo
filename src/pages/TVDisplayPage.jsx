@@ -295,6 +295,13 @@ export default function TVDisplayPage() {
           event.target.mute();
         }
         disableCaptions(event.target);
+
+        if (pendingSyncRef.current) {
+          const syncData = pendingSyncRef.current;
+          pendingSyncRef.current = null;
+          handleSync(syncData);
+        }
+
         if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
         if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
           sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
@@ -382,9 +389,16 @@ export default function TVDisplayPage() {
     };
   }, [sessionId]);
 
+  const pendingSyncRef = useRef(null);
+
   const handleSync = (data) => {
     const p = playerRef.current;
-    if (!p || typeof p.getPlayerState !== 'function') return;
+    if (!p || typeof p.getPlayerState !== 'function') {
+      if (data?.videoId) {
+        pendingSyncRef.current = data;
+      }
+      return;
+    }
 
     try {
       const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
