@@ -26,6 +26,14 @@ export const useSettingsStore = create(
       guestVersionRequest: false, // Allow guests to request Normal / Lyrics / Karaoke version
       partyRequestOffset: 5,
       pairedTvs: [],
+
+      // DJ Transitions
+      djTransitionsEnabled: true,
+      djTransitionMode: 'random', // 'random' | 'fade' | 'cut' | 'brake' | 'echo' | 'start'
+      djTransitionDuration: 5,
+      setDjTransitionsEnabled: (val) => set({ djTransitionsEnabled: val }),
+      setDjTransitionMode: (mode) => set({ djTransitionMode: mode }),
+      setDjTransitionDuration: (dur) => set({ djTransitionDuration: dur }),
       
       // DJ Profile
       djName: 'Dj Anfitrión',

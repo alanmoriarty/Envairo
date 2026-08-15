@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { Tv, Activity, Maximize, Minimize, X, Unlink, Volume2, VolumeX } from 'lucide-react';
+import { Tv, Activity, Maximize, Minimize, X, Unlink, Volume2, VolumeX, Music2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
@@ -620,6 +620,16 @@ const handleSync = (data) => {
       >
         <div id="tv-youtube-player"></div>
       </div>
+
+      {/* Overlay de transición con nota musical animada (evita pantalla en negro) */}
+      {sessionId && isLoadingVideo && (
+        <div className="absolute inset-0 z-[5] bg-[#0c0914] flex flex-col items-center justify-center gap-4 transition-opacity duration-300 animate-fade-in pointer-events-none">
+          <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-accent/15 border-2 border-accent/40 shadow-[0_0_50px_rgba(157,78,221,0.35)]">
+            <Music2 size={48} className="text-accent animate-pulse" />
+          </div>
+          <p className="text-white/80 font-medium text-lg tracking-wide uppercase">Cargando...</p>
+        </div>
+      )}
 
       {/* Click-blocking overlay */}
       <div className="absolute inset-0 z-10 cursor-default"></div>

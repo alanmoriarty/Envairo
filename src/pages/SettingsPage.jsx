@@ -452,6 +452,57 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+
+            {/* DJ Transitions System */}
+            <div className="border-t border-white/5 pt-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+                    <span>🎧</span> Transiciones DJ Automáticas
+                  </label>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Aplica mezclas dinámicas (Fade, Cut, Vinyl Brake, Echo, Spin Up) a 5 segundos de terminar la canción.
+                  </p>
+                </div>
+                <Toggle
+                  checked={store.djTransitionsEnabled}
+                  onChange={store.setDjTransitionsEnabled}
+                />
+              </div>
+
+              {store.djTransitionsEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 animate-fade-in">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Efecto de Transición</label>
+                    <select
+                      value={store.djTransitionMode}
+                      onChange={(e) => store.setDjTransitionMode(e.target.value)}
+                      className="input-field w-full text-xs"
+                    >
+                      <option value="random">🎲 Aleatorio (Mix de todos)</option>
+                      <option value="fade">🌊 Fundido Suave (Fade)</option>
+                      <option value="cut">⚡ Corte Rápido (Cut)</option>
+                      <option value="brake">🛑 Frenada de Vinilo (Brake)</option>
+                      <option value="echo">🔊 Echo Out</option>
+                      <option value="start">🚀 Spin Up</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">Anticipación (segundos)</label>
+                    <select
+                      value={store.djTransitionDuration}
+                      onChange={(e) => store.setDjTransitionDuration(parseInt(e.target.value, 10))}
+                      className="input-field w-full text-xs"
+                    >
+                      <option value="3">3 segundos</option>
+                      <option value="5">5 segundos (Recomendado)</option>
+                      <option value="7">7 segundos</option>
+                      <option value="10">10 segundos</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
         </div>
 

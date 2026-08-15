@@ -273,7 +273,34 @@ export function useYouTubeSDK() {
       });
       wrapper.appendChild(overlay);
 
-      // Botón flotante para salir de fullscreen
+      // Loader de transición con nota musical animada para cambios de modo (Karaoke / Letras / Video)
+      const loader = document.createElement('div');
+      loader.id = 'youtube-transition-loader';
+      loader.style.position = 'absolute';
+      loader.style.inset = '0';
+      loader.style.zIndex = '15';
+      loader.style.background = 'radial-gradient(circle at center, rgba(30,15,45,0.95) 0%, rgba(10,10,15,0.98) 100%)';
+      loader.style.display = 'flex';
+      loader.style.flexDirection = 'column';
+      loader.style.alignItems = 'center';
+      loader.style.justifyContent = 'center';
+      loader.style.gap = '12px';
+      loader.style.opacity = '0';
+      loader.style.pointerEvents = 'none';
+      loader.style.transition = 'opacity 0.3s ease-in-out';
+
+      loader.innerHTML = `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(157,78,221,0.15); border: 1.5px solid rgba(157,78,221,0.4); box-shadow: 0 0 25px rgba(157,78,221,0.35);">
+          <svg style="width: 28px; height: 28px; color: #c77dff; animation: pulse 1.5s infinite ease-in-out;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+        </div>
+        <span id="youtube-loader-text" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.5px; text-transform: uppercase;">Cambiando versión...</span>
+      `;
+      wrapper.appendChild(loader);
+
       const closeBtn = document.createElement('button');
       closeBtn.id = 'youtube-fs-close';
       closeBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
@@ -352,6 +379,13 @@ export function useYouTubeSDK() {
           if (!playerRef.current) return;
           
           currentYtIdRef.current = args.videoId;
+          
+          // Mostrar overlay de transición con nota musical
+          const loader = document.getElementById('youtube-transition-loader');
+          if (loader) {
+            loader.style.opacity = '1';
+            loader.style.pointerEvents = 'auto';
+          }
           try {
             if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
             if (typeof playerRef.current.loadVideoById === 'function') {
@@ -378,10 +412,11 @@ export function useYouTubeSDK() {
         fs: 0,
         modestbranding: 1,
         rel: 0,
-        showinfo: 0,
+        enablejsapi: 1,
+        origin: window.location.origin,
         iv_load_policy: 3,
-        cc_load_policy: 0, 
-        origin: window.location.origin
+        cc_load_policy: 0,
+        playsinline: 1
       };
 
       const onReady = (event) => {
@@ -424,6 +459,14 @@ export function useYouTubeSDK() {
         if (event.data === yt.PlayerState.PLAYING) {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
+          
+          // Ocultar suavemente el loader de transición
+          const loader = document.getElementById('youtube-transition-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.pointerEvents = 'none';
+          }
+
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
@@ -550,18 +593,112 @@ export function useYouTubeSDK() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playbackEngine, youtubeNativeCast]);
 
+  const isTransitioningRef = useRef(false);
+  const transitionTimerRef = useRef(null);
+
   const startProgressTimer = (p) => {
     stopProgressTimer();
     progressInterval.current = setInterval(() => {
       if (p && typeof p.getCurrentTime === 'function') {
         const time = p.getCurrentTime();
         if (time > 0) setProgress(Math.floor(time * 1000));
+        let dur = 0;
         if (typeof p.getDuration === 'function') {
-          const dur = p.getDuration();
+          dur = p.getDuration();
           if (dur > 0) setDuration(Math.floor(dur * 1000));
         }
+
+        // ── DJ Transiciones Automáticas a 5 segundos de terminar ──────────────
+        const settings = useSettingsStore.getState();
+        const store = usePlayerStore.getState();
+        const remainingSeconds = dur - time;
+
+        if (
+          settings.djTransitionsEnabled &&
+          dur > 15 && // Solo aplicar si el track dura más de 15s
+          remainingSeconds <= (settings.djTransitionDuration || 5) &&
+          remainingSeconds > 0.5 &&
+          !isTransitioningRef.current &&
+          store.queue.length > 0 &&
+          store.currentQueueIndex < store.queue.length - 1
+        ) {
+          triggerDJTransition(p, remainingSeconds);
+        }
       }
-    }, 1000);
+    }, 500);
+  };
+
+  const triggerDJTransition = (p, durationSec) => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+
+    const settings = useSettingsStore.getState();
+    const effects = ['fade', 'cut', 'brake', 'echo', 'start'];
+    const chosenEffect = settings.djTransitionMode === 'random' || !settings.djTransitionMode
+      ? effects[Math.floor(Math.random() * effects.length)]
+      : settings.djTransitionMode;
+
+    const loader = document.getElementById('youtube-transition-loader');
+    const loaderText = document.getElementById('youtube-loader-text');
+
+    const effectLabels = {
+      fade: '🎧 Transición: Fundido Suave',
+      cut: '⚡ Transición: Corte Rápido',
+      brake: '🛑 Transición: Vinyl Brake',
+      echo: '🌊 Transición: Echo Out',
+      start: '🚀 Transición: Spin Up'
+    };
+
+    if (loaderText) {
+      loaderText.innerText = effectLabels[chosenEffect] || '🎧 Transición DJ';
+    }
+    if (loader) {
+      loader.style.opacity = '1';
+      loader.style.pointerEvents = 'none';
+    }
+
+    const initialVolume = usePlayerStore.getState().volume || 70;
+    const transitionMs = Math.max(1500, Math.floor(durationSec * 1000));
+
+    if (chosenEffect === 'fade' || chosenEffect === 'echo') {
+      // Rampa de volumen descendente
+      const steps = 10;
+      const stepTime = transitionMs / steps;
+      let currentStep = 0;
+
+      const fadeInterval = setInterval(() => {
+        currentStep++;
+        const targetVol = Math.max(0, Math.floor(initialVolume * (1 - currentStep / steps)));
+        try { if (typeof p.setVolume === 'function') p.setVolume(targetVol); } catch (e) {}
+        if (currentStep >= steps) clearInterval(fadeInterval);
+      }, stepTime);
+    } else if (chosenEffect === 'brake') {
+      // Frenada de plato DJ (bajar playbackRate)
+      try {
+        if (typeof p.setPlaybackRate === 'function') {
+          p.setPlaybackRate(0.75);
+          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) {} }, transitionMs * 0.4);
+        }
+      } catch (e) {}
+    } else if (chosenEffect === 'cut') {
+      // Corte directo al final
+    }
+
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = setTimeout(() => {
+      // Restaurar valores por defecto para el siguiente track
+      try {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+        if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
+      } catch (e) {}
+
+      const store = usePlayerStore.getState();
+      const nextTrack = store.shiftQueue();
+      if (nextTrack) {
+        store.playEngineTrack(nextTrack, 0, null, true);
+      }
+      isTransitioningRef.current = false;
+    }, transitionMs);
   };
 
   const stopProgressTimer = () => {
@@ -569,6 +706,11 @@ export function useYouTubeSDK() {
       clearInterval(progressInterval.current);
       progressInterval.current = null;
     }
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+    isTransitioningRef.current = false;
   };
 
   return { 
