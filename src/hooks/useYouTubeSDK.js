@@ -490,6 +490,10 @@ export function useYouTubeSDK() {
       if (p && typeof p.getCurrentTime === 'function') {
         const time = p.getCurrentTime();
         if (time > 0) setProgress(Math.floor(time * 1000));
+        if (typeof p.getDuration === 'function') {
+          const dur = p.getDuration();
+          if (dur > 0) setDuration(Math.floor(dur * 1000));
+        }
       }
     }, 1000);
   };
