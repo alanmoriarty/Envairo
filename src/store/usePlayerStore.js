@@ -561,7 +561,7 @@ export const usePlayerStore = create(
         // Evitar duplicados consecutivos
         if (lastTrack && lastTrack.id === track.id) return state;
         return {
-          playHistory: [{ ...track, playedAt: new Date().toISOString() }, ...state.playHistory].slice(0, 1000)
+          playHistory: [{ ...track, playedAt: new Date().toISOString() }, ...state.playHistory].slice(0, 100)
         };
       }),
 

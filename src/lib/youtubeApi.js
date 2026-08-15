@@ -1,5 +1,6 @@
 let activePipedInstance = null;
 
+const MAX_SEARCH_CACHE = 50;
 const searchCache = new Map();
 
 /**
@@ -14,6 +15,10 @@ export async function searchYouTubeVideos(query, limit = 8) {
   
   const results = await _doSearchYouTubeVideos(query, limit);
   if (results && results.length > 0) {
+    if (searchCache.size >= MAX_SEARCH_CACHE) {
+      const firstKey = searchCache.keys().next().value;
+      searchCache.delete(firstKey);
+    }
     searchCache.set(cacheKey, results);
   }
   return results;
