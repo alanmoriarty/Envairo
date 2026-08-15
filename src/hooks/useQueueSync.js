@@ -61,10 +61,10 @@ export function useQueueSync() {
         clearTimeout(syncTimeoutRef.current);
       }
 
-      // Debounce the Supabase push by 500ms to avoid race conditions with rapid synchronous state updates (like setQueue + shiftQueue)
+      // Debounce the Supabase push by 120ms for ultra-responsive sync
       syncTimeoutRef.current = setTimeout(() => {
         const secret = useSettingsStore.getState().hostSecret;
-        if (!authStore.user && !secret) return; // Si no hay usuario ni secreto admin, no intentar empujar estado (solo invitados)
+        if (!authStore.user && !secret) return;
 
         supabase
           .rpc('sync_host_config', {
@@ -82,19 +82,14 @@ export function useQueueSync() {
           })
           .then(({ error }) => {
             if (error) {
-              if (error.code === 'P0001') {
-                console.warn('Session not yet created, skipping queue sync update for now.');
-                return;
-              }
+              if (error.code === 'P0001') return;
               console.error('Error syncing queue to Supabase:', error);
-              import('sonner').then(({ toast }) => toast.error('Error guardando en la nube (RPC): ' + error.message));
             }
           })
           .catch(err => {
             console.error('Catch error syncing:', err);
-            import('sonner').then(({ toast }) => toast.error('Fallo crítico al sincronizar (RPC): ' + err.message));
           });
-      }, 500);
+      }, 120);
     });
 
     // 2. Subscribe to Supabase changes to pull to Zustand
@@ -314,38 +309,43 @@ export function useQueueSync() {
         const isAdminMode = useSettingsStore.getState().isAdminMode;
         if (!user || isAdminMode) {
           const store = usePlayerStore.getState();
-          if (store.isPlaying !== payload.payload.isPlaying) {
-             store.setIsPlaying(payload.payload.isPlaying);
+          const p = payload.payload;
+          if (p.isPlaying !== undefined && store.isPlaying !== p.isPlaying) {
+             store.setIsPlaying(p.isPlaying);
           }
-          if (Math.abs(store.progress - payload.payload.progress) > 3000) {
-             store.setProgress(payload.payload.progress);
+          if (p.progress !== undefined && Math.abs(store.progress - p.progress) > 1500) {
+             store.setProgress(p.progress);
+          }
+          if (p.currentTrack && JSON.stringify(p.currentTrack) !== JSON.stringify(store.currentTrack)) {
+             store.setCurrentTrack(p.currentTrack);
           }
         }
       })
       .subscribe();
     }, 150);
 
-    // Broadcast para sincronizar el progreso de la canción con controles remotos/invitados
-    // Interval at 5000ms (was 1000ms) and only sends if state actually changed.
+    // Broadcast para sincronizar el estado y progreso en tiempo real con controles remotos
     let broadcastInterval = setInterval(() => {
       const user = useAuthStore.getState().user;
-      if (user && syncChannel && syncChannel.state === 'joined') {
+      const isAdminMode = useSettingsStore.getState().isAdminMode;
+      // Solo el anfitrión principal emite el pulso
+      if (user && !isAdminMode && syncChannel && syncChannel.state === 'joined') {
          const store = usePlayerStore.getState();
          const last = lastBroadcastPayload.current;
-         // Only broadcast if something meaningful changed
-         if (Math.abs(store.progress - last.progress) > 1000 || store.isPlaying !== last.isPlaying) {
-           lastBroadcastPayload.current = { progress: store.progress, isPlaying: store.isPlaying };
+         if (Math.abs(store.progress - last.progress) >= 1000 || store.isPlaying !== last.isPlaying || store.currentTrack?.id !== last.trackId) {
+           lastBroadcastPayload.current = { progress: store.progress, isPlaying: store.isPlaying, trackId: store.currentTrack?.id };
            syncChannel.send({
              type: 'broadcast',
              event: 'playback_sync',
              payload: {
                progress: store.progress,
-               isPlaying: store.isPlaying
+               isPlaying: store.isPlaying,
+               currentTrack: store.currentTrack
              }
-           }).catch(()=>{}); // ignorar errores si falla
+           }).catch(()=>{});
          }
       }
-    }, 5000);
+    }, 1000);
 
     // 4. Reconectar y sincronizar cuando la pestaña vuelve a ser visible (para celulares)
     const handleVisibilityChange = async () => {

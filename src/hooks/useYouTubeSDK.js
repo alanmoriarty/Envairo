@@ -416,6 +416,25 @@ export function useYouTubeSDK() {
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
+          
+          // Emitir broadcast inmediato a controles remotos
+          try {
+            const sessId = useSettingsStore.getState().sessionId;
+            if (sessId) {
+              const ch = supabase.channel(`queue-sync-${sessId}`);
+              ch.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  ch.send({
+                    type: 'broadcast',
+                    event: 'playback_sync',
+                    payload: { isPlaying: true, progress: Math.floor(p.getCurrentTime() * 1000), currentTrack: usePlayerStore.getState().currentTrack }
+                  });
+                  setTimeout(() => supabase.removeChannel(ch), 500);
+                }
+              });
+            }
+          } catch (e) {}
+
           try {
             p.unloadModule('captions');
             p.unloadModule('cc');
@@ -427,6 +446,24 @@ export function useYouTubeSDK() {
         } else if (event.data === yt.PlayerState.PAUSED) {
           setIsPlaying(false);
           stopProgressTimer();
+
+          // Emitir broadcast inmediato a controles remotos
+          try {
+            const sessId = useSettingsStore.getState().sessionId;
+            if (sessId) {
+              const ch = supabase.channel(`queue-sync-${sessId}`);
+              ch.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  ch.send({
+                    type: 'broadcast',
+                    event: 'playback_sync',
+                    payload: { isPlaying: false, progress: Math.floor(p.getCurrentTime() * 1000), currentTrack: usePlayerStore.getState().currentTrack }
+                  });
+                  setTimeout(() => supabase.removeChannel(ch), 500);
+                }
+              });
+            }
+          } catch (e) {}
         } else if (event.data === yt.PlayerState.ENDED) {
           setIsPlaying(false);
           stopProgressTimer();
