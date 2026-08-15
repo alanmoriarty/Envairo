@@ -545,7 +545,34 @@ const handleSync = (data) => {
     }
   };
 
-  const handleUnpair = () => {
+  const handleUnpair = async () => {
+    const currentPin = tvPin || localStorage.getItem('bq-tv-pin');
+    const currentSessId = sessionId || localStorage.getItem('bq-tv-session-id');
+
+    // 1. Notificar al anfitrión por BroadcastChannel local (si está en la misma PC)
+    try {
+      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      localChannel.postMessage({ type: 'SLAVE_UNPAIRED', tvId: currentPin });
+      setTimeout(() => localChannel.close(), 100);
+    } catch (e) {}
+
+    // 2. Notificar al anfitrión por Supabase Realtime (si es una Smart TV remota)
+    if (currentSessId && currentPin) {
+      try {
+        const syncChannel = supabase.channel(`tv-sync-${currentSessId}`);
+        await syncChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await syncChannel.send({
+              type: 'broadcast',
+              event: 'tv_sync',
+              payload: { type: 'SLAVE_UNPAIRED', tvId: currentPin, sentAt: Date.now() }
+            });
+            setTimeout(() => supabase.removeChannel(syncChannel), 300);
+          }
+        });
+      } catch (e) {}
+    }
+
     safeDestroyPlayer(playerRef, 'tv-yt-container', 'tv-youtube-player');
     localStorage.removeItem('bq-tv-session-id');
     localStorage.removeItem('bq-tv-pin');

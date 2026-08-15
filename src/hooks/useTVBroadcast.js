@@ -154,6 +154,10 @@ export function useTVBroadcast() {
         case 'TV_STOLEN':
           handleTVStolen(data.tvId);
           break;
+        case 'SLAVE_UNPAIRED':
+        case 'UNPAIRED':
+          handleSlaveUnpaired(data.tvId);
+          break;
       }
     };
 
@@ -166,6 +170,19 @@ export function useTVBroadcast() {
         if (e.payload) handleIncoming(e.payload);
       });
     }
+
+    const handleSlaveUnpaired = (tvId) => {
+      if (!tvId) return;
+      try {
+        const pairedTvs = useSettingsStore.getState().pairedTvs || [];
+        const updatedList = pairedTvs.filter(t => t.id !== tvId);
+        if (pairedTvs.length !== updatedList.length) {
+          useSettingsStore.getState().setPairedTvs(updatedList);
+          window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+          import('sonner').then(({ toast }) => toast.info(`La pantalla vinculada (${tvId}) se ha desvinculado.`));
+        }
+      } catch (err) {}
+    };
 
     const handleTVStolen = (tvId) => {
       try {
