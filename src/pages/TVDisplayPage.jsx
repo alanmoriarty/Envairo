@@ -408,13 +408,8 @@ export default function TVDisplayPage() {
       const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
 
       if (data.videoId) {
-        if (!currentVideoIdRef.current) {
-          currentVideoIdRef.current = data.videoId;
-          setCurrentVideoId(data.videoId);
-          setStatus('');
-        }
-
-        if (data.videoId !== currentVideoIdRef.current) {
+        const isFirstLoad = !currentVideoIdRef.current;
+        if (isFirstLoad || data.videoId !== currentVideoIdRef.current) {
           currentVideoIdRef.current = data.videoId;
           setCurrentVideoId(data.videoId);
           setStatus('');
@@ -428,7 +423,9 @@ export default function TVDisplayPage() {
           }
 
           p.loadVideoById({ videoId: data.videoId, startSeconds: start });
-          if (!data.isPlaying) {
+          if (data.isPlaying && typeof p.playVideo === 'function') {
+            try { p.playVideo(); } catch (e) {}
+          } else if (!data.isPlaying) {
              setTimeout(() => {
                 if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
              }, 500);
