@@ -273,7 +273,8 @@ export default function TVDisplayPage() {
       };
 
       const playerVars = {
-        autoplay: 0,
+        autoplay: 1,
+        enablejsapi: 1,
         mute: 1,
         controls: 0,
         disablekb: 1,
@@ -334,7 +335,10 @@ export default function TVDisplayPage() {
         const failedId = currentVideoIdRef.current;
 
         const c1 = document.getElementById('tv-yt-container');
-        if (c1) c1.style.opacity = '0';
+        if (c1) {
+          c1.style.opacity = '0';
+          c1.style.zIndex = '-1';
+        }
         
         if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
           try { playerRef.current.pauseVideo(); } catch (e) {}
@@ -346,7 +350,7 @@ export default function TVDisplayPage() {
         if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
         setStatus(t('tv.connected_waiting'));
 
-        if (event.data === 150 || event.data === 101 || event.data === 100) {
+        if (failedId) {
           const payload = { type: 'SLAVE_ERROR', videoId: failedId };
           if (channelRef.current) channelRef.current.postMessage(payload);
           if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
