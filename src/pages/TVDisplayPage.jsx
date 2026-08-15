@@ -213,15 +213,21 @@ export default function TVDisplayPage() {
       });
 
     // Intervalo de reintento automático (Heartbeat Retry):
-    // Si la TV está esperando video y no ha recibido paquetes del anfitrión, reintenta enviar REQUEST_SYNC cada 3 segundos.
+    // Si la TV está en espera de video, solicita la sincronización al anfitrión cada 2 segundos.
     const syncRetryInterval = setInterval(() => {
       if (!currentVideoIdRef.current) {
-        if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        if (channelRef.current) {
+          channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        }
         if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
-          sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+          sbSyncChannelRef.current.send({
+            type: 'broadcast',
+            event: 'tv_sync',
+            payload: { type: 'REQUEST_SYNC' }
+          }).catch(() => {});
         }
       }
-    }, 3000);
+    }, 2000);
 
     const handleToggleSound = (withSoundVal) => {
       const withSound = !!withSoundVal;
