@@ -199,9 +199,8 @@ export function useEnairoSelector() {
           return !isDuplicate;
         });
 
-        nonRepeatedTracks.forEach(track => addToQueue(track));
-
         if (nonRepeatedTracks.length > 0) {
+          usePlayerStore.getState().addMultipleToQueue(nonRepeatedTracks);
           toast.success(`envAIro añadió ${nonRepeatedTracks.length} canciones únicas al ambiente.`);
         } else if (foundTracks.length > 0) {
           toast.info(`envAIro omitió canciones sugeridas que ya habían sonado previamente.`);

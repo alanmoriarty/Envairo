@@ -197,6 +197,41 @@ export const usePlayerStore = create(
         }
       },
 
+      addMultipleToQueue: (tracks) => {
+        if (!Array.isArray(tracks) || tracks.length === 0) return;
+
+        set((state) => {
+          const newTracks = tracks.map((t, idx) => ({
+            ...t,
+            queueId: `${t.id}-${Date.now()}-${idx}`
+          }));
+
+          const newQueue = [...state.queue];
+          let insertIndex = newQueue.length;
+
+          if (state.currentQueueIndex >= 0) {
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+          }
+
+          newQueue.splice(insertIndex, 0, ...newTracks);
+
+          return {
+            queue: newQueue,
+            hasNewRequestsSinceReorder: true
+          };
+        });
+
+        get().startQueuePreloadWorker();
+
+        const stateAfter = get();
+        if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
+          const nextTrack = stateAfter.shiftQueue();
+          if (nextTrack) {
+            stateAfter.playEngineTrack(nextTrack);
+          }
+        }
+      },
+
       removeFromQueue: (queueId) => {
         set((state) => {
           const index = state.queue.findIndex((t) => t.queueId === queueId);
