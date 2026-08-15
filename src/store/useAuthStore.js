@@ -22,14 +22,21 @@ export const useAuthStore = create(
         const currentUser = get().user;
         const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
         
-        // Disparar el apagado de la sesión en la base de datos de inmediato
+        // Guardar el estado actual en la base de datos antes de salir
         if (sessionIdToClose && hostSecret && !skipDbUpdate) {
           try {
             const { supabase } = await import('../lib/supabase');
+            const playerState = usePlayerStore.getState();
             await supabase.rpc('sync_host_config', { 
               p_session_id: sessionIdToClose, 
               p_secret: hostSecret, 
-              p_updates: { active: false, secret: 'logged_out' } 
+              p_updates: { 
+                queue: playerState.queue,
+                current_queue_index: playerState.currentQueueIndex,
+                current_track: playerState.currentTrack,
+                play_history: playerState.playHistory,
+                active: true 
+              } 
             });
             await supabase.auth.signOut({ scope: 'local' });
           } catch (err) {
@@ -45,15 +52,12 @@ export const useAuthStore = create(
         }
 
         set({ user: null, isAuthenticated: false });
-        usePlayerStore.getState().clearPlayerState();
-        useSettingsStore.getState().clearSettingsState();
         
-        // Limpiar el almacenamiento local explícitamente para evitar cualquier fuga de estado
-        localStorage.removeItem('bq-player');
-        localStorage.removeItem('bq-settings');
+        // Mantener la cola y el historial guardados localmente para cuando vuelva a iniciar sesión
+        // Limpiar únicamente credenciales sensibles y tokens de autenticación
         localStorage.removeItem('bq-auth');
         
-        // Asegurar que el token de Supabase se elimine localmente, incluso si signOut falló
+        // Asegurar que el token de Supabase se elimine localmente
         Object.keys(localStorage).forEach(key => {
           if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
             localStorage.removeItem(key);
