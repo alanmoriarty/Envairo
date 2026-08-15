@@ -374,33 +374,29 @@ export function useYouTubeSDK() {
         store.setActiveDeviceId('youtube-device');
         setYoutubePlayer(virtualPlayer);
 
-        // Autoplay: retry up to 5 times (every 500ms) waiting for store rehydration/Supabase sync
+        // Autoplay on refresh: retry up to 6 times (every 500ms) 
+        // Waits for both currentTrack (from persist/Supabase) and youtubePlayer to be available
         let autoplayAttempts = 0;
         const tryAutoplay = () => {
           autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
+          const ytPlayer = freshStore.youtubePlayer;
           
-          if (freshStore.currentTrack && freshStore.currentTrack.id) {
-            // Fast path: if we have a persisted currentYtId, load it directly
+          if (freshStore.currentTrack && freshStore.currentTrack.id && ytPlayer) {
+            // Use the persisted currentYtId for instant resume, or fall back to full resolve
             const ytId = freshStore.currentYtId;
-            if (ytId && ytId.length === 11 && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+            if (ytId && ytId.length === 11) {
               const startSeconds = Math.max(0, (freshStore.progress || 0) / 1000);
-              playerRef.current.loadVideoById({ videoId: ytId, startSeconds });
-              usePlayerStore.setState({ isPlaying: true });
+              // Go through virtualPlayer proxy which handles unMute + playVideo
+              ytPlayer.loadVideoById({ videoId: ytId, startSeconds });
             } else {
-              // Full path: resolve YouTube video ID via search
-              freshStore.playEngineTrack(
-                freshStore.currentTrack,
-                freshStore.progress,
-                null,
-                true
-              );
+              freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress, null, true);
             }
-          } else if (autoplayAttempts < 5) {
+          } else if (autoplayAttempts < 6) {
             setTimeout(tryAutoplay, 500);
           }
         };
-        setTimeout(tryAutoplay, 500);
+        setTimeout(tryAutoplay, 300);
       };
 
       const handleStateChange = (event) => {
