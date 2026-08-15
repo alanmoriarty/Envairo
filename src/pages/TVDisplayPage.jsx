@@ -273,7 +273,10 @@ export default function TVDisplayPage() {
           event.target.mute();
         }
         disableCaptions(event.target);
-        channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+          sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+        }
       };
 
       const onStateChange = (event) => {
