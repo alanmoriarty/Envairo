@@ -38,49 +38,12 @@ export function AddSongModal({ onClose }) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const engine = usePlayerStore.getState().playbackEngine;
-        if (engine === 'youtube') {
-          const { searchYouTubeVideos } = await import('../../lib/youtubeApi');
-          const ytResults = await searchYouTubeVideos(query, 12);
-          if (ytResults && ytResults.length > 0) {
-            setResults(ytResults.map(r => ({
-              id: r.id,
-              uri: r.uri,
-              name: r.name,
-              artists: r.artists,
-              image: r.album?.images?.[0]?.url || r.image || '',
-              duration_ms: r.duration_ms || 0,
-              source: 'youtube'
-            })));
-            return;
-          }
-        }
-
-        // Spotify Engine o fallback
-        const { data, error } = await supabase.functions.invoke('search-spotify', {
-          body: { query, limit: 12, filterExplicit: useSettingsStore.getState().explicitFilter }
-        });
-        if (error) throw error;
-        const items = data?.tracks?.items || [];
-        setResults(items.map(normalizeApiTrack));
+        const { searchMusicCatalog } = await import('../../lib/musicApi');
+        const items = await searchMusicCatalog(query, 12, useSettingsStore.getState().explicitFilter);
+        setResults(items);
       } catch (err) {
         console.error('Error buscando:', err);
-        // Fallback a YouTube si la función de Spotify falla
-        try {
-          const { searchYouTubeVideos } = await import('../../lib/youtubeApi');
-          const ytResults = await searchYouTubeVideos(query, 12);
-          if (ytResults && ytResults.length > 0) {
-            setResults(ytResults.map(r => ({
-              id: r.id,
-              uri: r.uri,
-              name: r.name,
-              artists: r.artists,
-              image: r.album?.images?.[0]?.url || r.image || '',
-              duration_ms: r.duration_ms || 0,
-              source: 'youtube'
-            })));
-          }
-        } catch (e) {}
+        setResults([]);
       } finally {
         setSearching(false);
       }
