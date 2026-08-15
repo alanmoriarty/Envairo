@@ -689,33 +689,19 @@ export function useYouTubeSDK() {
     }
 
     const initialVolume = usePlayerStore.getState().volume || 70;
-    const transitionMs = Math.max(1500, Math.floor(durationSec * 1000));
+    const transitionMs = Math.max(1200, Math.floor(durationSec * 1000));
 
-    // Pre-obtener y resolver la siguiente canción en segundo plano durante los 5s de transición
-    const store = usePlayerStore.getState();
-    const nextIdx = store.currentQueueIndex + 1;
-    const upcomingTrack = store.queue[nextIdx];
-    if (upcomingTrack) {
-      store.resolveYouTubeVideoId(upcomingTrack).catch(() => { });
-    }
-
-    // Fundido suave de volumen de música real de fondo
-    if (chosenEffect === 'fade' || chosenEffect === 'echo') {
-      const steps = 10;
-      const stepTime = transitionMs / steps;
-      let currentStep = 0;
-
-      const fadeInterval = setInterval(() => {
-        currentStep++;
-        const targetVol = Math.max(0, Math.floor(initialVolume * (1 - currentStep / steps)));
-        try { if (typeof p.setVolume === 'function') p.setVolume(targetVol); } catch (e) { }
-        if (currentStep >= steps) clearInterval(fadeInterval);
-      }, stepTime);
+    // Obtener la siguiente canción y reproducirla de inmediato para que arranque en segundo plano
+    const freshStore = usePlayerStore.getState();
+    const nextTrack = freshStore.shiftQueue();
+    if (nextTrack) {
+      // Disparar carga y reproducción del nuevo video de inmediato
+      freshStore.playEngineTrack(nextTrack, 0, null, true);
     }
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    transitionTimerRef.current = setTimeout(async () => {
-      // Restaurar volumen y estilos visuales del video para el siguiente track
+    transitionTimerRef.current = setTimeout(() => {
+      // Restaurar volumen y estilos visuales del video
       try {
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
       } catch (e) { }
@@ -728,12 +714,6 @@ export function useYouTubeSDK() {
 
       usePlayerStore.getState().setActiveTransition(null);
 
-      const freshStore = usePlayerStore.getState();
-      const nextTrack = freshStore.shiftQueue();
-      if (nextTrack) {
-        await freshStore.playEngineTrack(nextTrack, 0, null, true);
-      }
-      
       // Ocultar el badge suavemente
       if (loader) {
         loader.style.opacity = '0';
