@@ -99,8 +99,16 @@ export function PersistentPlayer() {
       if (isPlaying) {
         state.youtubePlayer.pauseVideo();
       } else {
-        state.youtubePlayer.playVideo();
+        const pState = typeof state.youtubePlayer.getPlayerState === 'function' ? state.youtubePlayer.getPlayerState() : null;
+        // Si el reproductor no tiene video cargado (-1 o unstarted), invocar playEngineTrack directamente
+        if (pState === -1 || pState === null || pState === 5) {
+          state.playEngineTrack(state.currentTrack, state.progress, null, true);
+        } else {
+          state.youtubePlayer.playVideo();
+        }
       }
+    } else if (state.currentTrack) {
+      state.playEngineTrack(state.currentTrack, state.progress, null, true);
     }
   };
   const previousVolume = useRef(volume || 100);

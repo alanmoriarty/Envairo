@@ -317,7 +317,15 @@ export function useYouTubeSDK() {
 
       // Virtual Player Proxy único
       const virtualPlayer = {
-        playVideo: () => playerRef.current?.playVideo(),
+        playVideo: () => {
+          if (!playerRef.current) return;
+          try {
+            if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
+            if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
+          } catch (e) {
+            console.warn('Error en playVideo:', e);
+          }
+        },
         pauseVideo: () => playerRef.current?.pauseVideo(),
         seekTo: (s, a) => playerRef.current?.seekTo(s, a),
         setVolume: (v) => playerRef.current?.setVolume(v),
@@ -336,10 +344,16 @@ export function useYouTubeSDK() {
           if (!playerRef.current) return;
           
           currentYtIdRef.current = args.videoId;
-          if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-          if (typeof playerRef.current.loadVideoById === 'function') {
-            playerRef.current.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
-            if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
+          try {
+            if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
+            if (typeof playerRef.current.loadVideoById === 'function') {
+              playerRef.current.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
+            }
+            if (typeof playerRef.current.playVideo === 'function') {
+              playerRef.current.playVideo();
+            }
+          } catch (e) {
+            console.warn('Error en loadVideoById:', e);
           }
         }
       };
@@ -354,7 +368,6 @@ export function useYouTubeSDK() {
         showinfo: 0,
         iv_load_policy: 3,
         cc_load_policy: 0, 
-        mute: 0,
         origin: window.location.origin
       };
 
@@ -375,29 +388,25 @@ export function useYouTubeSDK() {
         store.setActiveDeviceId('youtube-device');
         setYoutubePlayer(virtualPlayer);
 
-        // Autoplay on refresh: retry up to 10 times (every 500ms = 5s total)
-        // currentTrack comes from Supabase fetch, currentYtId from localStorage persist
+        // Autoplay on refresh: retry up to 12 times (every 400ms = ~5s total)
         let autoplayAttempts = 0;
         const tryAutoplay = () => {
           autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
-          const ytPlayer = freshStore.youtubePlayer;
           
-          if (freshStore.currentTrack && freshStore.currentTrack.id && ytPlayer) {
-            // Use the persisted currentYtId for instant resume, or fall back to full resolve
+          if (freshStore.currentTrack && freshStore.currentTrack.id) {
             const ytId = freshStore.currentYtId;
             if (ytId && ytId.length === 11) {
               const startSeconds = Math.max(0, (freshStore.progress || 0) / 1000);
-              // Go through virtualPlayer proxy which handles unMute + playVideo
-              ytPlayer.loadVideoById({ videoId: ytId, startSeconds });
+              virtualPlayer.loadVideoById({ videoId: ytId, startSeconds });
             } else {
               freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress, null, true);
             }
-          } else if (autoplayAttempts < 10) {
-            setTimeout(tryAutoplay, 500);
+          } else if (autoplayAttempts < 12) {
+            setTimeout(tryAutoplay, 400);
           }
         };
-        setTimeout(tryAutoplay, 300);
+        setTimeout(tryAutoplay, 200);
       };
 
       const handleStateChange = (event) => {
