@@ -404,21 +404,17 @@ export default function TVDisplayPage() {
           if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
         } else if (isBuffering) {
           // Don't seek or change rate while buffering
-        } else if (Math.abs(diff) > 1.8) {
+        } else if (Math.abs(diff) > 0.8) {
           p.seekTo(targetTime, true);
           if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
-        } else if (diff > 0.4) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.07);
-        } else if (diff > 0.12) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.03);
-        } else if (diff > 0.04) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.01);
-        } else if (diff < -0.4) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.93);
-        } else if (diff < -0.12) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.97);
-        } else if (diff < -0.04) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.99);
+        } else if (diff > 0.15) {
+          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.15);
+        } else if (diff > 0.05) {
+          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.05);
+        } else if (diff < -0.15) {
+          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.85);
+        } else if (diff < -0.05) {
+          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.95);
         } else {
           if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
         }
