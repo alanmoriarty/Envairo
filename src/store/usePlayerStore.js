@@ -655,6 +655,7 @@ export const usePlayerStore = create(
         duration: state.duration,
         lastCommandTs: state.lastCommandTs,
         currentYtId: state.currentYtId,
+        currentTrack: state.currentTrack,
       }),
     }
   )

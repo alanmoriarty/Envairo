@@ -388,25 +388,19 @@ export function useYouTubeSDK() {
         store.setActiveDeviceId('youtube-device');
         setYoutubePlayer(virtualPlayer);
 
-        // Autoplay on refresh: retry up to 12 times (every 400ms = ~5s total)
+        // Autoplay on refresh: retry up to 15 times (every 300ms = 4.5s total)
         let autoplayAttempts = 0;
         const tryAutoplay = () => {
           autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
           
           if (freshStore.currentTrack && freshStore.currentTrack.id) {
-            const ytId = freshStore.currentYtId;
-            if (ytId && ytId.length === 11) {
-              const startSeconds = Math.max(0, (freshStore.progress || 0) / 1000);
-              virtualPlayer.loadVideoById({ videoId: ytId, startSeconds });
-            } else {
-              freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress, null, true);
-            }
-          } else if (autoplayAttempts < 12) {
-            setTimeout(tryAutoplay, 400);
+            freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
+          } else if (autoplayAttempts < 15) {
+            setTimeout(tryAutoplay, 300);
           }
         };
-        setTimeout(tryAutoplay, 200);
+        setTimeout(tryAutoplay, 150);
       };
 
       const handleStateChange = (event) => {
