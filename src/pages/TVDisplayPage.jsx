@@ -633,8 +633,8 @@ export default function TVDisplayPage() {
         </div>
       )}
 
-      {/* Modo Emparejado: Overlay status si no hay video activo */}
-      {sessionId && !currentVideoId && (
+      {/* Modo Emparejado: Overlay status si no hay video activo o status no está vacío */}
+      {sessionId && status !== '' && !currentVideoId && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
           <div className="bg-white/10 p-6 rounded-full border border-white/20">
             <Tv size={64} className="text-white opacity-80" />
