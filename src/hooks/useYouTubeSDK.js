@@ -4,11 +4,18 @@ import { useSettingsStore } from '../store/useSettingsStore';
 
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack, currentTrack } = usePlayerStore();
-  const playerRef = useRef(null);
+  const activeDeckRef = useRef('A'); // 'A' | 'B'
+  const playerARef = useRef(null);
+  const playerBRef = useRef(null);
   const currentYtIdRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
   const progressInterval = useRef(null);
+  const isTransitioningRef = useRef(false);
+  const transitionTimerRef = useRef(null);
   const { visualizerEnabled, youtubeNativeCast } = useSettingsStore();
+
+  const getActivePlayer = () => activeDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+  const getStandbyPlayer = () => activeDeckRef.current === 'A' ? playerBRef.current : playerARef.current;
 
   const applyStyles = (wrapper, isVis, isFs) => {
     if (!wrapper) return;
@@ -34,8 +41,6 @@ export function useYouTubeSDK() {
       wrapper.style.pointerEvents = 'auto';
       if (dragHeader) dragHeader.style.display = 'none';
     } else {
-      // DRAGGABLE PIP MINI PLAYER (240x135px - 16:9)
-      // Position saved in localStorage or defaults to bottom-right (24px, 96px)
       wrapper.style.display = 'block';
       wrapper.style.width = '240px';
       wrapper.style.height = '135px';
@@ -87,11 +92,11 @@ export function useYouTubeSDK() {
 
     const loadYouTubeAPI = () => {
       if (window.YT && window.YT.Player) {
-        initPlayer();
+        initPlayers();
         return;
       }
 
-      window.onYouTubeIframeAPIReady = initPlayer;
+      window.onYouTubeIframeAPIReady = initPlayers;
 
       const script = document.createElement('script');
       script.src = 'https://www.youtube.com/iframe_api';
@@ -99,15 +104,14 @@ export function useYouTubeSDK() {
       document.body.appendChild(script);
     };
 
-    const initPlayer = () => {
-      if (playerRef.current) return;
+    const initPlayers = () => {
+      if (playerARef.current || playerBRef.current) return;
 
       const wrapper = document.createElement('div');
       wrapper.id = 'youtube-wrapper';
       wrapper.style.position = 'fixed';
       wrapper.style.overflow = 'hidden';
 
-      // Restore saved custom position if available
       try {
         const savedPosStr = localStorage.getItem('bq-pip-pos');
         if (savedPosStr) {
@@ -122,7 +126,7 @@ export function useYouTubeSDK() {
 
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
 
-      // Drag Header Bar for moving PiP freely across screen
+      // Header Bar
       const dragHeader = document.createElement('div');
       dragHeader.id = 'youtube-drag-header';
       dragHeader.style.position = 'absolute';
@@ -144,7 +148,6 @@ export function useYouTubeSDK() {
       dragHandleIcon.style.color = 'rgba(255,255,255,0.7)';
       dragHandleIcon.style.fontSize = '12px';
       dragHandleIcon.style.fontWeight = 'bold';
-      dragHandleIcon.style.letterSpacing = '1px';
       dragHeader.appendChild(dragHandleIcon);
 
       const expandBtn = document.createElement('button');
@@ -161,15 +164,10 @@ export function useYouTubeSDK() {
         else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
       });
       dragHeader.appendChild(expandBtn);
-
       wrapper.appendChild(dragHeader);
 
-      // Make PiP Draggable
       let isDragging = false;
-      let startX = 0;
-      let startY = 0;
-      let initialLeft = 0;
-      let initialTop = 0;
+      let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
       const onMouseDown = (e) => {
         if (document.fullscreenElement) return;
@@ -191,10 +189,8 @@ export function useYouTubeSDK() {
         if (!isDragging) return;
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-
         const newLeft = Math.max(10, Math.min(window.innerWidth - 250, initialLeft + dx));
         const newTop = Math.max(10, Math.min(window.innerHeight - 145, initialTop + dy));
-
         wrapper.style.left = `${newLeft}px`;
         wrapper.style.top = `${newTop}px`;
         wrapper.style.right = 'auto';
@@ -211,7 +207,6 @@ export function useYouTubeSDK() {
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
 
-        // Save custom PiP position to localStorage
         const rect = wrapper.getBoundingClientRect();
         try {
           localStorage.setItem('bq-pip-pos', JSON.stringify({ x: rect.left, y: rect.top }));
@@ -223,32 +218,44 @@ export function useYouTubeSDK() {
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
       document.body.appendChild(wrapper);
 
-      // Contenedor del reproductor único
-      const container = document.createElement('div');
-      container.id = 'yt-container';
-      container.style.position = 'absolute';
-      container.style.inset = '0';
-      container.style.opacity = '1';
-      container.style.zIndex = '2';
-      wrapper.appendChild(container);
+      // DECK A CONTAINER
+      const containerA = document.createElement('div');
+      containerA.id = 'yt-deck-a';
+      containerA.style.position = 'absolute';
+      containerA.style.inset = '0';
+      containerA.style.opacity = '1';
+      containerA.style.zIndex = '3';
+      containerA.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+      wrapper.appendChild(containerA);
 
-      const target = document.createElement('div');
-      target.id = 'youtube-player-target';
-      container.appendChild(target);
+      const targetA = document.createElement('div');
+      targetA.id = 'youtube-player-deck-a';
+      containerA.appendChild(targetA);
 
-      // Overlay transparent shield to capture drag on PiP header/edges
+      // DECK B CONTAINER (Standby / Dual-buffer player)
+      const containerB = document.createElement('div');
+      containerB.id = 'yt-deck-b';
+      containerB.style.position = 'absolute';
+      containerB.style.inset = '0';
+      containerB.style.opacity = '0';
+      containerB.style.zIndex = '2';
+      containerB.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+      wrapper.appendChild(containerB);
+
+      const targetB = document.createElement('div');
+      targetB.id = 'youtube-player-deck-b';
+      containerB.appendChild(targetB);
+
+      // Overlay
       const overlay = document.createElement('div');
       overlay.id = 'youtube-overlay';
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
       overlay.style.cursor = 'grab';
-      // Solo capturar pointerEvents si el video está reproduciéndose o en fullscreen; si está pausado con botón rojo de YT, dejar que el usuario haga click directo
       overlay.style.pointerEvents = 'none';
       overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
-
       overlay.addEventListener('mousedown', onMouseDown);
-
       overlay.addEventListener('dblclick', () => {
         if (document.fullscreenElement) {
           document.exitFullscreen().catch(() => { });
@@ -257,32 +264,7 @@ export function useYouTubeSDK() {
           else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
         }
       });
-
-      overlay.addEventListener('click', (e) => {
-        if (document.fullscreenElement) {
-          const state = usePlayerStore.getState();
-          const { sessionId, hostSecret } = useSettingsStore.getState();
-          if (state.isPlaying) {
-            state.setIsPlaying(false);
-            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then());
-          } else {
-            state.setIsPlaying(true);
-            import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then());
-          }
-        }
-      });
       wrapper.appendChild(overlay);
-
-      // Loader de transición invisible para el usuario (gestiona estados sin superponer texto en pantalla)
-      const loader = document.createElement('div');
-      loader.id = 'youtube-transition-loader';
-      loader.style.position = 'absolute';
-      loader.style.inset = '0';
-      loader.style.zIndex = '15';
-      loader.style.background = 'transparent';
-      loader.style.display = 'none';
-      loader.style.pointerEvents = 'none';
-      wrapper.appendChild(loader);
 
       const closeBtn = document.createElement('button');
       closeBtn.id = 'youtube-fs-close';
@@ -301,12 +283,9 @@ export function useYouTubeSDK() {
       closeBtn.style.cursor = 'pointer';
       closeBtn.style.alignItems = 'center';
       closeBtn.style.justifyContent = 'center';
-
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => { });
-        }
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
       });
       wrapper.appendChild(closeBtn);
 
@@ -320,10 +299,10 @@ export function useYouTubeSDK() {
           overlay.style.pointerEvents = 'auto';
           overlay.style.cursor = isFs ? 'pointer' : 'grab';
         }
-        // Optimización de RAM: Fullscreen = 1080p / PiP = 360p-480p
         try {
-          if (playerRef.current && typeof playerRef.current.setPlaybackQuality === 'function') {
-            playerRef.current.setPlaybackQuality(isFs ? 'hd1080' : 'medium');
+          const activeP = getActivePlayer();
+          if (activeP && typeof activeP.setPlaybackQuality === 'function') {
+            activeP.setPlaybackQuality(isFs ? 'hd1080' : 'medium');
           }
         } catch (e) { }
       };
@@ -333,63 +312,57 @@ export function useYouTubeSDK() {
       wrapper._fsListener = handleFsChange;
       wrapper._fsEvents = events;
 
-      // Virtual Player Proxy único
+      // Virtual Player Proxy único que interactúa con el Deck activo
       const virtualPlayer = {
         playVideo: () => {
-          if (!playerRef.current) return;
+          const p = getActivePlayer();
+          if (!p) return;
           try {
-            if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-            if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
-          } catch (e) {
-            console.warn('Error en playVideo:', e);
-          }
+            if (typeof p.unMute === 'function') p.unMute();
+            if (typeof p.playVideo === 'function') p.playVideo();
+          } catch (e) { }
         },
-        pauseVideo: () => playerRef.current?.pauseVideo(),
-        seekTo: (s, a) => playerRef.current?.seekTo(s, a),
-        setVolume: (v) => playerRef.current?.setVolume(v),
-        getVolume: () => playerRef.current?.getVolume(),
-        getPlayerState: () => playerRef.current?.getPlayerState(),
-        getCurrentTime: () => playerRef.current?.getCurrentTime(),
-        getDuration: () => playerRef.current?.getDuration(),
-        setPlaybackRate: (rate) => playerRef.current?.setPlaybackRate(rate),
-        getPlaybackRate: () => playerRef.current?.getPlaybackRate(),
-        stopVideo: () => playerRef.current?.stopVideo(),
-        unloadModule: (m) => playerRef.current?.unloadModule(m),
-        destroy: () => playerRef.current?.destroy(),
-        cueVideoById: (args) => playerRef.current?.cueVideoById(args),
+        pauseVideo: () => getActivePlayer()?.pauseVideo(),
+        seekTo: (s, a) => getActivePlayer()?.seekTo(s, a),
+        setVolume: (v) => {
+          const p = getActivePlayer();
+          if (p && typeof p.setVolume === 'function') p.setVolume(v);
+        },
+        getVolume: () => getActivePlayer()?.getVolume(),
+        getPlayerState: () => getActivePlayer()?.getPlayerState(),
+        getCurrentTime: () => getActivePlayer()?.getCurrentTime(),
+        getDuration: () => getActivePlayer()?.getDuration(),
+        setPlaybackRate: (rate) => getActivePlayer()?.setPlaybackRate(rate),
+        getPlaybackRate: () => getActivePlayer()?.getPlaybackRate(),
+        stopVideo: () => {
+          playerARef.current?.stopVideo();
+          playerBRef.current?.stopVideo();
+        },
+        unloadModule: (m) => getActivePlayer()?.unloadModule(m),
+        destroy: () => {
+          playerARef.current?.destroy();
+          playerBRef.current?.destroy();
+        },
+        cueVideoById: (args) => getActivePlayer()?.cueVideoById(args),
 
         loadVideoById: (args) => {
-          if (!playerRef.current) return;
+          const activeP = getActivePlayer();
+          if (!activeP) return;
 
           currentYtIdRef.current = args.videoId;
 
-          // Restaurar inmediatamente cualquier transformación visual previa del contenedor
-          const container = document.getElementById('yt-container');
-          if (container) {
-            container.style.transition = 'none';
-            container.style.transform = 'none';
-            container.style.filter = 'none';
-            container.style.opacity = '1';
-          }
-
-          // Mostrar overlay de transición con nota musical
-          const loader = document.getElementById('youtube-transition-loader');
-          if (loader) {
-            loader.style.opacity = '1';
-            loader.style.pointerEvents = 'auto';
-          }
           try {
-            if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-            if (typeof playerRef.current.loadVideoById === 'function') {
+            if (typeof activeP.unMute === 'function') activeP.unMute();
+            if (typeof activeP.loadVideoById === 'function') {
               const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-              playerRef.current.loadVideoById({
+              activeP.loadVideoById({
                 videoId: args.videoId,
                 startSeconds: args.startSeconds || 0,
                 suggestedQuality: isFs ? 'hd1080' : 'medium'
               });
             }
-            if (typeof playerRef.current.playVideo === 'function') {
-              playerRef.current.playVideo();
+            if (typeof activeP.playVideo === 'function') {
+              activeP.playVideo();
             }
           } catch (e) {
             console.warn('Error en loadVideoById:', e);
@@ -411,118 +384,24 @@ export function useYouTubeSDK() {
         playsinline: 1
       };
 
-      const onReady = (event) => {
-        try {
-          event.target.unloadModule("captions");
-          event.target.unloadModule("cc");
-        } catch (e) { }
-
-        setYtReady(true);
-        const store = usePlayerStore.getState();
-        if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
-          playerRef.current.setVolume(store.volume);
-          playerRef.current.unMute();
-        }
-        store.setSdkReady(true);
-        store.setDeviceId('youtube-device');
-        store.setActiveDeviceId('youtube-device');
-        setYoutubePlayer(virtualPlayer);
-
-        // Autoplay on refresh: retry up to 15 times (every 300ms = 4.5s total)
-        let autoplayAttempts = 0;
-        const tryAutoplay = () => {
-          autoplayAttempts++;
-          const freshStore = usePlayerStore.getState();
-
-          if (freshStore.currentTrack && freshStore.currentTrack.id) {
-            freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
-          } else if (autoplayAttempts < 15) {
-            setTimeout(tryAutoplay, 300);
-          }
-        };
-        setTimeout(tryAutoplay, 150);
-      };
-
-      const handleStateChange = (event) => {
+      const handleStateChange = (deck, event) => {
         const yt = window.YT;
-        const p = playerRef.current;
-        if (!p) return;
+        const isCurrentDeck = activeDeckRef.current === deck;
+        const p = deck === 'A' ? playerARef.current : playerBRef.current;
 
-        if (event.data === yt.PlayerState.PLAYING) {
+        if (event.data === yt.PlayerState.PLAYING && isCurrentDeck) {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
-
-          // Limpiar cualquier efecto residual del contenedor al reproducir
-          const container = document.getElementById('yt-container');
-          if (container) {
-            container.style.transition = 'transform 0.4s ease, filter 0.4s ease, opacity 0.4s ease';
-            container.style.transform = 'none';
-            container.style.filter = 'none';
-            container.style.opacity = '1';
-          }
-
-          // Ocultar suavemente el loader de transición
-          const loader = document.getElementById('youtube-transition-loader');
-          if (loader) {
-            loader.style.opacity = '0';
-            loader.style.pointerEvents = 'none';
-          }
 
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
-
-          // Emitir broadcast inmediato a controles remotos
-          try {
-            const sessId = useSettingsStore.getState().sessionId;
-            if (sessId) {
-              const ch = supabase.channel(`queue-sync-${sessId}`);
-              ch.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                  ch.send({
-                    type: 'broadcast',
-                    event: 'playback_sync',
-                    payload: { isPlaying: true, progress: Math.floor(p.getCurrentTime() * 1000), currentTrack: usePlayerStore.getState().currentTrack }
-                  });
-                  setTimeout(() => supabase.removeChannel(ch), 500);
-                }
-              });
-            }
-          } catch (e) { }
-
-          try {
-            p.unloadModule('captions');
-            p.unloadModule('cc');
-            if (p.setOption) {
-              p.setOption('captions', 'track', {});
-              p.setOption('cc', 'track', {});
-            }
-          } catch (e) { }
-        } else if (event.data === yt.PlayerState.PAUSED) {
+        } else if (event.data === yt.PlayerState.PAUSED && isCurrentDeck) {
           setIsPlaying(false);
           stopProgressTimer();
-
-          // Emitir broadcast inmediato a controles remotos
-          try {
-            const sessId = useSettingsStore.getState().sessionId;
-            if (sessId) {
-              const ch = supabase.channel(`queue-sync-${sessId}`);
-              ch.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                  ch.send({
-                    type: 'broadcast',
-                    event: 'playback_sync',
-                    payload: { isPlaying: false, progress: Math.floor(p.getCurrentTime() * 1000), currentTrack: usePlayerStore.getState().currentTrack }
-                  });
-                  setTimeout(() => supabase.removeChannel(ch), 500);
-                }
-              });
-            }
-          } catch (e) { }
-        } else if (event.data === yt.PlayerState.ENDED) {
+        } else if (event.data === yt.PlayerState.ENDED && isCurrentDeck) {
           setIsPlaying(false);
           stopProgressTimer();
-          // Si una transición ya está en proceso de cambio, no duplicar el salto de cola
           if (isTransitioningRef.current) return;
           const store = usePlayerStore.getState();
           const nextTrack = store.shiftQueue();
@@ -531,52 +410,31 @@ export function useYouTubeSDK() {
           } else {
             currentYtIdRef.current = null;
             usePlayerStore.setState({ currentTrack: null, isPlaying: false, progress: 0, duration: 0 });
-            try {
-              playerRef.current?.stopVideo();
-            } catch (e) { }
           }
         }
       };
 
-      const handleError = (event) => {
-        const wrapper = document.getElementById('youtube-wrapper');
-        if (wrapper) {
-          wrapper.dataset.errorHidden = 'true';
-          const isVisualizerOn = useSettingsStore.getState().visualizerEnabled;
-          const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-          applyStyles(wrapper, isVisualizerOn, isFs);
+      // Inicializar Deck A y Deck B
+      playerARef.current = new window.YT.Player('youtube-player-deck-a', {
+        height: '100%', width: '100%', playerVars,
+        events: {
+          onReady: () => {
+            setYtReady(true);
+            const store = usePlayerStore.getState();
+            store.setSdkReady(true);
+            store.setDeviceId('youtube-device');
+            store.setActiveDeviceId('youtube-device');
+            setYoutubePlayer(virtualPlayer);
+          },
+          onStateChange: (e) => handleStateChange('A', e)
         }
+      });
 
-        if (event.data === 150 || event.data === 101 || event.data === 100) {
-          console.warn(`YouTube Error ${event.data}. Buscando alternativa...`);
-          const store = usePlayerStore.getState();
-          const currentYtId = store.currentYtId || currentYtIdRef.current;
-
-          if (currentYtId) {
-            store.addFailedYouTubeId(currentYtId);
-            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-            const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-            if (store.currentTrack) {
-              localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
-            }
-          }
-          store.playEngineTrack(store.currentTrack, 0, null, 1);
-          import('sonner').then(({ toast }) => toast.error('Video no disponible. Buscando alternativa...'));
-        } else if (event.data === 2 || event.data === 5) {
-          const store = usePlayerStore.getState();
-          const currentYtId = store.currentYtId || currentYtIdRef.current;
-          if (currentYtId && playerRef.current) {
-            setTimeout(() => {
-              playerRef.current.loadVideoById({ videoId: currentYtId, startSeconds: 0 });
-            }, 1000);
-          } else {
-            store.playEngineTrack(store.currentTrack, 0, null, 1);
-          }
+      playerBRef.current = new window.YT.Player('youtube-player-deck-b', {
+        height: '100%', width: '100%', playerVars,
+        events: {
+          onStateChange: (e) => handleStateChange('B', e)
         }
-      };
-
-      playerRef.current = new window.YT.Player('youtube-player-target', {
-        height: '100%', width: '100%', playerVars, events: { onReady, onStateChange: handleStateChange, onError: handleError }
       });
     };
 
@@ -584,7 +442,8 @@ export function useYouTubeSDK() {
 
     return () => {
       stopProgressTimer();
-      if (playerRef.current) { playerRef.current.destroy(); playerRef.current = null; }
+      if (playerARef.current) { playerARef.current.destroy(); playerARef.current = null; }
+      if (playerBRef.current) { playerBRef.current.destroy(); playerBRef.current = null; }
       const wrapper = document.getElementById('youtube-wrapper');
       if (wrapper) {
         if (wrapper._fsListener && wrapper._fsEvents) {
@@ -595,9 +454,6 @@ export function useYouTubeSDK() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playbackEngine, youtubeNativeCast]);
-
-  const isTransitioningRef = useRef(false);
-  const transitionTimerRef = useRef(null);
 
   const startProgressTimer = (p) => {
     stopProgressTimer();
@@ -631,7 +487,7 @@ export function useYouTubeSDK() {
     }, 500);
   };
 
-  const triggerDJTransition = async (p, durationSec) => {
+  const triggerDJTransition = async (currentP, durationSec) => {
     if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
 
@@ -641,116 +497,136 @@ export function useYouTubeSDK() {
       ? effects[Math.floor(Math.random() * effects.length)]
       : settings.djTransitionMode;
 
-    const ytContainer = document.getElementById('yt-container');
+    const initialVolume = usePlayerStore.getState().volume || 70;
+    const transitionMs = Math.max(2500, Math.floor(durationSec * 1000));
+
+    // Identificar Deck saliente y Deck entrante
+    const outgoingDeck = activeDeckRef.current; // 'A' o 'B'
+    const incomingDeck = outgoingDeck === 'A' ? 'B' : 'A';
+
+    const outgoingContainer = document.getElementById(outgoingDeck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+    const incomingContainer = document.getElementById(incomingDeck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+
+    const outgoingPlayer = outgoingDeck === 'A' ? playerARef.current : playerBRef.current;
+    const incomingPlayer = incomingDeck === 'A' ? playerARef.current : playerBRef.current;
+
+    // Obtener la siguiente canción de la cola
+    const freshStore = usePlayerStore.getState();
+    const nextIdx = freshStore.currentQueueIndex + 1;
+    const upcomingTrack = freshStore.queue[nextIdx];
+
+    if (!upcomingTrack || !incomingPlayer) {
+      isTransitioningRef.current = false;
+      return;
+    }
 
     usePlayerStore.getState().setActiveTransition({
       type: chosenEffect,
       label: 'Transición DJ'
     });
 
-    // Efectos visuales aplicados DIRECTAMENTE al contenedor del video de YouTube
-    if (ytContainer) {
-      ytContainer.style.transition = `transform ${durationSec}s cubic-bezier(0.25, 1, 0.5, 1), filter ${durationSec}s ease, opacity ${durationSec}s ease`;
+    // 1. Resolver el video ID de la siguiente canción
+    const { videoIdToPlay } = await freshStore.resolveYouTubeVideoId(upcomingTrack);
+
+    if (!videoIdToPlay) {
+      isTransitioningRef.current = false;
+      return;
+    }
+
+    // 2. Arrancar la canción entrante en el Deck en Standby en segundo plano con volumen 0
+    try {
+      if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
+      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
+      if (typeof incomingPlayer.loadVideoById === 'function') {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        incomingPlayer.loadVideoById({
+          videoId: videoIdToPlay,
+          startSeconds: 0,
+          suggestedQuality: isFs ? 'hd1080' : 'medium'
+        });
+      }
+      if (typeof incomingPlayer.playVideo === 'function') {
+        incomingPlayer.playVideo();
+      }
+    } catch (e) { }
+
+    // 3. Cruzar visualmente los contenedores (Opacity & Effects)
+    if (incomingContainer) {
+      incomingContainer.style.zIndex = '3';
+      incomingContainer.style.opacity = '0';
+      incomingContainer.style.transform = 'scale(1.02)';
+      incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
+      setTimeout(() => {
+        incomingContainer.style.opacity = '1';
+        incomingContainer.style.transform = 'none';
+      }, 50);
+    }
+
+    if (outgoingContainer) {
+      outgoingContainer.style.zIndex = '2';
+      outgoingContainer.style.transition = `opacity ${durationSec * 0.8}s ease, transform ${durationSec * 0.8}s ease, filter ${durationSec * 0.8}s ease`;
       
       if (chosenEffect === 'brake') {
-        // Frenada de vinilo: rotación lenta y contracción
-        ytContainer.style.transform = 'rotate(-8deg) scale(0.92)';
-        ytContainer.style.filter = 'brightness(0.7)';
+        outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95)';
+        outgoingContainer.style.filter = 'brightness(0.7)';
       } else if (chosenEffect === 'start') {
-        // Spin up: rotación de aceleración y zoom
-        ytContainer.style.transform = 'rotate(12deg) scale(1.08)';
-        ytContainer.style.filter = 'brightness(1.2)';
-      } else if (chosenEffect === 'fade' || chosenEffect === 'echo') {
-        // Fundido suave: zoom lento y desvanecimiento
-        ytContainer.style.transform = 'scale(1.05)';
-        ytContainer.style.opacity = '0.3';
-      } else if (chosenEffect === 'cut') {
-        // Corte rápido: flash y zoom
-        ytContainer.style.transform = 'scale(0.96)';
-        ytContainer.style.filter = 'contrast(1.2)';
+        outgoingContainer.style.transform = 'rotate(8deg) scale(1.05)';
+        outgoingContainer.style.filter = 'brightness(1.1)';
       }
+      outgoingContainer.style.opacity = '0';
     }
 
-    if (loader) {
-      loader.style.opacity = '1';
-      loader.style.pointerEvents = 'none';
-    }
-
-    const initialVolume = usePlayerStore.getState().volume || 70;
-    const transitionMs = Math.max(2000, Math.floor(durationSec * 1000));
-    const fadeOutDuration = Math.floor(transitionMs * 0.7); // 70% del tiempo para desvanecer suavemente el volumen
-
-    // Rampa de volumen suave descendente (Fade out progresivo de 100% a 0%)
-    const steps = 14;
-    const stepTime = fadeOutDuration / steps;
+    // 4. Rampa simultánea de volumen: Fade-out Deck saliente / Fade-in Deck entrante
+    const steps = 15;
+    const stepTime = transitionMs / steps;
     let currentStep = 0;
 
-    const fadeInterval = setInterval(() => {
+    const crossfadeInterval = setInterval(() => {
       currentStep++;
-      const targetVol = Math.max(0, Math.floor(initialVolume * (1 - currentStep / steps)));
+      const progressRatio = currentStep / steps; // 0 -> 1
+
+      const outVol = Math.max(0, Math.floor(initialVolume * (1 - progressRatio)));
+      const inVol = Math.min(initialVolume, Math.floor(initialVolume * progressRatio));
+
       try {
-        if (p && typeof p.setVolume === 'function') {
-          p.setVolume(targetVol);
-        }
+        if (outgoingPlayer && typeof outgoingPlayer.setVolume === 'function') outgoingPlayer.setVolume(outVol);
+        if (incomingPlayer && typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(inVol);
       } catch (e) { }
+
       if (currentStep >= steps) {
-        clearInterval(fadeInterval);
+        clearInterval(crossfadeInterval);
       }
     }, stepTime);
 
-    // Precargar y resolver en paralelo la siguiente canción
-    const store = usePlayerStore.getState();
-    const nextIdx = store.currentQueueIndex + 1;
-    const upcomingTrack = store.queue[nextIdx];
-    if (upcomingTrack) {
-      store.resolveYouTubeVideoId(upcomingTrack).catch(() => { });
-    }
-
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
-      clearInterval(fadeInterval);
+      clearInterval(crossfadeInterval);
 
-      // Cargar la siguiente canción con volumen suave y subirlo progresivamente
-      const freshStore = usePlayerStore.getState();
-      const nextTrack = freshStore.shiftQueue();
-
+      // Consolidar cambio de deck
+      activeDeckRef.current = incomingDeck;
+      const store = usePlayerStore.getState();
+      const nextTrack = store.shiftQueue();
       if (nextTrack) {
-        freshStore.playEngineTrack(nextTrack, 0, null, true);
-
-        // Fade-in progresivo para el nuevo track (de 0 a initialVolume)
-        setTimeout(() => {
-          try {
-            const newP = playerRef.current;
-            if (newP && typeof newP.setVolume === 'function') {
-              newP.setVolume(0);
-              let inStep = 0;
-              const inSteps = 8;
-              const inInterval = setInterval(() => {
-                inStep++;
-                const inVol = Math.min(initialVolume, Math.floor(initialVolume * (inStep / inSteps)));
-                try { if (typeof newP.setVolume === 'function') newP.setVolume(inVol); } catch (e) { }
-                if (inStep >= inSteps) clearInterval(inInterval);
-              }, 100);
-            }
-          } catch (e) { }
-        }, 300);
+        usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true });
       }
 
-      if (ytContainer) {
-        ytContainer.style.transform = 'none';
-        ytContainer.style.filter = 'none';
-        ytContainer.style.opacity = '1';
+      // Detener y resetear el deck saliente
+      try {
+        if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
+          outgoingPlayer.stopVideo();
+        }
+      } catch (e) { }
+
+      if (outgoingContainer) {
+        outgoingContainer.style.transform = 'none';
+        outgoingContainer.style.filter = 'none';
+        outgoingContainer.style.opacity = '0';
+        outgoingContainer.style.zIndex = '1';
       }
 
       usePlayerStore.getState().setActiveTransition(null);
-
-      // Ocultar el badge suavemente
-      if (loader) {
-        loader.style.opacity = '0';
-        loader.style.pointerEvents = 'none';
-      }
       isTransitioningRef.current = false;
-    }, fadeOutDuration);
+    }, transitionMs);
   };
 
   const stopProgressTimer = () => {
@@ -769,7 +645,7 @@ export function useYouTubeSDK() {
     ytReady,
     controls: {
       togglePlay: () => {
-        const p = playerRef.current;
+        const p = getActivePlayer();
         if (!p) return;
         const state = p.getPlayerState();
         if (state === 1) p.pauseVideo();
