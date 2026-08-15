@@ -371,6 +371,12 @@ export default function TVDisplayPage() {
         const bufferingOffset = 0.1;
         const start = data.time ? data.time + bufferingOffset : 0;
 
+        const c1 = document.getElementById('tv-yt-container');
+        if (c1) {
+          c1.style.opacity = '1';
+          c1.style.zIndex = '2';
+        }
+
         p.loadVideoById({ videoId: data.videoId, startSeconds: start });
         if (!data.isPlaying) {
            setTimeout(() => {

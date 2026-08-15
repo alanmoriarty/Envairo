@@ -51,18 +51,26 @@ export function useYouTubeSDK() {
       wrapper.style.pointerEvents = 'auto';
       if (dragHeader) dragHeader.style.display = 'flex';
 
-      const savedPos = wrapper.dataset.userMoved === 'true' ? {
-        left: wrapper.style.left,
-        top: wrapper.style.top
-      } : null;
+      const savedPosStr = localStorage.getItem('bq-pip-pos');
+      let hasSavedPos = false;
+      if (savedPosStr) {
+        try {
+          const pos = JSON.parse(savedPosStr);
+          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
+            wrapper.style.left = `${Math.max(10, Math.min(window.innerWidth - 250, pos.x))}px`;
+            wrapper.style.top = `${Math.max(10, Math.min(window.innerHeight - 150, pos.y))}px`;
+            wrapper.style.right = 'auto';
+            wrapper.style.bottom = 'auto';
+            hasSavedPos = true;
+          }
+        } catch (e) {}
+      }
 
-      if (!savedPos || !savedPos.left || savedPos.left === 'auto') {
-        const defaultLeft = Math.max(16, window.innerWidth - 264);
-        const defaultTop = Math.max(16, window.innerHeight - 245);
-        wrapper.style.left = `${defaultLeft}px`;
-        wrapper.style.top = `${defaultTop}px`;
-        wrapper.style.right = 'auto';
-        wrapper.style.bottom = 'auto';
+      if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
+        wrapper.style.left = 'auto';
+        wrapper.style.top = 'auto';
+        wrapper.style.right = '24px';
+        wrapper.style.bottom = '96px';
       }
     }
   };
