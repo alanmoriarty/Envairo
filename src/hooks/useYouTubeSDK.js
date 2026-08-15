@@ -363,6 +363,15 @@ export function useYouTubeSDK() {
 
           currentYtIdRef.current = args.videoId;
 
+          // Restaurar inmediatamente cualquier transformación visual previa del contenedor
+          const container = document.getElementById('yt-container');
+          if (container) {
+            container.style.transition = 'none';
+            container.style.transform = 'none';
+            container.style.filter = 'none';
+            container.style.opacity = '1';
+          }
+
           // Mostrar overlay de transición con nota musical
           const loader = document.getElementById('youtube-transition-loader');
           if (loader) {
@@ -442,6 +451,15 @@ export function useYouTubeSDK() {
         if (event.data === yt.PlayerState.PLAYING) {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
+
+          // Limpiar cualquier efecto residual del contenedor al reproducir
+          const container = document.getElementById('yt-container');
+          if (container) {
+            container.style.transition = 'transform 0.4s ease, filter 0.4s ease, opacity 0.4s ease';
+            container.style.transform = 'none';
+            container.style.filter = 'none';
+            container.style.opacity = '1';
+          }
 
           // Ocultar suavemente el loader de transición
           const loader = document.getElementById('youtube-transition-loader');
