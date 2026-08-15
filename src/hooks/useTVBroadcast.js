@@ -277,9 +277,15 @@ export function useTVBroadcast() {
       }
     }, 1000);
 
+    const handleUnload = () => {
+      broadcastMessage({ type: 'HOST_REFRESHING' });
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
     return () => {
       unsub();
       clearInterval(syncInterval);
+      window.removeEventListener('beforeunload', handleUnload);
       if (channelRef.current) {
         channelRef.current.close();
       }

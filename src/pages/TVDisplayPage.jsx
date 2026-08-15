@@ -144,6 +144,13 @@ export default function TVDisplayPage() {
         activeTvs.current.add(e.data.tvId);
       } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
         if (!limitReached) handleSync(e.data);
+      } else if (e.data.type === 'HOST_REFRESHING') {
+        if (!limitReached) {
+          if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+            playerRef.current.pauseVideo();
+          }
+          setStatus(t('tv.host_refreshing'));
+        }
       } else if (e.data.type === 'MASTER_DISCONNECT') {
         if (!limitReached) {
           if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
@@ -164,7 +171,12 @@ export default function TVDisplayPage() {
     sbSyncChannelRef.current
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
-          if (e.payload.type === 'MASTER_DISCONNECT') {
+          if (e.payload.type === 'HOST_REFRESHING') {
+            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+              playerRef.current.pauseVideo();
+            }
+            setStatus(t('tv.host_refreshing'));
+          } else if (e.payload.type === 'MASTER_DISCONNECT') {
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
               playerRef.current.pauseVideo();
             }
