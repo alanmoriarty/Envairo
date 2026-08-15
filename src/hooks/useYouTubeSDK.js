@@ -414,6 +414,26 @@ export function useYouTubeSDK() {
         }
       };
 
+      const handleError = (deck, event) => {
+        console.warn(`YouTube Error ${event.data} en Deck ${deck}. Buscando alternativa...`);
+        const store = usePlayerStore.getState();
+        const currentYtId = store.currentYtId || currentYtIdRef.current;
+
+        if (event.data === 150 || event.data === 101 || event.data === 100 || event.data === 2) {
+          if (currentYtId) {
+            store.addFailedYouTubeId(currentYtId);
+            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+            const mode = karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
+            if (store.currentTrack) {
+              localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
+            }
+          }
+          if (store.currentTrack) {
+            store.playEngineTrack(store.currentTrack, 0, null, 1);
+          }
+        }
+      };
+
       // Inicializar Deck A y Deck B
       playerARef.current = new window.YT.Player('youtube-player-deck-a', {
         height: '100%', width: '100%', playerVars,
@@ -425,15 +445,30 @@ export function useYouTubeSDK() {
             store.setDeviceId('youtube-device');
             store.setActiveDeviceId('youtube-device');
             setYoutubePlayer(virtualPlayer);
+
+            // Autoplay on refresh
+            let autoplayAttempts = 0;
+            const tryAutoplay = () => {
+              autoplayAttempts++;
+              const freshStore = usePlayerStore.getState();
+              if (freshStore.currentTrack && freshStore.currentTrack.id) {
+                freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
+              } else if (autoplayAttempts < 15) {
+                setTimeout(tryAutoplay, 300);
+              }
+            };
+            setTimeout(tryAutoplay, 200);
           },
-          onStateChange: (e) => handleStateChange('A', e)
+          onStateChange: (e) => handleStateChange('A', e),
+          onError: (e) => handleError('A', e)
         }
       });
 
       playerBRef.current = new window.YT.Player('youtube-player-deck-b', {
         height: '100%', width: '100%', playerVars,
         events: {
-          onStateChange: (e) => handleStateChange('B', e)
+          onStateChange: (e) => handleStateChange('B', e),
+          onError: (e) => handleError('B', e)
         }
       });
     };
