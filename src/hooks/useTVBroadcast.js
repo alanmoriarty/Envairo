@@ -185,7 +185,8 @@ export function useTVBroadcast() {
 
     const sendCurrentSync = () => {
       const state = usePlayerStore.getState();
-      if (state.playbackEngine === 'youtube' && state.currentYtId) {
+      const targetId = state.currentYtId || state.currentTrack?.id;
+      if (state.playbackEngine === 'youtube' && targetId) {
         let trueTime = (state.progress || 0) / 1000;
         if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
           const ytTime = state.youtubePlayer.getCurrentTime();
@@ -193,7 +194,7 @@ export function useTVBroadcast() {
         }
         broadcastMessage({
           type: 'SYNC',
-          videoId: state.currentYtId,
+          videoId: targetId,
           isPlaying: state.isPlaying,
           time: trueTime
         });
