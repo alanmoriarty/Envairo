@@ -427,9 +427,14 @@ export default function TVDisplayPage() {
 }, [sessionId]);
 
 const pendingSyncRef = useRef(null);
+const isTvTransitioningRef = useRef(false);
 
 const handleTransitionStart = (data) => {
   if (!data?.nextVideoId) return;
+
+  isTvTransitioningRef.current = true;
+  currentVideoIdRef.current = data.nextVideoId;
+  setCurrentVideoId(data.nextVideoId);
 
   const outgoingDeck = activeTvDeckRef.current;
   const incomingDeck = outgoingDeck === 'A' ? 'B' : 'A';
@@ -440,7 +445,10 @@ const handleTransitionStart = (data) => {
   const outgoingContainer = document.getElementById(outgoingDeck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
   const incomingContainer = document.getElementById(incomingDeck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
 
-  if (!incomingPlayer) return;
+  if (!incomingPlayer) {
+    isTvTransitioningRef.current = false;
+    return;
+  }
 
   const durationSec = data.durationSec || 5;
   const chosenEffect = data.effect || 'fade';
@@ -461,13 +469,8 @@ const handleTransitionStart = (data) => {
   // 2. Transición visual simultánea en pantalla
   if (incomingContainer) {
     incomingContainer.style.zIndex = '3';
-    incomingContainer.style.opacity = '0';
-    incomingContainer.style.transform = 'scale(1.02)';
+    incomingContainer.style.opacity = '1';
     incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
-    setTimeout(() => {
-      incomingContainer.style.opacity = '1';
-      incomingContainer.style.transform = 'none';
-    }, 50);
   }
 
   if (outgoingContainer) {
@@ -502,8 +505,7 @@ const handleTransitionStart = (data) => {
   // 4. Consolidar cambio de deck en la TV al finalizar la mezcla
   setTimeout(() => {
     activeTvDeckRef.current = incomingDeck;
-    currentVideoIdRef.current = data.nextVideoId;
-    setCurrentVideoId(data.nextVideoId);
+    isTvTransitioningRef.current = false;
 
     try {
       if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
@@ -521,6 +523,8 @@ const handleTransitionStart = (data) => {
 };
 
 const handleSync = (data) => {
+  if (isTvTransitioningRef.current) return;
+
   const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
   if (!activeP || typeof activeP.getPlayerState !== 'function') {
     if (data?.videoId) {
