@@ -190,7 +190,15 @@ export default function TVDisplayPage() {
           }
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          sbSyncChannelRef.current.send({
+            type: 'broadcast',
+            event: 'tv_sync',
+            payload: { type: 'REQUEST_SYNC' }
+          }).catch(() => {});
+        }
+      });
 
     const handleToggleSound = (withSoundVal) => {
       const withSound = !!withSoundVal;

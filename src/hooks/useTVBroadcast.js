@@ -141,7 +141,7 @@ export function useTVBroadcast() {
 
       switch (data.type) {
         case 'REQUEST_SYNC':
-          if (master) sendCurrentSync();
+          sendCurrentSync();
           break;
         case 'SLAVE_ERROR':
           if (master) handleSlaveError(data.videoId);

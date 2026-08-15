@@ -291,7 +291,7 @@ export function CastToTvModal({ isOpen, onClose }) {
               </div>
             </div>
             <button
-              onClick={() => window.open(`/tv?session=${activeSessionId}`, '_blank')}
+              onClick={() => window.open(`/tv?session=${activeSessionId}&sound=0`, '_blank')}
               className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
             >
               {t('cast.local_monitor_btn')}
