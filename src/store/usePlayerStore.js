@@ -473,6 +473,7 @@ export const usePlayerStore = create(
         set({ _currentPlayExecId: execId, progress: progressMs });
 
         get().queueAddToHistory(track);
+        const state = get();
         if (state.playbackEngine === 'youtube') {
           set({ currentTrack: track });
           const { videoIdToPlay, isSpotifyTrack, effectiveMode } = await get().resolveYouTubeVideoId(track, forceMode);
