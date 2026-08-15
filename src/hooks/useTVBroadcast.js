@@ -277,9 +277,28 @@ export function useTVBroadcast() {
       }
     }, 1000);
 
+    // ── Notify slave screens when host is refreshing/closing ──────────
+    const handleBeforeUnload = () => {
+      const refreshPayload = { type: 'HOST_REFRESHING', sentAt: Date.now() };
+      // BroadcastChannel (same machine)
+      if (channelRef.current) {
+        try { channelRef.current.postMessage(refreshPayload); } catch (e) {}
+      }
+      // Supabase Realtime (remote Smart TVs) — use sendBeacon-style sync send
+      if (sbChannelRef.current && sbChannelRef.current.state === 'joined') {
+        sbChannelRef.current.send({
+          type: 'broadcast',
+          event: 'tv_sync',
+          payload: refreshPayload
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
       unsub();
       clearInterval(syncInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (channelRef.current) {
         channelRef.current.close();
       }

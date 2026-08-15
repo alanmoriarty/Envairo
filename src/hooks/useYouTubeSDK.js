@@ -120,7 +120,6 @@ export function useYouTubeSDK() {
       } catch (e) {}
 
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
-      document.body.appendChild(wrapper);
 
       // Drag Header Bar for moving PiP freely across screen
       const dragHeader = document.createElement('div');

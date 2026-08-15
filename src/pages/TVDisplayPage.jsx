@@ -74,6 +74,7 @@ export default function TVDisplayPage() {
   const currentVideoIdRef = useRef(null);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const loadingTimerRef = useRef(null);
+  const hostRefreshingRef = useRef(false);
 
   // 1. Escuchar canal de emparejamiento SIEMPRE (tanto para PAIRED como para UNPAIRED)
   useEffect(() => {
@@ -146,6 +147,7 @@ export default function TVDisplayPage() {
         if (!limitReached) handleSync(e.data);
       } else if (e.data.type === 'HOST_REFRESHING') {
         if (!limitReached) {
+          hostRefreshingRef.current = true;
           if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
             playerRef.current.pauseVideo();
           }
@@ -172,6 +174,7 @@ export default function TVDisplayPage() {
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
           if (e.payload.type === 'HOST_REFRESHING') {
+            hostRefreshingRef.current = true;
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
               playerRef.current.pauseVideo();
             }
@@ -213,9 +216,12 @@ export default function TVDisplayPage() {
       });
 
     // Intervalo de reintento automático (Heartbeat Retry):
-    // Si la TV está en espera de video, solicita la sincronización al anfitrión cada 2 segundos.
+    // Solicita sincronización al anfitrión cada 2 segundos cuando:
+    // - No hay video cargado, O
+    // - El anfitrión está refrescando (para reconectar al volver)
     const syncRetryInterval = setInterval(() => {
-      if (!currentVideoIdRef.current) {
+      const needsRetry = !currentVideoIdRef.current || hostRefreshingRef.current;
+      if (needsRetry) {
         if (channelRef.current) {
           channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
         }
@@ -418,9 +424,18 @@ const handleSync = (data) => {
   try {
     const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
 
+    // Clear host-refreshing flag when we receive valid sync data
+    if (hostRefreshingRef.current && data.videoId) {
+      hostRefreshingRef.current = false;
+    }
+
     if (data.videoId) {
       const isNewTrack = data.videoId !== currentVideoIdRef.current;
-      if (isNewTrack) {
+
+      // If the host was refreshing and comes back with the same video, re-sync
+      const hostReturned = !isNewTrack && !isCurrentlyPlaying && data.isPlaying;
+
+      if (isNewTrack || hostReturned) {
         currentVideoIdRef.current = data.videoId;
         setCurrentVideoId(data.videoId);
         setStatus('');
@@ -432,7 +447,12 @@ const handleSync = (data) => {
           c1.style.zIndex = '2';
         }
 
-        p.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        if (isNewTrack) {
+          p.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        } else {
+          // Same video, host returned — just seek and play
+          p.seekTo(start, true);
+        }
         if (data.isPlaying && typeof p.playVideo === 'function') {
           try { p.playVideo(); } catch (e) {}
         }
