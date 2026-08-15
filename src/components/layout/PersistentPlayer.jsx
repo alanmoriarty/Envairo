@@ -315,9 +315,7 @@ export function PersistentPlayer() {
               <img
                 src={currentTrack.image}
                 alt="cover"
-                className={`w-10 h-10 rounded-lg object-cover flex-shrink-0 ${isPlaying ? 'animate-spin-slow' : ''
-                  }`}
-                style={{ animationDuration: '10s' }}
+                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
               />
             ) : (
               <div className="w-10 h-10 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0">
