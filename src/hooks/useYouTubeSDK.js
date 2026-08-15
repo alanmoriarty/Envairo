@@ -273,31 +273,34 @@ export function useYouTubeSDK() {
       });
       wrapper.appendChild(overlay);
 
-      // Loader de transición con nota musical animada para cambios de modo (Karaoke / Letras / Video)
+      // Loader de transición con efectos visuales dinámicos (Spin, Fade, Glitch, Zoom, Slide)
       const loader = document.createElement('div');
       loader.id = 'youtube-transition-loader';
       loader.style.position = 'absolute';
       loader.style.inset = '0';
       loader.style.zIndex = '15';
-      loader.style.background = 'radial-gradient(circle at center, rgba(30,15,45,0.95) 0%, rgba(10,10,15,0.98) 100%)';
+      loader.style.background = 'radial-gradient(circle at center, rgba(30,15,45,0.92) 0%, rgba(10,10,15,0.96) 100%)';
       loader.style.display = 'flex';
       loader.style.flexDirection = 'column';
       loader.style.alignItems = 'center';
       loader.style.justifyContent = 'center';
-      loader.style.gap = '12px';
+      loader.style.gap = '14px';
       loader.style.opacity = '0';
       loader.style.pointerEvents = 'none';
-      loader.style.transition = 'opacity 0.3s ease-in-out';
+      loader.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s ease';
 
       loader.innerHTML = `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(157,78,221,0.15); border: 1.5px solid rgba(157,78,221,0.4); box-shadow: 0 0 25px rgba(157,78,221,0.35);">
-          <svg style="width: 28px; height: 28px; color: #c77dff; animation: pulse 1.5s infinite ease-in-out;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div id="youtube-fx-icon-container" style="position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: rgba(157,78,221,0.2); border: 2px solid rgba(157,78,221,0.5); box-shadow: 0 0 35px rgba(157,78,221,0.45); transition: transform 0.4s ease;">
+          <svg id="youtube-fx-icon" style="width: 32px; height: 32px; color: #d88aff; animation: pulse 1.5s infinite ease-in-out;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18V5l12-2v13"></path>
             <circle cx="6" cy="18" r="3"></circle>
             <circle cx="18" cy="16" r="3"></circle>
           </svg>
         </div>
-        <span id="youtube-loader-text" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.5px; text-transform: uppercase;"></span>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <span id="youtube-loader-text" style="font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 0.75px; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></span>
+          <span id="youtube-loader-subtext" style="font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.6);">Mezclando en directo</span>
+        </div>
       `;
       wrapper.appendChild(loader);
 
@@ -640,12 +643,13 @@ export function useYouTubeSDK() {
 
     const loader = document.getElementById('youtube-transition-loader');
     const loaderText = document.getElementById('youtube-loader-text');
+    const iconContainer = document.getElementById('youtube-fx-icon-container');
 
     const effectLabels = {
       fade: '🎧 Transición: Fundido Suave',
       cut: '⚡ Transición: Corte Rápido',
       brake: '🛑 Transición: Vinyl Brake',
-      echo: '🌊 Transición: Echo Out',
+      echo: '🌊 Transición: Echo Sweep',
       start: '🚀 Transición: Spin Up'
     };
 
@@ -657,6 +661,22 @@ export function useYouTubeSDK() {
     if (loaderText) {
       loaderText.innerText = effectLabels[chosenEffect] || '🎧 Transición DJ';
     }
+
+    // Efectos visuales de animación en el icono central
+    if (iconContainer) {
+      if (chosenEffect === 'brake') {
+        iconContainer.style.transform = 'rotate(-180deg) scale(0.9)';
+      } else if (chosenEffect === 'start') {
+        iconContainer.style.transform = 'rotate(360deg) scale(1.15)';
+      } else if (chosenEffect === 'cut') {
+        iconContainer.style.transform = 'scale(1.25)';
+      } else if (chosenEffect === 'echo') {
+        iconContainer.style.transform = 'scale(1.05)';
+      } else {
+        iconContainer.style.transform = 'scale(1)';
+      }
+    }
+
     if (loader) {
       loader.style.opacity = '1';
       loader.style.pointerEvents = 'none';
@@ -673,8 +693,8 @@ export function useYouTubeSDK() {
       store.resolveYouTubeVideoId(upcomingTrack).catch(() => { });
     }
 
+    // Fundido suave de volumen de música real de fondo
     if (chosenEffect === 'fade' || chosenEffect === 'echo') {
-      // Rampa de volumen descendente
       const steps = 10;
       const stepTime = transitionMs / steps;
       let currentStep = 0;
@@ -685,26 +705,18 @@ export function useYouTubeSDK() {
         try { if (typeof p.setVolume === 'function') p.setVolume(targetVol); } catch (e) { }
         if (currentStep >= steps) clearInterval(fadeInterval);
       }, stepTime);
-    } else if (chosenEffect === 'brake') {
-      // Frenada real de plato DJ (bajar playbackRate progresivamente a 0.5 y 0.25)
-      try {
-        if (typeof p.setPlaybackRate === 'function') {
-          p.setPlaybackRate(0.75);
-          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) { } }, transitionMs * 0.3);
-          setTimeout(() => { try { p.setPlaybackRate(0.25); } catch (e) { } }, transitionMs * 0.6);
-        }
-      } catch (e) { }
-    } else if (chosenEffect === 'cut') {
-      // Corte directo
     }
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
-      // Restaurar valores por defecto para el siguiente track
+      // Restaurar volumen y valores por defecto para el siguiente track
       try {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
       } catch (e) { }
+
+      if (iconContainer) {
+        iconContainer.style.transform = 'none';
+      }
 
       usePlayerStore.getState().setActiveTransition(null);
 
@@ -713,7 +725,6 @@ export function useYouTubeSDK() {
       if (nextTrack) {
         freshStore.playEngineTrack(nextTrack, 0, null, true);
       } else {
-        // Si no hay más canciones, cerrar el loader
         if (loader) {
           loader.style.opacity = '0';
           loader.style.pointerEvents = 'none';
