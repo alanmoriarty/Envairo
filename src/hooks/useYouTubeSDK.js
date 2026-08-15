@@ -568,7 +568,14 @@ export function useYouTubeSDK() {
       return;
     }
 
-    // 2. Arrancar la canción entrante en el Deck en Standby en segundo plano con volumen 0
+    // 2. Actualizar INMEDIATAMENTE el track en el estado global para que el panel anfitrión refleje el nuevo tema
+    const nextTrack = freshStore.shiftQueue();
+    if (nextTrack) {
+      usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
+      freshStore.queueAddToHistory(nextTrack);
+    }
+
+    // 3. Arrancar la canción entrante en el Deck en Standby en segundo plano con volumen 0
     try {
       if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
       if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
@@ -585,7 +592,7 @@ export function useYouTubeSDK() {
       }
     } catch (e) { }
 
-    // 3. Cruzar visualmente los contenedores (Opacity & Effects)
+    // 4. Cruzar visualmente los contenedores (Opacity & Effects)
     if (incomingContainer) {
       incomingContainer.style.zIndex = '3';
       incomingContainer.style.opacity = '0';
@@ -611,7 +618,7 @@ export function useYouTubeSDK() {
       outgoingContainer.style.opacity = '0';
     }
 
-    // 4. Rampa simultánea de volumen: Fade-out Deck saliente / Fade-in Deck entrante
+    // 5. Rampa simultánea de volumen: Fade-out Deck saliente / Fade-in Deck entrante
     const steps = 15;
     const stepTime = transitionMs / steps;
     let currentStep = 0;
@@ -637,14 +644,8 @@ export function useYouTubeSDK() {
     transitionTimerRef.current = setTimeout(() => {
       clearInterval(crossfadeInterval);
 
-      // Consolidar cambio de deck
+      // Consolidar cambio definitivo de deck activo
       activeDeckRef.current = incomingDeck;
-      const store = usePlayerStore.getState();
-      const nextTrack = store.shiftQueue();
-      if (nextTrack) {
-        usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
-        store.queueAddToHistory(nextTrack);
-      }
 
       // Conectar el temporizador de progreso al nuevo reproductor activo
       if (incomingPlayer) {
