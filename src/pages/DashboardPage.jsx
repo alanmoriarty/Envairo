@@ -79,6 +79,8 @@ const SortableQueueItem = React.memo(function SortableQueueItem({ track, onRemov
         <img src={track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'}
           onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
           draggable={false} />
       ) : (

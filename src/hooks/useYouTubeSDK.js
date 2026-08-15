@@ -310,6 +310,12 @@ export function useYouTubeSDK() {
           overlay.style.pointerEvents = 'auto';
           overlay.style.cursor = isFs ? 'pointer' : 'grab';
         }
+        // Optimización de RAM: Fullscreen = 1080p / PiP = 360p-480p
+        try {
+          if (playerRef.current && typeof playerRef.current.setPlaybackQuality === 'function') {
+            playerRef.current.setPlaybackQuality(isFs ? 'hd1080' : 'medium');
+          }
+        } catch (e) {}
       };
 
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
@@ -349,7 +355,12 @@ export function useYouTubeSDK() {
           try {
             if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
             if (typeof playerRef.current.loadVideoById === 'function') {
-              playerRef.current.loadVideoById({ videoId: args.videoId, startSeconds: args.startSeconds || 0 });
+              const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+              playerRef.current.loadVideoById({ 
+                videoId: args.videoId, 
+                startSeconds: args.startSeconds || 0,
+                suggestedQuality: isFs ? 'hd1080' : 'medium'
+              });
             }
             if (typeof playerRef.current.playVideo === 'function') {
               playerRef.current.playVideo();
