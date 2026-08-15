@@ -30,7 +30,18 @@ export default function TVDisplayPage() {
   const { t } = useTranslation();
   const channelRef = useRef(null);
   const sbSyncChannelRef = useRef(null);
-  const playerRef = useRef(null);
+  const playerARef = useRef(null);
+  const playerBRef = useRef(null);
+  const activeTvDeckRef = useRef('A'); // 'A' | 'B'
+  const playerRef = {
+    get current() {
+      return activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+    },
+    set current(val) {
+      if (activeTvDeckRef.current === 'A') playerARef.current = val;
+      else playerBRef.current = val;
+    }
+  };
 
   // Session & Pairing State
   const [sessionId, setSessionId] = useState(() => {
@@ -143,6 +154,8 @@ export default function TVDisplayPage() {
         }
       } else if (e.data.type === 'PONG') {
         activeTvs.current.add(e.data.tvId);
+      } else if (e.data.type === 'DJ_TRANSITION_START') {
+        if (!limitReached) handleTransitionStart(e.data);
       } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
         if (!limitReached) handleSync(e.data);
       } else if (e.data.type === 'HOST_REFRESHING') {
@@ -173,7 +186,9 @@ export default function TVDisplayPage() {
     sbSyncChannelRef.current
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
-          if (e.payload.type === 'HOST_REFRESHING') {
+          if (e.payload.type === 'DJ_TRANSITION_START') {
+            handleTransitionStart(e.payload);
+          } else if (e.payload.type === 'HOST_REFRESHING') {
             hostRefreshingRef.current = true;
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
               playerRef.current.pauseVideo();
@@ -292,7 +307,7 @@ export default function TVDisplayPage() {
     }, 500);
 
   function initPlayer() {
-    if (playerRef.current) return;
+    if (playerARef.current || playerBRef.current) return;
 
     const disableCaptions = (player) => {
       try {
@@ -323,7 +338,7 @@ export default function TVDisplayPage() {
       origin: window.location.origin
     };
 
-    const onReady = (event) => {
+    const handleDeckReady = (deck, event) => {
       if (tvWithSoundRef.current) {
         try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
       } else {
@@ -331,19 +346,20 @@ export default function TVDisplayPage() {
       }
       disableCaptions(event.target);
 
-      if (pendingSyncRef.current) {
-        const syncData = pendingSyncRef.current;
-        pendingSyncRef.current = null;
-        handleSync(syncData);
-      }
-
-      if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
-      if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
-        sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+      if (deck === 'A') {
+        if (pendingSyncRef.current) {
+          const syncData = pendingSyncRef.current;
+          pendingSyncRef.current = null;
+          handleSync(syncData);
+        }
+        if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+          sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+        }
       }
     };
 
-    const onStateChange = (event) => {
+    const handleDeckStateChange = (deck, event) => {
       if (tvWithSoundRef.current) {
         try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
       } else {
@@ -351,11 +367,10 @@ export default function TVDisplayPage() {
       }
       disableCaptions(event.target);
 
-      if (event.data === window.YT.PlayerState.PLAYING) {
+      if (event.data === window.YT.PlayerState.PLAYING && activeTvDeckRef.current === deck) {
         if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
         setIsLoadingVideo(false);
-
-        const playingContainer = document.getElementById('tv-yt-container');
+        const playingContainer = document.getElementById(deck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
         if (playingContainer) {
           playingContainer.style.opacity = '1';
           playingContainer.style.zIndex = '2';
@@ -363,20 +378,20 @@ export default function TVDisplayPage() {
       }
     };
 
-    const onError = (event) => {
-      console.warn('Advertencia en reproductor esclavo TV:', event.data);
-      // Mantener la pantalla limpia de tarjetas de error de YouTube
-      const c1 = document.getElementById('tv-yt-container');
-      if (c1) {
-        c1.style.opacity = '0';
-        c1.style.zIndex = '-1';
+    playerARef.current = new window.YT.Player('tv-youtube-player-deck-a', {
+      height: '100%', width: '100%', playerVars,
+      events: {
+        onReady: (e) => handleDeckReady('A', e),
+        onStateChange: (e) => handleDeckStateChange('A', e)
       }
-      setIsLoadingVideo(false);
-      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-    };
+    });
 
-    playerRef.current = new window.YT.Player('tv-youtube-player', {
-      height: '100%', width: '100%', playerVars, events: { onReady, onStateChange, onError }
+    playerBRef.current = new window.YT.Player('tv-youtube-player-deck-b', {
+      height: '100%', width: '100%', playerVars,
+      events: {
+        onReady: (e) => handleDeckReady('B', e),
+        onStateChange: (e) => handleDeckStateChange('B', e)
+      }
     });
   }
 
@@ -399,7 +414,8 @@ export default function TVDisplayPage() {
     if (sbSyncChannelRef.current) {
       supabase.removeChannel(sbSyncChannelRef.current);
     }
-    safeDestroyPlayer(playerRef, 'tv-yt-container', 'tv-youtube-player');
+    safeDestroyPlayer(playerARef, 'tv-yt-deck-a', 'tv-youtube-player-deck-a');
+    safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
 
@@ -412,9 +428,101 @@ export default function TVDisplayPage() {
 
 const pendingSyncRef = useRef(null);
 
+const handleTransitionStart = (data) => {
+  if (!data?.nextVideoId) return;
+
+  const outgoingDeck = activeTvDeckRef.current;
+  const incomingDeck = outgoingDeck === 'A' ? 'B' : 'A';
+
+  const outgoingPlayer = outgoingDeck === 'A' ? playerARef.current : playerBRef.current;
+  const incomingPlayer = incomingDeck === 'A' ? playerARef.current : playerBRef.current;
+
+  const outgoingContainer = document.getElementById(outgoingDeck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+  const incomingContainer = document.getElementById(incomingDeck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+
+  if (!incomingPlayer) return;
+
+  const durationSec = data.durationSec || 5;
+  const chosenEffect = data.effect || 'fade';
+
+  // 1. Cargar y arrancar el video entrante en el Deck en Standby en segundo plano
+  try {
+    if (tvWithSoundRef.current) {
+      if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
+      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
+    } else {
+      if (typeof incomingPlayer.mute === 'function') incomingPlayer.mute();
+    }
+    disableCaptions(incomingPlayer);
+    incomingPlayer.loadVideoById({ videoId: data.nextVideoId, startSeconds: 0, suggestedQuality: 'hd1080' });
+    incomingPlayer.playVideo();
+  } catch (e) { }
+
+  // 2. Transición visual simultánea en pantalla
+  if (incomingContainer) {
+    incomingContainer.style.zIndex = '3';
+    incomingContainer.style.opacity = '0';
+    incomingContainer.style.transform = 'scale(1.02)';
+    incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
+    setTimeout(() => {
+      incomingContainer.style.opacity = '1';
+      incomingContainer.style.transform = 'none';
+    }, 50);
+  }
+
+  if (outgoingContainer) {
+    outgoingContainer.style.zIndex = '2';
+    outgoingContainer.style.transition = `opacity ${durationSec * 0.8}s ease, transform ${durationSec * 0.8}s ease, filter ${durationSec * 0.8}s ease`;
+    if (chosenEffect === 'brake') {
+      outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95)';
+      outgoingContainer.style.filter = 'brightness(0.7)';
+    } else if (chosenEffect === 'start') {
+      outgoingContainer.style.transform = 'rotate(8deg) scale(1.05)';
+      outgoingContainer.style.filter = 'brightness(1.1)';
+    }
+    outgoingContainer.style.opacity = '0';
+  }
+
+  // 3. Rampa de volumen suave si la TV tiene sonido activado
+  if (tvWithSoundRef.current) {
+    const steps = 12;
+    const stepTime = (durationSec * 1000) / steps;
+    let step = 0;
+    const volInterval = setInterval(() => {
+      step++;
+      const ratio = step / steps;
+      try {
+        if (outgoingPlayer && typeof outgoingPlayer.setVolume === 'function') outgoingPlayer.setVolume(Math.max(0, Math.floor(100 * (1 - ratio))));
+        if (incomingPlayer && typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(Math.min(100, Math.floor(100 * ratio)));
+      } catch (e) { }
+      if (step >= steps) clearInterval(volInterval);
+    }, stepTime);
+  }
+
+  // 4. Consolidar cambio de deck en la TV al finalizar la mezcla
+  setTimeout(() => {
+    activeTvDeckRef.current = incomingDeck;
+    currentVideoIdRef.current = data.nextVideoId;
+    setCurrentVideoId(data.nextVideoId);
+
+    try {
+      if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
+        outgoingPlayer.stopVideo();
+      }
+    } catch (e) { }
+
+    if (outgoingContainer) {
+      outgoingContainer.style.transform = 'none';
+      outgoingContainer.style.filter = 'none';
+      outgoingContainer.style.opacity = '0';
+      outgoingContainer.style.zIndex = '1';
+    }
+  }, durationSec * 1000);
+};
+
 const handleSync = (data) => {
-  const p = playerRef.current;
-  if (!p || typeof p.getPlayerState !== 'function') {
+  const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+  if (!activeP || typeof activeP.getPlayerState !== 'function') {
     if (data?.videoId) {
       pendingSyncRef.current = data;
     }
@@ -422,17 +530,14 @@ const handleSync = (data) => {
   }
 
   try {
-    const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
+    const isCurrentlyPlaying = activeP.getPlayerState() === window.YT.PlayerState.PLAYING;
 
-    // Clear host-refreshing flag when we receive valid sync data
     if (hostRefreshingRef.current && data.videoId) {
       hostRefreshingRef.current = false;
     }
 
     if (data.videoId) {
       const isNewTrack = data.videoId !== currentVideoIdRef.current;
-
-      // If the host was refreshing and comes back with the same video, re-sync
       const hostReturned = !isNewTrack && !isCurrentlyPlaying && data.isPlaying;
 
       if (isNewTrack || hostReturned) {
@@ -441,75 +546,65 @@ const handleSync = (data) => {
         setStatus('');
         const start = data.time ? data.time + 0.1 : 0;
 
-        const c1 = document.getElementById('tv-yt-container');
-        if (c1) {
-          c1.style.opacity = '1';
-          c1.style.zIndex = '2';
+        const cActive = document.getElementById(activeTvDeckRef.current === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+        if (cActive) {
+          cActive.style.opacity = '1';
+          cActive.style.zIndex = '2';
         }
 
         if (isNewTrack) {
-          setIsLoadingVideo(true);
-          p.loadVideoById({ videoId: data.videoId, startSeconds: start });
-          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-          loadingTimerRef.current = setTimeout(() => {
-            setIsLoadingVideo(false);
-          }, 1500);
+          activeP.loadVideoById({ videoId: data.videoId, startSeconds: start, suggestedQuality: 'hd1080' });
         } else {
-          // Same video, host returned / seeked — do not show loading overlay
-          p.seekTo(start, true);
+          activeP.seekTo(start, true);
         }
-        if (data.isPlaying && typeof p.playVideo === 'function') {
-          try { p.playVideo(); } catch (e) {}
+        if (data.isPlaying && typeof activeP.playVideo === 'function') {
+          try { activeP.playVideo(); } catch (e) {}
         }
         return;
       }
     }
 
-    // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up sin bloquear pantalla)
     if (typeof data.time === 'number') {
-      const playerState = p.getPlayerState();
+      const playerState = activeP.getPlayerState();
       const isEnded = playerState === window.YT.PlayerState.ENDED;
-      const duration = p.getDuration() || 0;
+      const duration = activeP.getDuration() || 0;
 
       const transitDelay = (data.sentAt && data.sentAt > 0)
         ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
         : 0;
       const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
-      const currentTime = p.getCurrentTime() || 0;
+      const currentTime = activeP.getCurrentTime() || 0;
       const diff = targetTime - currentTime;
 
       if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
       } else if (Math.abs(diff) > 1.2) {
-        // Salto directo de tiempo sin activar loader
-        p.seekTo(targetTime, true);
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+        activeP.seekTo(targetTime, true);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
       } else if (diff > 0.15) {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.15);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.15);
       } else if (diff > 0.05) {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.05);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.05);
       } else if (diff < -0.15) {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.85);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.85);
       } else if (diff < -0.05) {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.95);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.95);
       } else {
-        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
       }
     }
 
-    // 2. Sincronizar inmediatamente el estado de reproducción/pausa
     if (typeof data.isPlaying === 'boolean') {
       if (!data.isPlaying) {
-        if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-      } else if (data.isPlaying) {
-        setStatus('');
-        if (p && typeof p.playVideo === 'function' && !isCurrentlyPlaying) {
-          p.playVideo();
+        if (activeP && typeof activeP.pauseVideo === 'function') activeP.pauseVideo();
+      } else {
+        if (activeP && typeof activeP.playVideo === 'function' && activeP.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+          activeP.playVideo();
         }
       }
     }
   } catch (err) {
-    console.error("Error sincronizando TV Display:", err);
+    console.warn('Error en handleSync de TV:', err);
   }
 };
 
@@ -615,13 +710,21 @@ const handleSync = (data) => {
       onMouseMove={handleMouseMove}
       onClick={handleMouseMove}
     >
-      {/* 1. Contenedor permanente de reproductor YouTube */}
+      {/* 1. Contenedores permanentes de reproductores YouTube (Deck A y Deck B - Doble Buffer) */}
       <div
-        id="tv-yt-container"
+        id="tv-yt-deck-a"
         className={`absolute inset-0 z-[2] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
-        style={{ width: '100vw', height: '100vh' }}
+        style={{ width: '100vw', height: '100vh', opacity: 1 }}
       >
-        <div id="tv-youtube-player"></div>
+        <div id="tv-youtube-player-deck-a"></div>
+      </div>
+
+      <div
+        id="tv-yt-deck-b"
+        className={`absolute inset-0 z-[1] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
+        style={{ width: '100vw', height: '100vh', opacity: 0 }}
+      >
+        <div id="tv-youtube-player-deck-b"></div>
       </div>
 
       {/* Overlay de transición con nota musical animada (evita pantalla en negro) */}

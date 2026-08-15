@@ -568,6 +568,31 @@ export function useYouTubeSDK() {
       return;
     }
 
+    // Emitir broadcast de inicio de transición a pantallas esclavas (TVs)
+    try {
+      const sessId = useSettingsStore.getState().sessionId;
+      const bc = new BroadcastChannel('envairo_tv_sync');
+      const payload = {
+        type: 'DJ_TRANSITION_START',
+        nextVideoId: videoIdToPlay,
+        durationSec: durationSec,
+        effect: chosenEffect,
+        sentAt: Date.now()
+      };
+      bc.postMessage(payload);
+      bc.close();
+
+      if (sessId) {
+        const ch = supabase.channel(`tv-sync-${sessId}`);
+        ch.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            ch.send({ type: 'broadcast', event: 'tv_sync', payload });
+            setTimeout(() => supabase.removeChannel(ch), 500);
+          }
+        });
+      }
+    } catch (e) { }
+
     // 2. Actualizar INMEDIATAMENTE el track en el estado global para que el panel anfitrión refleje el nuevo tema
     const nextTrack = freshStore.shiftQueue();
     if (nextTrack) {
