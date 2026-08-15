@@ -385,14 +385,12 @@ export function useQueueSync() {
           });
           usePlayerStore.getState().startQueuePreloadWorker();
 
-          // If the SDK is already initialized AND the Supabase track differs from persisted,
-          // trigger playback. Otherwise the onReady handler in useYouTubeSDK handles autoplay
-          // for the persisted track (avoids competing playEngineTrack calls).
+          // If the SDK is already initialized, trigger playback immediately.
+          // Otherwise the onReady handler in useYouTubeSDK will pick up
+          // currentTrack (set above) and start from persistedProgress.
           const playerState = usePlayerStore.getState();
-          const persistedTrackId = playerState.currentTrack?.id;
-          const supabaseTrackId = data.current_track?.id;
-          if (data.current_track && playerState.sdkReady && playerState.youtubePlayer && supabaseTrackId !== persistedTrackId) {
-            playerState.playEngineTrack(data.current_track, persistedProgress, null, true);
+          if (data.current_track && playerState.sdkReady && playerState.youtubePlayer) {
+            playerState.playEngineTrack(data.current_track, persistedProgress, null, playerState.isPlaying);
           }
         }
         usePlayerStore.getState().setInitialSyncDone(true);

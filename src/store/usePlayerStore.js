@@ -654,10 +654,7 @@ export const usePlayerStore = create(
         progress: state.progress,
         duration: state.duration,
         lastCommandTs: state.lastCommandTs,
-        currentTrack: state.currentTrack,
-        currentQueueIndex: state.currentQueueIndex,
         currentYtId: state.currentYtId,
-        queue: state.queue,
       }),
     }
   )

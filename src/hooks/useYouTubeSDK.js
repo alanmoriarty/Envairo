@@ -374,8 +374,8 @@ export function useYouTubeSDK() {
         store.setActiveDeviceId('youtube-device');
         setYoutubePlayer(virtualPlayer);
 
-        // Autoplay on refresh: retry up to 6 times (every 500ms) 
-        // Waits for both currentTrack (from persist/Supabase) and youtubePlayer to be available
+        // Autoplay on refresh: retry up to 10 times (every 500ms = 5s total)
+        // currentTrack comes from Supabase fetch, currentYtId from localStorage persist
         let autoplayAttempts = 0;
         const tryAutoplay = () => {
           autoplayAttempts++;
@@ -392,7 +392,7 @@ export function useYouTubeSDK() {
             } else {
               freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress, null, true);
             }
-          } else if (autoplayAttempts < 6) {
+          } else if (autoplayAttempts < 10) {
             setTimeout(tryAutoplay, 500);
           }
         };
