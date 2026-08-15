@@ -520,6 +520,8 @@ export function useYouTubeSDK() {
         } else if (event.data === yt.PlayerState.ENDED) {
           setIsPlaying(false);
           stopProgressTimer();
+          // Si una transición ya está en proceso de cambio, no duplicar el salto de cola
+          if (isTransitioningRef.current) return;
           const store = usePlayerStore.getState();
           const nextTrack = store.shiftQueue();
           if (nextTrack) {
@@ -712,7 +714,7 @@ export function useYouTubeSDK() {
     }
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    transitionTimerRef.current = setTimeout(() => {
+    transitionTimerRef.current = setTimeout(async () => {
       // Restaurar volumen y estilos visuales del video para el siguiente track
       try {
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
@@ -729,12 +731,13 @@ export function useYouTubeSDK() {
       const freshStore = usePlayerStore.getState();
       const nextTrack = freshStore.shiftQueue();
       if (nextTrack) {
-        freshStore.playEngineTrack(nextTrack, 0, null, true);
-      } else {
-        if (loader) {
-          loader.style.opacity = '0';
-          loader.style.pointerEvents = 'none';
-        }
+        await freshStore.playEngineTrack(nextTrack, 0, null, true);
+      }
+      
+      // Ocultar el badge suavemente
+      if (loader) {
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
       }
       isTransitioningRef.current = false;
     }, transitionMs);
