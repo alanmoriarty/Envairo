@@ -268,8 +268,10 @@ export default function TVDisplayPage() {
       }
     }, 500);
 
+    let isComponentMounted = true;
+
     function initPlayer() {
-      if (playerRef.current) return;
+      if (playerRef.current || !isComponentMounted) return;
 
       const disableCaptions = (player) => {
         try {
@@ -301,6 +303,7 @@ export default function TVDisplayPage() {
       };
 
       const onReady = (event) => {
+        if (!isComponentMounted) return;
         if (tvWithSoundRef.current) {
           event.target.unMute();
           event.target.setVolume(100);
@@ -322,6 +325,7 @@ export default function TVDisplayPage() {
       };
 
       const onStateChange = (event) => {
+        if (!isComponentMounted) return;
         if (tvWithSoundRef.current) {
           event.target.unMute();
           event.target.setVolume(100);
@@ -343,6 +347,7 @@ export default function TVDisplayPage() {
       };
 
       const onError = (event) => {
+        if (!isComponentMounted) return;
         console.warn('Error en reproductor esclavo:', event.data);
         const failedId = currentVideoIdRef.current;
 
@@ -386,6 +391,7 @@ export default function TVDisplayPage() {
     document.addEventListener('MSFullscreenChange', handleFsChange);
 
     return () => {
+      isComponentMounted = false;
       clearTimeout(timeoutId);
       if (channelRef.current) {
         channelRef.current.removeEventListener('message', handleMessage);
