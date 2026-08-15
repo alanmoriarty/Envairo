@@ -278,15 +278,9 @@ export function useTVBroadcast() {
       }
     }, 1000);
 
-    const handleUnload = () => {
-      broadcastMessage({ type: 'MASTER_DISCONNECT' });
-    };
-    window.addEventListener('beforeunload', handleUnload);
-
     return () => {
       unsub();
       clearInterval(syncInterval);
-      window.removeEventListener('beforeunload', handleUnload);
       if (channelRef.current) {
         channelRef.current.close();
       }
