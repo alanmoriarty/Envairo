@@ -396,7 +396,7 @@ export function useQueueSync() {
           // currentTrack (set above) and start from persistedProgress.
           const playerState = usePlayerStore.getState();
           if (data.current_track && playerState.sdkReady && playerState.youtubePlayer) {
-            playerState.playEngineTrack(data.current_track, persistedProgress, null, playerState.isPlaying);
+            playerState.playEngineTrack(data.current_track, persistedProgress, null, true);
           }
         }
         usePlayerStore.getState().setInitialSyncDone(true);
