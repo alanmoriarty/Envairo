@@ -448,9 +448,14 @@ const handleSync = (data) => {
         }
 
         if (isNewTrack) {
+          setIsLoadingVideo(true);
           p.loadVideoById({ videoId: data.videoId, startSeconds: start });
+          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+          loadingTimerRef.current = setTimeout(() => {
+            setIsLoadingVideo(false);
+          }, 1500);
         } else {
-          // Same video, host returned — just seek and play
+          // Same video, host returned / seeked — do not show loading overlay
           p.seekTo(start, true);
         }
         if (data.isPlaying && typeof p.playVideo === 'function') {
@@ -460,10 +465,9 @@ const handleSync = (data) => {
       }
     }
 
-    // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up)
+    // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up sin bloquear pantalla)
     if (typeof data.time === 'number') {
       const playerState = p.getPlayerState();
-      const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
       const isEnded = playerState === window.YT.PlayerState.ENDED;
       const duration = p.getDuration() || 0;
 
@@ -476,9 +480,8 @@ const handleSync = (data) => {
 
       if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
         if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
-      } else if (isBuffering) {
-        // Don't seek or change rate while buffering
       } else if (Math.abs(diff) > 1.2) {
+        // Salto directo de tiempo sin activar loader
         p.seekTo(targetTime, true);
         if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
       } else if (diff > 0.15) {
