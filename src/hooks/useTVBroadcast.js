@@ -179,13 +179,8 @@ export function useTVBroadcast() {
     };
 
     const handleSlaveError = (failedVideoId) => {
-      const state = usePlayerStore.getState();
-      if (state.currentYtId === failedVideoId && state.currentTrack) {
-        console.warn(`Una TV esclava reportó error con el video ${failedVideoId}. Forzando alternativa...`);
-        usePlayerStore.setState(s => ({ failedYouTubeIds: [...s.failedYouTubeIds, failedVideoId] }));
-        state.playEngineTrack(state.currentTrack, 0, null, 1);
-        import('sonner').then(({ toast }) => toast.error('TV no pudo reproducir el video. Buscando alternativa...'));
-      }
+      // Do not restart track on host if slave TV has iframe restriction issue
+      console.warn(`Pantalla secundaria reportó restricción en video ${failedVideoId}. El anfitrión mantendrá la reproducción actual.`);
     };
 
     const sendCurrentSync = () => {

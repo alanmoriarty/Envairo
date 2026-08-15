@@ -174,7 +174,9 @@ export function useYouTubeSDK() {
       const onMouseDown = (e) => {
         if (document.fullscreenElement) return;
         isDragging = true;
-        dragHeader.style.cursor = 'grabbing';
+        wrapper.style.cursor = 'grabbing';
+        if (dragHeader) dragHeader.style.cursor = 'grabbing';
+        if (overlay) overlay.style.cursor = 'grabbing';
         startX = e.clientX;
         startY = e.clientY;
         const rect = wrapper.getBoundingClientRect();
@@ -203,7 +205,9 @@ export function useYouTubeSDK() {
       const onMouseUp = () => {
         if (!isDragging) return;
         isDragging = false;
-        dragHeader.style.cursor = 'grab';
+        wrapper.style.cursor = 'grab';
+        if (dragHeader) dragHeader.style.cursor = 'grab';
+        if (overlay) overlay.style.cursor = 'grab';
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
 
@@ -232,22 +236,27 @@ export function useYouTubeSDK() {
       target.id = 'youtube-player-target';
       container.appendChild(target);
 
-      // Overlay to capture clicks in Fullscreen
+      // Overlay transparent shield to capture drag and clicks everywhere on PiP
       const overlay = document.createElement('div');
       overlay.id = 'youtube-overlay';
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
-      overlay.style.cursor = 'pointer';
+      overlay.style.cursor = 'grab';
       overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
+
+      overlay.addEventListener('mousedown', onMouseDown);
 
       overlay.addEventListener('dblclick', () => {
         if (document.fullscreenElement) {
           document.exitFullscreen().catch(() => { });
+        } else {
+          if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+          else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
         }
       });
 
-      overlay.addEventListener('click', () => {
+      overlay.addEventListener('click', (e) => {
         if (document.fullscreenElement) {
           const state = usePlayerStore.getState();
           const { sessionId, hostSecret } = useSettingsStore.getState();
@@ -295,7 +304,10 @@ export function useYouTubeSDK() {
         const isFs = fsElement === wrapper;
         applyStyles(wrapper, isVisualizerOn, isFs);
         closeBtn.style.display = isFs ? 'flex' : 'none';
-        if (overlay) overlay.style.pointerEvents = isFs ? 'auto' : 'none';
+        if (overlay) {
+          overlay.style.pointerEvents = 'auto';
+          overlay.style.cursor = isFs ? 'pointer' : 'grab';
+        }
       };
 
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];

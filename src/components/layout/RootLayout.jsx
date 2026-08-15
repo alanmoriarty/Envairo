@@ -13,7 +13,6 @@ import { toast } from 'sonner';
 import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 import { useTVBroadcast } from '../../hooks/useTVBroadcast';
-import { useAutoQueue } from '../../hooks/useAutoQueue';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
@@ -28,7 +27,6 @@ export function RootLayout() {
   useQueueSync();
   useEnairoSelector();
   useTVBroadcast();
-  useAutoQueue();
 
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
