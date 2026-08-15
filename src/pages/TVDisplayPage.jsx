@@ -484,8 +484,11 @@ export default function TVDisplayPage() {
       if (typeof data.isPlaying === 'boolean') {
         if (!data.isPlaying) {
           if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-        } else if (data.isPlaying && !isCurrentlyPlaying) {
-          if (p && typeof p.playVideo === 'function') p.playVideo();
+        } else if (data.isPlaying) {
+          setStatus('');
+          if (p && typeof p.playVideo === 'function' && !isCurrentlyPlaying) {
+            p.playVideo();
+          }
         }
       }
     } catch (err) {
