@@ -513,7 +513,7 @@ export const usePlayerStore = create(
 
             // Cargar el nuevo video
             if (videoIdToPlay && videoIdToPlay !== 'null' && videoIdToPlay !== 'undefined' && videoIdToPlay.length === 11) {
-              set({ currentYtId: videoIdToPlay });
+              set({ currentYtId: videoIdToPlay, isPlaying: autoplay !== false });
               const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
               if (state.youtubePlayer && typeof state.youtubePlayer.loadVideoById === 'function') {
                 state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });

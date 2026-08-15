@@ -233,6 +233,8 @@ export default function TVDisplayPage() {
         setLimitReached(true);
         setIsCheckingLimit(false);
         setStatus(t('tv.max_limit_reached'));
+      } else {
+        setIsCheckingLimit(false);
         const checkAndInit = () => {
           setStatus(t('tv.connected_waiting'));
           initPlayer();
