@@ -212,6 +212,17 @@ export default function TVDisplayPage() {
         }
       });
 
+    // Intervalo de reintento automático (Heartbeat Retry):
+    // Si la TV está esperando video y no ha recibido paquetes del anfitrión, reintenta enviar REQUEST_SYNC cada 3 segundos.
+    const syncRetryInterval = setInterval(() => {
+      if (!currentVideoIdRef.current) {
+        if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+        if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+          sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+        }
+      }
+    }, 3000);
+
     const handleToggleSound = (withSoundVal) => {
       const withSound = !!withSoundVal;
       localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
@@ -367,6 +378,7 @@ export default function TVDisplayPage() {
   document.addEventListener('MSFullscreenChange', handleFsChange);
 
   return () => {
+    clearInterval(syncRetryInterval);
     clearTimeout(timeoutId);
     if (channelRef.current) {
       channelRef.current.removeEventListener('message', handleMessage);
