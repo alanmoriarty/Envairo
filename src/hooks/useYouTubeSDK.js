@@ -689,22 +689,64 @@ export function useYouTubeSDK() {
     }
 
     const initialVolume = usePlayerStore.getState().volume || 70;
-    const transitionMs = Math.max(1200, Math.floor(durationSec * 1000));
+    const transitionMs = Math.max(2000, Math.floor(durationSec * 1000));
+    const fadeOutDuration = Math.floor(transitionMs * 0.7); // 70% del tiempo para desvanecer suavemente el volumen
 
-    // Obtener la siguiente canción y reproducirla de inmediato para que arranque en segundo plano
-    const freshStore = usePlayerStore.getState();
-    const nextTrack = freshStore.shiftQueue();
-    if (nextTrack) {
-      // Disparar carga y reproducción del nuevo video de inmediato
-      freshStore.playEngineTrack(nextTrack, 0, null, true);
+    // Rampa de volumen suave descendente (Fade out progresivo de 100% a 0%)
+    const steps = 14;
+    const stepTime = fadeOutDuration / steps;
+    let currentStep = 0;
+
+    const fadeInterval = setInterval(() => {
+      currentStep++;
+      const targetVol = Math.max(0, Math.floor(initialVolume * (1 - currentStep / steps)));
+      try {
+        if (p && typeof p.setVolume === 'function') {
+          p.setVolume(targetVol);
+        }
+      } catch (e) { }
+      if (currentStep >= steps) {
+        clearInterval(fadeInterval);
+      }
+    }, stepTime);
+
+    // Precargar y resolver en paralelo la siguiente canción
+    const store = usePlayerStore.getState();
+    const nextIdx = store.currentQueueIndex + 1;
+    const upcomingTrack = store.queue[nextIdx];
+    if (upcomingTrack) {
+      store.resolveYouTubeVideoId(upcomingTrack).catch(() => { });
     }
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
-      // Restaurar volumen y estilos visuales del video
-      try {
-        if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
-      } catch (e) { }
+      clearInterval(fadeInterval);
+
+      // Cargar la siguiente canción con volumen suave y subirlo progresivamente
+      const freshStore = usePlayerStore.getState();
+      const nextTrack = freshStore.shiftQueue();
+
+      if (nextTrack) {
+        freshStore.playEngineTrack(nextTrack, 0, null, true);
+
+        // Fade-in progresivo para el nuevo track (de 0 a initialVolume)
+        setTimeout(() => {
+          try {
+            const newP = playerRef.current;
+            if (newP && typeof newP.setVolume === 'function') {
+              newP.setVolume(0);
+              let inStep = 0;
+              const inSteps = 8;
+              const inInterval = setInterval(() => {
+                inStep++;
+                const inVol = Math.min(initialVolume, Math.floor(initialVolume * (inStep / inSteps)));
+                try { if (typeof newP.setVolume === 'function') newP.setVolume(inVol); } catch (e) { }
+                if (inStep >= inSteps) clearInterval(inInterval);
+              }, 100);
+            }
+          } catch (e) { }
+        }, 300);
+      }
 
       if (ytContainer) {
         ytContainer.style.transform = 'none';
@@ -720,7 +762,7 @@ export function useYouTubeSDK() {
         loader.style.pointerEvents = 'none';
       }
       isTransitioningRef.current = false;
-    }, transitionMs);
+    }, fadeOutDuration);
   };
 
   const stopProgressTimer = () => {
