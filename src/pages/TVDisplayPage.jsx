@@ -403,26 +403,34 @@ export default function TVDisplayPage() {
     try {
       const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
 
-      if (data.videoId && data.videoId !== currentVideoIdRef.current) {
-        currentVideoIdRef.current = data.videoId;
-        setCurrentVideoId(data.videoId);
-        setStatus('');
-        const bufferingOffset = 0.1;
-        const start = data.time ? data.time + bufferingOffset : 0;
-
-        const c1 = document.getElementById('tv-yt-container');
-        if (c1) {
-          c1.style.opacity = '1';
-          c1.style.zIndex = '2';
+      if (data.videoId) {
+        if (!currentVideoIdRef.current) {
+          currentVideoIdRef.current = data.videoId;
+          setCurrentVideoId(data.videoId);
+          setStatus('');
         }
 
-        p.loadVideoById({ videoId: data.videoId, startSeconds: start });
-        if (!data.isPlaying) {
-           setTimeout(() => {
-              if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-           }, 500);
+        if (data.videoId !== currentVideoIdRef.current) {
+          currentVideoIdRef.current = data.videoId;
+          setCurrentVideoId(data.videoId);
+          setStatus('');
+          const bufferingOffset = 0.1;
+          const start = data.time ? data.time + bufferingOffset : 0;
+
+          const c1 = document.getElementById('tv-yt-container');
+          if (c1) {
+            c1.style.opacity = '1';
+            c1.style.zIndex = '2';
+          }
+
+          p.loadVideoById({ videoId: data.videoId, startSeconds: start });
+          if (!data.isPlaying) {
+             setTimeout(() => {
+                if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
+             }, 500);
+          }
+          return;
         }
-        return;
       }
 
       // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up)
