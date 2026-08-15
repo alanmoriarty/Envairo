@@ -607,7 +607,17 @@ export function useYouTubeSDK() {
       const store = usePlayerStore.getState();
       const nextTrack = store.shiftQueue();
       if (nextTrack) {
-        usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true });
+        usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
+        store.queueAddToHistory(nextTrack);
+      }
+
+      // Conectar el temporizador de progreso al nuevo reproductor activo
+      if (incomingPlayer) {
+        startProgressTimer(incomingPlayer);
+        try {
+          const dur = incomingPlayer.getDuration();
+          if (dur > 0) setDuration(Math.floor(dur * 1000));
+        } catch (e) { }
       }
 
       // Detener y resetear el deck saliente
@@ -623,6 +633,24 @@ export function useYouTubeSDK() {
         outgoingContainer.style.opacity = '0';
         outgoingContainer.style.zIndex = '1';
       }
+
+      // Sincronizar con dispositivos remotos (Smart TV / Guests)
+      try {
+        const sessId = useSettingsStore.getState().sessionId;
+        if (sessId) {
+          const ch = supabase.channel(`queue-sync-${sessId}`);
+          ch.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              ch.send({
+                type: 'broadcast',
+                event: 'playback_sync',
+                payload: { isPlaying: true, progress: 0, currentTrack: nextTrack }
+              });
+              setTimeout(() => supabase.removeChannel(ch), 500);
+            }
+          });
+        }
+      } catch (e) { }
 
       usePlayerStore.getState().setActiveTransition(null);
       isTransitioningRef.current = false;
