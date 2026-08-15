@@ -628,7 +628,7 @@ export function useYouTubeSDK() {
     }, 500);
   };
 
-  const triggerDJTransition = (p, durationSec) => {
+  const triggerDJTransition = async (p, durationSec) => {
     if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
 
@@ -659,6 +659,14 @@ export function useYouTubeSDK() {
 
     const initialVolume = usePlayerStore.getState().volume || 70;
     const transitionMs = Math.max(1500, Math.floor(durationSec * 1000));
+
+    // Pre-obtener y resolver la siguiente canción en segundo plano durante los 5s de transición
+    const store = usePlayerStore.getState();
+    const nextIdx = store.currentQueueIndex + 1;
+    const upcomingTrack = store.queue[nextIdx];
+    if (upcomingTrack) {
+      store.resolveYouTubeVideoId(upcomingTrack).catch(() => {});
+    }
 
     if (chosenEffect === 'fade' || chosenEffect === 'echo') {
       // Rampa de volumen descendente
@@ -692,10 +700,16 @@ export function useYouTubeSDK() {
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
       } catch (e) {}
 
-      const store = usePlayerStore.getState();
-      const nextTrack = store.shiftQueue();
+      const freshStore = usePlayerStore.getState();
+      const nextTrack = freshStore.shiftQueue();
       if (nextTrack) {
-        store.playEngineTrack(nextTrack, 0, null, true);
+        freshStore.playEngineTrack(nextTrack, 0, null, true);
+      } else {
+        // Si no hay más canciones, cerrar el loader
+        if (loader) {
+          loader.style.opacity = '0';
+          loader.style.pointerEvents = 'none';
+        }
       }
       isTransitioningRef.current = false;
     }, transitionMs);
