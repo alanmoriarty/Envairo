@@ -379,13 +379,23 @@ export function useYouTubeSDK() {
         const tryAutoplay = () => {
           autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
+          
           if (freshStore.currentTrack && freshStore.currentTrack.id) {
-            freshStore.playEngineTrack(
-              freshStore.currentTrack,
-              freshStore.progress,
-              null,
-              true
-            );
+            // Fast path: if we have a persisted currentYtId, load it directly
+            const ytId = freshStore.currentYtId;
+            if (ytId && ytId.length === 11 && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+              const startSeconds = Math.max(0, (freshStore.progress || 0) / 1000);
+              playerRef.current.loadVideoById({ videoId: ytId, startSeconds });
+              usePlayerStore.setState({ isPlaying: true });
+            } else {
+              // Full path: resolve YouTube video ID via search
+              freshStore.playEngineTrack(
+                freshStore.currentTrack,
+                freshStore.progress,
+                null,
+                true
+              );
+            }
           } else if (autoplayAttempts < 5) {
             setTimeout(tryAutoplay, 500);
           }
@@ -487,7 +497,8 @@ export function useYouTubeSDK() {
         document.body.removeChild(wrapper);
       }
     };
-  }, [playbackEngine, setYoutubePlayer, setIsPlaying, setDuration, youtubeNativeCast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playbackEngine, youtubeNativeCast]);
 
   const startProgressTimer = (p) => {
     stopProgressTimer();
