@@ -473,19 +473,15 @@ export const usePlayerStore = create(
         set({ _currentPlayExecId: execId, progress: progressMs });
 
         get().queueAddToHistory(track);
-        const state = get();
         if (state.playbackEngine === 'youtube') {
-          if (state.youtubePlayer && track.id) {
-            // (No llamamos stopVideo() aquí para permitir que useYouTubeSDK haga el crossfade de doble búfer)
-            // Solo pausamos el estado si no estamos reproduciendo, pero la transición maneja esto internamente.
+          set({ currentTrack: track });
+          const { videoIdToPlay, isSpotifyTrack, effectiveMode } = await get().resolveYouTubeVideoId(track, forceMode);
 
-            const { videoIdToPlay, isSpotifyTrack, effectiveMode } = await get().resolveYouTubeVideoId(track, forceMode);
-
-            // Evitar condición de carrera: si el usuario saltó rápido de canción mientras resolvíamos esta
-            if (get()._currentPlayExecId !== execId) {
-              console.warn("Se ignoró playEngineTrack porque hay una petición más reciente.");
-              return;
-            }
+          // Evitar condición de carrera: si el usuario saltó rápido de canción mientras resolvíamos esta
+          if (get()._currentPlayExecId !== execId) {
+            console.warn("Se ignoró playEngineTrack porque hay una petición más reciente.");
+            return;
+          }
 
             // Validar estrictamente el ID antes de enviarlo al reproductor
             if (!videoIdToPlay || videoIdToPlay === 'undefined' || videoIdToPlay === 'null' || videoIdToPlay.length !== 11 || (videoIdToPlay === track.id && isSpotifyTrack) || (track.source === 'youtube' && get().failedYouTubeIds.includes(track.id))) {
@@ -515,8 +511,9 @@ export const usePlayerStore = create(
             if (videoIdToPlay && videoIdToPlay !== 'null' && videoIdToPlay !== 'undefined' && videoIdToPlay.length === 11) {
               set({ currentYtId: videoIdToPlay, isPlaying: autoplay !== false });
               const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
-              if (state.youtubePlayer && typeof state.youtubePlayer.loadVideoById === 'function') {
-                state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+              const yt = get().youtubePlayer;
+              if (yt && typeof yt.loadVideoById === 'function') {
+                yt.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
               }
             } else {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar video de respaldo. Saltando...'));
@@ -542,7 +539,6 @@ export const usePlayerStore = create(
 
             // Iniciar precarga de las siguientes canciones de la cola en segundo plano
             get().startQueuePreloadWorker();
-          }
         }
       },
 

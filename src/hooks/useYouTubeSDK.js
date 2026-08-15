@@ -236,13 +236,15 @@ export function useYouTubeSDK() {
       target.id = 'youtube-player-target';
       container.appendChild(target);
 
-      // Overlay transparent shield to capture drag and clicks everywhere on PiP
+      // Overlay transparent shield to capture drag on PiP header/edges
       const overlay = document.createElement('div');
       overlay.id = 'youtube-overlay';
       overlay.style.position = 'absolute';
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
       overlay.style.cursor = 'grab';
+      // Solo capturar pointerEvents si el video está reproduciéndose o en fullscreen; si está pausado con botón rojo de YT, dejar que el usuario haga click directo
+      overlay.style.pointerEvents = 'none';
       overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
 
       overlay.addEventListener('mousedown', onMouseDown);
