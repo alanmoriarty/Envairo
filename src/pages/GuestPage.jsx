@@ -62,14 +62,8 @@ export default function GuestPage() {
     const urlQrToken = new URLSearchParams(location.search).get('t');
     if (!urlQrToken) return; // Sin token en la URL, nada que canjear
 
-    const storedToken = localStorage.getItem(`gat_${sessionId}`);
-    if (storedToken) {
-      // Ya tiene un token guardado del mismo dispositivo, no re-canjear
-      setGuestToken(storedToken);
-      return;
-    }
-
-    // Primera visita con QR: canjear qr_token por guest_access_token personal
+    // Al escanear un QR con ?t= siempre canjeamos un nuevo token de acceso de 6 horas
+    // para refrescar la sesión del invitado y no quedar bloqueado por tokens viejos expirados en localStorage
     setIsExchangingToken(true);
     supabase
       .rpc('create_guest_access', {
@@ -78,16 +72,16 @@ export default function GuestPage() {
       })
       .then(({ data, error }) => {
         if (error || !data) {
-          // QR inválido (quizás el host regeneró) → no bloquear, solo no hay token
           console.warn('QR token no válido:', error?.message);
         } else {
-          // Guardar el token personal en localStorage
+          // Guardar el nuevo token personal en localStorage
           localStorage.setItem(`gat_${sessionId}`, data);
           setGuestToken(data);
+          setQrAccessDenied(false); // Desbloquear pantalla si estaba en expirado
         }
       })
       .finally(() => setIsExchangingToken(false));
-  }, [sessionId]); // solo al montar
+  }, [sessionId, location.search]);
 
   // Real-time session config from Supabase
   const [sessionConfig, setSessionConfig] = useState(null);
