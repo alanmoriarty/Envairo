@@ -215,21 +215,35 @@ export default function TVDisplayPage() {
         setStatus(t('tv.max_limit_reached'));
       } else {
         setIsCheckingLimit(false);
-        if (!window.YT) {
-          const tag = document.createElement('script');
-          tag.src = "https://www.youtube.com/iframe_api";
-          const firstScriptTag = document.getElementsByTagName('script')[0];
-          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
-
-        window.onYouTubeIframeAPIReady = () => {
+        const checkAndInit = () => {
           setStatus(t('tv.connected_waiting'));
           initPlayer();
         };
 
         if (window.YT && window.YT.Player) {
-          setStatus(t('tv.connected_waiting'));
-          initPlayer();
+          checkAndInit();
+        } else {
+          const prevReady = window.onYouTubeIframeAPIReady;
+          window.onYouTubeIframeAPIReady = () => {
+            if (typeof prevReady === 'function') prevReady();
+            checkAndInit();
+          };
+
+          if (window.YT && typeof window.YT.ready === 'function') {
+            window.YT.ready(checkAndInit);
+          }
+
+          if (!document.getElementById('yt-iframe-api-script') && !window.YT) {
+            const tag = document.createElement('script');
+            tag.id = 'yt-iframe-api-script';
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            if (firstScriptTag && firstScriptTag.parentNode) {
+              firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            } else {
+              document.head.appendChild(tag);
+            }
+          }
         }
       }
     }, 500);
