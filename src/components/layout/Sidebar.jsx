@@ -95,13 +95,6 @@ export function Sidebar({ isOpen, onClose }) {
     }
 
     await logout();
-
-    // Limpiar cola local DESPUÉS de que logout() haya guardado en Supabase
-    try {
-      const { usePlayerStore } = await import('../../store/usePlayerStore');
-      usePlayerStore.getState().clearPlayerState();
-    } catch (e) {}
-
     navigate('/');
   };
 

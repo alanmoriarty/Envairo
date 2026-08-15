@@ -23,24 +23,35 @@ export const useAuthStore = create(
         const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
         
         // Guardar el estado actual en la base de datos antes de salir
-        if (sessionIdToClose && hostSecret && !skipDbUpdate) {
+        if (sessionIdToClose && !skipDbUpdate) {
           try {
             const { supabase } = await import('../lib/supabase');
             const playerState = usePlayerStore.getState();
-            await supabase.rpc('sync_host_config', { 
-              p_session_id: sessionIdToClose, 
-              p_secret: hostSecret, 
-              p_updates: { 
-                queue: playerState.queue,
-                current_queue_index: playerState.currentQueueIndex,
-                current_track: playerState.currentTrack,
-                play_history: playerState.playHistory,
-                active: true 
-              } 
-            });
+            const updates = { 
+              queue: playerState.queue || [],
+              current_queue_index: playerState.currentQueueIndex ?? -1,
+              current_track: playerState.currentTrack || null,
+              play_history: playerState.playHistory || [],
+              active: true 
+            };
+
+            // 1. Intento directo con las credenciales de usuario autenticado
+            const { error: directErr } = await supabase
+              .from('sessions')
+              .update(updates)
+              .eq('id', sessionIdToClose);
+
+            // 2. Si falla o si hay hostSecret, respaldar mediante RPC
+            if (directErr && hostSecret) {
+              await supabase.rpc('sync_host_config', { 
+                p_session_id: sessionIdToClose, 
+                p_secret: hostSecret, 
+                p_updates: updates
+              });
+            }
             await supabase.auth.signOut({ scope: 'local' });
           } catch (err) {
-            console.error(err);
+            console.error('Error guardando sesión antes de salir:', err);
           }
         } else {
           try {

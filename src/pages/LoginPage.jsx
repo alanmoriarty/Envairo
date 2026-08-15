@@ -152,8 +152,8 @@ export default function LoginPage() {
 
         if (data.session) {
           const prevSessionId = useSettingsStore.getState().sessionId;
-          // Si había una sesión previa, siempre la limpiamos al iniciar sesión con otro usuario
-          if (prevSessionId && prevSessionId !== data.user.id) {
+          // Solo limpiar estado si la sesión anterior pertenecía a OTRO usuario autenticado distinto (UUID real)
+          if (prevSessionId && !prevSessionId.startsWith('session-') && prevSessionId !== data.user.id) {
             usePlayerStore.getState().clearPlayerState();
             useSettingsStore.getState().clearSettingsState();
             localStorage.removeItem('bq-player');
