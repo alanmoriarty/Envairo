@@ -233,8 +233,6 @@ export default function TVDisplayPage() {
         setLimitReached(true);
         setIsCheckingLimit(false);
         setStatus(t('tv.max_limit_reached'));
-      } else {
-        setIsCheckingLimit(false);
         const checkAndInit = () => {
           setStatus(t('tv.connected_waiting'));
           initPlayer();
@@ -268,239 +266,209 @@ export default function TVDisplayPage() {
       }
     }, 500);
 
-    let isComponentMounted = true;
+  function initPlayer() {
+    if (playerRef.current) return;
 
-    function initPlayer() {
-      if (playerRef.current || !isComponentMounted) return;
-
-      const disableCaptions = (player) => {
-        try {
-          if (player && typeof player.unloadModule === 'function') {
-            player.unloadModule('captions');
-            player.unloadModule('cc');
-          }
-          if (player && typeof player.setOption === 'function') {
-            player.setOption('captions', 'track', {});
-            player.setOption('cc', 'track', {});
-          }
-        } catch (e) {}
-      };
-
-      const playerVars = {
-        autoplay: 1,
-        enablejsapi: 1,
-        mute: 1,
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        modestbranding: 1,
-        rel: 0,
-        showinfo: 0,
-        iv_load_policy: 3,
-        cc_load_policy: 0,
-        cc_lang_pref: 'none',
-        origin: window.location.origin
-      };
-
-      const onReady = (event) => {
-        if (!isComponentMounted) return;
-        if (tvWithSoundRef.current) {
-          event.target.unMute();
-          event.target.setVolume(100);
-        } else {
-          event.target.mute();
+    const disableCaptions = (player) => {
+      try {
+        if (player && typeof player.unloadModule === 'function') {
+          player.unloadModule('captions');
+          player.unloadModule('cc');
         }
-        disableCaptions(event.target);
-
-        if (pendingSyncRef.current) {
-          const syncData = pendingSyncRef.current;
-          pendingSyncRef.current = null;
-          handleSync(syncData);
+        if (player && typeof player.setOption === 'function') {
+          player.setOption('captions', 'track', {});
+          player.setOption('cc', 'track', {});
         }
+      } catch (e) {}
+    };
 
-        if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
-        if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
-          sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+    const playerVars = {
+      autoplay: 1,
+      enablejsapi: 1,
+      mute: 1,
+      controls: 0,
+      disablekb: 1,
+      fs: 0,
+      modestbranding: 1,
+      rel: 0,
+      showinfo: 0,
+      iv_load_policy: 3,
+      cc_load_policy: 0,
+      cc_lang_pref: 'none',
+      origin: window.location.origin
+    };
+
+    const onReady = (event) => {
+      if (tvWithSoundRef.current) {
+        try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
+      } else {
+        try { event.target.mute(); } catch (e) {}
+      }
+      disableCaptions(event.target);
+
+      if (pendingSyncRef.current) {
+        const syncData = pendingSyncRef.current;
+        pendingSyncRef.current = null;
+        handleSync(syncData);
+      }
+
+      if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+      if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+        sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+      }
+    };
+
+    const onStateChange = (event) => {
+      if (tvWithSoundRef.current) {
+        try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
+      } else {
+        try { event.target.mute(); } catch (e) {}
+      }
+      disableCaptions(event.target);
+
+      if (event.data === window.YT.PlayerState.PLAYING) {
+        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+        setIsLoadingVideo(false);
+
+        const playingContainer = document.getElementById('tv-yt-container');
+        if (playingContainer) {
+          playingContainer.style.opacity = '1';
+          playingContainer.style.zIndex = '2';
         }
-      };
+      }
+    };
 
-      const onStateChange = (event) => {
-        if (!isComponentMounted) return;
-        if (tvWithSoundRef.current) {
-          event.target.unMute();
-          event.target.setVolume(100);
-        } else {
-          event.target.mute();
-        }
-        disableCaptions(event.target);
+    const onError = (event) => {
+      console.warn('Advertencia en reproductor esclavo TV:', event.data);
+      // Mantener la pantalla limpia de tarjetas de error de YouTube
+      const c1 = document.getElementById('tv-yt-container');
+      if (c1) {
+        c1.style.opacity = '0';
+        c1.style.zIndex = '-1';
+      }
+      setIsLoadingVideo(false);
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    };
 
-        if (event.data === window.YT.PlayerState.PLAYING) {
-          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-          setIsLoadingVideo(false);
+    playerRef.current = new window.YT.Player('tv-youtube-player', {
+      height: '100%', width: '100%', playerVars, events: { onReady, onStateChange, onError }
+    });
+  }
 
-          const playingContainer = document.getElementById('tv-yt-container');
-          if (playingContainer) {
-            playingContainer.style.opacity = '1';
-            playingContainer.style.zIndex = '2';
-          }
-        }
-      };
+  const handleFsChange = () => {
+    setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement));
+  };
 
-      const onError = (event) => {
-        if (!isComponentMounted) return;
-        console.warn('Error en reproductor esclavo:', event.data);
-        const failedId = currentVideoIdRef.current;
+  document.addEventListener('fullscreenchange', handleFsChange);
+  document.addEventListener('webkitfullscreenchange', handleFsChange);
+  document.addEventListener('mozfullscreenchange', handleFsChange);
+  document.addEventListener('MSFullscreenChange', handleFsChange);
+
+  return () => {
+    clearTimeout(timeoutId);
+    if (channelRef.current) {
+      channelRef.current.removeEventListener('message', handleMessage);
+      channelRef.current.close();
+    }
+    if (sbSyncChannelRef.current) {
+      supabase.removeChannel(sbSyncChannelRef.current);
+    }
+    safeDestroyPlayer(playerRef, 'tv-yt-container', 'tv-youtube-player');
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+
+    document.removeEventListener('fullscreenchange', handleFsChange);
+    document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    document.removeEventListener('mozfullscreenchange', handleFsChange);
+    document.removeEventListener('MSFullscreenChange', handleFsChange);
+  };
+}, [sessionId]);
+
+const pendingSyncRef = useRef(null);
+
+const handleSync = (data) => {
+  const p = playerRef.current;
+  if (!p || typeof p.getPlayerState !== 'function') {
+    if (data?.videoId) {
+      pendingSyncRef.current = data;
+    }
+    return;
+  }
+
+  try {
+    const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
+
+    if (data.videoId) {
+      const isNewTrack = data.videoId !== currentVideoIdRef.current;
+      if (isNewTrack) {
+        currentVideoIdRef.current = data.videoId;
+        setCurrentVideoId(data.videoId);
+        setStatus('');
+        const start = data.time ? data.time + 0.1 : 0;
 
         const c1 = document.getElementById('tv-yt-container');
         if (c1) {
-          c1.style.opacity = '0';
-          c1.style.zIndex = '-1';
-        }
-        
-        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-          try { playerRef.current.pauseVideo(); } catch (e) {}
+          c1.style.opacity = '1';
+          c1.style.zIndex = '2';
         }
 
-        setCurrentVideoId(null);
-        currentVideoIdRef.current = null;
-        setIsLoadingVideo(false);
-        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-        setStatus(t('tv.connected_waiting'));
-
-        if (failedId) {
-          const payload = { type: 'SLAVE_ERROR', videoId: failedId };
-          if (channelRef.current) channelRef.current.postMessage(payload);
-          if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
-            sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload }).catch(() => {});
-          }
+        p.loadVideoById({ videoId: data.videoId, startSeconds: start });
+        if (data.isPlaying && typeof p.playVideo === 'function') {
+          try { p.playVideo(); } catch (e) {}
         }
-      };
-
-      playerRef.current = new window.YT.Player('tv-youtube-player', {
-        height: '100%', width: '100%', playerVars, events: { onReady, onStateChange, onError }
-      });
+        return;
+      }
     }
 
-    const handleFsChange = () => {
-      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement));
-    };
+    // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up)
+    if (typeof data.time === 'number') {
+      const playerState = p.getPlayerState();
+      const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
+      const isEnded = playerState === window.YT.PlayerState.ENDED;
+      const duration = p.getDuration() || 0;
 
-    document.addEventListener('fullscreenchange', handleFsChange);
-    document.addEventListener('webkitfullscreenchange', handleFsChange);
-    document.addEventListener('mozfullscreenchange', handleFsChange);
-    document.addEventListener('MSFullscreenChange', handleFsChange);
+      const transitDelay = (data.sentAt && data.sentAt > 0)
+        ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
+        : 0;
+      const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
+      const currentTime = p.getCurrentTime() || 0;
+      const diff = targetTime - currentTime;
 
-    return () => {
-      isComponentMounted = false;
-      clearTimeout(timeoutId);
-      if (channelRef.current) {
-        channelRef.current.removeEventListener('message', handleMessage);
-        channelRef.current.close();
+      if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+      } else if (isBuffering) {
+        // Don't seek or change rate while buffering
+      } else if (Math.abs(diff) > 1.2) {
+        p.seekTo(targetTime, true);
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+      } else if (diff > 0.15) {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.15);
+      } else if (diff > 0.05) {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.05);
+      } else if (diff < -0.15) {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.85);
+      } else if (diff < -0.05) {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.95);
+      } else {
+        if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
       }
-      if (sbSyncChannelRef.current) {
-        supabase.removeChannel(sbSyncChannelRef.current);
-      }
-      safeDestroyPlayer(playerRef, 'tv-yt-container', 'tv-youtube-player');
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-
-      document.removeEventListener('fullscreenchange', handleFsChange);
-      document.removeEventListener('webkitfullscreenchange', handleFsChange);
-      document.removeEventListener('mozfullscreenchange', handleFsChange);
-      document.removeEventListener('MSFullscreenChange', handleFsChange);
-    };
-  }, [sessionId]);
-
-  const pendingSyncRef = useRef(null);
-
-  const handleSync = (data) => {
-    const p = playerRef.current;
-    if (!p || typeof p.getPlayerState !== 'function') {
-      if (data?.videoId) {
-        pendingSyncRef.current = data;
-      }
-      return;
     }
 
-    try {
-      const isCurrentlyPlaying = p.getPlayerState() === window.YT.PlayerState.PLAYING;
-
-      if (data.videoId) {
-        const isFirstLoad = !currentVideoIdRef.current;
-        if (isFirstLoad || data.videoId !== currentVideoIdRef.current) {
-          currentVideoIdRef.current = data.videoId;
-          setCurrentVideoId(data.videoId);
-          setStatus('');
-          const bufferingOffset = 0.1;
-          const start = data.time ? data.time + bufferingOffset : 0;
-
-          const c1 = document.getElementById('tv-yt-container');
-          if (c1) {
-            c1.style.opacity = '1';
-            c1.style.zIndex = '2';
-          }
-
-          p.loadVideoById({ videoId: data.videoId, startSeconds: start });
-          if (data.isPlaying && typeof p.playVideo === 'function') {
-            try { p.playVideo(); } catch (e) {}
-          } else if (!data.isPlaying) {
-             setTimeout(() => {
-                if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-             }, 500);
-          }
-          return;
+    // 2. Sincronizar inmediatamente el estado de reproducción/pausa
+    if (typeof data.isPlaying === 'boolean') {
+      if (!data.isPlaying) {
+        if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
+      } else if (data.isPlaying) {
+        setStatus('');
+        if (p && typeof p.playVideo === 'function' && !isCurrentlyPlaying) {
+          p.playVideo();
         }
       }
-
-      // 1. Ajustar el tiempo si hay desvío (Smooth Catch-up)
-      if (typeof data.time === 'number') {
-        const playerState = p.getPlayerState();
-        const isBuffering = playerState === window.YT.PlayerState.BUFFERING;
-        const isEnded = playerState === window.YT.PlayerState.ENDED;
-        const duration = p.getDuration() || 0;
-
-        const transitDelay = (data.sentAt && data.sentAt > 0)
-          ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
-          : 0;
-        const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
-        const currentTime = p.getCurrentTime() || 0;
-        const diff = targetTime - currentTime; // positive = TV is behind
-
-        if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
-        } else if (isBuffering) {
-          // Don't seek or change rate while buffering
-        } else if (Math.abs(diff) > 0.8) {
-          p.seekTo(targetTime, true);
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
-        } else if (diff > 0.15) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.15);
-        } else if (diff > 0.05) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.05);
-        } else if (diff < -0.15) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.85);
-        } else if (diff < -0.05) {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(0.95);
-        } else {
-          if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
-        }
-      }
-
-      // 2. Sincronizar inmediatamente el estado de reproducción/pausa
-      if (typeof data.isPlaying === 'boolean') {
-        if (!data.isPlaying) {
-          if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
-        } else if (data.isPlaying) {
-          setStatus('');
-          if (p && typeof p.playVideo === 'function' && !isCurrentlyPlaying) {
-            p.playVideo();
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error sincronizando TV Display:", err);
     }
-  };
+  } catch (err) {
+    console.error("Error sincronizando TV Display:", err);
+  }
+};
 
   const handleMouseMove = () => {
     setIsIdle(false);
@@ -639,8 +607,8 @@ export default function TVDisplayPage() {
         </div>
       )}
 
-      {/* Modo Emparejado: Overlay status si no hay video activo o status no está vacío */}
-      {sessionId && status !== '' && !currentVideoId && (
+      {/* Modo Emparejado: Overlay status si no hay video activo */}
+      {sessionId && !currentVideoId && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
           <div className="bg-white/10 p-6 rounded-full border border-white/20">
             <Tv size={64} className="text-white opacity-80" />
