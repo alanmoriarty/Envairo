@@ -215,9 +215,9 @@ export default function TVDisplayPage() {
       }
     };
 
-    // 2.c. Verificación de límite de pantallas
+    // 2.c. Verificación de límite de pantallas (Máximo 4 pantallas además del anfitrión)
     const timeoutId = setTimeout(() => {
-      if (activeTvs.current.size >= 10) {
+      if (activeTvs.current.size >= 4) {
         setLimitReached(true);
         setIsCheckingLimit(false);
         setStatus(t('tv.max_limit_reached'));
