@@ -652,9 +652,11 @@ export const usePlayerStore = create(
         volume: state.volume,
         isPlaying: state.isPlaying,
         progress: state.progress,
+        duration: state.duration,
         lastCommandTs: state.lastCommandTs,
         currentTrack: state.currentTrack,
         currentQueueIndex: state.currentQueueIndex,
+        currentYtId: state.currentYtId,
         queue: state.queue,
       }),
     }

@@ -36,7 +36,8 @@ export function useTVBroadcast() {
     // Helper: check if this instance is the active master
     const isMaster = () => {
       const state = usePlayerStore.getState();
-      return !state.activeDeviceId || getInstanceId() === state.activeDeviceId;
+      // 'youtube-device' is always the local host's device ID (set in useYouTubeSDK onReady)
+      return !state.activeDeviceId || state.activeDeviceId === 'youtube-device' || getInstanceId() === state.activeDeviceId;
     };
 
     const broadcastMessage = (data) => {
@@ -185,7 +186,7 @@ export function useTVBroadcast() {
 
     const sendCurrentSync = () => {
       const state = usePlayerStore.getState();
-      const targetId = state.currentYtId || state.currentTrack?.id;
+      const targetId = state.currentYtId;
       if (state.playbackEngine === 'youtube' && targetId) {
         let trueTime = (state.progress || 0) / 1000;
         if (state.youtubePlayer && typeof state.youtubePlayer.getCurrentTime === 'function') {
