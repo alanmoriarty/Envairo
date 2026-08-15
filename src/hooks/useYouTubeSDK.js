@@ -48,6 +48,7 @@ export function useYouTubeSDK() {
       wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
       wrapper.style.zIndex = '9999';
       wrapper.style.filter = 'none';
+      wrapper.style.willChange = 'left, top';
       wrapper.style.pointerEvents = 'auto';
       if (dragHeader) dragHeader.style.display = 'flex';
 

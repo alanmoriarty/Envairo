@@ -43,7 +43,7 @@ const formatArtists = (artists) => {
   return 'Artista Desconocido';
 };
 
-function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
+const SortableQueueItem = React.memo(function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: track.queueId,
@@ -121,7 +121,7 @@ function SortableQueueItem({ track, onRemove, onPlay, isPlaying, isPlayed }) {
       </div>
     </div>
   );
-}
+});
 
 export default function DashboardPage() {
   // Granular selectors: each hook only re-renders when ITS specific slice changes.

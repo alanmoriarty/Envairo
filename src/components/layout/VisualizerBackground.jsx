@@ -51,8 +51,9 @@ export function VisualizerBackground() {
       className={`fixed top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-h-[100vh] min-w-[177.77vh] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-1000`}
       style={{
         zIndex: isFullscreen ? 9999 : -2,
-        opacity: isFullscreen ? 1 : 0.5,
-        filter: isFullscreen ? 'none' : 'blur(4px) saturate(1.5)',
+        opacity: isFullscreen ? 1 : 0.35,
+        transform: 'translate(-50%, -50%) translateZ(0)',
+        willChange: 'opacity',
         pointerEvents: isFullscreen ? 'auto' : 'none'
       }}
     >
