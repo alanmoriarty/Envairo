@@ -515,10 +515,8 @@ export const usePlayerStore = create(
             if (videoIdToPlay && videoIdToPlay !== 'null' && videoIdToPlay !== 'undefined' && videoIdToPlay.length === 11) {
               set({ currentYtId: videoIdToPlay });
               const startSeconds = (typeof progressMs === 'number' && !isNaN(progressMs)) ? Math.max(0, progressMs / 1000) : 0;
-              if (autoplay) {
-                state.youtubePlayer?.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
-              } else {
-                state.youtubePlayer?.cueVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
+              if (state.youtubePlayer && typeof state.youtubePlayer.loadVideoById === 'function') {
+                state.youtubePlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: startSeconds });
               }
             } else {
               import('sonner').then(({ toast }) => toast.error('No se pudo encontrar video de respaldo. Saltando...'));
