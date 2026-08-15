@@ -526,18 +526,6 @@ export const usePlayerStore = create(
                 set({ currentTrack: null, isPlaying: false });
               }
             }
-            // Precarga de Búfer: Buscar silenciosamente los otros modos para que la transición sea instantánea
-            try {
-              const { useSettingsStore } = await import('./useSettingsStore');
-              const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-              const currentMode = forceMode || track.version_preference || (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-
-              const modesToCache = ['normal', 'karaoke', 'lyrics'].filter(m => m !== currentMode);
-              modesToCache.forEach(m => {
-                get().resolveYouTubeVideoId(track, m).catch(() => { });
-              });
-            } catch (e) { }
-
             // Iniciar precarga de las siguientes canciones de la cola en segundo plano
             get().startQueuePreloadWorker();
         }
