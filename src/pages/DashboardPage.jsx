@@ -802,125 +802,134 @@ export default function DashboardPage() {
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
 
-      {/* EnvAIro Confirmation Modal */}
+      {/* EnvAIro Selector Confirmation Modal */}
       {isEnairoModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
           onClick={() => setIsEnairoModalOpen(false)}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] flex flex-col relative"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setIsEnairoModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <div className="p-5 flex-1 overflow-y-auto custom-scrollbar pt-6">
-              <div className="flex justify-center mb-4 mt-2">
-                <div className="p-3 bg-accent/20 rounded-full">
-                  <Sparkles size={32} className="text-accent" />
+            {/* Header with Close button and safe padding */}
+            <div className="p-6 pb-4 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3.5 pr-4">
+                <div className="p-3 bg-accent/20 border border-accent/30 rounded-2xl shrink-0">
+                  <Sparkles size={24} className="text-accent animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white leading-snug">
+                    {t('dashboard.envairo_config_title')}
+                  </h3>
+                  <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                    {t('dashboard.envairo_config_desc')}
+                  </p>
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center text-white mb-2">
-                {t('dashboard.envairo_config_title')}
-              </h3>
-              <p className="text-sm text-center text-text-muted mb-6">
-                {t('dashboard.envairo_config_desc')}
-              </p>
+              <button
+                onClick={() => setIsEnairoModalOpen(false)}
+                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              <div className="space-y-4 mb-6 text-left">
-                <div className="pt-2">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-sm font-semibold text-text-primary">{t('settings.envairo_prompt_label')}</label>
-                    <span className={`text-xs font-mono ${enairoPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
-                      {enairoPrompt.length} / {MAX_PROMPT_LENGTH}
-                    </span>
-                  </div>
-                  <textarea
-                    maxLength={MAX_PROMPT_LENGTH}
-                    value={enairoPrompt}
-                    onChange={(e) => setEnairoPrompt(sanitizePrompt(e.target.value))}
-                    placeholder={t('settings.envairo_prompt_placeholder')}
-                    className="input-field w-full h-24 resize-none"
-                  />
+            {/* Scrollable Content Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-left">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                    {t('settings.envairo_prompt_label')}
+                  </label>
+                  <span className={`text-xs font-mono ${enairoPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                    {enairoPrompt.length} / {MAX_PROMPT_LENGTH}
+                  </span>
                 </div>
+                <textarea
+                  maxLength={MAX_PROMPT_LENGTH}
+                  value={enairoPrompt}
+                  onChange={(e) => setEnairoPrompt(sanitizePrompt(e.target.value))}
+                  placeholder={t('settings.envairo_prompt_placeholder')}
+                  className="input-field w-full h-24 resize-none text-sm leading-relaxed"
+                />
+              </div>
 
-                <div className="pt-2">
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">Cantidad de sugerencias a generar</label>
-                  <p className="text-xs text-text-muted mb-2">Máximo 50 canciones por generación.</p>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={enairoTrackCount}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === '') { setEnairoTrackCount(''); return; }
-                      const n = parseInt(v, 10);
-                      if (!isNaN(n)) setEnairoTrackCount(Math.min(50, Math.max(1, n)));
-                    }}
-                    onBlur={() => { if (enairoTrackCount === '') setEnairoTrackCount(35); }}
-                    className="input-field w-full text-center"
-                  />
-                </div>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                  Cantidad de sugerencias a generar
+                </label>
+                <p className="text-xs text-text-muted">Máximo 50 canciones por generación.</p>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={enairoTrackCount}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') { setEnairoTrackCount(''); return; }
+                    const n = parseInt(v, 10);
+                    if (!isNaN(n)) setEnairoTrackCount(Math.min(50, Math.max(1, n)));
+                  }}
+                  onBlur={() => { if (enairoTrackCount === '') setEnairoTrackCount(35); }}
+                  className="input-field w-full text-center font-bold text-base"
+                />
+              </div>
 
-                <div className="border-t border-white/10 pt-4 space-y-3">
-                  <Toggle
-                    checked={enairoAutoIntervalEnabled}
-                    onChange={setEnairoAutoIntervalEnabled}
-                    label="Ejecutar automáticamente cada 2 horas"
-                    description="envAIro Selector se volverá a ejecutar solo usando este mismo contexto (máximo 3 veces al día)."
-                  />
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                <Toggle
+                  checked={enairoAutoIntervalEnabled}
+                  onChange={setEnairoAutoIntervalEnabled}
+                  label="Ejecutar automáticamente cada 2 horas"
+                  description="envAIro Selector se volverá a ejecutar solo usando este mismo contexto (máximo 3 veces al día)."
+                />
 
-                  <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 text-xs text-text-muted flex items-start gap-2.5">
-                    <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-white">Límite de Ejecución Automática</p>
-                      <p className="mt-0.5 text-text-muted leading-relaxed">
-                        Se ejecutará automáticamente cada 2 horas <strong className="text-white">únicamente 3 veces al día</strong> para conservar la cuota de tu cuenta.
-                      </p>
-                      <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                        <span className="font-mono text-accent font-semibold">Ejecuciones de hoy:</span>
-                        <span className="font-mono font-bold text-white bg-accent/20 px-2 py-0.5 rounded-md">
-                          {enairoUsageCount || 0} / 3
-                        </span>
-                      </div>
+                <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 text-xs text-text-muted flex items-start gap-2.5">
+                  <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-white">Límite de Ejecución Automática</p>
+                    <p className="mt-0.5 text-text-muted leading-relaxed">
+                      Se ejecutará automáticamente cada 2 horas <strong className="text-white">únicamente 3 veces al día</strong> para conservar la cuota de tu cuenta.
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                      <span className="font-mono text-accent font-semibold">Ejecuciones de hoy:</span>
+                      <span className="font-mono font-bold text-white bg-accent/20 px-2 py-0.5 rounded-md">
+                        {enairoUsageCount || 0} / 3
+                      </span>
                     </div>
                   </div>
                 </div>
-
-                {canSeeTestMode && (
-                  <div className="border-t border-white/5 pt-4">
-                    <Toggle
-                      checked={enairoTestMode}
-                      onChange={setEnairoTestMode}
-                      label={t('settings.envairo_test_label')}
-                      description={t('settings.envairo_test_desc')}
-                    />
-                  </div>
-                )}
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsEnairoModalOpen(false)}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-text-primary bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    setIsEnairoModalOpen(false);
-                    triggerEnairo();
-                  }}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white bg-accent hover:bg-accent-hover transition-colors shadow-glow-sm"
-                >
-                  Sí, Generar
-                </button>
-              </div>
+              {canSeeTestMode && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <Toggle
+                    checked={enairoTestMode}
+                    onChange={setEnairoTestMode}
+                    label={t('settings.envairo_test_label')}
+                    description={t('settings.envairo_test_desc')}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="p-4 px-6 bg-black/30 border-t border-white/10 shrink-0 flex gap-3">
+              <button
+                onClick={() => setIsEnairoModalOpen(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setIsEnairoModalOpen(false);
+                  triggerEnairo();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+              >
+                Sí, Generar
+              </button>
             </div>
           </div>
         </div>
@@ -939,22 +948,11 @@ export default function DashboardPage() {
             className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Close button */}
-            <button
-              onClick={() => {
-                setIsAutoDjModalOpen(false);
-                setAutoDJ(false);
-              }}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Scrollable Content Body */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
-              <div className="flex items-center gap-3.5 pr-8">
+            {/* Header with Close button and safe padding */}
+            <div className="p-6 pb-4 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3.5 pr-4">
                 <div className="p-3 bg-accent/20 border border-accent/30 rounded-2xl shrink-0">
-                  <Sparkles size={26} className="text-accent animate-pulse" />
+                  <Sparkles size={24} className="text-accent animate-pulse" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white leading-snug">
@@ -965,7 +963,19 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  setIsAutoDjModalOpen(false);
+                  setAutoDJ(false);
+                }}
+                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
+            {/* Scrollable Content Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
               {/* Contexto de la IA */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between items-center">
