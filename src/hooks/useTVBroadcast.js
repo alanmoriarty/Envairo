@@ -26,7 +26,11 @@ export function useTVBroadcast() {
         supabase.removeChannel(sbChannelRef.current);
       }
       sbChannelRef.current = supabase.channel(`tv-sync-${activeSessionId}`);
-      sbChannelRef.current.subscribe();
+      sbChannelRef.current.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setTimeout(() => sendCurrentSync(), 300);
+        }
+      });
     }
 
     // Helper: check if this instance is the active master
