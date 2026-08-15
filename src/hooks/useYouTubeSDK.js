@@ -649,6 +649,11 @@ export function useYouTubeSDK() {
       start: '🚀 Transición: Spin Up'
     };
 
+    usePlayerStore.getState().setActiveTransition({
+      type: chosenEffect,
+      label: effectLabels[chosenEffect] || '🎧 Transición DJ'
+    });
+
     if (loaderText) {
       loaderText.innerText = effectLabels[chosenEffect] || '🎧 Transición DJ';
     }
@@ -681,15 +686,16 @@ export function useYouTubeSDK() {
         if (currentStep >= steps) clearInterval(fadeInterval);
       }, stepTime);
     } else if (chosenEffect === 'brake') {
-      // Frenada de plato DJ (bajar playbackRate)
+      // Frenada real de plato DJ (bajar playbackRate progresivamente a 0.5 y 0.25)
       try {
         if (typeof p.setPlaybackRate === 'function') {
           p.setPlaybackRate(0.75);
-          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) {} }, transitionMs * 0.4);
+          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) {} }, transitionMs * 0.3);
+          setTimeout(() => { try { p.setPlaybackRate(0.25); } catch (e) {} }, transitionMs * 0.6);
         }
       } catch (e) {}
     } else if (chosenEffect === 'cut') {
-      // Corte directo al final
+      // Corte directo
     }
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
@@ -699,6 +705,8 @@ export function useYouTubeSDK() {
         if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
       } catch (e) {}
+
+      usePlayerStore.getState().setActiveTransition(null);
 
       const freshStore = usePlayerStore.getState();
       const nextTrack = freshStore.shiftQueue();

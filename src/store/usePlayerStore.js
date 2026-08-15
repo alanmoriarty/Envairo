@@ -23,6 +23,8 @@ export const usePlayerStore = create(
       // Playback state
       currentTrack: null,
       isPlaying: false,
+      activeTransition: null, // { type: 'brake' | 'fade' | 'cut' | 'echo' | 'start', label: string } | null
+      setActiveTransition: (t) => set({ activeTransition: t }),
       pendingResume: false,
       deviceTransferred: false,
       progress: 0,
