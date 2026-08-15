@@ -195,10 +195,28 @@ export default function GuestPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
+        const engine = stateData?.playback_engine || 'youtube';
+        if (engine === 'youtube') {
+          const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+          const ytResults = await searchYouTubeVideos(query, 8);
+          if (ytResults && ytResults.length > 0) {
+            setResults(ytResults.map(r => ({
+              id: r.id,
+              uri: r.uri,
+              name: r.name,
+              artists: r.artists,
+              image: r.album?.images?.[0]?.url || r.image || '',
+              duration_ms: r.duration_ms || 0,
+              source: 'youtube'
+            })));
+            return;
+          }
+        }
+
         const { data, error } = await supabase.functions.invoke('search-spotify', {
           body: {
             query,
-            limit: 6,
+            limit: 8,
             filterExplicit: stateData?.explicit_filter || false
           }
         });
@@ -206,7 +224,25 @@ export default function GuestPage() {
         const items = data?.tracks?.items || [];
         setResults(items.map(normalizeApiTrack));
       } catch (err) {
-        setResults([]);
+        try {
+          const { searchYouTubeVideos } = await import('../lib/youtubeApi');
+          const ytResults = await searchYouTubeVideos(query, 8);
+          if (ytResults && ytResults.length > 0) {
+            setResults(ytResults.map(r => ({
+              id: r.id,
+              uri: r.uri,
+              name: r.name,
+              artists: r.artists,
+              image: r.album?.images?.[0]?.url || r.image || '',
+              duration_ms: r.duration_ms || 0,
+              source: 'youtube'
+            })));
+          } else {
+            setResults([]);
+          }
+        } catch (e) {
+          setResults([]);
+        }
       } finally {
         setSearching(false);
       }
