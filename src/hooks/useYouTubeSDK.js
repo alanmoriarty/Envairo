@@ -374,7 +374,10 @@ export function useYouTubeSDK() {
         store.setActiveDeviceId('youtube-device');
         setYoutubePlayer(virtualPlayer);
 
-        setTimeout(() => {
+        // Autoplay: retry up to 5 times (every 500ms) waiting for store rehydration/Supabase sync
+        let autoplayAttempts = 0;
+        const tryAutoplay = () => {
+          autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
           if (freshStore.currentTrack && freshStore.currentTrack.id) {
             freshStore.playEngineTrack(
@@ -383,8 +386,11 @@ export function useYouTubeSDK() {
               null,
               true
             );
+          } else if (autoplayAttempts < 5) {
+            setTimeout(tryAutoplay, 500);
           }
-        }, 500);
+        };
+        setTimeout(tryAutoplay, 500);
       };
 
       const handleStateChange = (event) => {
