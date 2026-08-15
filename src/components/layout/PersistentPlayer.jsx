@@ -31,7 +31,7 @@ export function PersistentPlayer() {
   const activeDeviceId = usePlayerStore(s => s.activeDeviceId);
   const deviceId = usePlayerStore(s => s.deviceId);
   const playbackEngine = usePlayerStore(s => s.playbackEngine);
-
+  const activeTransition = usePlayerStore(s => s.activeTransition);
 
   const { controls: youtubeControls, ytReady } = useYouTubeSDK();
 
@@ -327,9 +327,9 @@ export function PersistentPlayer() {
                 <p className="text-sm font-semibold text-text-primary truncate">
                   {currentTrack?.name || 'Sin reproducción'}
                 </p>
-                {usePlayerStore(s => s.activeTransition) && (
+                {activeTransition && (
                   <span className="text-[10px] font-bold text-pink-400 bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded-full shrink-0 animate-pulse">
-                    {usePlayerStore(s => s.activeTransition)?.label}
+                    {activeTransition.label}
                   </span>
                 )}
               </div>

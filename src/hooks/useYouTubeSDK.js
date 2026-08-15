@@ -64,7 +64,7 @@ export function useYouTubeSDK() {
             wrapper.style.bottom = 'auto';
             hasSavedPos = true;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
@@ -118,7 +118,7 @@ export function useYouTubeSDK() {
             wrapper.dataset.userMoved = 'true';
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
 
@@ -215,7 +215,7 @@ export function useYouTubeSDK() {
         const rect = wrapper.getBoundingClientRect();
         try {
           localStorage.setItem('bq-pip-pos', JSON.stringify({ x: rect.left, y: rect.top }));
-        } catch (e) {}
+        } catch (e) { }
       };
 
       dragHeader.addEventListener('mousedown', onMouseDown);
@@ -231,7 +231,7 @@ export function useYouTubeSDK() {
       container.style.opacity = '1';
       container.style.zIndex = '2';
       wrapper.appendChild(container);
-      
+
       const target = document.createElement('div');
       target.id = 'youtube-player-target';
       container.appendChild(target);
@@ -297,7 +297,7 @@ export function useYouTubeSDK() {
             <circle cx="18" cy="16" r="3"></circle>
           </svg>
         </div>
-        <span id="youtube-loader-text" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.5px; text-transform: uppercase;">Cambiando versión...</span>
+        <span id="youtube-loader-text" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.5px; text-transform: uppercase;"></span>
       `;
       wrapper.appendChild(loader);
 
@@ -342,7 +342,7 @@ export function useYouTubeSDK() {
           if (playerRef.current && typeof playerRef.current.setPlaybackQuality === 'function') {
             playerRef.current.setPlaybackQuality(isFs ? 'hd1080' : 'medium');
           }
-        } catch (e) {}
+        } catch (e) { }
       };
 
       const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
@@ -374,12 +374,12 @@ export function useYouTubeSDK() {
         unloadModule: (m) => playerRef.current?.unloadModule(m),
         destroy: () => playerRef.current?.destroy(),
         cueVideoById: (args) => playerRef.current?.cueVideoById(args),
-        
+
         loadVideoById: (args) => {
           if (!playerRef.current) return;
-          
+
           currentYtIdRef.current = args.videoId;
-          
+
           // Mostrar overlay de transición con nota musical
           const loader = document.getElementById('youtube-transition-loader');
           if (loader) {
@@ -390,8 +390,8 @@ export function useYouTubeSDK() {
             if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
             if (typeof playerRef.current.loadVideoById === 'function') {
               const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-              playerRef.current.loadVideoById({ 
-                videoId: args.videoId, 
+              playerRef.current.loadVideoById({
+                videoId: args.videoId,
                 startSeconds: args.startSeconds || 0,
                 suggestedQuality: isFs ? 'hd1080' : 'medium'
               });
@@ -423,8 +423,8 @@ export function useYouTubeSDK() {
         try {
           event.target.unloadModule("captions");
           event.target.unloadModule("cc");
-        } catch (e) {}
-        
+        } catch (e) { }
+
         setYtReady(true);
         const store = usePlayerStore.getState();
         if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
@@ -441,7 +441,7 @@ export function useYouTubeSDK() {
         const tryAutoplay = () => {
           autoplayAttempts++;
           const freshStore = usePlayerStore.getState();
-          
+
           if (freshStore.currentTrack && freshStore.currentTrack.id) {
             freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
           } else if (autoplayAttempts < 15) {
@@ -459,7 +459,7 @@ export function useYouTubeSDK() {
         if (event.data === yt.PlayerState.PLAYING) {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
-          
+
           // Ocultar suavemente el loader de transición
           const loader = document.getElementById('youtube-transition-loader');
           if (loader) {
@@ -470,7 +470,7 @@ export function useYouTubeSDK() {
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
-          
+
           // Emitir broadcast inmediato a controles remotos
           try {
             const sessId = useSettingsStore.getState().sessionId;
@@ -487,7 +487,7 @@ export function useYouTubeSDK() {
                 }
               });
             }
-          } catch (e) {}
+          } catch (e) { }
 
           try {
             p.unloadModule('captions');
@@ -517,7 +517,7 @@ export function useYouTubeSDK() {
                 }
               });
             }
-          } catch (e) {}
+          } catch (e) { }
         } else if (event.data === yt.PlayerState.ENDED) {
           setIsPlaying(false);
           stopProgressTimer();
@@ -530,7 +530,7 @@ export function useYouTubeSDK() {
             usePlayerStore.setState({ currentTrack: null, isPlaying: false, progress: 0, duration: 0 });
             try {
               playerRef.current?.stopVideo();
-            } catch (e) {}
+            } catch (e) { }
           }
         }
       };
@@ -590,7 +590,7 @@ export function useYouTubeSDK() {
         document.body.removeChild(wrapper);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playbackEngine, youtubeNativeCast]);
 
   const isTransitioningRef = useRef(false);
@@ -670,7 +670,7 @@ export function useYouTubeSDK() {
     const nextIdx = store.currentQueueIndex + 1;
     const upcomingTrack = store.queue[nextIdx];
     if (upcomingTrack) {
-      store.resolveYouTubeVideoId(upcomingTrack).catch(() => {});
+      store.resolveYouTubeVideoId(upcomingTrack).catch(() => { });
     }
 
     if (chosenEffect === 'fade' || chosenEffect === 'echo') {
@@ -682,7 +682,7 @@ export function useYouTubeSDK() {
       const fadeInterval = setInterval(() => {
         currentStep++;
         const targetVol = Math.max(0, Math.floor(initialVolume * (1 - currentStep / steps)));
-        try { if (typeof p.setVolume === 'function') p.setVolume(targetVol); } catch (e) {}
+        try { if (typeof p.setVolume === 'function') p.setVolume(targetVol); } catch (e) { }
         if (currentStep >= steps) clearInterval(fadeInterval);
       }, stepTime);
     } else if (chosenEffect === 'brake') {
@@ -690,10 +690,10 @@ export function useYouTubeSDK() {
       try {
         if (typeof p.setPlaybackRate === 'function') {
           p.setPlaybackRate(0.75);
-          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) {} }, transitionMs * 0.3);
-          setTimeout(() => { try { p.setPlaybackRate(0.25); } catch (e) {} }, transitionMs * 0.6);
+          setTimeout(() => { try { p.setPlaybackRate(0.5); } catch (e) { } }, transitionMs * 0.3);
+          setTimeout(() => { try { p.setPlaybackRate(0.25); } catch (e) { } }, transitionMs * 0.6);
         }
-      } catch (e) {}
+      } catch (e) { }
     } else if (chosenEffect === 'cut') {
       // Corte directo
     }
@@ -704,7 +704,7 @@ export function useYouTubeSDK() {
       try {
         if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
         if (typeof p.setVolume === 'function') p.setVolume(initialVolume);
-      } catch (e) {}
+      } catch (e) { }
 
       usePlayerStore.getState().setActiveTransition(null);
 
@@ -735,7 +735,7 @@ export function useYouTubeSDK() {
     isTransitioningRef.current = false;
   };
 
-  return { 
+  return {
     ytReady,
     controls: {
       togglePlay: () => {
