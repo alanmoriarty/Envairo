@@ -323,16 +323,9 @@ export function PersistentPlayer() {
               </div>
             )}
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-text-primary truncate">
-                  {currentTrack?.name || 'Sin reproducción'}
-                </p>
-                {activeTransition && (
-                  <span className="text-[10px] font-bold text-pink-400 bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded-full shrink-0 animate-pulse">
-                    {activeTransition.label}
-                  </span>
-                )}
-              </div>
+              <p className="text-sm font-semibold text-text-primary truncate">
+                {currentTrack?.name || 'Sin reproducción'}
+              </p>
               <div className="flex items-center gap-2 truncate">
                 <p className="text-xs text-text-muted truncate">
                   {currentTrack?.artists ? formatArtists(currentTrack.artists) : 'Esperando una canción...'}

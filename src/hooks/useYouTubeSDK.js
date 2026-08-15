@@ -273,31 +273,15 @@ export function useYouTubeSDK() {
       });
       wrapper.appendChild(overlay);
 
-      // Loader y badge de transición visual sobre el video
+      // Loader de transición invisible para el usuario (gestiona estados sin superponer texto en pantalla)
       const loader = document.createElement('div');
       loader.id = 'youtube-transition-loader';
       loader.style.position = 'absolute';
       loader.style.inset = '0';
       loader.style.zIndex = '15';
       loader.style.background = 'transparent';
-      loader.style.display = 'flex';
-      loader.style.flexDirection = 'column';
-      loader.style.alignItems = 'center';
-      loader.style.justifyContent = 'center';
-      loader.style.opacity = '0';
+      loader.style.display = 'none';
       loader.style.pointerEvents = 'none';
-      loader.style.transition = 'opacity 0.3s ease';
-
-      loader.innerHTML = `
-        <div id="youtube-fx-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 9999px; background: rgba(15,10,25,0.75); border: 1px solid rgba(157,78,221,0.5); backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.5); transform: translateY(0); transition: transform 0.3s ease;">
-          <svg id="youtube-fx-icon" style="width: 18px; height: 18px; color: #d88aff; animation: pulse 1.5s infinite ease-in-out;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18V5l12-2v13"></path>
-            <circle cx="6" cy="18" r="3"></circle>
-            <circle cx="18" cy="16" r="3"></circle>
-          </svg>
-          <span id="youtube-loader-text" style="font-size: 11px; font-weight: 700; color: #fff; letter-spacing: 0.5px; text-transform: uppercase;"></span>
-        </div>
-      `;
       wrapper.appendChild(loader);
 
       const closeBtn = document.createElement('button');
@@ -639,26 +623,12 @@ export function useYouTubeSDK() {
       ? effects[Math.floor(Math.random() * effects.length)]
       : settings.djTransitionMode;
 
-    const loader = document.getElementById('youtube-transition-loader');
-    const loaderText = document.getElementById('youtube-loader-text');
     const ytContainer = document.getElementById('yt-container');
-
-    const effectLabels = {
-      fade: '🎧 Transición: Fundido',
-      cut: '⚡ Transición: Corte Rápido',
-      brake: '🛑 Transición: Vinyl Brake',
-      echo: '🌊 Transición: Dissolve Zoom',
-      start: '🚀 Transición: Spin Up'
-    };
 
     usePlayerStore.getState().setActiveTransition({
       type: chosenEffect,
-      label: effectLabels[chosenEffect] || '🎧 Transición DJ'
+      label: 'Transición DJ'
     });
-
-    if (loaderText) {
-      loaderText.innerText = effectLabels[chosenEffect] || '🎧 Transición DJ';
-    }
 
     // Efectos visuales aplicados DIRECTAMENTE al contenedor del video de YouTube
     if (ytContainer) {
