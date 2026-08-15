@@ -1,16 +1,3 @@
-const BASE_URL = 'https://www.googleapis.com/youtube/v3';
-
-async function ensureYouTubeToken() {
-  const { isYouTubeTokenExpired, refreshYouTubeToken } = await import('./youtubeAuth');
-  if (isYouTubeTokenExpired()) {
-    try {
-      await refreshYouTubeToken();
-    } catch (e) {
-      console.warn('Failed to refresh YouTube token:', e);
-    }
-  }
-  return localStorage.getItem('youtube_access_token');
-}
 let activePipedInstance = null;
 
 const searchCache = new Map();
@@ -133,154 +120,70 @@ export function getMockYouTubeResults(query) {
 }
 
 /**
- * Obtiene las playlists del usuario autenticado en YouTube.
- */
-export async function getUserYouTubePlaylists(limit = 50) {
-  const token = await ensureYouTubeToken();
-  if (!token) throw new Error('YOUTUBE_AUTH_REQUIRED');
-
-  const url = new URL(`${BASE_URL}/playlists`);
-  url.searchParams.append('part', 'snippet,contentDetails');
-  url.searchParams.append('mine', 'true');
-  url.searchParams.append('maxResults', limit.toString());
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('youtube_access_token');
-      throw new Error('YOUTUBE_AUTH_REQUIRED');
-    }
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Error fetching YouTube playlists');
-  }
-
-  const data = await response.json();
-  return data;
-}
-
-/**
- * Obtiene los detalles de una playlist específica de YouTube.
+ * Obtiene los detalles de una playlist de YouTube (Título, Portada, ID)
+ * utilizando el backend proxy/scraper sin requerir OAuth de Google.
  */
 export async function getYouTubePlaylist(playlistId) {
-  const token = await ensureYouTubeToken();
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocal ? 'https://envairoqr.com' : window.location.origin;
+    const url = new URL(baseUrl + '/api/youtube-playlist');
+    url.searchParams.append('id', playlistId);
 
-  // Se requiere autenticación OAuth para acceder a playlists.
-  // La API Key NO se usa en el cliente para evitar exponer secrets en el bundle.
-  if (!token) {
-    throw new Error('YOUTUBE_AUTH_REQUIRED');
-  }
-
-  const url = new URL(`${BASE_URL}/playlists`);
-  url.searchParams.append('part', 'snippet');
-  url.searchParams.append('id', playlistId);
-
-  const response = await fetch(url.toString(), {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('youtube_access_token');
-      throw new Error('YOUTUBE_AUTH_REQUIRED');
+    const response = await fetch(url.toString());
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        id: data.id || playlistId,
+        name: data.name || 'Playlist de YouTube',
+        snapshot_id: `yt-${playlistId}`,
+        owner: { id: 'youtube' },
+        images: data.thumbnail ? [{ url: data.thumbnail }] : []
+      };
     }
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Error fetching YouTube playlist');
+  } catch (err) {
+    console.warn('Error en proxy de playlist:', err);
   }
 
-  const data = await response.json();
-  if (!data.items || data.items.length === 0) return null;
-  
-  const pl = data.items[0];
-  return {
-    id: pl.id,
-    name: pl.snippet.title,
-    snapshot_id: pl.etag,
-    owner: { id: pl.snippet.channelId },
-    images: [{ url: pl.snippet.thumbnails?.medium?.url || pl.snippet.thumbnails?.default?.url }]
-  };
+  throw new Error('No se pudo cargar la playlist. Verifica que el enlace sea público o no listado.');
 }
 
 /**
- * Obtiene los videos de una playlist de YouTube.
+ * Obtiene los videos de una playlist de YouTube con sus duraciones y metadatos
+ * utilizando el backend proxy/scraper.
  */
 export async function getYouTubePlaylistItems(playlistId, limit = 50) {
-  const token = await ensureYouTubeToken();
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocal ? 'https://envairoqr.com' : window.location.origin;
+    const url = new URL(baseUrl + '/api/youtube-playlist');
+    url.searchParams.append('id', playlistId);
 
-  // Se requiere autenticación OAuth para acceder a playlists.
-  // La API Key NO se usa en el cliente para evitar exponer secrets en el bundle.
-  if (!token) {
-    throw new Error('YOUTUBE_AUTH_REQUIRED');
-  }
+    const response = await fetch(url.toString());
+    if (response.ok) {
+      const data = await response.json();
+      const rawItems = data.items || [];
 
-  const url = new URL(`${BASE_URL}/playlistItems`);
-  url.searchParams.append('part', 'snippet,contentDetails');
-  url.searchParams.append('playlistId', playlistId);
-  url.searchParams.append('maxResults', Math.min(limit, 50).toString()); // Cap at 50
+      const items = rawItems.slice(0, limit).map(item => ({
+        track: {
+          id: item.id,
+          uri: `youtube:${item.id}`,
+          name: item.title,
+          artists: item.uploaderName || 'YouTube',
+          album: {
+            images: [{ url: item.thumbnail || `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` }]
+          },
+          duration_ms: (item.duration || 0) * 1000,
+          source: 'youtube',
+          is_local: false
+        }
+      }));
 
-  const response = await fetch(url.toString(), {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('youtube_access_token');
-      throw new Error('YOUTUBE_AUTH_REQUIRED');
+      return { items };
     }
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Error fetching YouTube playlist items');
+  } catch (err) {
+    console.warn('Error en proxy de playlist items:', err);
   }
 
-  const data = await response.json();
-  
-  // Try to pre-fetch durations for these items if possible
-  // YouTube Data API requires a separate call to /videos to get duration
-  const videoIds = data.items.map(item => item.contentDetails.videoId).filter(Boolean);
-  
-  let durations = {};
-  if (videoIds.length > 0) {
-    try {
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const baseUrlStr = isLocal ? 'https://envairoqr.com' : window.location.origin;
-      const vidUrl = new URL(`${baseUrlStr}/api/youtube-details`);
-      vidUrl.searchParams.append('id', videoIds.join(','));
-      
-      const vidRes = await fetch(vidUrl.toString());
-      if (vidRes.ok) {
-        const vidData = await vidRes.json();
-        vidData.items.forEach(v => {
-          durations[v.id] = parseYouTubeDuration(v.contentDetails.duration);
-        });
-      }
-    } catch (e) {
-      console.error('Error fetching durations for playlist items', e);
-    }
-  }
-
-  // Mapear al formato esperado
-  const items = data.items.map(item => {
-    const snippet = item.snippet;
-    const videoId = item.contentDetails.videoId;
-    return {
-      track: {
-        id: videoId,
-        uri: `youtube:${videoId}`,
-        name: snippet.title,
-        artists: snippet.videoOwnerChannelTitle || snippet.channelTitle,
-        album: {
-          images: [{ url: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url }]
-        },
-        duration_ms: durations[videoId] || 0,
-        source: 'youtube',
-        is_local: false
-      }
-    };
-  });
-  
-  return { items };
+  throw new Error('No se pudieron obtener las canciones de la playlist.');
 }
