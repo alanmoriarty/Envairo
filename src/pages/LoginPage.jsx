@@ -126,7 +126,10 @@ export default function LoginPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { captchaToken }
+          options: {
+            emailRedirectTo: `${window.location.origin}/app/dashboard`,
+            captchaToken
+          }
         });
 
         if (error) throw error;
