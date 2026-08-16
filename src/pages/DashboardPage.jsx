@@ -26,6 +26,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { sanitizePrompt, MAX_PROMPT_LENGTH } from '../utils/security';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { sendRemotePlaybackCommand } from '../lib/remoteSyncChannel';
 
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
@@ -289,11 +290,7 @@ export default function DashboardPage() {
     if ((sdkReady || isAdminMode) && track.uri) {
       if (isAdminMode) {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
-        import('../lib/supabase').then(m => m.supabase.rpc('sync_host_config', {
-          p_session_id: sessionId,
-          p_secret: useSettingsStore.getState().hostSecret,
-          p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } }
-        }).then());
+        sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
       } else {
         usePlayerStore.getState().playTrackFromQueue(track.queueId);
         usePlayerStore.getState().playEngineTrack(track);
@@ -317,14 +314,8 @@ export default function DashboardPage() {
 
     clearTimeout(volumeDebounce.current);
     volumeDebounce.current = setTimeout(() => {
-      supabase.rpc('sync_host_config', {
-        p_session_id: sessionId,
-        p_secret: hostSecret,
-        p_updates: {
-          playback_command: { action: 'set_volume', value: vol, ts: Date.now() }
-        }
-      }).then();
-    }, 300);
+      sendRemotePlaybackCommand('set_volume', { value: vol });
+    }, 150);
   };
 
   const toggleRemoteMute = () => {
@@ -449,7 +440,7 @@ export default function DashboardPage() {
                   const newValue = !karaokeEnabled;
                   setKaraokeEnabled(newValue);
                   if (isAdminMode) {
-                    supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_karaoke', value: newValue, ts: Date.now() } } }).then();
+                    sendRemotePlaybackCommand('toggle_karaoke', { value: newValue });
                   } else {
                     const currentTrack = usePlayerStore.getState().currentTrack;
                     const progress = usePlayerStore.getState().progress;
@@ -474,7 +465,7 @@ export default function DashboardPage() {
                   const newValue = !lyricsEnabled;
                   setLyricsEnabled(newValue);
                   if (isAdminMode) {
-                    supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'toggle_lyrics', value: newValue, ts: Date.now() } } }).then();
+                    sendRemotePlaybackCommand('toggle_lyrics', { value: newValue });
                   } else {
                     const currentTrack = usePlayerStore.getState().currentTrack;
                     const progress = usePlayerStore.getState().progress;
@@ -502,7 +493,7 @@ export default function DashboardPage() {
           <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">{t('nav.remote')}</span>
           <button
             onClick={() => {
-              supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'restart', ts: Date.now() } } }).then();
+              sendRemotePlaybackCommand('restart');
             }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors hidden sm:block"
             title={t('dashboard.restart_song')}
@@ -514,7 +505,7 @@ export default function DashboardPage() {
             onClick={() => {
               const track = usePlayerStore.getState().prevQueue();
               if (track) {
-                supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } }).then();
+                sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
               }
             }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"
@@ -526,7 +517,7 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 usePlayerStore.getState().setIsPlaying(false);
-                supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'pause', ts: Date.now() } } }).then();
+                sendRemotePlaybackCommand('pause');
               }}
               className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
             >
@@ -536,7 +527,7 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 usePlayerStore.getState().setIsPlaying(true);
-                supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play', ts: Date.now() } } }).then();
+                sendRemotePlaybackCommand('play');
               }}
               className="p-4 rounded-full bg-accent hover:bg-accent-hover text-white transition-colors shadow-glow-sm"
             >
@@ -549,7 +540,7 @@ export default function DashboardPage() {
               if (!usePlayerStore.getState().checkSkipSpam()) return;
               const track = usePlayerStore.getState().shiftQueue();
               if (track) {
-                supabase.rpc('sync_host_config', { p_session_id: sessionId, p_secret: hostSecret, p_updates: { playback_command: { action: 'play_specific', queueId: track.queueId, ts: Date.now() } } }).then();
+                sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
               }
             }}
             className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors"

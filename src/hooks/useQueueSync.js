@@ -4,6 +4,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { getInstanceId } from '../lib/instanceId';
+import { setActiveSessionChannel, getLastRemoteActionTs } from '../lib/remoteSyncChannel';
 
 export function useQueueSync() {
   const authStore = useAuthStore((state) => state);
@@ -193,140 +194,169 @@ export function useQueueSync() {
       }, 500);
     });
 
+    // Ejecución centralizada de comandos de reproducción en el Host
+    const executeHostPlaybackCommand = (cmd) => {
+      if (!cmd || !cmd.action) return;
+      const currentState = usePlayerStore.getState();
+      if (cmd.ts && cmd.ts === currentState.lastCommandTs) return;
+      if (cmd.ts) currentState.setLastCommandTs(cmd.ts);
+
+      if (cmd.ts && (Date.now() - cmd.ts > 10000)) return;
+
+      if (cmd.action === 'play') {
+        if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();
+        currentState.setIsPlaying(true);
+      } else if (cmd.action === 'pause') {
+        if (currentState.youtubePlayer) currentState.youtubePlayer.pauseVideo();
+        currentState.setIsPlaying(false);
+      } else if (cmd.action === 'next') {
+        if (!currentState.checkSkipSpam()) return;
+        const nextTrack = currentState.shiftQueue();
+        if (nextTrack) {
+          currentState.playEngineTrack(nextTrack);
+        }
+      } else if (cmd.action === 'play_specific') {
+        const track = currentState.playTrackFromQueue(cmd.queueId);
+        if (track) {
+          currentState.playEngineTrack(track);
+        }
+      } else if (cmd.action === 'prev') {
+        const prevTrack = currentState.prevQueue();
+        if (prevTrack) {
+          currentState.playEngineTrack(prevTrack);
+        }
+      } else if (cmd.action === 'restart') {
+        if (currentState.youtubePlayer) {
+          currentState.youtubePlayer.seekTo(0, true);
+          currentState.youtubePlayer.playVideo();
+          currentState.setProgress(0);
+          currentState.setIsPlaying(true);
+        }
+      } else if (cmd.action === 'seek') {
+        if (currentState.youtubePlayer && typeof cmd.value === 'number') {
+          currentState.youtubePlayer.seekTo(cmd.value / 1000, true);
+          currentState.setProgress(cmd.value);
+        }
+      } else if (cmd.action === 'set_volume') {
+        currentState.setVolume(cmd.value);
+        if (currentState.youtubePlayer) {
+          currentState.youtubePlayer.setVolume(cmd.value);
+        }
+      } else if (cmd.action === 'toggle_karaoke') {
+        useSettingsStore.getState().setKaraokeEnabled(cmd.value);
+        if (currentState.currentTrack) {
+          const newMode = cmd.value ? 'karaoke' : useSettingsStore.getState().lyricsEnabled ? 'lyrics' : 'normal';
+          currentState.playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
+        }
+      } else if (cmd.action === 'toggle_lyrics') {
+        useSettingsStore.getState().setLyricsEnabled(cmd.value);
+        if (currentState.currentTrack) {
+          const newMode = cmd.value ? 'lyrics' : useSettingsStore.getState().karaokeEnabled ? 'karaoke' : 'normal';
+          currentState.playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
+        }
+      }
+    };
+
     initSyncTimeout = setTimeout(() => {
       if (!isMounted) return;
 
       syncChannel = supabase
         .channel(`queue-sync-${sessionId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
-        async (payload) => {
-          const newSession = payload.new;
-          const currentState = usePlayerStore.getState();
-
-          const activeInstanceId = getInstanceId();
-          const { user, logout } = useAuthStore.getState();
+        .on('broadcast', { event: 'remote_command' }, ({ payload }) => {
+          const { user } = useAuthStore.getState();
           const { isAdminMode } = useSettingsStore.getState();
+          // El anfitrión principal ejecuta los comandos WebSocket en <50ms
+          if (user && !isAdminMode) {
+            executeHostPlaybackCommand(payload);
+          }
+        })
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
+          async (payload) => {
+            const newSession = payload.new;
+            const currentState = usePlayerStore.getState();
 
-          // Ignorar eventos de kickout si estamos en medio de tomar el control
-          if (isTakingOverRef.current) return;
+            const activeInstanceId = getInstanceId();
+            const { user, logout } = useAuthStore.getState();
+            const { isAdminMode } = useSettingsStore.getState();
 
-          // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
-          if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
-            import('sonner').then(({ toast }) => {
-              toast.error('Sesión iniciada en otro dispositivo', { duration: 5000 });
-            });
-            
-            // Pausar y desconectar el reproductor del dispositivo viejo
-            try {
-              const state = usePlayerStore.getState();
-              if (state.youtubePlayer) {
-                state.youtubePlayer.pauseVideo();
-              }
-            } catch (err) {}
+            // Ignorar eventos de kickout si estamos en medio de tomar el control
+            if (isTakingOverRef.current) return;
 
-            // Esperar a que el logout limpie el estado local ANTES de redirigir,
-            // y pasar `true` para no desactivar la sesión en la base de datos (ya que pertenece al nuevo dispositivo)
-            logout(true).then(() => {
+            // Kickout Logic: Si somos un Host autenticado y el active_instance_id cambia, fuimos reemplazados
+            if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
+              import('sonner').then(({ toast }) => {
+                toast.error('Sesión iniciada en otro dispositivo', { duration: 5000 });
+              });
+              
+              try {
+                const state = usePlayerStore.getState();
+                if (state.youtubePlayer) {
+                  state.youtubePlayer.pauseVideo();
+                }
+              } catch (err) {}
+
+              logout(true).then(() => {
+                window.location.href = '/';
+              });
+              return;
+            }
+
+            // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
+            if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
+              import('sonner').then(({ toast }) => {
+                toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
+              });
+              useSettingsStore.getState().setIsAdminMode(false);
+              return;
+            }
+
+            // Kickout Logic (Remoto): Si el anfitrión cerró sesión o regeneró el QR, el secret cambia y nos expulsa
+            if (isAdminMode && newSession.secret && newSession.secret !== useSettingsStore.getState().hostSecret) {
+              import('sonner').then(({ toast }) => {
+                toast.error('La sesión del anfitrión ha expirado o se ha cerrado.', { duration: 8000 });
+              });
+              useSettingsStore.getState().clearSettingsState();
               window.location.href = '/';
-            });
-            return;
+              return;
+            }
+
+            // Procesar Comandos de Reproducción como fallback desde DB
+            if (!isAdminMode && newSession.playback_command) {
+              executeHostPlaybackCommand(newSession.playback_command);
+            }
+
+            // Procesar las actualizaciones de la cola y la pista actual
+            processStateUpdates(newSession);
           }
+        )
+        .on('broadcast', { event: 'playback_sync' }, (payload) => {
+          const user = useAuthStore.getState().user;
+          const isAdminMode = useSettingsStore.getState().isAdminMode;
+          if (!user || isAdminMode) {
+            const store = usePlayerStore.getState();
+            const p = payload.payload;
+            const isRecentRemoteAction = (Date.now() - getLastRemoteActionTs()) < 1200;
 
-          // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
-          if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
-            import('sonner').then(({ toast }) => {
-              toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
-            });
-            useSettingsStore.getState().setIsAdminMode(false);
-            return;
-          }
-
-          // Kickout Logic (Remoto): Si el anfitrión cerró sesión o regeneró el QR, el secret cambia y nos expulsa
-          if (isAdminMode && newSession.secret && newSession.secret !== useSettingsStore.getState().hostSecret) {
-            import('sonner').then(({ toast }) => {
-              toast.error('La sesión del anfitrión ha expirado o se ha cerrado.', { duration: 8000 });
-            });
-            useSettingsStore.getState().clearSettingsState();
-            window.location.href = '/';
-            return;
-          }
-
-          // Procesar Comandos de Reproducción (Solo el Host principal los ejecuta)
-
-          if (!isAdminMode && newSession.playback_command) {
-            const cmd = newSession.playback_command;
-            if (cmd.ts !== currentState.lastCommandTs) {
-              usePlayerStore.getState().setLastCommandTs(cmd.ts);
-                          if (Date.now() - cmd.ts < 10000) {
-                  if (cmd.action === 'play') {
-                    if (currentState.youtubePlayer) currentState.youtubePlayer.playVideo();
-                  } else if (cmd.action === 'pause') {
-                    if (currentState.youtubePlayer) currentState.youtubePlayer.pauseVideo();
-                  } else if (cmd.action === 'next') {
-                    const nextTrack = usePlayerStore.getState().shiftQueue();
-                    if (nextTrack) {
-                      usePlayerStore.getState().playEngineTrack(nextTrack);
-                    }
-                  } else if (cmd.action === 'play_specific') {
-                    const track = usePlayerStore.getState().playTrackFromQueue(cmd.queueId);
-                    if (track) {
-                      usePlayerStore.getState().playEngineTrack(track);
-                    }
-                  } else if (cmd.action === 'prev') {
-                    const prevTrack = usePlayerStore.getState().prevQueue();
-                    if (prevTrack) {
-                      usePlayerStore.getState().playEngineTrack(prevTrack);
-                    }
-                  } else if (cmd.action === 'restart') {
-                    if (currentState.youtubePlayer) {
-                      currentState.youtubePlayer.seekTo(0, true);
-                      currentState.youtubePlayer.playVideo();
-                    }
-                  } else if (cmd.action === 'set_volume') {
-                    usePlayerStore.getState().setVolume(cmd.value);
-                    if (currentState.youtubePlayer) {
-                      currentState.youtubePlayer.setVolume(cmd.value);
-                    }
-                  } else if (cmd.action === 'toggle_karaoke') {
-                    useSettingsStore.getState().setKaraokeEnabled(cmd.value);
-                    if (currentState.currentTrack) {
-                      const newMode = cmd.value ? 'karaoke' : useSettingsStore.getState().lyricsEnabled ? 'lyrics' : 'normal';
-                      usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
-                    }
-                  } else if (cmd.action === 'toggle_lyrics') {
-                    useSettingsStore.getState().setLyricsEnabled(cmd.value);
-                    if (currentState.currentTrack) {
-                      const newMode = cmd.value ? 'lyrics' : useSettingsStore.getState().karaokeEnabled ? 'karaoke' : 'normal';
-                      usePlayerStore.getState().playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
-                    }
-                  }
+            if (!isRecentRemoteAction && p.isPlaying !== undefined && store.isPlaying !== p.isPlaying) {
+               store.setIsPlaying(p.isPlaying);
+            }
+            if (p.progress !== undefined && Math.abs(store.progress - p.progress) > 1500) {
+               store.setProgress(p.progress);
+            }
+            if (p.currentTrack && JSON.stringify(p.currentTrack) !== JSON.stringify(store.currentTrack)) {
+               store.setCurrentTrack(p.currentTrack);
             }
           }
-        }
-          // Procesar las actualizaciones de la cola y la pista actual
-          processStateUpdates(newSession);
-        }
-      )
-      .on('broadcast', { event: 'playback_sync' }, (payload) => {
-        const user = useAuthStore.getState().user;
-        const isAdminMode = useSettingsStore.getState().isAdminMode;
-        if (!user || isAdminMode) {
-          const store = usePlayerStore.getState();
-          const p = payload.payload;
-          if (p.isPlaying !== undefined && store.isPlaying !== p.isPlaying) {
-             store.setIsPlaying(p.isPlaying);
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            setActiveSessionChannel(syncChannel);
           }
-          if (p.progress !== undefined && Math.abs(store.progress - p.progress) > 1500) {
-             store.setProgress(p.progress);
-          }
-          if (p.currentTrack && JSON.stringify(p.currentTrack) !== JSON.stringify(store.currentTrack)) {
-             store.setCurrentTrack(p.currentTrack);
-          }
-        }
-      })
-      .subscribe();
+        });
+
+      setActiveSessionChannel(syncChannel);
     }, 150);
 
     // Broadcast para sincronizar el estado y progreso en tiempo real con controles remotos
@@ -454,6 +484,7 @@ export function useQueueSync() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handleBeforeUnload);
       flushPendingSync();
+      setActiveSessionChannel(null);
       if (syncChannel) supabase.removeChannel(syncChannel);
     };
   }, [sessionId]);
