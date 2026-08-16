@@ -49,6 +49,8 @@ export default function TVDisplayPage() {
   const activeTvDeckRef = useRef('A'); // 'A' | 'B'
   const pendingSyncRef = useRef(null);
   const isTvTransitioningRef = useRef(false);
+  const tvTransitionTimerRef = useRef(null);
+  const tvVolIntervalRef = useRef(null);
 
   // Proxy that always points to the active deck's player
   const playerRef = {
@@ -430,6 +432,8 @@ export default function TVDisplayPage() {
     safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    if (tvTransitionTimerRef.current) clearTimeout(tvTransitionTimerRef.current);
+    if (tvVolIntervalRef.current) clearInterval(tvVolIntervalRef.current);
 
     document.removeEventListener('fullscreenchange', handleFsChange);
     document.removeEventListener('webkitfullscreenchange', handleFsChange);
@@ -441,6 +445,9 @@ export default function TVDisplayPage() {
 // ── handleTransitionStart: crossfade entre decks en pantalla esclava ──
 const handleTransitionStart = (data) => {
   if (!data?.nextVideoId) return;
+
+  if (tvTransitionTimerRef.current) clearTimeout(tvTransitionTimerRef.current);
+  if (tvVolIntervalRef.current) clearInterval(tvVolIntervalRef.current);
 
   isTvTransitioningRef.current = true;
   currentVideoIdRef.current = data.nextVideoId;
@@ -462,6 +469,7 @@ const handleTransitionStart = (data) => {
 
   const durationSec = data.durationSec || 5;
   const chosenEffect = data.effect || 'fade';
+  const transitionMs = Math.max(2500, Math.floor(durationSec * 1000));
 
   // 1. Cargar y arrancar el video entrante en el Deck en Standby en segundo plano
   try {
@@ -479,8 +487,13 @@ const handleTransitionStart = (data) => {
   // 2. Transición visual simultánea en pantalla
   if (incomingContainer) {
     incomingContainer.style.zIndex = '3';
-    incomingContainer.style.opacity = '1';
+    incomingContainer.style.opacity = '0';
+    incomingContainer.style.transform = 'scale(1.02)';
     incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
+    setTimeout(() => {
+      incomingContainer.style.opacity = '1';
+      incomingContainer.style.transform = 'none';
+    }, 50);
   }
 
   if (outgoingContainer) {
@@ -498,24 +511,28 @@ const handleTransitionStart = (data) => {
 
   // 3. Rampa de volumen suave si la TV tiene sonido activado
   if (tvWithSoundRef.current) {
-    const steps = 12;
-    const stepTime = (durationSec * 1000) / steps;
+    const steps = 15;
+    const stepTime = transitionMs / steps;
     let step = 0;
-    const volInterval = setInterval(() => {
+    tvVolIntervalRef.current = setInterval(() => {
       step++;
       const ratio = step / steps;
       try {
         if (outgoingPlayer && typeof outgoingPlayer.setVolume === 'function') outgoingPlayer.setVolume(Math.max(0, Math.floor(100 * (1 - ratio))));
         if (incomingPlayer && typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(Math.min(100, Math.floor(100 * ratio)));
       } catch (e) { }
-      if (step >= steps) clearInterval(volInterval);
+      if (step >= steps) {
+        clearInterval(tvVolIntervalRef.current);
+        tvVolIntervalRef.current = null;
+      }
     }, stepTime);
   }
 
   // 4. Consolidar cambio de deck en la TV al finalizar la mezcla
-  setTimeout(() => {
+  tvTransitionTimerRef.current = setTimeout(() => {
     activeTvDeckRef.current = incomingDeck;
     isTvTransitioningRef.current = false;
+    tvTransitionTimerRef.current = null;
 
     try {
       if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
@@ -529,7 +546,14 @@ const handleTransitionStart = (data) => {
       outgoingContainer.style.opacity = '0';
       outgoingContainer.style.zIndex = '1';
     }
-  }, durationSec * 1000);
+
+    if (incomingContainer) {
+      incomingContainer.style.transform = 'none';
+      incomingContainer.style.filter = 'none';
+      incomingContainer.style.opacity = '1';
+      incomingContainer.style.zIndex = '2';
+    }
+  }, transitionMs);
 };
 handleTransitionStartRef.current = handleTransitionStart;
 
@@ -755,7 +779,7 @@ handleSyncRef.current = handleSync;
           <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-accent/15 border-2 border-accent/40 shadow-[0_0_50px_rgba(157,78,221,0.35)]">
             <Music2 size={48} className="text-accent animate-pulse" />
           </div>
-          <p className="text-white/80 font-medium text-lg tracking-wide uppercase">Cargando...</p>
+          <p className="text-white/80 font-medium text-lg tracking-wide uppercase">{t('tv.loading')}</p>
         </div>
       )}
 

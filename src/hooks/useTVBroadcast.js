@@ -4,6 +4,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { getInstanceId } from '../lib/instanceId';
+import { setTvSyncChannel } from '../lib/tvSyncChannel';
 
 export function useTVBroadcast() {
   const channelRef = useRef(null);
@@ -26,6 +27,7 @@ export function useTVBroadcast() {
         supabase.removeChannel(sbChannelRef.current);
       }
       sbChannelRef.current = supabase.channel(`tv-sync-${activeSessionId}`);
+      setTvSyncChannel(sbChannelRef.current);
       sbChannelRef.current.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setTimeout(() => sendCurrentSync(), 300);
@@ -322,6 +324,7 @@ export function useTVBroadcast() {
         channelRef.current.close();
       }
       if (sbChannelRef.current) {
+        setTvSyncChannel(null);
         supabase.removeChannel(sbChannelRef.current);
       }
     };

@@ -508,6 +508,7 @@ const ES = {
     host_disconnected: 'Anfitrión desconectado. Esperando reconexión...',
     max_limit_reached: 'Límite máximo alcanzado (4 pantallas simultáneas)',
     connected_waiting: 'Conectado. Esperando música...',
+    loading: 'Cargando...',
     searching_alternative: 'Buscando alternativa...',
     link_this_screen: 'Vincular esta pantalla',
     blacklist_artist_placeholder: 'Ej: Anuel AA, Yeri Mua...',
@@ -690,6 +691,7 @@ const ES = {
     exit_fullscreen: 'Salir de pantalla completa',
     fullscreen: 'Pantalla Completa',
     exit_esc: 'Salir (o presiona ESC)',
+    loading: 'Cargando...',
   },
   profile: {
     empty_nickname: 'El apodo no puede estar vacío',
@@ -1166,6 +1168,7 @@ const EN = {
     exit_fullscreen: 'Exit fullscreen',
     fullscreen: 'Fullscreen',
     exit_esc: 'Exit (or press ESC)',
+    loading: 'Loading...',
   },
   profile: {
     empty_nickname: 'Nickname cannot be empty',

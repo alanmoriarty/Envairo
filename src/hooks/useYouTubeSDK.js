@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { supabase } from '../lib/supabase';
+import { getTvSyncChannel } from '../lib/tvSyncChannel';
 
 export function useYouTubeSDK() {
   const { setYoutubePlayer, playbackEngine, setIsPlaying, setProgress, setDuration, setCurrentTrack, currentTrack } = usePlayerStore();
@@ -330,8 +332,24 @@ export function useYouTubeSDK() {
         },
         getVolume: () => getActivePlayer()?.getVolume(),
         getPlayerState: () => getActivePlayer()?.getPlayerState(),
-        getCurrentTime: () => getActivePlayer()?.getCurrentTime(),
-        getDuration: () => getActivePlayer()?.getDuration(),
+        getCurrentTime: () => {
+          if (isTransitioningRef.current) {
+            const incomingP = getStandbyPlayer();
+            if (incomingP && typeof incomingP.getCurrentTime === 'function') {
+              return incomingP.getCurrentTime();
+            }
+          }
+          return getActivePlayer()?.getCurrentTime();
+        },
+        getDuration: () => {
+          if (isTransitioningRef.current) {
+            const incomingP = getStandbyPlayer();
+            if (incomingP && typeof incomingP.getDuration === 'function') {
+              return incomingP.getDuration();
+            }
+          }
+          return getActivePlayer()?.getDuration();
+        },
         setPlaybackRate: (rate) => getActivePlayer()?.setPlaybackRate(rate),
         getPlaybackRate: () => getActivePlayer()?.getPlaybackRate(),
         stopVideo: () => {
@@ -346,6 +364,35 @@ export function useYouTubeSDK() {
         cueVideoById: (args) => getActivePlayer()?.cueVideoById(args),
 
         loadVideoById: (args) => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
+          isTransitioningRef.current = false;
+          usePlayerStore.getState().setActiveTransition(null);
+
+          const activeDeck = activeDeckRef.current;
+          const standbyDeck = activeDeck === 'A' ? 'B' : 'A';
+          const activeContainer = document.getElementById(activeDeck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+          const standbyContainer = document.getElementById(standbyDeck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+          const standbyP = getStandbyPlayer();
+
+          if (activeContainer) {
+            activeContainer.style.opacity = '1';
+            activeContainer.style.zIndex = '3';
+            activeContainer.style.transform = 'none';
+            activeContainer.style.filter = 'none';
+          }
+          if (standbyContainer) {
+            standbyContainer.style.opacity = '0';
+            standbyContainer.style.zIndex = '2';
+            standbyContainer.style.transform = 'none';
+            standbyContainer.style.filter = 'none';
+          }
+          if (standbyP && typeof standbyP.stopVideo === 'function') {
+            try { standbyP.stopVideo(); } catch (e) {}
+          }
+
           const activeP = getActivePlayer();
           if (!activeP) return;
 
@@ -477,6 +524,7 @@ export function useYouTubeSDK() {
 
     return () => {
       stopProgressTimer();
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       if (playerARef.current) { playerARef.current.destroy(); playerARef.current = null; }
       if (playerBRef.current) { playerBRef.current.destroy(); playerBRef.current = null; }
       const wrapper = document.getElementById('youtube-wrapper');
@@ -565,12 +613,12 @@ export function useYouTubeSDK() {
 
     if (!videoIdToPlay) {
       isTransitioningRef.current = false;
+      usePlayerStore.getState().setActiveTransition(null);
       return;
     }
 
     // Emitir broadcast de inicio de transición a pantallas esclavas (TVs)
     try {
-      const sessId = useSettingsStore.getState().sessionId;
       const bc = new BroadcastChannel('envairo_tv_sync');
       const payload = {
         type: 'DJ_TRANSITION_START',
@@ -582,21 +630,23 @@ export function useYouTubeSDK() {
       bc.postMessage(payload);
       bc.close();
 
-      if (sessId) {
-        const ch = supabase.channel(`tv-sync-${sessId}`);
-        ch.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            ch.send({ type: 'broadcast', event: 'tv_sync', payload });
-            setTimeout(() => supabase.removeChannel(ch), 500);
-          }
-        });
+      // Reusar canal permanente de useTVBroadcast en vez de crear uno efímero
+      const tvChannel = getTvSyncChannel();
+      if (tvChannel && tvChannel.state === 'joined') {
+        tvChannel.send({ type: 'broadcast', event: 'tv_sync', payload }).catch(() => {});
       }
     } catch (e) { }
 
-    // 2. Actualizar INMEDIATAMENTE el track en el estado global para que el panel anfitrión refleje el nuevo tema
+    // 2. Actualizar INMEDIATAMENTE el track y video ID en el estado global para que el anfitrión y los syncs reflejen el nuevo video
     const nextTrack = freshStore.shiftQueue();
     if (nextTrack) {
-      usePlayerStore.setState({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
+      currentYtIdRef.current = videoIdToPlay;
+      usePlayerStore.setState({
+        currentYtId: videoIdToPlay,
+        currentTrack: nextTrack,
+        isPlaying: true,
+        progress: 0
+      });
       freshStore.queueAddToHistory(nextTrack);
     }
 
@@ -616,6 +666,9 @@ export function useYouTubeSDK() {
         incomingPlayer.playVideo();
       }
     } catch (e) { }
+
+    // Conectar inmediatamente el timer de progreso a la nueva canción (incomingPlayer)
+    startProgressTimer(incomingPlayer);
 
     // 4. Cruzar visualmente los contenedores (Opacity & Effects)
     if (incomingContainer) {
@@ -695,6 +748,13 @@ export function useYouTubeSDK() {
         outgoingContainer.style.zIndex = '1';
       }
 
+      if (incomingContainer) {
+        incomingContainer.style.transform = 'none';
+        incomingContainer.style.filter = 'none';
+        incomingContainer.style.opacity = '1';
+        incomingContainer.style.zIndex = '3';
+      }
+
       // Sincronizar con dispositivos remotos (Smart TV / Guests)
       try {
         const sessId = useSettingsStore.getState().sessionId;
@@ -723,11 +783,6 @@ export function useYouTubeSDK() {
       clearInterval(progressInterval.current);
       progressInterval.current = null;
     }
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current);
-      transitionTimerRef.current = null;
-    }
-    isTransitioningRef.current = false;
   };
 
   return {
