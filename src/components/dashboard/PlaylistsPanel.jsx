@@ -191,36 +191,24 @@ export function PlaylistsPanel() {
       }
 
       const currentState = usePlayerStore.getState();
-      const currentQueue = currentState.queue;
-      const isQueueEmpty = currentQueue.length === 0;
+      const isQueueEmpty = currentState.queue.length === 0 && !currentState.currentTrack;
 
-      usePlayerStore.setState({ queue: [...currentQueue, ...tracksToQueue] });
+      currentState.addMultipleToQueue(tracksToQueue);
 
       if (isAdminMode) {
+        const updatedState = usePlayerStore.getState();
         import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', {
           p_session_id: sessionId,
           p_secret: useSettingsStore.getState().hostSecret,
           p_updates: {
-            queue: [...currentQueue, ...tracksToQueue],
-            current_queue_index: currentState.currentQueueIndex
+            queue: updatedState.queue,
+            current_queue_index: updatedState.currentQueueIndex
           }
-        }).then());
+        }).catch(() => {}));
       }
 
       if (isQueueEmpty) {
-        const firstTrack = shiftQueue();
-        if (firstTrack) {
-          if (isAdminMode) {
-            import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', {
-              p_session_id: sessionId,
-              p_secret: useSettingsStore.getState().hostSecret,
-              p_updates: { playback_command: { action: 'play_specific', queueId: firstTrack.queueId, ts: Date.now() } }
-            }).then());
-          } else {
-            usePlayerStore.getState().playEngineTrack(firstTrack);
-          }
-          toast.success(t('dashboard.toast_pl_added', { name: playlist.name }), { id: toastId });
-        }
+        toast.success(t('dashboard.toast_pl_added', { name: playlist.name }), { id: toastId });
       } else {
         toast.success(t('dashboard.toast_pl_added_multiple', { count: tracksToQueue.length }), { id: toastId });
       }

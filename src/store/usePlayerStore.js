@@ -190,8 +190,7 @@ export const usePlayerStore = create(
 
         // Si el reproductor está completamente vacío (cola acabada y nada sonando), iniciar auto-reproducción
         const stateAfter = get();
-
-        if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
+        if (!stateAfter.currentTrack && stateAfter.queue.length > 0) {
           const nextTrack = stateAfter.shiftQueue();
           if (nextTrack) {
             stateAfter.playEngineTrack(nextTrack);
@@ -226,7 +225,7 @@ export const usePlayerStore = create(
         get().startQueuePreloadWorker();
 
         const stateAfter = get();
-        if (!stateAfter.currentTrack && stateAfter.queue.length > 0 && stateAfter.currentQueueIndex < stateAfter.queue.length - 1) {
+        if (!stateAfter.currentTrack && stateAfter.queue.length > 0) {
           const nextTrack = stateAfter.shiftQueue();
           if (nextTrack) {
             stateAfter.playEngineTrack(nextTrack);
@@ -303,8 +302,10 @@ export const usePlayerStore = create(
         if (next) {
           set({ currentQueueIndex: nextIndex, currentTrack: next, queue: newQueue });
           return next;
+        } else {
+          set({ currentQueueIndex: newQueue.length, currentTrack: null, queue: newQueue });
+          return null;
         }
-        return null;
       },
 
       prevQueue: () => {
@@ -582,11 +583,19 @@ export const usePlayerStore = create(
       },
 
       addToHistory: (track) => set((state) => {
+        if (!track || !track.id) return state;
         const lastTrack = state.playHistory[0];
-        // Evitar duplicados consecutivos
-        if (lastTrack && lastTrack.id === track.id) return state;
+        // Evitar duplicados consecutivos si es exactamente la misma canción reproducida recientemente
+        if (lastTrack && lastTrack.id === track.id && (!lastTrack.playedAt || Math.abs(Date.now() - new Date(lastTrack.playedAt).getTime()) < 30000)) {
+          return state;
+        }
+        const historyEntry = {
+          ...track,
+          playedAt: track.playedAt || new Date().toISOString()
+        };
+        const filteredHistory = state.playHistory.filter(h => h.queueId !== track.queueId);
         return {
-          playHistory: [{ ...track, playedAt: new Date().toISOString() }, ...state.playHistory].slice(0, 100)
+          playHistory: [historyEntry, ...filteredHistory].slice(0, 100)
         };
       }),
 
@@ -678,6 +687,9 @@ export const usePlayerStore = create(
         lastCommandTs: state.lastCommandTs,
         currentYtId: state.currentYtId,
         currentTrack: state.currentTrack,
+        queue: state.queue,
+        currentQueueIndex: state.currentQueueIndex,
+        playHistory: state.playHistory,
       }),
     }
   )

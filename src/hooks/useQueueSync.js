@@ -56,6 +56,11 @@ export function useQueueSync() {
         return;
       }
 
+      // Guard: don't push empty uninitialized state before initial sync completes
+      if (!state.initialSyncDone && state.queue.length === 0 && !state.currentTrack) {
+        return;
+      }
+
       // Limpiar el timeout anterior si existe
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
@@ -362,6 +367,44 @@ export function useQueueSync() {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // 5. Flush inmediato antes de cerrar o recargar la pestaña
+    const flushPendingSync = () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
+      }
+      const secret = useSettingsStore.getState().hostSecret;
+      const user = useAuthStore.getState().user;
+      const isAdmin = useSettingsStore.getState().isAdminMode;
+      if (isAdmin || (!user && !secret)) return;
+
+      const state = usePlayerStore.getState();
+      if (!state.initialSyncDone && state.queue.length === 0 && !state.currentTrack) return;
+
+      supabase
+        .rpc('sync_host_config', {
+          p_session_id: sessionId,
+          p_secret: secret,
+          p_updates: {
+            queue: state.queue,
+            current_queue_index: state.currentQueueIndex,
+            current_track: state.currentTrack,
+            play_history: state.playHistory,
+            paired_tvs: useSettingsStore.getState().pairedTvs,
+            active_device_id: state.activeDeviceId,
+            volume: state.volume
+          }
+        })
+        .catch(() => {});
+    };
+
+    const handleBeforeUnload = () => {
+      flushPendingSync();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
     // 3. Initial pull
     supabase
       .from('sessions')
@@ -408,9 +451,9 @@ export function useQueueSync() {
       unsubscribe();
       unsubscribeSettings();
       clearInterval(broadcastInterval);
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+      flushPendingSync();
       if (syncChannel) supabase.removeChannel(syncChannel);
     };
   }, [sessionId]);
