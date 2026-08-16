@@ -36,6 +36,7 @@ import { CastToTvModal } from '../components/dashboard/CastToTvModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
+import { isAllowedEmail } from '../utils/constants';
 
 const formatArtists = (artists) => {
   if (typeof artists === 'string') return artists;
@@ -184,12 +185,7 @@ export default function DashboardPage() {
   } = useSettingsStore();
 
   const { user } = useAuthStore.getState();
-  const ALLOWED_EMAILS = [
-    'aliriopina04@gmail.com',
-    'aliriopina05@gmail.com',
-    'verotorrenegra@gmail.com'
-  ];
-  const canSeeTestMode = ALLOWED_EMAILS.includes(user?.email);
+  const canSeeTestMode = isAllowedEmail(user?.email);
 
   useEffect(() => {
     const timer = setInterval(() => setLocalTime(Date.now()), 60000); // update every minute

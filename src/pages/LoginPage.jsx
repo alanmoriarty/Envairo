@@ -11,20 +11,23 @@ import { InstallAppButton } from '../components/shared/InstallAppButton';
 import { toast } from 'sonner';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { AdSense } from '../components/ads/AdSense';
-
-// Lista de correos con suscripción activa (Beta)
-export const ALLOWED_EMAILS = [
-  'aliriopina04@gmail.com',
-  'javiercardonaaudiovisual@gmail.com',
-  'verotorrenegra@gmail.com'
-];
+import { ALLOWED_EMAILS, isAllowedEmail } from '../utils/constants';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
 
   useEffect(() => {
+    // 0. Listener para auto-login cuando el usuario confirma su correo desde el enlace mágico
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+        setUser(session.user);
+        toast.success(t('login.login_success') || '¡Sesión iniciada con éxito!');
+        navigate('/app/dashboard', { replace: true });
+      }
+    });
+
     // 1. Interceptar parámetros de "QR de Administrador" para control remoto (tiene máxima prioridad)
     const params = new URLSearchParams(window.location.search);
     const session = params.get('session');
@@ -51,7 +54,7 @@ export default function LoginPage() {
         useSettingsStore.getState().setIsAdminMode(false);
 
         const userEmail = currentUser?.email || '';
-        let isSubscribed = ALLOWED_EMAILS.length === 0 || ALLOWED_EMAILS.includes(userEmail.toLowerCase().trim());
+        let isSubscribed = isAllowedEmail(userEmail);
 
         // Si no está en la lista de beta, comprobamos en la base de datos
         if (!isSubscribed && currentUser?.id) {
@@ -71,7 +74,12 @@ export default function LoginPage() {
     };
 
     checkSubscriptionAndRedirect(user);
-  }, [user, isAuthenticated, navigate]);
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [user, isAuthenticated, navigate, setUser, t]);
+
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerSent, setRegisterSent] = useState(false);   // Post-registration confirmation
   const [isResetting, setIsResetting] = useState(false);     // Forgot-password mode
@@ -84,7 +92,6 @@ export default function LoginPage() {
   // Inline error: shown persistently below the form (doesn't disappear like a toast)
   const [authError, setAuthError] = useState('');
   const captchaRef = useRef(null);
-  const setUser = useAuthStore(s => s.setUser);
 
   // Password strength: scored 0-4 based on 5 criteria
   const getPasswordStrength = (pwd) => {
@@ -102,17 +109,6 @@ export default function LoginPage() {
     return { score: level, label: labels[level], color: colors[level] };
   };
   const pwdStrength = getPasswordStrength(password);
-
-  const ALLOWED_EMAILS = [
-    'aliriopina04@gmail.com',
-    'aliriopina05@gmail.com',
-    'javiercardonaaudiovisual@gmail.com',
-    'alextascvers@gmail.com',
-    'bernabeite@gmail.com',
-    'camiloardila.1803@gmail.com',
-    'julian.10barrera@gmail.com',
-    'Verotorrenegra@gmail.com'
-  ]; // <-- Agrega aquí los correos a los que les darás acceso a la Beta
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
@@ -163,7 +159,7 @@ export default function LoginPage() {
           }
 
           setUser(data.user);
-          let isSubscribed = ALLOWED_EMAILS.length === 0 || ALLOWED_EMAILS.includes(data.user.email.toLowerCase().trim());
+          let isSubscribed = isAllowedEmail(data.user.email);
 
           if (!isSubscribed) {
             const { data: subData } = await supabase
