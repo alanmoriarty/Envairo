@@ -186,7 +186,8 @@ export default function DashboardPage() {
   const { user } = useAuthStore.getState();
   const ALLOWED_EMAILS = [
     'aliriopina04@gmail.com',
-    'aliriopina05@gmail.com'
+    'aliriopina05@gmail.com',
+    'verotorrenegra@gmail.com'
   ];
   const canSeeTestMode = ALLOWED_EMAILS.includes(user?.email);
 

@@ -15,7 +15,8 @@ import { AdSense } from '../components/ads/AdSense';
 // Lista de correos con suscripción activa (Beta)
 export const ALLOWED_EMAILS = [
   'aliriopina04@gmail.com',
-  'javiercardonaaudiovisual@gmail.com'
+  'javiercardonaaudiovisual@gmail.com',
+  'verotorrenegra@gmail.com'
 ];
 
 export default function LoginPage() {
@@ -109,7 +110,8 @@ export default function LoginPage() {
     'alextascvers@gmail.com',
     'bernabeite@gmail.com',
     'camiloardila.1803@gmail.com',
-    'julian.10barrera@gmail.com'
+    'julian.10barrera@gmail.com',
+    'Verotorrenegra@gmail.com'
   ]; // <-- Agrega aquí los correos a los que les darás acceso a la Beta
 
   const handleEmailAuth = async (e) => {
@@ -363,226 +365,226 @@ export default function LoginPage() {
             )}
           </div>
         ) : (
-        /* ── LOGIN / REGISTER FORM ── */
-        <div className="card p-6 space-y-4 mb-6">
-          {registerSent ? (
-            /* ── POST-REGISTRATION CONFIRMATION ── */
-            <div className="flex flex-col items-center text-center gap-5 py-4 animate-fade-in">
-              {/* Animated checkmark circle */}
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="relative bg-green-500/10 border border-green-500/30 rounded-full p-5">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#4ade80' }}>
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="m22 7-10 7L2 7" />
-                  </svg>
+          /* ── LOGIN / REGISTER FORM ── */
+          <div className="card p-6 space-y-4 mb-6">
+            {registerSent ? (
+              /* ── POST-REGISTRATION CONFIRMATION ── */
+              <div className="flex flex-col items-center text-center gap-5 py-4 animate-fade-in">
+                {/* Animated checkmark circle */}
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="relative bg-green-500/10 border border-green-500/30 rounded-full p-5">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#4ade80' }}>
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-10 7L2 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="text-lg font-semibold text-text-primary">¡Cuenta creada!</h2>
+                  <p className="text-sm text-text-muted leading-relaxed max-w-[260px]">
+                    Enviamos un correo de confirmación a
+                  </p>
+                  <p className="text-sm font-semibold text-accent break-all">{email}</p>
+                  <p className="text-sm text-text-muted leading-relaxed max-w-[260px]">
+                    Abre el enlace del correo antes de iniciar sesión.
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <button
+                    onClick={() => { setIsRegistering(false); setRegisterSent(false); setAuthError(''); }}
+                    className="w-full py-3 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
+                    style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', boxShadow: '0 4px 20px rgba(157,78,221,0.3)' }}
+                  >
+                    Ir al inicio de sesión
+                  </button>
+                  <p className="text-xs text-text-muted mt-1">
+                    ¿No llegó el correo?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setIsResetting(true); setIsRegistering(false); setRegisterSent(false); }}
+                      className="text-accent hover:text-primary transition-colors underline"
+                    >
+                      Solicitar reenvío
+                    </button>
+                  </p>
                 </div>
               </div>
+            ) : ( /* key forces remount → retriggers animate-slide-up-sm on mode switch */
+              <div key={isRegistering ? 'register' : 'login'} className="animate-slide-up-sm">
+                <h2 className="text-lg font-semibold text-text-primary text-center mb-4">
+                  {isRegistering ? t('login.create_account') : t('login.access')}
+                </h2>
 
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold text-text-primary">¡Cuenta creada!</h2>
-                <p className="text-sm text-text-muted leading-relaxed max-w-[260px]">
-                  Enviamos un correo de confirmación a
-                </p>
-                <p className="text-sm font-semibold text-accent break-all">{email}</p>
-                <p className="text-sm text-text-muted leading-relaxed max-w-[260px]">
-                  Abre el enlace del correo antes de iniciar sesión.
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 w-full">
-                <button
-                  onClick={() => { setIsRegistering(false); setRegisterSent(false); setAuthError(''); }}
-                  className="w-full py-3 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', boxShadow: '0 4px 20px rgba(157,78,221,0.3)' }}
-                >
-                  Ir al inicio de sesión
-                </button>
-                <p className="text-xs text-text-muted mt-1">
-                  ¿No llegó el correo?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setIsResetting(true); setIsRegistering(false); setRegisterSent(false); }}
-                    className="text-accent hover:text-primary transition-colors underline"
-                  >
-                    Solicitar reenvío
-                  </button>
-                </p>
-              </div>
-            </div>
-          ) : ( /* key forces remount → retriggers animate-slide-up-sm on mode switch */
-          <div key={isRegistering ? 'register' : 'login'} className="animate-slide-up-sm">
-          <h2 className="text-lg font-semibold text-text-primary text-center mb-4">
-            {isRegistering ? t('login.create_account') : t('login.access')}
-          </h2>
-
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">{t('login.email_label')}</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setAuthError(''); }}
-                required
-                maxLength={100}
-                className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
-                placeholder={t('login.email_placeholder')}
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-text-secondary">{t('login.password_label')}</label>
-                {!isRegistering && (
-                  <button
-                    type="button"
-                    onClick={() => { setIsResetting(true); setAuthError(''); }}
-                    className="text-xs text-accent hover:text-primary transition-colors"
-                  >
-                    {t('login.forgot_password')}
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setAuthError(''); }}
-                  required
-                  minLength={isRegistering ? 8 : 6}
-                  maxLength={64}
-                  pattern={isRegistering ? "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}" : undefined}
-                  title={isRegistering ? "Debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número." : undefined}
-                  className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 pr-12 text-white focus:outline-none focus:border-accent transition-colors"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors flex items-center justify-center"
-                  aria-label={showPassword ? t('login.hide_password') : t('login.show_password')}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {isRegistering && password.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {/* 4-bar strength meter */}
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4].map((level) => (
-                      <div
-                        key={level}
-                        className="h-1.5 flex-1 rounded-full transition-all duration-300"
-                        style={{
-                          background: pwdStrength.score >= level
-                            ? pwdStrength.color
-                            : 'rgba(255,255,255,0.1)'
-                        }}
-                      />
-                    ))}
+                <form onSubmit={handleEmailAuth} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">{t('login.email_label')}</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setAuthError(''); }}
+                      required
+                      maxLength={100}
+                      className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors"
+                      placeholder={t('login.email_placeholder')}
+                    />
                   </div>
-                  {/* Strength label + active criteria */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium transition-colors duration-300" style={{ color: pwdStrength.color }}>
-                      {pwdStrength.label}
-                    </span>
-                    <span className="text-[10px] text-text-muted">
-                      {password.length}/64
-                    </span>
-                  </div>
-                  {/* Criteria checklist — only shown until all pass */}
-                  {pwdStrength.score < 4 && (
-                    <ul className="space-y-0.5">
-                      {[
-                        { ok: password.length >= 8,        label: 'Mínimo 8 caracteres' },
-                        { ok: /[A-Z]/.test(password),      label: 'Una letra mayúscula' },
-                        { ok: /[a-z]/.test(password),      label: 'Una letra minúscula' },
-                        { ok: /\d/.test(password),         label: 'Un número' },
-                        { ok: /[^A-Za-z0-9]/.test(password), label: 'Un carácter especial (opcional +)' },
-                      ].map(({ ok, label }) => (
-                        <li key={label} className="flex items-center gap-1.5 text-[11px] transition-colors duration-200"
-                          style={{ color: ok ? '#4ade80' : 'rgba(255,255,255,0.35)' }}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-text-secondary">{t('login.password_label')}</label>
+                      {!isRegistering && (
+                        <button
+                          type="button"
+                          onClick={() => { setIsResetting(true); setAuthError(''); }}
+                          className="text-xs text-accent hover:text-primary transition-colors"
                         >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            {ok
-                              ? <><polyline points="20 6 9 17 4 12" /></>
-                              : <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>}
-                          </svg>
-                          {label}
-                        </li>
-                      ))}
-                    </ul>
+                          {t('login.forgot_password')}
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setAuthError(''); }}
+                        required
+                        minLength={isRegistering ? 8 : 6}
+                        maxLength={64}
+                        pattern={isRegistering ? "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}" : undefined}
+                        title={isRegistering ? "Debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número." : undefined}
+                        className="w-full bg-black/40 border border-accent/20 rounded-xl px-4 py-3 pr-12 text-white focus:outline-none focus:border-accent transition-colors"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors flex items-center justify-center"
+                        aria-label={showPassword ? t('login.hide_password') : t('login.show_password')}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    {isRegistering && password.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {/* 4-bar strength meter */}
+                        <div className="flex gap-1.5">
+                          {[1, 2, 3, 4].map((level) => (
+                            <div
+                              key={level}
+                              className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                              style={{
+                                background: pwdStrength.score >= level
+                                  ? pwdStrength.color
+                                  : 'rgba(255,255,255,0.1)'
+                              }}
+                            />
+                          ))}
+                        </div>
+                        {/* Strength label + active criteria */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-medium transition-colors duration-300" style={{ color: pwdStrength.color }}>
+                            {pwdStrength.label}
+                          </span>
+                          <span className="text-[10px] text-text-muted">
+                            {password.length}/64
+                          </span>
+                        </div>
+                        {/* Criteria checklist — only shown until all pass */}
+                        {pwdStrength.score < 4 && (
+                          <ul className="space-y-0.5">
+                            {[
+                              { ok: password.length >= 8, label: 'Mínimo 8 caracteres' },
+                              { ok: /[A-Z]/.test(password), label: 'Una letra mayúscula' },
+                              { ok: /[a-z]/.test(password), label: 'Una letra minúscula' },
+                              { ok: /\d/.test(password), label: 'Un número' },
+                              { ok: /[^A-Za-z0-9]/.test(password), label: 'Un carácter especial (opcional +)' },
+                            ].map(({ ok, label }) => (
+                              <li key={label} className="flex items-center gap-1.5 text-[11px] transition-colors duration-200"
+                                style={{ color: ok ? '#4ade80' : 'rgba(255,255,255,0.35)' }}
+                              >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  {ok
+                                    ? <><polyline points="20 6 9 17 4 12" /></>
+                                    : <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>}
+                                </svg>
+                                {label}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                    {/* Keep static hint in login mode so the field label area doesn't collapse */}
+                    {isRegistering && password.length === 0 && (
+                      <p className="text-[11px] text-text-muted mt-2 ml-1 leading-tight">
+                        {t('login.password_hint')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-center pt-2 pb-2">
+                    <HCaptcha
+                      ref={captchaRef}
+                      sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      theme="dark"
+                    />
+                  </div>
+
+                  {/* Inline auth error — persistent, visible until the user corrects their input */}
+                  {authError && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm animate-fade-in"
+                      style={{
+                        background: 'rgba(239,68,68,0.12)',
+                        border: '1px solid rgba(239,68,68,0.35)',
+                        color: '#fca5a5'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" style={{ color: '#f87171' }}>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      <span>{authError}</span>
+                    </div>
                   )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                      boxShadow: '0 4px 20px rgba(157,78,221,0.3)',
+                    }}
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : isRegistering ? (
+                      t('login.register_btn')
+                    ) : (
+                      t('login.login_btn')
+                    )}
+                  </button>
+                </form>
+
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => { setIsRegistering(!isRegistering); setAuthError(''); }}
+                    className="text-sm text-accent hover:text-primary transition-colors"
+                  >
+                    {isRegistering ? t('login.already_have_account') : t('login.dont_have_account')}
+                  </button>
                 </div>
-              )}
-              {/* Keep static hint in login mode so the field label area doesn't collapse */}
-              {isRegistering && password.length === 0 && (
-                <p className="text-[11px] text-text-muted mt-2 ml-1 leading-tight">
-                  {t('login.password_hint')}
-                </p>
-              )}
-            </div>
 
-            <div className="flex justify-center pt-2 pb-2">
-              <HCaptcha
-                ref={captchaRef}
-                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
-                onVerify={(token) => setCaptchaToken(token)}
-                onExpire={() => setCaptchaToken(null)}
-                theme="dark"
-              />
-            </div>
-
-            {/* Inline auth error — persistent, visible until the user corrects their input */}
-            {authError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm animate-fade-in"
-                style={{
-                  background: 'rgba(239,68,68,0.12)',
-                  border: '1px solid rgba(239,68,68,0.35)',
-                  color: '#fca5a5'
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" style={{ color: '#f87171' }}>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <span>{authError}</span>
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-                boxShadow: '0 4px 20px rgba(157,78,221,0.3)',
-              }}
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : isRegistering ? (
-                t('login.register_btn')
-              ) : (
-                t('login.login_btn')
-              )}
-            </button>
-          </form>
-
-          <div className="text-center mt-4">
-            <button
-              onClick={() => { setIsRegistering(!isRegistering); setAuthError(''); }}
-              className="text-sm text-accent hover:text-primary transition-colors"
-            >
-              {isRegistering ? t('login.already_have_account') : t('login.dont_have_account')}
-            </button>
+            )} {/* end registerSent ternary */}
           </div>
-
-          </div> 
-          )} {/* end registerSent ternary */}
-        </div>
         )} {/* end isResetting ternary */}
 
         {/* Install App — secondary action, outside the auth card so it doesn't compete */}

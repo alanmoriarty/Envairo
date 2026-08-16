@@ -141,7 +141,8 @@ export default function SettingsPage() {
   const ALLOWED_EMAILS = [
     'aliriopina04@gmail.com',
     'aliriopina05@gmail.com',
-    'javiercardonaaudiovisual@gmail.com'
+    'javiercardonaaudiovisual@gmail.com',
+    'verotorrenegra@gmail.com'
   ];
   const canSeeTestMode = ALLOWED_EMAILS.includes(userEmail);
 
@@ -151,13 +152,28 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('simple');
 
-  const allKeysForSync = ['enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'guestVersionRequest', 'partyRequestOffset'];
-  const currentSettingsObj = {};
-  allKeysForSync.forEach(k => { currentSettingsObj[k] = store[k]; });
-  const currentSignature = JSON.stringify(currentSettingsObj);
+  const ALL_KEYS_FOR_SYNC = [
+    'eventName', 'mode', 'alwaysAvailable', 'startTime', 'endTime',
+    'requestsPerHour', 'requestsPerGuest', 'tableCount', 'partyRequestOffset',
+    'allowRepeats', 'repeatCooldown', 'cooldownEnabled', 'cooldownMinutes',
+    'explicitFilter', 'guestVersionRequest', 'visualizerEnabled', 'visualizerUrl',
+    'djTransitionsEnabled', 'djTransitionMode', 'djTransitionDuration',
+    'whitelistGenres', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists'
+  ];
 
-  // Si no se ha cargado una firma aún (recién abierto sin red), consideramos que no hay cambios
-  const hasChanges = lastSavedSignature ? currentSignature !== lastSavedSignature : false;
+  const getSettingsSignature = (stateObj) => {
+    const obj = {};
+    ALL_KEYS_FOR_SYNC.forEach(k => {
+      obj[k] = stateObj[k] !== undefined ? stateObj[k] : null;
+    });
+    return JSON.stringify(obj);
+  };
+
+  const [initialSignature, setInitialSignature] = useState(() => getSettingsSignature(useSettingsStore.getState()));
+  const currentSignature = getSettingsSignature(store);
+
+  // Solo se activa si el usuario realmente modificó algún campo respecto a la carga inicial o último guardado
+  const hasChanges = currentSignature !== initialSignature;
 
   const saveSettingsToCloud = async () => {
     if (!hasChanges) return;
@@ -196,6 +212,7 @@ export default function SettingsPage() {
           }
         });
       }
+      setInitialSignature(currentSignature);
       setLastSavedSignature(currentSignature);
       toast.success(t('settings.save_success') || 'Cambios guardados exitosamente');
     } catch (e) {
@@ -234,16 +251,16 @@ export default function SettingsPage() {
         <p className="text-text-muted text-sm mt-1 mb-4">{t('settings.subtitle')}</p>
 
         {/* Tabs */}
-        <div className="flex flex-col sm:flex-row gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:w-fit">
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 w-full sm:max-w-md">
           <button
             onClick={() => setActiveTab('simple')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all text-center ${activeTab === 'simple' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
             {t('settings.tab_simple')}
           </button>
           <button
             onClick={() => setActiveTab('custom')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all text-center ${activeTab === 'custom' ? 'bg-accent text-white shadow-glow' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
           >
             {t('settings.tab_custom')}
           </button>
