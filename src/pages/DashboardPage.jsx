@@ -713,8 +713,8 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col flex-1 min-h-[420px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
-          <div className="card p-4 sm:p-5 flex flex-col h-full overflow-hidden lg:min-h-0">
+        <div className={`flex flex-col h-[56vh] sm:h-[62vh] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+          <div className="card p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">
                 <div className="flex items-center gap-2 mb-1 sm:mb-0">
@@ -786,7 +786,7 @@ export default function DashboardPage() {
                   items={queue.map((t) => t.queueId)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-0">
                     {queue.map((track, index) => (
                       <SortableQueueItem
                         key={track.queueId}
