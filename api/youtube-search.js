@@ -1,10 +1,11 @@
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
 
-// Proxy rotativo residencial - credencial en variable de entorno del servidor
-const PROXIES = [
-  process.env.WEBSHARE_PROXY_URL || 'http://p.webshare.io:80'
-];
+// Proxy residencial - credencial en variable de entorno del servidor (soporta lista separada por comas)
+const PROXIES = (process.env.WEBSHARE_PROXY_URL || process.env.WEBSHARE_PROXIES || 'http://p.webshare.io:80')
+  .split(',')
+  .map(p => p.trim())
+  .filter(Boolean);
 
 // Orígenes permitidos para CORS
 const ALLOWED_ORIGINS = [

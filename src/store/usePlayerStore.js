@@ -176,7 +176,7 @@ export const usePlayerStore = create(
           let insertIndex = newQueue.length;
 
           if (state.currentQueueIndex >= 0) {
-            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 2);
           }
 
           newQueue.splice(insertIndex, 0, newTrack);
@@ -211,7 +211,7 @@ export const usePlayerStore = create(
           let insertIndex = newQueue.length;
 
           if (state.currentQueueIndex >= 0) {
-            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+            insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 2);
           }
 
           newQueue.splice(insertIndex, 0, ...newTracks);
@@ -662,7 +662,7 @@ export const usePlayerStore = create(
                 insertIndex++;
               }
             } else {
-              insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 15);
+              insertIndex = Math.min(newQueue.length, state.currentQueueIndex + 2);
             }
           }
 

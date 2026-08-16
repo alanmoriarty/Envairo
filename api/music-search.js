@@ -1,9 +1,10 @@
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
 
-const PROXIES = [
-  process.env.WEBSHARE_PROXY_URL || 'http://p.webshare.io:80'
-];
+const PROXIES = (process.env.WEBSHARE_PROXY_URL || process.env.WEBSHARE_PROXIES || 'http://p.webshare.io:80')
+  .split(',')
+  .map(p => p.trim())
+  .filter(Boolean);
 
 const ALLOWED_ORIGINS = [
   'https://envairoqr.com',
