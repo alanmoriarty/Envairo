@@ -26,6 +26,20 @@ function safeDestroyPlayer(playerRef, containerId, childId) {
   }
 }
 
+// Utility: disable YouTube captions on a player instance
+function disableCaptions(player) {
+  try {
+    if (player && typeof player.unloadModule === 'function') {
+      player.unloadModule('captions');
+      player.unloadModule('cc');
+    }
+    if (player && typeof player.setOption === 'function') {
+      player.setOption('captions', 'track', {});
+      player.setOption('cc', 'track', {});
+    }
+  } catch (e) {}
+}
+
 export default function TVDisplayPage() {
   const { t } = useTranslation();
   const channelRef = useRef(null);
@@ -33,6 +47,10 @@ export default function TVDisplayPage() {
   const playerARef = useRef(null);
   const playerBRef = useRef(null);
   const activeTvDeckRef = useRef('A'); // 'A' | 'B'
+  const pendingSyncRef = useRef(null);
+  const isTvTransitioningRef = useRef(false);
+
+  // Proxy that always points to the active deck's player
   const playerRef = {
     get current() {
       return activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
@@ -42,6 +60,10 @@ export default function TVDisplayPage() {
       else playerBRef.current = val;
     }
   };
+
+  // Refs to always call the latest version of these handlers from useEffect listeners
+  const handleSyncRef = useRef(null);
+  const handleTransitionStartRef = useRef(null);
 
   // Session & Pairing State
   const [sessionId, setSessionId] = useState(() => {
@@ -155,9 +177,9 @@ export default function TVDisplayPage() {
       } else if (e.data.type === 'PONG') {
         activeTvs.current.add(e.data.tvId);
       } else if (e.data.type === 'DJ_TRANSITION_START') {
-        if (!limitReached) handleTransitionStart(e.data);
+        if (!limitReached && handleTransitionStartRef.current) handleTransitionStartRef.current(e.data);
       } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
-        if (!limitReached) handleSync(e.data);
+        if (!limitReached && handleSyncRef.current) handleSyncRef.current(e.data);
       } else if (e.data.type === 'HOST_REFRESHING') {
         if (!limitReached) {
           hostRefreshingRef.current = true;
@@ -187,7 +209,7 @@ export default function TVDisplayPage() {
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
           if (e.payload.type === 'DJ_TRANSITION_START') {
-            handleTransitionStart(e.payload);
+            if (handleTransitionStartRef.current) handleTransitionStartRef.current(e.payload);
           } else if (e.payload.type === 'HOST_REFRESHING') {
             hostRefreshingRef.current = true;
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
@@ -216,7 +238,7 @@ export default function TVDisplayPage() {
             if (e.payload.tvId && e.payload.tvId !== tvPin) return;
             handleToggleSound(e.payload.tvWithSound);
           } else {
-            handleSync(e.payload);
+            if (handleSyncRef.current) handleSyncRef.current(e.payload);
           }
         }
       })
@@ -309,19 +331,6 @@ export default function TVDisplayPage() {
   function initPlayer() {
     if (playerARef.current || playerBRef.current) return;
 
-    const disableCaptions = (player) => {
-      try {
-        if (player && typeof player.unloadModule === 'function') {
-          player.unloadModule('captions');
-          player.unloadModule('cc');
-        }
-        if (player && typeof player.setOption === 'function') {
-          player.setOption('captions', 'track', {});
-          player.setOption('cc', 'track', {});
-        }
-      } catch (e) {}
-    };
-
     const playerVars = {
       autoplay: 1,
       enablejsapi: 1,
@@ -350,7 +359,7 @@ export default function TVDisplayPage() {
         if (pendingSyncRef.current) {
           const syncData = pendingSyncRef.current;
           pendingSyncRef.current = null;
-          handleSync(syncData);
+          if (handleSyncRef.current) handleSyncRef.current(syncData);
         }
         if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
         if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
@@ -360,10 +369,13 @@ export default function TVDisplayPage() {
     };
 
     const handleDeckStateChange = (deck, event) => {
-      if (tvWithSoundRef.current) {
-        try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
-      } else {
-        try { event.target.mute(); } catch (e) {}
+      // Only force volume on the ACTIVE deck; don't touch the incoming deck during transitions
+      if (!isTvTransitioningRef.current && activeTvDeckRef.current === deck) {
+        if (tvWithSoundRef.current) {
+          try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
+        } else {
+          try { event.target.mute(); } catch (e) {}
+        }
       }
       disableCaptions(event.target);
 
@@ -426,9 +438,7 @@ export default function TVDisplayPage() {
   };
 }, [sessionId]);
 
-const pendingSyncRef = useRef(null);
-const isTvTransitioningRef = useRef(false);
-
+// ── handleTransitionStart: crossfade entre decks en pantalla esclava ──
 const handleTransitionStart = (data) => {
   if (!data?.nextVideoId) return;
 
@@ -521,8 +531,11 @@ const handleTransitionStart = (data) => {
     }
   }, durationSec * 1000);
 };
+handleTransitionStartRef.current = handleTransitionStart;
 
+// ── handleSync: sincronización de reproducción con el anfitrión ──
 const handleSync = (data) => {
+  // Bloquear sincronización durante transiciones DJ para evitar interferencias
   if (isTvTransitioningRef.current) return;
 
   const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
@@ -557,6 +570,9 @@ const handleSync = (data) => {
         }
 
         if (isNewTrack) {
+          setIsLoadingVideo(true);
+          if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+          loadingTimerRef.current = setTimeout(() => setIsLoadingVideo(false), 1500);
           activeP.loadVideoById({ videoId: data.videoId, startSeconds: start, suggestedQuality: 'hd1080' });
         } else {
           activeP.seekTo(start, true);
@@ -611,6 +627,7 @@ const handleSync = (data) => {
     console.warn('Error en handleSync de TV:', err);
   }
 };
+handleSyncRef.current = handleSync;
 
   const handleMouseMove = () => {
     setIsIdle(false);
@@ -675,7 +692,8 @@ const handleSync = (data) => {
       } catch (e) {}
     }
 
-    safeDestroyPlayer(playerRef, 'tv-yt-container', 'tv-youtube-player');
+    safeDestroyPlayer(playerARef, 'tv-yt-deck-a', 'tv-youtube-player-deck-a');
+    safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
     localStorage.removeItem('bq-tv-session-id');
     localStorage.removeItem('bq-tv-pin');
     setSessionId(null);
