@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
+import { sendRemoteQueueUpdate } from '../../lib/remoteSyncChannel';
 
 function normalizeApiTrack(t) {
   return {
@@ -72,14 +73,7 @@ export function AddSongModal({ onClose }) {
     usePlayerStore.getState().addToQueue(newTrack);
 
     if (isAdminMode) {
-      import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', { 
-        p_session_id: sessionId, 
-        p_secret: hostSecret, 
-        p_updates: { 
-          queue: usePlayerStore.getState().queue,
-          current_queue_index: usePlayerStore.getState().currentQueueIndex
-        } 
-      }).then());
+      sendRemoteQueueUpdate(usePlayerStore.getState().queue, usePlayerStore.getState().currentQueueIndex);
     }
 
     toast.success(t('dashboard.toast_added', { name: track.name }));

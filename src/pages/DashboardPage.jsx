@@ -26,7 +26,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { sanitizePrompt, MAX_PROMPT_LENGTH } from '../utils/security';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { sendRemotePlaybackCommand } from '../lib/remoteSyncChannel';
+import { sendRemotePlaybackCommand, sendRemoteQueueUpdate } from '../lib/remoteSyncChannel';
 
 import { QRCard } from '../components/qr/QRCard';
 import { Toggle } from '../components/ui/Toggle';
@@ -258,6 +258,12 @@ export default function DashboardPage() {
     const oldIdx = queue.findIndex((t) => t.queueId === active.id);
     const newIdx = queue.findIndex((t) => t.queueId === over.id);
     reorderQueue(oldIdx, newIdx);
+
+    if (isAdminMode) {
+      const updatedQueue = usePlayerStore.getState().queue;
+      const updatedIndex = usePlayerStore.getState().currentQueueIndex;
+      sendRemoteQueueUpdate(updatedQueue, updatedIndex);
+    }
   };
 
   const handleApprove = async (reqId, trackName) => {
@@ -266,9 +272,15 @@ export default function DashboardPage() {
     const secret = useSettingsStore.getState().hostSecret;
     await supabase.rpc('manage_request', { p_request_id: reqId, p_session_id: sessionId, p_secret: secret, p_new_status: 'approved' });
 
-    // Auto-play if nothing is currently playing
+    if (isAdminMode) {
+      const updatedQueue = usePlayerStore.getState().queue;
+      const updatedIndex = usePlayerStore.getState().currentQueueIndex;
+      sendRemoteQueueUpdate(updatedQueue, updatedIndex);
+    }
+
+    // Auto-play if nothing is currently playing (only on Host)
     const state = usePlayerStore.getState();
-    if (!state.currentTrack && state.queue.length > 0 && sdkReady) {
+    if (!isAdminMode && !state.currentTrack && state.queue.length > 0 && sdkReady) {
       const nextTrack = usePlayerStore.getState().shiftQueue();
       if (nextTrack) {
         usePlayerStore.getState().playEngineTrack(nextTrack);
@@ -302,6 +314,12 @@ export default function DashboardPage() {
   const handleRemoveQueue = (queueId) => {
     removeFromQueue(queueId);
     toast.success(t('dashboard.toast_removed'));
+
+    if (isAdminMode) {
+      const updatedQueue = usePlayerStore.getState().queue;
+      const updatedIndex = usePlayerStore.getState().currentQueueIndex;
+      sendRemoteQueueUpdate(updatedQueue, updatedIndex);
+    }
   };
 
   const volumeDebounce = React.useRef(null);

@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from '../../store/useLanguageStore';
 import { sanitizeUrl, MAX_URL_LENGTH } from '../../utils/security';
+import { sendRemoteQueueUpdate } from '../../lib/remoteSyncChannel';
 
 // Función auxiliar para formatear la fecha como "Hoy", "Ayer", o "DD/MM/YYYY"
 function formatDateLabel(dateString) {
@@ -197,14 +198,7 @@ export function PlaylistsPanel() {
 
       if (isAdminMode) {
         const updatedState = usePlayerStore.getState();
-        import('../../lib/supabase').then(m => m.supabase.rpc('sync_host_config', {
-          p_session_id: sessionId,
-          p_secret: useSettingsStore.getState().hostSecret,
-          p_updates: {
-            queue: updatedState.queue,
-            current_queue_index: updatedState.currentQueueIndex
-          }
-        }).catch(() => {}));
+        sendRemoteQueueUpdate(updatedState.queue, updatedState.currentQueueIndex);
       }
 
       if (isQueueEmpty) {

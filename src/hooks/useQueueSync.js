@@ -41,9 +41,12 @@ export function useQueueSync() {
         return;
       }
 
-      // Los controles remotos (isAdminMode) NUNCA deben empujar cambios locales de su player a la DB del host
-      if (useSettingsStore.getState().isAdminMode) {
-        return;
+      // Si estamos en control remoto (isAdminMode), solo sincronizar si cambió la cola o el índice
+      const isAdminMode = useSettingsStore.getState().isAdminMode;
+      if (isAdminMode) {
+        if (state.queue === prevState.queue && state.currentQueueIndex === prevState.currentQueueIndex) {
+          return;
+        }
       }
 
       if (isRemoteUpdate.current) {
@@ -72,11 +75,13 @@ export function useQueueSync() {
         const secret = useSettingsStore.getState().hostSecret;
         if (!authStore.user && !secret) return;
 
-        supabase
-          .rpc('sync_host_config', {
-            p_session_id: sessionId,
-            p_secret: secret,
-            p_updates: {
+        const isAdmin = useSettingsStore.getState().isAdminMode;
+        const updates = isAdmin
+          ? {
+              queue: state.queue,
+              current_queue_index: state.currentQueueIndex
+            }
+          : {
               queue: state.queue,
               current_queue_index: state.currentQueueIndex,
               current_track: state.currentTrack,
@@ -84,7 +89,26 @@ export function useQueueSync() {
               paired_tvs: useSettingsStore.getState().pairedTvs,
               active_device_id: state.activeDeviceId,
               volume: state.volume
+            };
+
+        // Si es admin, emitir broadcast en tiempo real a la pantalla del anfitrión (<50ms)
+        if (isAdmin && syncChannel && syncChannel.state === 'joined') {
+          syncChannel.send({
+            type: 'broadcast',
+            event: 'queue_sync',
+            payload: {
+              queue: state.queue,
+              currentQueueIndex: state.currentQueueIndex,
+              ts: Date.now()
             }
+          }).catch(() => {});
+        }
+
+        supabase
+          .rpc('sync_host_config', {
+            p_session_id: sessionId,
+            p_secret: secret,
+            p_updates: updates
           })
           .then(({ error }) => {
             if (error) {
@@ -347,6 +371,33 @@ export function useQueueSync() {
             }
             if (p.currentTrack && JSON.stringify(p.currentTrack) !== JSON.stringify(store.currentTrack)) {
                store.setCurrentTrack(p.currentTrack);
+            }
+          }
+        })
+        .on('broadcast', { event: 'queue_sync' }, ({ payload }) => {
+          if (payload && Array.isArray(payload.queue)) {
+            const currentState = usePlayerStore.getState();
+            const queueChanged = JSON.stringify(payload.queue) !== JSON.stringify(currentState.queue);
+            const indexChanged = typeof payload.currentQueueIndex === 'number' && payload.currentQueueIndex !== currentState.currentQueueIndex;
+
+            if (queueChanged || indexChanged) {
+              isRemoteUpdate.current = true;
+              usePlayerStore.setState({
+                ...(queueChanged ? { queue: payload.queue } : {}),
+                ...(indexChanged ? { currentQueueIndex: payload.currentQueueIndex } : {})
+              });
+              usePlayerStore.getState().startQueuePreloadWorker();
+
+              // Si el reproductor no está reproduciendo nada y la nueva cola tiene canciones, iniciar auto-play
+              const stateAfter = usePlayerStore.getState();
+              const { user } = useAuthStore.getState();
+              const { isAdminMode } = useSettingsStore.getState();
+              if (user && !isAdminMode && !stateAfter.currentTrack && stateAfter.queue.length > 0) {
+                const nextTrack = stateAfter.shiftQueue();
+                if (nextTrack) {
+                  stateAfter.playEngineTrack(nextTrack);
+                }
+              }
             }
           }
         })

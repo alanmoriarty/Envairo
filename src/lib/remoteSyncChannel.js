@@ -64,3 +64,45 @@ export async function sendRemotePlaybackCommand(action, params = {}) {
     });
   }
 }
+
+/**
+ * Sends a queue update from the remote to the host.
+ * 1. Broadcasts immediately over WebSocket (<50ms execution on Host).
+ * 2. Persists to PostgreSQL via sync_host_config RPC.
+ */
+export async function sendRemoteQueueUpdate(queue, currentQueueIndex) {
+  if (!Array.isArray(queue)) return;
+
+  const payload = {
+    queue,
+    currentQueueIndex: typeof currentQueueIndex === 'number' ? currentQueueIndex : -1,
+    ts: Date.now()
+  };
+
+  // 1. WebSocket Broadcast inmediato (<50ms)
+  if (activeSessionChannel && activeSessionChannel.state === 'joined') {
+    activeSessionChannel.send({
+      type: 'broadcast',
+      event: 'queue_sync',
+      payload
+    }).catch(err => {
+      console.warn('Error broadcasting remote queue update:', err);
+    });
+  }
+
+  // 2. Persistencia en Base de Datos
+  const { sessionId, hostSecret } = useSettingsStore.getState();
+  if (sessionId && hostSecret) {
+    supabase.rpc('sync_host_config', {
+      p_session_id: sessionId,
+      p_secret: hostSecret,
+      p_updates: {
+        queue,
+        current_queue_index: payload.currentQueueIndex
+      }
+    }).catch(err => {
+      console.error('Error persisting remote queue to DB:', err);
+    });
+  }
+}
+
