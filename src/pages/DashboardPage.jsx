@@ -343,7 +343,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="absolute inset-0 p-4 sm:p-6 space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar pb-28 lg:pb-6">
+    <div className="absolute inset-0 p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar pb-20 sm:pb-24 lg:pb-6">
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -395,61 +395,61 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        {/* Controls Bar: Horizontal Scrollable Chips on Mobile, Flex on Desktop */}
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex items-center gap-2 flex-nowrap sm:flex-wrap">
           {/* Mode toggle */}
-          <div className="card px-4 py-3 flex items-center gap-3">
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0">
             <button
               onClick={() => setMode('party')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                 }`}
             >
-              <Users size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_party')}</span>
+              <Users size={14} />
+              <span>{t('dashboard.mode_party')}</span>
             </button>
-            <div className="w-px h-4 bg-white/10" />
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
             <button
               onClick={() => setMode('commercial')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                 }`}
             >
-              <Store size={14} /> <span className="hidden sm:inline">{t('dashboard.mode_commercial')}</span>
+              <Store size={14} />
+              <span>{t('dashboard.mode_commercial')}</span>
             </button>
           </div>
 
           {/* View/Panel toggles */}
-          <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowRequests(!showRequests)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${showRequests ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                }`}
-              title={t('dashboard.toggle_requests')}
-            >
-              <ClipboardList size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_requests')}</span>
-            </button>
+          <button
+            onClick={() => setShowRequests(!showRequests)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${showRequests ? 'bg-accent text-white border-accent shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
+              }`}
+            title={t('dashboard.toggle_requests')}
+          >
+            <ClipboardList size={14} />
+            <span>{t('dashboard.toggle_requests')}</span>
+          </button>
 
-            {(() => {
-              const engine = usePlayerStore.getState().playbackEngine;
-              if (engine === 'spotify' || engine === 'youtube') {
-                return (
-                  <>
-                    <div className="w-px h-4 bg-white/10" />
-                    <button
-                      onClick={() => setShowPlaylists(!showPlaylists)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${showPlaylists ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                        }`}
-                      title={t('dashboard.toggle_playlists')}
-                    >
-                      <ListMusic size={14} /> <span className="hidden sm:inline">{t('dashboard.toggle_playlists')}</span>
-                    </button>
-                  </>
-                );
-              }
-              return null;
-            })()}
-          </div>
+          {(() => {
+            const engine = usePlayerStore.getState().playbackEngine;
+            if (engine === 'spotify' || engine === 'youtube') {
+              return (
+                <button
+                  onClick={() => setShowPlaylists(!showPlaylists)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${showPlaylists ? 'bg-accent text-white border-accent shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
+                    }`}
+                  title={t('dashboard.toggle_playlists')}
+                >
+                  <ListMusic size={14} />
+                  <span>{t('dashboard.toggle_playlists')}</span>
+                </button>
+              );
+            }
+            return null;
+          })()}
 
           {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
           {playbackEngine === 'youtube' && (
-            <div className="card px-4 py-3 flex flex-wrap items-center gap-3">
+            <>
               <button
                 onClick={() => {
                   const newValue = !karaokeEnabled;
@@ -465,15 +465,13 @@ export default function DashboardPage() {
                     }
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${karaokeEnabled ? 'bg-pink-500 text-white border-pink-500 shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
                   }`}
                 title="Karaoke"
               >
                 <Mic2 size={14} />
-                <span className="hidden sm:inline">Karaoke</span>
+                <span>Karaoke</span>
               </button>
-
-              <div className="w-px h-4 bg-white/10" />
 
               <button
                 onClick={() => {
@@ -490,14 +488,14 @@ export default function DashboardPage() {
                     }
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${lyricsEnabled ? 'bg-sky-500 text-white border-sky-500 shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
                   }`}
                 title="Lyrics"
               >
                 <Type size={14} />
-                <span className="hidden sm:inline">Lyrics</span>
+                <span>Lyrics</span>
               </button>
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -631,19 +629,19 @@ export default function DashboardPage() {
                           });
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
+                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
                         ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
                         : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
                         }`}
                       title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
                     >
                       {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                      <span className="hidden sm:inline">
+                      <span className="text-[11px] sm:text-xs">
                         {alwaysAvailable ? t('dashboard.open_requests') : t('dashboard.closed_requests')}
                       </span>
                     </button>
 
-                    <div className="w-px h-4 bg-white/10 hidden sm:block" />
+                    <div className="w-px h-4 bg-white/10" />
 
                     {/* envAIro Filter Button */}
                     <button
@@ -654,14 +652,14 @@ export default function DashboardPage() {
                           setIsAutoDjModalOpen(true);
                         }
                       }}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
+                      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
                         ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
                         : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
                         }`}
                       title="envAIro Filter"
                     >
                       <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-                      <span className="hidden sm:inline">envAIro Filter</span>
+                      <span className="text-[11px] sm:text-xs">envAIro Filter</span>
                     </button>
                   </div>
                 </div>
@@ -715,8 +713,8 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col h-[500px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
-          <div className="card p-5 flex flex-col h-full overflow-hidden lg:min-h-0">
+        <div className={`flex flex-col flex-1 min-h-[420px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+          <div className="card p-4 sm:p-5 flex flex-col h-full overflow-hidden lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">
                 <div className="flex items-center gap-2 mb-1 sm:mb-0">
@@ -817,7 +815,7 @@ export default function DashboardPage() {
           onClick={() => setIsEnairoModalOpen(false)}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}
@@ -844,7 +842,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-3 sm:space-y-4 text-left">
+            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0 space-y-3 sm:space-y-4 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-accent">
@@ -922,10 +920,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="p-3.5 sm:p-4 px-4 sm:px-6 bg-black/40 border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3">
+            <div className="p-3 sm:p-4 px-4 sm:px-6 bg-bg-card border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3 z-10">
               <button
                 onClick={() => setIsEnairoModalOpen(false)}
-                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
                 {t('dashboard.envairo_cancel_btn')}
               </button>
@@ -934,7 +932,7 @@ export default function DashboardPage() {
                   setIsEnairoModalOpen(false);
                   triggerEnairo();
                 }}
-                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
                 {t('dashboard.envairo_generate_btn')}
               </button>
@@ -953,7 +951,7 @@ export default function DashboardPage() {
           }}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}
@@ -983,7 +981,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-3 sm:space-y-4">
+            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0 space-y-3 sm:space-y-4">
               {/* Contexto de la IA */}
               <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-center">
@@ -1056,13 +1054,13 @@ export default function DashboardPage() {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="p-3.5 sm:p-4 px-4 sm:px-6 bg-black/40 border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3">
+            <div className="p-3 sm:p-4 px-4 sm:px-6 bg-bg-card border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3 z-10">
               <button
                 onClick={() => {
                   setIsAutoDjModalOpen(false);
                   setAutoDJ(false); // cancel activation
                 }}
-                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
                 {t('dashboard.filter_cancel_btn')}
               </button>
@@ -1071,7 +1069,7 @@ export default function DashboardPage() {
                   setIsAutoDjModalOpen(false);
                   setAutoDJ(true);
                 }}
-                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
                 {t('dashboard.filter_activate_btn')}
               </button>
