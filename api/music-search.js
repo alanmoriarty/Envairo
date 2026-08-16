@@ -12,6 +12,29 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4173'
 ];
 
+// ── In-Memory Server Cache (LRU + 24h TTL) ───────────────────────────────────
+const MAX_CACHE_SIZE = 500;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+const memoryCache = new Map();
+
+function getCachedResults(key) {
+  const cached = memoryCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function setCachedResults(key, data) {
+  if (memoryCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = memoryCache.keys().next().value;
+    memoryCache.delete(oldestKey);
+  }
+  memoryCache.set(key, { data, timestamp: Date.now() });
+}
+
 export default async function handler(req, res) {
   const origin = req.headers.origin;
   if (ALLOWED_ORIGINS.includes(origin)) {
@@ -35,12 +58,22 @@ export default async function handler(req, res) {
     }
 
     const query = q.trim();
+    const cacheKey = `${query.toLowerCase()}_${limit}_${filterExplicit}`;
+
+    // 1. Verificar caché en memoria antes de tocar la red o el proxy
+    const cachedResponse = getCachedResults(cacheKey);
+    if (cachedResponse) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(cachedResponse);
+    }
+
     let agent = undefined;
     if (PROXIES.length > 0) {
       agent = new HttpsProxyAgent(PROXIES[Math.floor(Math.random() * PROXIES.length)]);
     }
 
-    // 1. Intentar Deezer vía Proxy Residencial (Ordenado por RANKING/popularidad)
+    // 2. Intentar Deezer vía Proxy Residencial (Ordenado por RANKING/popularidad)
     try {
       const searchParams = new URLSearchParams({
         q: query,
@@ -51,7 +84,8 @@ export default async function handler(req, res) {
       const response = await fetch(`https://api.deezer.com/search?${searchParams.toString()}`, {
         agent,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Encoding': 'gzip, deflate, br'
         }
       });
 
@@ -64,7 +98,7 @@ export default async function handler(req, res) {
         cleanData = cleanData.slice(0, limit);
 
         if (cleanData.length > 0) {
-          return res.status(200).json({
+          const resultPayload = {
             tracks: {
               items: cleanData.map(track => ({
                 id: track.id.toString(),
@@ -80,14 +114,19 @@ export default async function handler(req, res) {
                 }
               }))
             }
-          });
+          };
+
+          setCachedResults(cacheKey, resultPayload);
+          res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+          res.setHeader('X-Cache', 'MISS');
+          return res.status(200).json(resultPayload);
         }
       }
     } catch (deezerErr) {
       console.warn('Deezer proxy search failed, falling back to iTunes proxy:', deezerErr.message);
     }
 
-    // 2. Fallback a iTunes vía Proxy Residencial
+    // 3. Fallback a iTunes vía Proxy Residencial
     const itunesParams = new URLSearchParams({
       term: query,
       entity: 'song',
@@ -97,7 +136,8 @@ export default async function handler(req, res) {
     const itunesRes = await fetch(`https://itunes.apple.com/search?${itunesParams.toString()}`, {
       agent,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Encoding': 'gzip, deflate, br'
       }
     });
 
@@ -109,7 +149,7 @@ export default async function handler(req, res) {
       }
       results = results.slice(0, limit);
 
-      return res.status(200).json({
+      const resultPayload = {
         tracks: {
           items: results.map(track => ({
             id: track.trackId?.toString() || Math.random().toString(),
@@ -125,7 +165,12 @@ export default async function handler(req, res) {
             }
           }))
         }
-      });
+      };
+
+      setCachedResults(cacheKey, resultPayload);
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+      res.setHeader('X-Cache', 'MISS');
+      return res.status(200).json(resultPayload);
     }
 
     res.status(500).json({ error: 'Search failed on all proxy providers' });
@@ -134,3 +179,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+

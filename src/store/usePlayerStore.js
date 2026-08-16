@@ -463,45 +463,52 @@ export const usePlayerStore = create(
         return { videoIdToPlay, isSpotifyTrack, effectiveMode: mode };
       },
 
-      // Worker en segundo plano para precargar IDs de los siguientes temas de la cola (hasta 5 canciones adelantadas)
-      startQueuePreloadWorker: async () => {
+      // Worker en segundo plano para precargar IDs de los siguientes temas de la cola (hasta 2 canciones adelantadas)
+      startQueuePreloadWorker: () => {
         const state = get();
-        // Si ya está corriendo o no estamos en YouTube, abortar
-        if (state.preloadWorkerRunning || state.playbackEngine !== 'youtube') return;
+        if (state.playbackEngine !== 'youtube') return;
 
-        set({ preloadWorkerRunning: true });
+        if (state._preloadTimer) clearTimeout(state._preloadTimer);
 
-        try {
-          const { useSettingsStore } = await import('./useSettingsStore');
-          const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
+        const timer = setTimeout(async () => {
+          const freshState = get();
+          if (freshState.preloadWorkerRunning || freshState.playbackEngine !== 'youtube') return;
 
-          // Recorrer la cola desde la canción siguiente (máximo 5 pistas adelantadas)
-          const queue = get().queue || [];
-          const currentIndex = get().currentQueueIndex;
-          const startIndex = Math.max(0, currentIndex + 1);
-          const endIndex = Math.min(queue.length, startIndex + 5);
+          set({ preloadWorkerRunning: true });
 
-          for (let i = startIndex; i < endIndex; i++) {
-            if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
+          try {
+            const { useSettingsStore } = await import('./useSettingsStore');
+            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
 
-            const track = get().queue[i];
-            // Per-track mode: respect guest's version_preference, fallback to global host setting
-            const trackMode = track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-            const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
-            const cachedId = localStorage.getItem(cacheKey);
+            // Recorrer la cola desde la canción siguiente (máximo 2 pistas adelantadas para ahorrar ancho de banda)
+            const queue = get().queue || [];
+            const currentIndex = get().currentQueueIndex;
+            const startIndex = Math.max(0, currentIndex + 1);
+            const endIndex = Math.min(queue.length, startIndex + 2);
 
-            // Precargar y resolver cualquier canción próxima que no esté cacheada o que haya fallado previamente
-            if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
-              await get().resolveYouTubeVideoId(track, trackMode);
-              // Pequeña pausa de 300ms entre búsquedas para no saturar la API
-              await new Promise(resolve => setTimeout(resolve, 300));
+            for (let i = startIndex; i < endIndex; i++) {
+              if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
+
+              const track = get().queue[i];
+              const trackMode = track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
+              const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
+              const cachedId = localStorage.getItem(cacheKey);
+
+              // Precargar y resolver cualquier canción próxima que no esté cacheada
+              if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
+                await get().resolveYouTubeVideoId(track, trackMode);
+                // Pausa de 400ms entre búsquedas para no saturar
+                await new Promise(resolve => setTimeout(resolve, 400));
+              }
             }
+          } catch (error) {
+            console.error("Error in queue preload worker:", error);
+          } finally {
+            set({ preloadWorkerRunning: false });
           }
-        } catch (error) {
-          console.error("Error in queue preload worker:", error);
-        } finally {
-          set({ preloadWorkerRunning: false });
-        }
+        }, 500);
+
+        set({ _preloadTimer: timer });
       },
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {

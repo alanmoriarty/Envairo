@@ -1,6 +1,6 @@
 let activePipedInstance = null;
 
-const MAX_SEARCH_CACHE = 50;
+const MAX_SEARCH_CACHE = 150;
 const searchCache = new Map();
 
 /**
@@ -8,7 +8,8 @@ const searchCache = new Map();
  * Retorna una lista formateada para ser compatible con el sistema de cola existente.
  */
 export async function searchYouTubeVideos(query, limit = 8) {
-  const cacheKey = `${query}_${limit}`;
+  const normalizedQuery = (query || '').trim().toLowerCase();
+  const cacheKey = `${normalizedQuery}_${limit}`;
   if (searchCache.has(cacheKey)) {
     return searchCache.get(cacheKey);
   }

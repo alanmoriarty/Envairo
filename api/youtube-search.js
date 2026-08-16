@@ -14,6 +14,29 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4173'
 ];
 
+// ── In-Memory Server Cache (LRU + 24h TTL) ───────────────────────────────────
+const MAX_CACHE_SIZE = 500;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+const youtubeMemoryCache = new Map();
+
+function getCachedYtResults(key) {
+  const cached = youtubeMemoryCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    youtubeMemoryCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function setCachedYtResults(key, data) {
+  if (youtubeMemoryCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = youtubeMemoryCache.keys().next().value;
+    youtubeMemoryCache.delete(oldestKey);
+  }
+  youtubeMemoryCache.set(key, { data, timestamp: Date.now() });
+}
+
 export default async function handler(req, res) {
   // CORS headers - solo permitir orígenes de confianza
   const origin = req.headers.origin;
@@ -38,8 +61,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
     }
 
+    const query = q.trim();
+    const cacheKey = `${query.toLowerCase()}_${limit}`;
+
+    // 1. Servir desde caché en memoria si existe (0 MB de proxy y <5ms de respuesta)
+    const cached = getCachedYtResults(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(cached);
+    }
+
     // Helper to fetch with timeout
-    const fetchWithTimeout = async (url, options, timeoutMs = 3000) => {
+    const fetchWithTimeout = async (url, options, timeoutMs = 2500) => {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -51,22 +85,29 @@ export default async function handler(req, res) {
         throw err;
       }
     };
-    // --- 1. INTENTO VÍA PIPED (Descentralizado) ---
+
+    // --- 1. INTENTO VÍA PIPED (JSON Descentralizado ultraligero de ~4 KB sin consumir proxy) ---
     const pipedInstances = [
       'https://pipedapi.kavin.rocks',
       'https://pipedapi.tokhmi.xyz',
       'https://pipedapi.moomoo.me',
       'https://pipedapi.syncpundit.io',
-      'https://api-piped.mha.fi'
+      'https://api-piped.mha.fi',
+      'https://pipedapi.r4fo.com'
     ];
     const instancesToTry = pipedInstances.sort(() => 0.5 - Math.random());
 
     for (const instance of instancesToTry) {
       try {
-        const res = await fetchWithTimeout(`${instance}/search?q=${encodeURIComponent(q)}&filter=all`, {}, 5000);
-        if (res.ok) {
-          const data = await res.json();
-          const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, parseInt(limit, 10));
+        const pipedRes = await fetchWithTimeout(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`, {
+          headers: {
+            'Accept-Encoding': 'gzip, deflate, br'
+          }
+        }, 2500);
+
+        if (pipedRes.ok) {
+          const data = await pipedRes.json();
+          const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
           
           if (streams.length > 0) {
             const items = streams.map(item => {
@@ -94,16 +135,20 @@ export default async function handler(req, res) {
             }).filter(t => t.id && t.id.videoId && t.id.videoId.length === 11);
 
             if (items.length > 0) {
-              return res.status(200).json({ items });
+              const payload = { items };
+              setCachedYtResults(cacheKey, payload);
+              res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+              res.setHeader('X-Cache', 'MISS');
+              return res.status(200).json(payload);
             }
           }
         }
       } catch (err) {
-        // Ignorar y probar el siguiente nodo
+        // Continuar al siguiente nodo Piped rápidamente
       }
     }
 
-    // --- 2. INTENTO VÍA SCRAPER (Webshare) ---
+    // --- 2. INTENTO VÍA SCRAPER CON COMPRESIÓN (Webshare) ---
     let html = null;
     let attempts = 0;
     const maxAttempts = 3;
@@ -111,22 +156,22 @@ export default async function handler(req, res) {
     while (attempts < maxAttempts) {
       try {
         attempts++;
-        // Use a proxy for the first 2 attempts, then try direct connection
         const useProxy = attempts < maxAttempts;
         let agent = undefined;
         
-        if (useProxy) {
+        if (useProxy && PROXIES.length > 0) {
           const randomProxy = PROXIES[Math.floor(Math.random() * PROXIES.length)];
           agent = new HttpsProxyAgent(randomProxy);
         }
 
-        const response = await fetchWithTimeout(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, { 
+        const response = await fetchWithTimeout(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, { 
           agent,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br' // Reduce HTML de 1.5MB a ~180KB en el proxy
           }
-        }, 4000); // 4 second timeout per attempt
+        }, 4000);
 
         if (!response.ok) {
           throw new Error(`YouTube returned status ${response.status}`);
@@ -134,9 +179,8 @@ export default async function handler(req, res) {
 
         html = await response.text();
         
-        // Verificamos si realmente obtuvimos la data
         if (html && html.includes('ytInitialData')) {
-          break; // Success!
+          break; // Exitoso
         }
       } catch (err) {
         console.warn(`Attempt ${attempts} failed:`, err.message);
@@ -155,7 +199,6 @@ export default async function handler(req, res) {
     const data = JSON.parse(match[1]);
     let videos = [];
     
-    // Navegar la compleja estructura de JSON de YouTube
     const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
     if (contents) {
        for (const section of contents) {
@@ -181,10 +224,15 @@ export default async function handler(req, res) {
        }
     }
 
-    const items = videos.slice(0, parseInt(limit, 10));
-    res.status(200).json({ items });
+    const items = videos.slice(0, limit);
+    const finalPayload = { items };
+    setCachedYtResults(cacheKey, finalPayload);
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+    res.setHeader('X-Cache', 'MISS');
+    res.status(200).json(finalPayload);
   } catch (error) {
     console.error('API /youtube-search error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
