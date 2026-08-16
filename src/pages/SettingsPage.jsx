@@ -457,10 +457,10 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-                    <span>🎤</span> Versión por petición del invitado
+                    <span>🎤</span> {t('settings.guest_version_title')}
                   </label>
                   <p className="text-xs text-text-muted mt-0.5">
-                    Los invitados podrán elegir si quieren su canción en versión normal, con letra o karaoke.
+                    {t('settings.guest_version_desc')}
                   </p>
                 </div>
                 <Toggle
@@ -475,10 +475,10 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-                    <span>🎧</span> Transiciones DJ Automáticas
+                    <span>🎧</span> {t('settings.dj_transitions_title')}
                   </label>
                   <p className="text-xs text-text-muted mt-0.5">
-                    Aplica mezclas dinámicas (Fade, Cut, Vinyl Brake, Echo, Spin Up) a 5 segundos de terminar la canción.
+                    {t('settings.dj_transitions_desc')}
                   </p>
                 </div>
                 <Toggle
@@ -490,31 +490,31 @@ export default function SettingsPage() {
               {store.djTransitionsEnabled && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 animate-fade-in">
                   <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">Efecto de Transición</label>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">{t('settings.dj_transition_effect')}</label>
                     <select
                       value={store.djTransitionMode}
                       onChange={(e) => store.setDjTransitionMode(e.target.value)}
                       className="input-field w-full text-xs"
                     >
-                      <option value="random">🎲 Aleatorio (Mix de todos)</option>
-                      <option value="fade">🌊 Fundido Suave (Fade)</option>
-                      <option value="cut">⚡ Corte Rápido (Cut)</option>
-                      <option value="brake">🛑 Frenada de Vinilo (Brake)</option>
-                      <option value="echo">🔊 Echo Out</option>
-                      <option value="start">🚀 Spin Up</option>
+                      <option value="random">{t('settings.dj_transition_random')}</option>
+                      <option value="fade">{t('settings.dj_transition_fade')}</option>
+                      <option value="cut">{t('settings.dj_transition_cut')}</option>
+                      <option value="brake">{t('settings.dj_transition_brake')}</option>
+                      <option value="echo">{t('settings.dj_transition_echo')}</option>
+                      <option value="start">{t('settings.dj_transition_start')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-text-primary mb-1">Anticipación (segundos)</label>
+                    <label className="block text-xs font-semibold text-text-primary mb-1">{t('settings.dj_anticipation')}</label>
                     <select
                       value={store.djTransitionDuration}
                       onChange={(e) => store.setDjTransitionDuration(parseInt(e.target.value, 10))}
                       className="input-field w-full text-xs"
                     >
-                      <option value="3">3 segundos</option>
-                      <option value="5">5 segundos (Recomendado)</option>
-                      <option value="7">7 segundos</option>
-                      <option value="10">10 segundos</option>
+                      <option value="3">{t('settings.dj_sec_3')}</option>
+                      <option value="5">{t('settings.dj_sec_5')}</option>
+                      <option value="7">{t('settings.dj_sec_7')}</option>
+                      <option value="10">{t('settings.dj_sec_10')}</option>
                     </select>
                   </div>
                 </div>
@@ -669,38 +669,38 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_urbano')}</h4>
-                  <p><strong>Reggaeton:</strong> incluye Urbano latino, Música latina, Latin urban.</p>
-                  <p><strong>Trap Latino:</strong> incluye Trap, Urbano latino, Reggaeton.</p>
+                  <p><strong>Reggaeton:</strong> {t('settings.guide_modal_reggaeton_desc')}</p>
+                  <p><strong>Trap Latino:</strong> {t('settings.guide_modal_trap_desc')}</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_pop')}</h4>
-                  <p><strong>Pop:</strong> incluye Pop latino, Latin pop, Indie pop.</p>
-                  <p><strong>Rock:</strong> incluye Rock latino, Latin rock, Hard rock, Indie rock, Metal, Punk.</p>
+                  <p><strong>Pop:</strong> {t('settings.guide_modal_pop_desc')}</p>
+                  <p><strong>Rock:</strong> {t('settings.guide_modal_rock_desc')}</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_electro')}</h4>
-                  <p><strong>Electrónica:</strong> incluye Dance, House, Techno, EDM, Trance, Dubstep.</p>
-                  <p><strong>Lofi:</strong> incluye Chill, Ambient.</p>
+                  <p><strong>Electrónica:</strong> {t('settings.guide_modal_electro_desc')}</p>
+                  <p><strong>Lofi:</strong> {t('settings.guide_modal_lofi_desc')}</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_tropical')}</h4>
-                  <p><strong>Tropical:</strong> incluye Salsa, Bachata, Merengue, Cumbia, Latino.</p>
-                  <p><strong>Reggae:</strong> incluye Dancehall, Ska.</p>
+                  <p><strong>Tropical:</strong> {t('settings.guide_modal_tropical_desc')}</p>
+                  <p><strong>Reggae:</strong> {t('settings.guide_modal_reggae_desc')}</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_regional')}</h4>
-                  <p><strong>Regional Mexicano:</strong> incluye Banda, Norteño, Mariachi, Corridos, Corridos Tumbados, Ranchera.</p>
+                  <p><strong>Regional Mexicano:</strong> {t('settings.guide_modal_regional_desc')}</p>
                 </div>
 
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <h4 className="font-semibold text-white mb-2">{t('settings.guide_modal_other')}</h4>
-                  <p><strong>Hip-Hop / Rap:</strong> incluye R&B, Trap.</p>
-                  <p><strong>Folk:</strong> incluye Acústico, Cantautor, Country.</p>
-                  <p><strong>Soundtrack:</strong> incluye Banda sonora, OST, Cine.</p>
+                  <p><strong>Hip-Hop / Rap:</strong> {t('settings.guide_modal_hiphop_desc')}</p>
+                  <p><strong>Folk:</strong> {t('settings.guide_modal_folk_desc')}</p>
+                  <p><strong>Soundtrack:</strong> {t('settings.guide_modal_soundtrack_desc')}</p>
                 </div>
               </div>
 

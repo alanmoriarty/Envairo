@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useYouTubeSDK } from '../../hooks/useYouTubeSDK';
 import {
   Play, Pause, SkipForward, SkipBack,
-  Volume2, VolumeX, Music2, Wifi, WifiOff, RotateCcw
+  Volume2, VolumeX, Music2, Wifi, WifiOff, RotateCcw, Tv
 } from 'lucide-react';
 
 const formatArtists = (artists) => {
@@ -356,6 +356,15 @@ export function PersistentPlayer() {
             </button>
             <button onClick={controls.skipNext} className="btn-ghost p-2">
               <SkipForward size={18} />
+            </button>
+
+            {/* Mobile / Quick Video PiP Toggle */}
+            <button
+              onClick={() => window.toggleYouTubePiP?.()}
+              className="btn-ghost p-2 text-text-muted hover:text-accent transition-colors"
+              title="Mostrar / Ocultar Video"
+            >
+              <Tv size={18} />
             </button>
 
             {/* Mobile Volume Control */}

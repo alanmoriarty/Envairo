@@ -347,7 +347,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={`absolute inset-0 p-4 sm:p-6 space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar ${isAdminMode ? 'pb-28' : ''}`}>
+    <div className="absolute inset-0 p-4 sm:p-6 space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar pb-28 lg:pb-6">
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -869,9 +869,9 @@ export default function DashboardPage() {
 
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-accent">
-                  Cantidad de sugerencias a generar
+                  {t('dashboard.envairo_track_count_label')}
                 </label>
-                <p className="text-xs text-text-muted">Máximo 50 canciones por generación.</p>
+                <p className="text-xs text-text-muted">{t('dashboard.envairo_track_count_sub')}</p>
                 <input
                   type="number"
                   min="1"
@@ -892,19 +892,19 @@ export default function DashboardPage() {
                 <Toggle
                   checked={enairoAutoIntervalEnabled}
                   onChange={setEnairoAutoIntervalEnabled}
-                  label="Ejecutar automáticamente cada 2 horas"
-                  description="envAIro Selector se volverá a ejecutar solo usando este mismo contexto (máximo 3 veces al día)."
+                  label={t('dashboard.envairo_auto_label')}
+                  description={t('dashboard.envairo_auto_desc')}
                 />
 
                 <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 text-xs text-text-muted flex items-start gap-2.5">
                   <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-white">Límite de Ejecución Automática</p>
+                    <p className="font-semibold text-white">{t('dashboard.envairo_auto_limit_title')}</p>
                     <p className="mt-0.5 text-text-muted leading-relaxed">
-                      Se ejecutará automáticamente cada 2 horas <strong className="text-white">únicamente 3 veces al día</strong> para conservar la cuota de tu cuenta.
+                      {t('dashboard.envairo_auto_limit_desc')}
                     </p>
                     <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                      <span className="font-mono text-accent font-semibold">Ejecuciones de hoy:</span>
+                      <span className="font-mono text-accent font-semibold">{t('dashboard.envairo_auto_today')}</span>
                       <span className="font-mono font-bold text-white bg-accent/20 px-2 py-0.5 rounded-md">
                         {enairoUsageCount || 0} / 3
                       </span>
@@ -931,7 +931,7 @@ export default function DashboardPage() {
                 onClick={() => setIsEnairoModalOpen(false)}
                 className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
-                Cancelar
+                {t('dashboard.envairo_cancel_btn')}
               </button>
               <button
                 onClick={() => {
@@ -940,7 +940,7 @@ export default function DashboardPage() {
                 }}
                 className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
-                Sí, Generar
+                {t('dashboard.envairo_generate_btn')}
               </button>
             </div>
           </div>
@@ -968,10 +968,10 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white leading-snug">
-                    Activar envAIro Filter
+                    {t('dashboard.filter_modal_title')}
                   </h3>
                   <p className="text-xs text-text-muted mt-0.5">
-                    envAIro Filter seleccionará automáticamente las siguientes canciones según tus reglas.
+                    {t('dashboard.filter_modal_desc')}
                   </p>
                 </div>
               </div>
@@ -992,7 +992,7 @@ export default function DashboardPage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="block text-xs font-bold uppercase tracking-wider text-accent">
-                    Contexto de envAIro Filter (Opcional)
+                    {t('dashboard.filter_context_label')}
                   </label>
                   <span className={`text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
                     {autoDjPrompt.length} / {MAX_PROMPT_LENGTH}
@@ -1002,11 +1002,11 @@ export default function DashboardPage() {
                   maxLength={MAX_PROMPT_LENGTH}
                   value={autoDjPrompt}
                   onChange={(e) => setAutoDjPrompt(sanitizePrompt(e.target.value))}
-                  placeholder="Ej: Solo canciones suaves de bachata, salsa vieja y pop latino..."
+                  placeholder={t('dashboard.filter_context_placeholder')}
                   className="input-field w-full h-20 resize-none text-sm leading-relaxed"
                 />
                 <p className="text-[11px] text-text-muted leading-tight">
-                  Si lo dejas en blanco, envAIro Filter usará solo los filtros de géneros en la configuración.
+                  {t('dashboard.filter_context_hint')}
                 </p>
               </div>
 
@@ -1015,8 +1015,8 @@ export default function DashboardPage() {
                 <Toggle
                   checked={explicitFilter}
                   onChange={setExplicitFilter}
-                  label="Filtro de Contenido Explícito"
-                  description="Bloquea automáticamente canciones con contenido o lenguaje explícito."
+                  label={t('dashboard.filter_explicit_title')}
+                  description={t('dashboard.filter_explicit_desc')}
                 />
               </div>
 
@@ -1027,10 +1027,10 @@ export default function DashboardPage() {
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5">
                     <div className="flex justify-between items-center">
                       <label className="block text-xs font-bold uppercase tracking-wider text-accent">
-                        Posición de peticiones de invitados
+                        {t('dashboard.filter_offset_title')}
                       </label>
                       <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30 font-mono">
-                        {currentOffset === 1 ? 'Siguiente (+1)' : `+${currentOffset} canciones`}
+                        {currentOffset === 1 ? t('dashboard.filter_offset_next') : t('dashboard.filter_offset_songs', { count: currentOffset })}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 pt-1">
@@ -1052,7 +1052,7 @@ export default function DashboardPage() {
                       />
                     </div>
                     <p className="text-[11px] text-text-muted leading-tight">
-                      Define a cuántas canciones de distancia (1 a 20) después de la actual se insertarán las peticiones de invitados.
+                      {t('dashboard.filter_offset_hint')}
                     </p>
                   </div>
                 );
@@ -1068,7 +1068,7 @@ export default function DashboardPage() {
                 }}
                 className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
-                Cancelar
+                {t('dashboard.filter_cancel_btn')}
               </button>
               <button
                 onClick={() => {
@@ -1077,7 +1077,7 @@ export default function DashboardPage() {
                 }}
                 className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
-                Activar
+                {t('dashboard.filter_activate_btn')}
               </button>
             </div>
           </div>

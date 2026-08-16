@@ -23,6 +23,14 @@ export function useYouTubeSDK() {
     if (!wrapper) return;
 
     const dragHeader = document.getElementById('youtube-drag-header');
+    const miniBadge = document.getElementById('youtube-mini-badge');
+    const isMinimized = wrapper.dataset.minimized === 'true';
+    const isHidden = wrapper.dataset.hidden === 'true';
+
+    if (isHidden) {
+      wrapper.style.display = 'none';
+      return;
+    }
 
     if (isFs) {
       wrapper.style.display = 'block';
@@ -36,28 +44,31 @@ export function useYouTubeSDK() {
       wrapper.style.minWidth = '177.77vh';
       wrapper.style.transform = 'translate(-50%, -50%)';
       wrapper.style.borderRadius = '0';
+      wrapper.style.border = 'none';
       wrapper.style.boxShadow = 'none';
       wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
       wrapper.style.zIndex = '99999';
       wrapper.style.filter = 'none';
       wrapper.style.pointerEvents = 'auto';
       if (dragHeader) dragHeader.style.display = 'none';
-    } else {
+      if (miniBadge) miniBadge.style.display = 'none';
+    } else if (isMinimized) {
       wrapper.style.display = 'block';
-      wrapper.style.width = '240px';
-      wrapper.style.height = '135px';
+      wrapper.style.width = '48px';
+      wrapper.style.height = '48px';
       wrapper.style.minHeight = '0';
       wrapper.style.minWidth = '0';
       wrapper.style.transform = 'none';
-      wrapper.style.borderRadius = '12px';
-      wrapper.style.border = '2px solid rgba(157,78,221,0.5)';
-      wrapper.style.boxShadow = '0 10px 30px rgba(0,0,0,0.8)';
+      wrapper.style.borderRadius = '24px';
+      wrapper.style.border = '2px solid rgba(157,78,221,0.85)';
+      wrapper.style.boxShadow = '0 8px 24px rgba(0,0,0,0.8), 0 0 15px rgba(157,78,221,0.4)';
       wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
       wrapper.style.zIndex = '9999';
       wrapper.style.filter = 'none';
-      wrapper.style.willChange = 'left, top';
+      wrapper.style.cursor = 'pointer';
       wrapper.style.pointerEvents = 'auto';
-      if (dragHeader) dragHeader.style.display = 'flex';
+      if (dragHeader) dragHeader.style.display = 'none';
+      if (miniBadge) miniBadge.style.display = 'flex';
 
       const savedPosStr = localStorage.getItem('bq-pip-pos');
       let hasSavedPos = false;
@@ -65,8 +76,8 @@ export function useYouTubeSDK() {
         try {
           const pos = JSON.parse(savedPosStr);
           if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-            wrapper.style.left = `${Math.max(10, Math.min(window.innerWidth - 250, pos.x))}px`;
-            wrapper.style.top = `${Math.max(10, Math.min(window.innerHeight - 150, pos.y))}px`;
+            wrapper.style.left = `${Math.max(8, Math.min(window.innerWidth - 56, pos.x))}px`;
+            wrapper.style.top = `${Math.max(8, Math.min(window.innerHeight - 130, pos.y))}px`;
             wrapper.style.right = 'auto';
             wrapper.style.bottom = 'auto';
             hasSavedPos = true;
@@ -77,11 +88,92 @@ export function useYouTubeSDK() {
       if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
         wrapper.style.left = 'auto';
         wrapper.style.top = 'auto';
-        wrapper.style.right = '24px';
-        wrapper.style.bottom = '96px';
+        wrapper.style.right = '16px';
+        wrapper.style.bottom = '85px';
+      }
+    } else {
+      const isMobile = window.innerWidth < 640;
+      const pipW = isMobile ? 160 : 240;
+      const pipH = isMobile ? 90 : 135;
+
+      wrapper.style.display = 'block';
+      wrapper.style.width = `${pipW}px`;
+      wrapper.style.height = `${pipH}px`;
+      wrapper.style.minHeight = '0';
+      wrapper.style.minWidth = '0';
+      wrapper.style.transform = 'none';
+      wrapper.style.borderRadius = '12px';
+      wrapper.style.border = '2px solid rgba(157,78,221,0.6)';
+      wrapper.style.boxShadow = '0 10px 30px rgba(0,0,0,0.85), 0 0 12px rgba(157,78,221,0.25)';
+      wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
+      wrapper.style.zIndex = '9999';
+      wrapper.style.filter = 'none';
+      wrapper.style.willChange = 'left, top';
+      wrapper.style.pointerEvents = 'auto';
+      if (dragHeader) dragHeader.style.display = 'flex';
+      if (miniBadge) miniBadge.style.display = 'none';
+
+      const savedPosStr = localStorage.getItem('bq-pip-pos');
+      let hasSavedPos = false;
+      if (savedPosStr) {
+        try {
+          const pos = JSON.parse(savedPosStr);
+          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
+            wrapper.style.left = `${Math.max(8, Math.min(window.innerWidth - pipW - 8, pos.x))}px`;
+            wrapper.style.top = `${Math.max(8, Math.min(window.innerHeight - pipH - 85, pos.y))}px`;
+            wrapper.style.right = 'auto';
+            wrapper.style.bottom = 'auto';
+            hasSavedPos = true;
+          }
+        } catch (e) { }
+      }
+
+      if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
+        wrapper.style.left = 'auto';
+        wrapper.style.top = 'auto';
+        wrapper.style.right = isMobile ? '12px' : '24px';
+        wrapper.style.bottom = isMobile ? '80px' : '96px';
       }
     }
   };
+
+  useEffect(() => {
+    // Expose global controller for the floating PiP video
+    window.toggleYouTubePiP = (forcedOpen) => {
+      const wrapper = document.getElementById('youtube-wrapper');
+      if (!wrapper) return;
+      const isHidden = wrapper.dataset.hidden === 'true';
+      const isMinimized = wrapper.dataset.minimized === 'true';
+
+      if (typeof forcedOpen === 'boolean') {
+        wrapper.dataset.hidden = forcedOpen ? 'false' : 'true';
+        if (forcedOpen) wrapper.dataset.minimized = 'false';
+      } else if (isHidden) {
+        wrapper.dataset.hidden = 'false';
+        wrapper.dataset.minimized = 'false';
+      } else if (!isMinimized) {
+        wrapper.dataset.minimized = 'true';
+      } else {
+        wrapper.dataset.minimized = 'false';
+      }
+
+      const isFs = document.fullscreenElement === wrapper;
+      applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, isFs);
+    };
+
+    const handleResize = () => {
+      const wrapper = document.getElementById('youtube-wrapper');
+      if (!wrapper) return;
+      const isFs = document.fullscreenElement === wrapper;
+      applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, isFs);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      delete window.toggleYouTubePiP;
+    };
+  }, []);
 
   useEffect(() => {
     const wrapper = document.getElementById('youtube-wrapper');
@@ -113,6 +205,7 @@ export function useYouTubeSDK() {
       wrapper.id = 'youtube-wrapper';
       wrapper.style.position = 'fixed';
       wrapper.style.overflow = 'hidden';
+      wrapper.style.transition = 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.25s ease';
 
       try {
         const savedPosStr = localStorage.getItem('bq-pip-pos');
@@ -135,64 +228,158 @@ export function useYouTubeSDK() {
       dragHeader.style.top = '0';
       dragHeader.style.left = '0';
       dragHeader.style.right = '0';
-      dragHeader.style.height = '24px';
-      dragHeader.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0))';
+      dragHeader.style.height = '26px';
+      dragHeader.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0))';
       dragHeader.style.zIndex = '35';
       dragHeader.style.cursor = 'grab';
       dragHeader.style.display = 'flex';
       dragHeader.style.alignItems = 'center';
       dragHeader.style.justifyContent = 'space-between';
-      dragHeader.style.padding = '0 8px';
+      dragHeader.style.padding = '0 6px';
       dragHeader.style.userSelect = 'none';
+      dragHeader.style.touchAction = 'none';
 
-      const dragHandleIcon = document.createElement('span');
-      dragHandleIcon.innerHTML = '⋮⋮';
-      dragHandleIcon.style.color = 'rgba(255,255,255,0.7)';
-      dragHandleIcon.style.fontSize = '12px';
-      dragHandleIcon.style.fontWeight = 'bold';
+      const dragHandleIcon = document.createElement('div');
+      dragHandleIcon.style.display = 'flex';
+      dragHandleIcon.style.alignItems = 'center';
+      dragHandleIcon.style.gap = '4px';
+      dragHandleIcon.innerHTML = '<span style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: bold; line-height: 1;">⋮⋮</span><span style="font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8);">Video</span>';
       dragHeader.appendChild(dragHandleIcon);
 
+      const headerActions = document.createElement('div');
+      headerActions.style.display = 'flex';
+      headerActions.style.alignItems = 'center';
+      headerActions.style.gap = '6px';
+
+      // Minimize Button
+      const minimizeBtn = document.createElement('button');
+      minimizeBtn.innerHTML = '–';
+      minimizeBtn.title = 'Minimizar a burbuja flotante';
+      minimizeBtn.style.color = 'rgba(255,255,255,0.85)';
+      minimizeBtn.style.background = 'rgba(255,255,255,0.1)';
+      minimizeBtn.style.border = 'none';
+      minimizeBtn.style.borderRadius = '4px';
+      minimizeBtn.style.width = '18px';
+      minimizeBtn.style.height = '18px';
+      minimizeBtn.style.display = 'flex';
+      minimizeBtn.style.alignItems = 'center';
+      minimizeBtn.style.justifyContent = 'center';
+      minimizeBtn.style.fontSize = '13px';
+      minimizeBtn.style.fontWeight = 'bold';
+      minimizeBtn.style.cursor = 'pointer';
+      minimizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrapper.dataset.minimized = 'true';
+        applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
+      });
+      headerActions.appendChild(minimizeBtn);
+
+      // Fullscreen Button
       const expandBtn = document.createElement('button');
       expandBtn.innerHTML = '⛶';
       expandBtn.title = 'Pantalla Completa';
-      expandBtn.style.color = 'rgba(255,255,255,0.8)';
-      expandBtn.style.background = 'none';
+      expandBtn.style.color = 'rgba(255,255,255,0.85)';
+      expandBtn.style.background = 'rgba(255,255,255,0.1)';
       expandBtn.style.border = 'none';
-      expandBtn.style.fontSize = '12px';
+      expandBtn.style.borderRadius = '4px';
+      expandBtn.style.width = '18px';
+      expandBtn.style.height = '18px';
+      expandBtn.style.display = 'flex';
+      expandBtn.style.alignItems = 'center';
+      expandBtn.style.justifyContent = 'center';
+      expandBtn.style.fontSize = '11px';
       expandBtn.style.cursor = 'pointer';
       expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (wrapper.requestFullscreen) wrapper.requestFullscreen();
         else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
       });
-      dragHeader.appendChild(expandBtn);
+      headerActions.appendChild(expandBtn);
+
+      // Hide Button
+      const hideBtn = document.createElement('button');
+      hideBtn.innerHTML = '✕';
+      hideBtn.title = 'Ocultar video';
+      hideBtn.style.color = 'rgba(255,255,255,0.85)';
+      hideBtn.style.background = 'rgba(255,255,255,0.1)';
+      hideBtn.style.border = 'none';
+      hideBtn.style.borderRadius = '4px';
+      hideBtn.style.width = '18px';
+      hideBtn.style.height = '18px';
+      hideBtn.style.display = 'flex';
+      hideBtn.style.alignItems = 'center';
+      hideBtn.style.justifyContent = 'center';
+      hideBtn.style.fontSize = '10px';
+      hideBtn.style.cursor = 'pointer';
+      hideBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrapper.dataset.hidden = 'true';
+        applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
+      });
+      headerActions.appendChild(hideBtn);
+
+      dragHeader.appendChild(headerActions);
       wrapper.appendChild(dragHeader);
+
+      // Minimized Floating Badge
+      const miniBadge = document.createElement('div');
+      miniBadge.id = 'youtube-mini-badge';
+      miniBadge.style.position = 'absolute';
+      miniBadge.style.inset = '0';
+      miniBadge.style.zIndex = '40';
+      miniBadge.style.background = 'linear-gradient(135deg, rgba(20,10,35,0.95), rgba(40,15,65,0.95))';
+      miniBadge.style.backdropFilter = 'blur(6px)';
+      miniBadge.style.display = 'none';
+      miniBadge.style.alignItems = 'center';
+      miniBadge.style.justifyContent = 'center';
+      miniBadge.style.flexDirection = 'column';
+      miniBadge.style.cursor = 'pointer';
+      miniBadge.style.touchAction = 'none';
+      miniBadge.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9D4EDD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px rgba(157,78,221,0.6));">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+      `;
+      miniBadge.title = 'Toca para expandir el video';
+      miniBadge.addEventListener('click', (e) => {
+        if (hasMovedSignificantly) return;
+        e.stopPropagation();
+        wrapper.dataset.minimized = 'false';
+        applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
+      });
+      wrapper.appendChild(miniBadge);
 
       let isDragging = false;
       let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+      let hasMovedSignificantly = false;
 
-      const onMouseDown = (e) => {
+      const handleDragStart = (clientX, clientY) => {
         if (document.fullscreenElement) return;
         isDragging = true;
-        wrapper.style.cursor = 'grabbing';
-        if (dragHeader) dragHeader.style.cursor = 'grabbing';
-        if (overlay) overlay.style.cursor = 'grabbing';
-        startX = e.clientX;
-        startY = e.clientY;
+        hasMovedSignificantly = false;
+        startX = clientX;
+        startY = clientY;
         const rect = wrapper.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        wrapper.style.cursor = 'grabbing';
       };
 
-      const onMouseMove = (e) => {
+      const handleDragMove = (clientX, clientY) => {
         if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        const newLeft = Math.max(10, Math.min(window.innerWidth - 250, initialLeft + dx));
-        const newTop = Math.max(10, Math.min(window.innerHeight - 145, initialTop + dy));
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          hasMovedSignificantly = true;
+        }
+        const isMin = wrapper.dataset.minimized === 'true';
+        const isMobile = window.innerWidth < 640;
+        const w = isMin ? 48 : (isMobile ? 160 : 240);
+        const h = isMin ? 48 : (isMobile ? 90 : 135);
+
+        const newLeft = Math.max(6, Math.min(window.innerWidth - w - 6, initialLeft + dx));
+        const newTop = Math.max(6, Math.min(window.innerHeight - h - 6, initialTop + dy));
         wrapper.style.left = `${newLeft}px`;
         wrapper.style.top = `${newTop}px`;
         wrapper.style.right = 'auto';
@@ -200,22 +387,62 @@ export function useYouTubeSDK() {
         wrapper.dataset.userMoved = 'true';
       };
 
-      const onMouseUp = () => {
+      const handleDragEnd = () => {
         if (!isDragging) return;
         isDragging = false;
-        wrapper.style.cursor = 'grab';
-        if (dragHeader) dragHeader.style.cursor = 'grab';
-        if (overlay) overlay.style.cursor = 'grab';
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-
+        wrapper.style.cursor = wrapper.dataset.minimized === 'true' ? 'pointer' : 'grab';
         const rect = wrapper.getBoundingClientRect();
         try {
           localStorage.setItem('bq-pip-pos', JSON.stringify({ x: rect.left, y: rect.top }));
         } catch (e) { }
       };
 
+      const onMouseDown = (e) => {
+        if (e.target.closest('button')) return;
+        handleDragStart(e.clientX, e.clientY);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+
+      const onMouseMove = (e) => {
+        handleDragMove(e.clientX, e.clientY);
+      };
+
+      const onMouseUp = () => {
+        handleDragEnd();
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+
+      const onTouchStart = (e) => {
+        if (e.target.closest('button')) return;
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        handleDragStart(touch.clientX, touch.clientY);
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+        document.addEventListener('touchcancel', onTouchEnd);
+      };
+
+      const onTouchMove = (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        e.preventDefault(); // prevent scrolling while dragging pip
+        const touch = e.touches[0];
+        handleDragMove(touch.clientX, touch.clientY);
+      };
+
+      const onTouchEnd = () => {
+        handleDragEnd();
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        document.removeEventListener('touchcancel', onTouchEnd);
+      };
+
       dragHeader.addEventListener('mousedown', onMouseDown);
+      dragHeader.addEventListener('touchstart', onTouchStart, { passive: true });
+      miniBadge.addEventListener('mousedown', onMouseDown);
+      miniBadge.addEventListener('touchstart', onTouchStart, { passive: true });
+
       wrapper.style.overflow = 'hidden';
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
       document.body.appendChild(wrapper);
