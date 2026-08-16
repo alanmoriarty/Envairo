@@ -37,7 +37,7 @@ export function ProfileModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-bg-base/90 backdrop-blur-md flex flex-col items-center justify-center z-[110] p-4">
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-3 sm:p-4">
       <div className="relative w-full max-w-md bg-bg-card rounded-2xl border border-white/10 shadow-2xl p-6 animate-in zoom-in-95 fade-in">
         <button
           onClick={onClose}

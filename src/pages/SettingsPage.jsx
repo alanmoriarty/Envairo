@@ -650,7 +650,7 @@ export default function SettingsPage() {
       </div>
 
       {showGenreGuide && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
           <div className="bg-bg-elevated w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
             <div className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-bg-elevated z-10">
               <h3 className="font-bold text-text-primary flex items-center gap-2">

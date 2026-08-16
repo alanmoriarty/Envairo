@@ -817,44 +817,44 @@ export default function DashboardPage() {
       {/* EnvAIro Selector Confirmation Modal */}
       {isEnairoModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
           onClick={() => setIsEnairoModalOpen(false)}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[88vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[92vh] sm:max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}
-            <div className="p-6 pb-4 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
-              <div className="flex items-center gap-3.5 pr-4">
-                <div className="p-3 bg-accent/20 border border-accent/30 rounded-2xl shrink-0">
-                  <Sparkles size={24} className="text-accent animate-pulse" />
+            <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 pr-2 min-w-0">
+                <div className="p-2 sm:p-3 bg-accent/20 border border-accent/30 rounded-xl sm:rounded-2xl shrink-0">
+                  <Sparkles size={20} className="text-accent animate-pulse" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white leading-snug">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-xl font-bold text-white leading-tight truncate">
                     {t('dashboard.envairo_config_title')}
                   </h3>
-                  <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight sm:leading-relaxed line-clamp-2">
                     {t('dashboard.envairo_config_desc')}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsEnairoModalOpen(false)}
-                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
+                className="p-1.5 sm:p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-left">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-3 sm:space-y-4 text-left">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                  <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-accent">
                     {t('settings.envairo_prompt_label')}
                   </label>
-                  <span className={`text-xs font-mono ${enairoPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                  <span className={`text-[11px] sm:text-xs font-mono ${enairoPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
                     {enairoPrompt.length} / {MAX_PROMPT_LENGTH}
                   </span>
                 </div>
@@ -863,15 +863,15 @@ export default function DashboardPage() {
                   value={enairoPrompt}
                   onChange={(e) => setEnairoPrompt(sanitizePrompt(e.target.value))}
                   placeholder={t('settings.envairo_prompt_placeholder')}
-                  className="input-field w-full h-24 resize-none text-sm leading-relaxed"
+                  className="input-field w-full h-20 sm:h-24 resize-none text-xs sm:text-sm leading-relaxed"
                 />
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
+                <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-accent">
                   {t('dashboard.envairo_track_count_label')}
                 </label>
-                <p className="text-xs text-text-muted">{t('dashboard.envairo_track_count_sub')}</p>
+                <p className="text-[11px] sm:text-xs text-text-muted">{t('dashboard.envairo_track_count_sub')}</p>
                 <input
                   type="number"
                   min="1"
@@ -884,11 +884,11 @@ export default function DashboardPage() {
                     if (!isNaN(n)) setEnairoTrackCount(Math.min(50, Math.max(1, n)));
                   }}
                   onBlur={() => { if (enairoTrackCount === '') setEnairoTrackCount(35); }}
-                  className="input-field w-full text-center font-bold text-base"
+                  className="input-field w-full text-center font-bold text-sm sm:text-base py-1.5 sm:py-2"
                 />
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-2.5 sm:space-y-3">
                 <Toggle
                   checked={enairoAutoIntervalEnabled}
                   onChange={setEnairoAutoIntervalEnabled}
@@ -896,11 +896,11 @@ export default function DashboardPage() {
                   description={t('dashboard.envairo_auto_desc')}
                 />
 
-                <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 text-xs text-text-muted flex items-start gap-2.5">
+                <div className="bg-accent/10 border border-accent/20 rounded-xl p-2.5 sm:p-3 text-xs text-text-muted flex items-start gap-2.5">
                   <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-white">{t('dashboard.envairo_auto_limit_title')}</p>
-                    <p className="mt-0.5 text-text-muted leading-relaxed">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white text-xs sm:text-sm">{t('dashboard.envairo_auto_limit_title')}</p>
+                    <p className="mt-0.5 text-text-muted text-[11px] sm:text-xs leading-relaxed">
                       {t('dashboard.envairo_auto_limit_desc')}
                     </p>
                     <div className="mt-1.5 flex items-center justify-between text-[11px]">
@@ -914,7 +914,7 @@ export default function DashboardPage() {
               </div>
 
               {canSeeTestMode && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <Toggle
                     checked={enairoTestMode}
                     onChange={setEnairoTestMode}
@@ -926,10 +926,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="p-4 px-6 bg-black/30 border-t border-white/10 shrink-0 flex gap-3">
+            <div className="p-3.5 sm:p-4 px-4 sm:px-6 bg-black/40 border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3">
               <button
                 onClick={() => setIsEnairoModalOpen(false)}
-                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
                 {t('dashboard.envairo_cancel_btn')}
               </button>
@@ -938,7 +938,7 @@ export default function DashboardPage() {
                   setIsEnairoModalOpen(false);
                   triggerEnairo();
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
                 {t('dashboard.envairo_generate_btn')}
               </button>
@@ -950,27 +950,27 @@ export default function DashboardPage() {
       {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
           onClick={() => {
             setIsAutoDjModalOpen(false);
             setAutoDJ(false); // cancel activation
           }}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[88vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[92vh] sm:max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}
-            <div className="p-6 pb-4 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
-              <div className="flex items-center gap-3.5 pr-4">
-                <div className="p-3 bg-accent/20 border border-accent/30 rounded-2xl shrink-0">
-                  <Sparkles size={24} className="text-accent animate-pulse" />
+            <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 pr-2 min-w-0">
+                <div className="p-2 sm:p-3 bg-accent/20 border border-accent/30 rounded-xl sm:rounded-2xl shrink-0">
+                  <Sparkles size={20} className="text-accent animate-pulse" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white leading-snug">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-xl font-bold text-white leading-tight truncate">
                     {t('dashboard.filter_modal_title')}
                   </h3>
-                  <p className="text-xs text-text-muted mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight sm:leading-relaxed line-clamp-2">
                     {t('dashboard.filter_modal_desc')}
                   </p>
                 </div>
@@ -980,21 +980,21 @@ export default function DashboardPage() {
                   setIsAutoDjModalOpen(false);
                   setAutoDJ(false);
                 }}
-                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
+                className="p-1.5 sm:p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-3 sm:space-y-4">
               {/* Contexto de la IA */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                  <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-accent">
                     {t('dashboard.filter_context_label')}
                   </label>
-                  <span className={`text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
+                  <span className={`text-[11px] sm:text-xs font-mono ${autoDjPrompt.length >= MAX_PROMPT_LENGTH ? 'text-danger font-bold' : 'text-text-muted'}`}>
                     {autoDjPrompt.length} / {MAX_PROMPT_LENGTH}
                   </span>
                 </div>
@@ -1003,15 +1003,15 @@ export default function DashboardPage() {
                   value={autoDjPrompt}
                   onChange={(e) => setAutoDjPrompt(sanitizePrompt(e.target.value))}
                   placeholder={t('dashboard.filter_context_placeholder')}
-                  className="input-field w-full h-20 resize-none text-sm leading-relaxed"
+                  className="input-field w-full h-16 sm:h-20 resize-none text-xs sm:text-sm leading-relaxed"
                 />
-                <p className="text-[11px] text-text-muted leading-tight">
+                <p className="text-[10px] sm:text-[11px] text-text-muted leading-tight">
                   {t('dashboard.filter_context_hint')}
                 </p>
               </div>
 
               {/* Filtro Explícito */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                 <Toggle
                   checked={explicitFilter}
                   onChange={setExplicitFilter}
@@ -1024,16 +1024,16 @@ export default function DashboardPage() {
               {(() => {
                 const currentOffset = (typeof partyRequestOffset === 'number' && !isNaN(partyRequestOffset) && partyRequestOffset > 0) ? partyRequestOffset : 5;
                 return (
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5">
-                    <div className="flex justify-between items-center">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-accent">
+                  <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-2 sm:space-y-2.5">
+                    <div className="flex justify-between items-center gap-2">
+                      <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-accent truncate">
                         {t('dashboard.filter_offset_title')}
                       </label>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30 font-mono">
+                      <span className="text-[11px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-accent/20 text-accent border border-accent/30 font-mono shrink-0">
                         {currentOffset === 1 ? t('dashboard.filter_offset_next') : t('dashboard.filter_offset_songs', { count: currentOffset })}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 pt-1">
+                    <div className="flex items-center gap-2.5 sm:gap-3 pt-1">
                       <input
                         type="range"
                         min={1}
@@ -1048,10 +1048,10 @@ export default function DashboardPage() {
                         max={20}
                         value={currentOffset}
                         onChange={(e) => setPartyRequestOffset(e.target.value)}
-                        className="w-16 py-1.5 px-2 text-center text-sm bg-black/50 border border-white/15 rounded-xl font-bold text-white focus:border-accent outline-none"
+                        className="w-14 sm:w-16 py-1 px-1.5 text-center text-xs sm:text-sm bg-black/50 border border-white/15 rounded-xl font-bold text-white focus:border-accent outline-none"
                       />
                     </div>
-                    <p className="text-[11px] text-text-muted leading-tight">
+                    <p className="text-[10px] sm:text-[11px] text-text-muted leading-tight">
                       {t('dashboard.filter_offset_hint')}
                     </p>
                   </div>
@@ -1060,13 +1060,13 @@ export default function DashboardPage() {
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="p-4 px-6 bg-black/30 border-t border-white/10 shrink-0 flex gap-3">
+            <div className="p-3.5 sm:p-4 px-4 sm:px-6 bg-black/40 border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3">
               <button
                 onClick={() => {
                   setIsAutoDjModalOpen(false);
                   setAutoDJ(false); // cancel activation
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
               >
                 {t('dashboard.filter_cancel_btn')}
               </button>
@@ -1075,7 +1075,7 @@ export default function DashboardPage() {
                   setIsAutoDjModalOpen(false);
                   setAutoDJ(true);
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
+                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
                 {t('dashboard.filter_activate_btn')}
               </button>
