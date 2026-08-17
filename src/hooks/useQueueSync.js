@@ -318,14 +318,18 @@ export function useQueueSync() {
             // Ignorar eventos de kickout si estamos en medio de tomar el control
             if (isTakingOverRef.current) return;
 
-            // Si el active_instance_id cambia a otro dispositivo, simplemente pausamos la reproducción local sin cerrar la sesión
+            // Kickout Logic (Host): Si somos un Host autenticado y el active_instance_id cambia a otro dispositivo, cerrar sesión aquí
             if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
+              import('sonner').then(({ toast }) => {
+                toast.error('Tu sesión se ha abierto en otro dispositivo. Cerrando sesión...', { duration: 8000 });
+              });
               try {
                 const state = usePlayerStore.getState();
                 if (state.youtubePlayer && typeof state.youtubePlayer.pauseVideo === 'function') {
                   state.youtubePlayer.pauseVideo();
                 }
               } catch (err) {}
+              logout(true);
               return;
             }
 
@@ -565,33 +569,28 @@ export function useQueueSync() {
 
       const activeInstanceId = getInstanceId();
       const { data } = await supabase.from('sessions').select('id, active_instance_id').eq('id', sessionId).maybeSingle();
-      
       const { data: { user: sbUser } } = await supabase.auth.getUser();
 
       if (data) {
         if (authStore.user || secret) {
-          // Si somos el host autenticado (no un remote/admin), podemos tomar control de la sesión.
-          // Re-read isAdminMode fresh to avoid race condition with LoginPage setting it.
-          if (authStore.user && !isAdmin) {
+          const currentIsAdmin = useSettingsStore.getState().isAdminMode;
+          if (authStore.user && !currentIsAdmin) {
              try {
-               // Solo tomar posesión de la instancia si no hay ninguna activa o si somos la misma
-               if (!data.active_instance_id || data.active_instance_id === activeInstanceId) {
-                 const { data: newSecret } = await supabase.rpc('host_takeover_session', {
-                   p_session_id: sessionId,
-                   p_active_instance_id: activeInstanceId,
-                   p_secret: secret
-                 });
-                 
-                 if (newSecret && newSecret !== secret) {
-                   useSettingsStore.getState().setHostSecret(newSecret);
-                 }
-
-                 await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
+               const { data: newSecret } = await supabase.rpc('host_takeover_session', {
+                 p_session_id: sessionId,
+                 p_active_instance_id: activeInstanceId,
+                 p_secret: secret
+               });
+               
+               if (newSecret && newSecret !== secret) {
+                 useSettingsStore.getState().setHostSecret(newSecret);
                }
+
+               await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
              } catch (err) {
                console.error("Error al registrar instancia:", err);
              }
-          } else if (isAdmin) {
+          } else if (currentIsAdmin) {
             // Para Control Remoto: Actualizar ÚNICAMENTE el active_remote_id (expulsa el remoto viejo sin tocar el Host)
             await supabase.from('sessions').update({ active_remote_id: activeInstanceId }).eq('id', sessionId);
           }
