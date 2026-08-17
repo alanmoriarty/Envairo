@@ -693,7 +693,7 @@ const ES = {
       },
       {
         question: '¿Cómo controlo la música y las peticiones?',
-        answer: 'Todo se maneja desde el panel principal. Ahí puedes ver las peticiones que llegan, aceptar o rechazar canciones, y controlar el volumen. Además, cuentas con herramientas como el "Auto-DJ" y listas de reproducción (playlists) para mantener el ambiente.'
+        answer: 'Todo se maneja desde el panel principal. Ahí puedes ver las peticiones que llegan, aceptar o rechazar canciones, y controlar el volumen. Además, cuentas con herramientas como el "envAIro Filter" y listas de reproducción (playlists) para mantener el ambiente.'
       },
       {
         question: '¿Puedo filtrar qué tipo de música suena?',
