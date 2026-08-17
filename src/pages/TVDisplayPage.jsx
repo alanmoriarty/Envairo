@@ -219,7 +219,7 @@ export default function TVDisplayPage() {
     channelRef.current.addEventListener('message', handleMessage);
     channelRef.current.postMessage({ type: 'PING', tvId: myTvId.current });
 
-    // 2.b. Supabase Realtime Broadcast (Internet)
+    // 2.b. Supabase Realtime Broadcast & Database Sync (Internet)
     sbSyncChannelRef.current = supabase.channel(`tv-sync-${sessionId}`);
     sbSyncChannelRef.current
       .on('broadcast', { event: 'tv_sync' }, (e) => {
@@ -261,6 +261,36 @@ export default function TVDisplayPage() {
           }
         }
       })
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
+        (payload) => {
+          const newSession = payload.new;
+          if (!newSession) return;
+          const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
+          const pairedList = Array.isArray(newSession.paired_tvs) ? newSession.paired_tvs : [];
+          const myTvEntry = pairedList.find(t => String(t.id || '').replace(/\D/g, '') === cleanCurrentPin);
+
+          if (!myTvEntry) {
+            // Si la TV fue eliminada de la base de datos, desvincular inmediatamente
+            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+              playerRef.current.pauseVideo();
+            }
+            currentVideoIdRef.current = null;
+            setCurrentVideoId(null);
+            localStorage.removeItem('bq-tv-session-id');
+            setSessionId(null);
+            setStatus(t('tv.unpaired_by_host'));
+            window.location.reload();
+            return;
+          }
+
+          // Si cambió el estado de sonido en la base de datos
+          if (typeof myTvEntry.soundEnabled === 'boolean' && myTvEntry.soundEnabled !== tvWithSoundRef.current) {
+            handleToggleSound(myTvEntry.soundEnabled);
+          }
+        }
+      )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           sbSyncChannelRef.current.send({
