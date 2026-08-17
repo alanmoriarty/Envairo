@@ -18,18 +18,18 @@ export const useAuthStore = create(
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: async (skipDbUpdate = false) => {
-        const { hostSecret, isAdminMode } = useSettingsStore.getState();
+        const { hostSecret, isAdminMode, sessionId } = useSettingsStore.getState();
         const currentUser = get().user;
-        const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
+        const sessionIdToClose = currentUser?.id || sessionId;
         
-        // Guardar el estado actual en la base de datos antes de salir
+        // Guardar el estado actual en la base de datos y apagar las peticiones antes de salir
         if (sessionIdToClose && !skipDbUpdate) {
           try {
             const { supabase } = await import('../lib/supabase');
             const playerState = usePlayerStore.getState();
             
             // Si es Control Remoto, solo libera el active_remote_id sin apagar la sala ni las peticiones
-            // Si es el Anfitrión Principal, apaga la sala (active: false) para cerrar inmediatamente las peticiones a invitados
+            // Si es el Anfitrión Principal, apaga la sala (active: false) exactamente como el botón de "Cerrar Peticiones"
             const updates = isAdminMode ? {
               active_remote_id: null,
               updated_at: new Date().toISOString()
@@ -45,20 +45,33 @@ export const useAuthStore = create(
               updated_at: new Date().toISOString()
             };
 
-            // 1. Intento directo con las credenciales de usuario autenticado
-            const { error: directErr } = await supabase
-              .from('sessions')
-              .update(updates)
-              .eq('id', sessionIdToClose);
-
-            // 2. Si falla o si hay hostSecret, respaldar mediante RPC
-            if (directErr && hostSecret) {
+            // Ejecutar sync_host_config RPC directamente (SECURITY DEFINER garantiza el update)
+            if (hostSecret) {
               await supabase.rpc('sync_host_config', { 
                 p_session_id: sessionIdToClose, 
                 p_secret: hostSecret, 
                 p_updates: updates
               });
+            } else {
+              await supabase
+                .from('sessions')
+                .update(updates)
+                .eq('id', sessionIdToClose);
             }
+
+            // También actualizar host_settings en user_metadata para persistir alwaysAvailable: false
+            if (!isAdminMode && currentUser) {
+              const currentState = useSettingsStore.getState();
+              const settingsObj = {};
+              const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset'];
+              allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
+              settingsObj.alwaysAvailable = false;
+
+              await supabase.auth.updateUser({
+                data: { host_settings: JSON.stringify(settingsObj) }
+              }).catch(() => {});
+            }
+
             await supabase.auth.signOut({ scope: 'local' });
           } catch (err) {
             console.error('Error guardando sesión antes de salir:', err);
