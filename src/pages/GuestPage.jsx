@@ -139,7 +139,7 @@ export default function GuestPage() {
 
   const stateData = sessionConfig?.session_state || {};
 
-  const isAvailable = sessionConfig?._notFound ? false : (stateData.active ?? sessionConfig?.active ?? true);
+  const isAvailable = !sessionConfig?._notFound && (sessionConfig?.active === true || stateData?.active === true);
   const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
   const blacklistGenres = stateData.blacklist_genres || sessionConfig?.blacklist_genres || [];
   const blacklistSongs = stateData.blacklist_songs || sessionConfig?.blacklist_songs || [];

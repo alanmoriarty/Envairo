@@ -66,7 +66,7 @@ export const useSettingsStore = create(
         eventName: '',
         autoDJ: false,
         autoDjPrompt: '',
-        alwaysAvailable: true,
+        alwaysAvailable: false,
         startTime: '19:00',
         endTime: '03:00',
         allowRepeats: true,
@@ -89,8 +89,8 @@ export const useSettingsStore = create(
         enairoEnabled: true,
         enairoPrompt: '',
         enairoTestMode: false,
-        sessionId: `session-${Date.now()}`,
-        hostSecret: crypto.randomUUID(),
+        sessionId: null,
+        hostSecret: null,
         isAdminMode: false
       }),
 

@@ -185,6 +185,10 @@ export function RootLayout() {
     let timeoutId;
     let prevState = useSettingsStore.getState();
     const unsubSettings = useSettingsStore.subscribe((state) => {
+      // Guard: no sincronizar si no hay un usuario autenticado o está cerrando sesión
+      const currentUser = useAuthStore.getState().user;
+      if (!currentUser) return;
+
       const allKeys = [
         'djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'autoDJ', 'autoDjPrompt', 
         'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 
