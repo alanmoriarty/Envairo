@@ -404,26 +404,28 @@ export default function DashboardPage() {
 
         {/* Controls Bar: Horizontal Scrollable Segmented Pills */}
         <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex items-center gap-2.5 flex-nowrap sm:flex-wrap">
-          {/* Grupo 1: Modo (Fiesta / Comercial) */}
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
-            <button
-              onClick={() => setMode('party')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                }`}
-            >
-              <Users size={14} />
-              <span>{t('dashboard.mode_party')}</span>
-            </button>
-            <div className="w-px h-4 bg-white/10 mx-0.5" />
-            <button
-              onClick={() => setMode('commercial')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
-                }`}
-            >
-              <Store size={14} />
-              <span>{t('dashboard.mode_commercial')}</span>
-            </button>
-          </div>
+          {/* Grupo 1: Modo (Fiesta / Comercial) - Solo para el Anfitrión Principal */}
+          {!isAdminMode && (
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
+              <button
+                onClick={() => setMode('party')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                  }`}
+              >
+                <Users size={14} />
+                <span>{t('dashboard.mode_party')}</span>
+              </button>
+              <div className="w-px h-4 bg-white/10 mx-0.5" />
+              <button
+                onClick={() => setMode('commercial')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'commercial' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                  }`}
+              >
+                <Store size={14} />
+                <span>{t('dashboard.mode_commercial')}</span>
+              </button>
+            </div>
+          )}
 
           {/* Grupo 2: Paneles (Peticiones / Playlists) */}
           <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
@@ -753,7 +755,7 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col flex-1 min-h-[380px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+        <div className={`flex flex-col flex-1 min-h-[380px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"} ${isAdminMode ? 'mb-24 lg:mb-0' : ''}`}>
           <div className="card p-4 sm:p-5 flex flex-col flex-1 h-full overflow-hidden min-h-[380px] lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">
@@ -777,7 +779,7 @@ export default function DashboardPage() {
                     <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
 
                     {(!enairoTestMode && enairoUsageCount >= 3) ? (
-                      <span className="text-xs font-medium text-text-muted" title={t('dashboard.daily_limit_reached')}>{t('dashboard.daily_limit')}</span>
+                       <span className="text-xs font-medium text-text-muted" title={t('dashboard.daily_limit_reached')}>{t('dashboard.daily_limit')}</span>
                     ) : (!enairoTestMode && enairoCooldownUntil > localTime) ? (
                       <span className="text-xs font-medium text-text-muted">
                         {t('dashboard.available_in', { min: Math.ceil((enairoCooldownUntil - localTime) / 60000) })}
@@ -826,7 +828,7 @@ export default function DashboardPage() {
                   items={queue.map((t) => t.queueId)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className={`space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-[280px] lg:min-h-0 ${isAdminMode ? 'pb-28 sm:pb-32 lg:pb-24' : 'pb-12 lg:pb-2'}`}>
+                  <div className={`space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-[280px] lg:min-h-0 ${isAdminMode ? 'pb-36 sm:pb-40 lg:pb-24' : 'pb-12 lg:pb-2'}`}>
                     {queue.map((track, index) => (
                       <SortableQueueItem
                         key={track.queueId}
@@ -844,6 +846,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Espaciador inferior en Control Remoto para garantizar scroll total sobre la barra fija */}
+      {isAdminMode && <div className="h-28 sm:h-32 shrink-0 pointer-events-none lg:hidden" aria-hidden="true" />}
 
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />

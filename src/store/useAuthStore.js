@@ -32,6 +32,8 @@ export const useAuthStore = create(
               current_queue_index: playerState.currentQueueIndex ?? -1,
               current_track: playerState.currentTrack || null,
               play_history: playerState.playHistory || [],
+              active_instance_id: null,
+              active_device_id: null,
               active: true 
             };
 

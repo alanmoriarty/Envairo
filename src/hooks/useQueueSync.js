@@ -12,6 +12,9 @@ export function useQueueSync() {
   const isRemoteUpdate = useRef(false);
   const syncTimeoutRef = useRef(null);
   const isTakingOverRef = useRef(false);
+  const hasClaimedOwnershipRef = useRef(false);
+  const lastTakeoverTsRef = useRef(0);
+  const mountTsRef = useRef(Date.now());
   const lastBroadcastPayload = useRef({ progress: -1, isPlaying: null });
 
   useEffect(() => {
@@ -315,31 +318,32 @@ export function useQueueSync() {
             const { user, logout } = useAuthStore.getState();
             const { isAdminMode } = useSettingsStore.getState();
 
-            // Ignorar eventos de kickout si estamos en medio de tomar el control
-            if (isTakingOverRef.current) return;
+            // Ignorar eventos de kickout durante el periodo de arranque, registro de instancia o toma de control
+            const isWithinGrace = (Date.now() - mountTsRef.current < 5000) || (Date.now() - lastTakeoverTsRef.current < 4000);
+            if (!isTakingOverRef.current && !isWithinGrace && hasClaimedOwnershipRef.current) {
+              // Kickout Logic (Host): Si somos un Host autenticado y el active_instance_id cambia a otro dispositivo, cerrar sesión aquí
+              if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
+                import('sonner').then(({ toast }) => {
+                  toast.error('Tu sesión se ha abierto en otro dispositivo. Cerrando sesión...', { duration: 8000 });
+                });
+                try {
+                  const state = usePlayerStore.getState();
+                  if (state.youtubePlayer && typeof state.youtubePlayer.pauseVideo === 'function') {
+                    state.youtubePlayer.pauseVideo();
+                  }
+                } catch (err) {}
+                logout(true);
+                return;
+              }
 
-            // Kickout Logic (Host): Si somos un Host autenticado y el active_instance_id cambia a otro dispositivo, cerrar sesión aquí
-            if (user && !isAdminMode && newSession.active_instance_id && newSession.active_instance_id !== activeInstanceId) {
-              import('sonner').then(({ toast }) => {
-                toast.error('Tu sesión se ha abierto en otro dispositivo. Cerrando sesión...', { duration: 8000 });
-              });
-              try {
-                const state = usePlayerStore.getState();
-                if (state.youtubePlayer && typeof state.youtubePlayer.pauseVideo === 'function') {
-                  state.youtubePlayer.pauseVideo();
-                }
-              } catch (err) {}
-              logout(true);
-              return;
-            }
-
-            // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
-            if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
-              import('sonner').then(({ toast }) => {
-                toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
-              });
-              useSettingsStore.getState().setIsAdminMode(false);
-              return;
+              // Kickout Logic (Remoto): Si somos un Control Remoto y el active_remote_id cambia, fuimos reemplazados
+              if (isAdminMode && newSession.active_remote_id && newSession.active_remote_id !== activeInstanceId) {
+                import('sonner').then(({ toast }) => {
+                  toast.error('Otro control remoto se ha conectado. Desconectando...', { duration: 8000 });
+                });
+                useSettingsStore.getState().setIsAdminMode(false);
+                return;
+              }
             }
 
             // Kickout Logic (Remoto): Si el anfitrión cerró sesión o regeneró el QR, el secret cambia y nos expulsa
@@ -585,14 +589,17 @@ export function useQueueSync() {
                if (newSecret && newSecret !== secret) {
                  useSettingsStore.getState().setHostSecret(newSecret);
                }
-
                await supabase.from('sessions').update({ active_instance_id: activeInstanceId }).eq('id', sessionId);
+               hasClaimedOwnershipRef.current = true;
+               lastTakeoverTsRef.current = Date.now();
              } catch (err) {
                console.error("Error al registrar instancia:", err);
              }
           } else if (currentIsAdmin) {
             // Para Control Remoto: Actualizar ÚNICAMENTE el active_remote_id (expulsa el remoto viejo sin tocar el Host)
             await supabase.from('sessions').update({ active_remote_id: activeInstanceId }).eq('id', sessionId);
+            hasClaimedOwnershipRef.current = true;
+            lastTakeoverTsRef.current = Date.now();
           }
           await supabase.rpc('sync_host_config', {
             p_session_id: sessionId,
@@ -644,9 +651,13 @@ export function useQueueSync() {
         if (insertError) {
           console.error("Critical: Failed to insert session!", insertError);
           import('sonner').then(({ toast }) => toast.error('Error al crear la sala: ' + insertError.message));
+        } else {
+          hasClaimedOwnershipRef.current = true;
+          lastTakeoverTsRef.current = Date.now();
         }
       }
       isTakingOverRef.current = false;
+      lastTakeoverTsRef.current = Date.now();
     };
     syncSession();
 
