@@ -113,35 +113,57 @@ export function CastToTvModal({ isOpen, onClose }) {
   };
 
   const handleUnpair = async (tvId) => {
+    // 1. Actualizar estado local inmediatamente
+    const updatedList = getPairedTvs().filter(t => t.id !== tvId);
+    useSettingsStore.getState().setPairedTvs(updatedList);
+    window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+
+    // 2. Persistir INMEDIATAMENTE en la base de datos de Supabase
+    if (activeSessionId) {
+      const secret = useSettingsStore.getState().hostSecret;
+      if (secret) {
+        supabase.rpc('sync_host_config', {
+          p_session_id: activeSessionId,
+          p_secret: secret,
+          p_updates: { paired_tvs: updatedList }
+        }).catch(console.error);
+      }
+      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(console.error);
+    }
+
+    // 3. Enviar señal de desvinculación a la TV (Local BroadcastChannel)
+    try {
+      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      localChannel.postMessage({ type: 'UNPAIRED', tvId });
+      setTimeout(() => localChannel.close(), 100);
+    } catch (e) {}
+
+    // 4. Enviar por canal permanente de Supabase si está disponible
+    try {
+      const { getTvSyncChannel } = await import('../../lib/tvSyncChannel');
+      const activeSbChannel = getTvSyncChannel();
+      if (activeSbChannel && activeSbChannel.state === 'joined') {
+        activeSbChannel.send({
+          type: 'broadcast',
+          event: 'tv_sync',
+          payload: { type: 'UNPAIRED', tvId }
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
+    // 5. Enviar por canal específico de pairing de la TV
     const pairChannel = supabase.channel(`tv-pair-${tvId}`);
     pairChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await pairChannel.send({
           type: 'broadcast',
           event: 'pairing_result',
-          payload: { type: 'UNPAIRED' }
+          payload: { type: 'UNPAIRED', tvId }
         });
-        setTimeout(() => supabase.removeChannel(pairChannel), 500);
+        setTimeout(() => supabase.removeChannel(pairChannel), 1000);
       }
     });
 
-    if (activeSessionId) {
-      const syncChannel = supabase.channel(`tv-sync-${activeSessionId}`);
-      syncChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await syncChannel.send({
-            type: 'broadcast',
-            event: 'tv_sync',
-            payload: { type: 'UNPAIRED', tvId }
-          });
-          setTimeout(() => supabase.removeChannel(syncChannel), 500);
-        }
-      });
-    }
-
-    const updatedList = getPairedTvs().filter(t => t.id !== tvId);
-    useSettingsStore.getState().setPairedTvs(updatedList);
-    window.dispatchEvent(new Event('bq-paired-tvs-updated'));
     toast.success(t('cast.tv_unlinked'));
   };
 

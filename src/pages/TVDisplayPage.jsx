@@ -197,6 +197,20 @@ export default function TVDisplayPage() {
           }
           setStatus(t('tv.host_disconnected'));
         }
+      } else if (e.data.type === 'UNPAIRED') {
+        const cleanTargetId = String(e.data.tvId || '').replace(/\D/g, '');
+        const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
+        if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
+
+        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+          playerRef.current.pauseVideo();
+        }
+        currentVideoIdRef.current = null;
+        setCurrentVideoId(null);
+        localStorage.removeItem('bq-tv-session-id');
+        setSessionId(null);
+        setStatus(t('tv.unpaired_by_host'));
+        window.location.reload();
       } else if (e.data.type === 'TOGGLE_SOUND') {
         handleToggleSound(e.data.tvWithSound);
       }
@@ -224,7 +238,9 @@ export default function TVDisplayPage() {
             }
             setStatus(t('tv.host_disconnected'));
           } else if (e.payload.type === 'UNPAIRED') {
-            if (e.payload.tvId && e.payload.tvId !== tvPin) return;
+            const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
+            const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
+            if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
 
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
               playerRef.current.pauseVideo();
@@ -232,12 +248,13 @@ export default function TVDisplayPage() {
             currentVideoIdRef.current = null;
             setCurrentVideoId(null);
             localStorage.removeItem('bq-tv-session-id');
-            localStorage.removeItem('bq-tv-pin');
             setSessionId(null);
             setStatus(t('tv.unpaired_by_host'));
             window.location.reload();
           } else if (e.payload.type === 'TOGGLE_SOUND') {
-            if (e.payload.tvId && e.payload.tvId !== tvPin) return;
+            const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
+            const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
+            if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
             handleToggleSound(e.payload.tvWithSound);
           } else {
             if (handleSyncRef.current) handleSyncRef.current(e.payload);
