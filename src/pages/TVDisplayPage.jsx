@@ -150,10 +150,11 @@ export default function TVDisplayPage() {
           currentVideoIdRef.current = null;
           setCurrentVideoId(null);
           localStorage.removeItem('bq-tv-session-id');
-          localStorage.removeItem('bq-tv-pin');
           setSessionId(null);
           setStatus(t('tv.unpaired_by_host'));
           window.location.reload();
+        } else if (e.payload?.type === 'TOGGLE_SOUND') {
+          handleToggleSound(e.payload.tvWithSound);
         }
       })
       .subscribe();
@@ -293,16 +294,23 @@ export default function TVDisplayPage() {
     const handleToggleSound = (withSoundVal) => {
       const withSound = !!withSoundVal;
       localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
+      tvWithSoundRef.current = withSound;
       setTvWithSound(withSound);
       
-      if (playerRef.current && typeof playerRef.current.unMute === 'function') {
-        if (withSound) {
-          playerRef.current.unMute();
-          if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
-        } else {
-          playerRef.current.mute();
-        }
-      }
+      const applyVolume = (p) => {
+        if (!p) return;
+        try {
+          if (withSound) {
+            if (typeof p.unMute === 'function') p.unMute();
+            if (typeof p.setVolume === 'function') p.setVolume(100);
+          } else {
+            if (typeof p.mute === 'function') p.mute();
+          }
+        } catch (e) {}
+      };
+
+      applyVolume(playerARef.current);
+      applyVolume(playerBRef.current);
     };
 
     // 2.c. Verificación de límite de pantallas (Máximo 4 pantallas además del anfitrión)

@@ -727,11 +727,26 @@ export function useYouTubeSDK() {
               const freshStore = usePlayerStore.getState();
               if (freshStore.currentTrack && freshStore.currentTrack.id) {
                 freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
-              } else if (autoplayAttempts < 15) {
-                setTimeout(tryAutoplay, 300);
+              } else if (autoplayAttempts < 20) {
+                setTimeout(tryAutoplay, 250);
               }
             };
-            setTimeout(tryAutoplay, 200);
+            setTimeout(tryAutoplay, 100);
+
+            // Respaldo para superar bloqueos de autoplay de navegadores (Chrome/Edge/Safari)
+            const handleFirstGesture = () => {
+              const fresh = usePlayerStore.getState();
+              const p = getActivePlayer();
+              if (fresh.currentTrack && p) {
+                try {
+                  if (typeof p.unMute === 'function') p.unMute();
+                  if (typeof p.playVideo === 'function') p.playVideo();
+                } catch (e) {}
+              }
+            };
+            window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+            window.addEventListener('keydown', handleFirstGesture, { once: true });
+            window.addEventListener('touchstart', handleFirstGesture, { once: true });
           },
           onStateChange: (e) => handleStateChange('A', e),
           onError: (e) => handleError('A', e)

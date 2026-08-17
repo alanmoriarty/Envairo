@@ -177,24 +177,53 @@ export function CastToTvModal({ isOpen, onClose }) {
     useSettingsStore.getState().setPairedTvs(updatedList);
     window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
-    // Enviar mensaje local a pantallas que estén en la misma PC
-    const localChannel = new BroadcastChannel('envairo_tv_sync');
-    localChannel.postMessage({ type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId });
-    setTimeout(() => localChannel.close(), 100);
-
+    // Persistir en Supabase
     if (activeSessionId) {
-      const syncChannel = supabase.channel(`tv-sync-${activeSessionId}`);
-      syncChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await syncChannel.send({
-            type: 'broadcast',
-            event: 'tv_sync',
-            payload: { type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId }
-          });
-          setTimeout(() => supabase.removeChannel(syncChannel), 500);
-        }
-      });
+      const secret = useSettingsStore.getState().hostSecret;
+      if (secret) {
+        supabase.rpc('sync_host_config', {
+          p_session_id: activeSessionId,
+          p_secret: secret,
+          p_updates: { paired_tvs: updatedList }
+        }).catch(console.error);
+      }
+      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(console.error);
     }
+
+    // 1. Enviar mensaje local a pantallas en la misma PC
+    try {
+      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      localChannel.postMessage({ type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId });
+      setTimeout(() => localChannel.close(), 100);
+    } catch (e) {}
+
+    // 2. Enviar por canal permanente de sincronización de Supabase
+    try {
+      const { getTvSyncChannel } = await import('../../lib/tvSyncChannel');
+      const activeSbChannel = getTvSyncChannel();
+      if (activeSbChannel && activeSbChannel.state === 'joined') {
+        activeSbChannel.send({
+          type: 'broadcast',
+          event: 'tv_sync',
+          payload: { type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId }
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
+    // 3. Enviar por canal específico de pairing de la TV
+    const pairChannel = supabase.channel(`tv-pair-${tvId}`);
+    pairChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await pairChannel.send({
+          type: 'broadcast',
+          event: 'pairing_result',
+          payload: { type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId }
+        });
+        setTimeout(() => supabase.removeChannel(pairChannel), 1000);
+      }
+    });
+
+    toast.success(newVal ? 'Sonido activado en TV' : 'Sonido silenciado en TV');
   };
 
   return (
