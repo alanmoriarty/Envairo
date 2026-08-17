@@ -121,20 +121,35 @@ export function CastToTvModal({ isOpen, onClose }) {
     setPairedTvs(updatedList);
     window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
-    // 1. Guardar en Base de Datos de inmediato
+    // 1. Guardar en Base de Datos de inmediato (Directo + RPC para anfitrión o remoto)
     if (activeSessionId) {
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        await supabase.rpc('sync_host_config', {
+        supabase.rpc('sync_host_config', {
           p_session_id: activeSessionId,
           p_secret: secret,
           p_updates: { paired_tvs: updatedList }
         }).catch(console.error);
       }
-      await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(console.error);
+      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
     }
 
-    // 2. Broadcast Local
+    // 2. Broadcast Directo al canal específico de la TV (tv-pair-{tvId})
+    try {
+      const directPairCh = supabase.channel(`tv-pair-${cleanTvId}`);
+      directPairCh.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await directPairCh.send({
+            type: 'broadcast',
+            event: 'pairing_result',
+            payload: { type: 'UNPAIRED', tvId: cleanTvId }
+          }).catch(() => {});
+          setTimeout(() => supabase.removeChannel(directPairCh), 1000);
+        }
+      });
+    } catch (e) {}
+
+    // 3. Broadcast Local
     try {
       const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
       const localChannel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
@@ -142,11 +157,11 @@ export function CastToTvModal({ isOpen, onClose }) {
       setTimeout(() => localChannel.close(), 100);
     } catch (e) {}
 
-    // 3. Broadcast Supabase Realtime
+    // 4. Broadcast Supabase Realtime tv-sync
     try {
       const { getTvSyncChannel } = await import('../../lib/tvSyncChannel');
       const activeSbChannel = getTvSyncChannel();
-      if (activeSbChannel) {
+      if (activeSbChannel && activeSbChannel.state === 'joined') {
         activeSbChannel.send({
           type: 'broadcast',
           event: 'tv_sync',
@@ -159,10 +174,6 @@ export function CastToTvModal({ isOpen, onClose }) {
   };
 
   const handleToggleTvSound = async (tvId, currentSoundState) => {
-    if (!isPlaying) {
-      toast.error("Solo puedes activar el sonido cuando hay música reproduciéndose.");
-      return;
-    }
     const cleanTvId = String(tvId || '').replace(/\D/g, '');
     const newVal = !currentSoundState;
     const currentList = getPairedTvs();
@@ -172,20 +183,35 @@ export function CastToTvModal({ isOpen, onClose }) {
     setPairedTvs(updatedList);
     window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
-    // 1. Guardar en Base de Datos de inmediato
+    // 1. Guardar en Base de Datos de inmediato (Directo + RPC)
     if (activeSessionId) {
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        await supabase.rpc('sync_host_config', {
+        supabase.rpc('sync_host_config', {
           p_session_id: activeSessionId,
           p_secret: secret,
           p_updates: { paired_tvs: updatedList }
         }).catch(console.error);
       }
-      await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(console.error);
+      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
     }
 
-    // 2. Broadcast Local
+    // 2. Broadcast Directo al canal específico de la TV (tv-pair-{tvId})
+    try {
+      const directPairCh = supabase.channel(`tv-pair-${cleanTvId}`);
+      directPairCh.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await directPairCh.send({
+            type: 'broadcast',
+            event: 'pairing_result',
+            payload: { type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId: cleanTvId }
+          }).catch(() => {});
+          setTimeout(() => supabase.removeChannel(directPairCh), 1000);
+        }
+      });
+    } catch (e) {}
+
+    // 3. Broadcast Local
     try {
       const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
       const localChannel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
@@ -193,11 +219,11 @@ export function CastToTvModal({ isOpen, onClose }) {
       setTimeout(() => localChannel.close(), 100);
     } catch (e) {}
 
-    // 3. Broadcast Supabase Realtime
+    // 4. Broadcast Supabase Realtime tv-sync
     try {
       const { getTvSyncChannel } = await import('../../lib/tvSyncChannel');
       const activeSbChannel = getTvSyncChannel();
-      if (activeSbChannel) {
+      if (activeSbChannel && activeSbChannel.state === 'joined') {
         activeSbChannel.send({
           type: 'broadcast',
           event: 'tv_sync',
@@ -309,28 +335,30 @@ export function CastToTvModal({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Opción 2: Monitor Local (Pestaña Silenciada) */}
-          <div className="flex flex-col gap-2 p-4 bg-white/5 rounded-2xl border border-white/10">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-2.5 rounded-xl text-white">
-                  <Monitor size={20} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-white text-sm">{t('cast.local_monitor_title')}</h4>
-                  <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
-                    {t('cast.local_monitor_desc')}
-                  </p>
+          {/* Opción 2: Monitor Local (Pestaña Silenciada / Conexión Directa) - Solo disponible para el Anfitrión */}
+          {!isAdminMode && (
+            <div className="flex flex-col gap-2 p-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/10 p-2.5 rounded-xl text-white">
+                    <Monitor size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-sm">{t('cast.local_monitor_title')}</h4>
+                    <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                      {t('cast.local_monitor_desc')}
+                    </p>
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => window.open(`/tv?session=${activeSessionId}&sound=0`, '_blank')}
+                className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
+              >
+                {t('cast.local_monitor_btn')}
+              </button>
             </div>
-            <button
-              onClick={() => window.open(`/tv?session=${activeSessionId}&sound=0`, '_blank')}
-              className="mt-3 btn-secondary bg-white/5 hover:bg-white/10 w-full py-2.5 text-sm font-semibold"
-            >
-              {t('cast.local_monitor_btn')}
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Footer */}

@@ -350,7 +350,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="absolute inset-0 p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar pb-24 sm:pb-28 lg:pb-6">
+    <div className={`absolute inset-0 p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar ${isAdminMode ? 'pb-32 sm:pb-36 lg:pb-28' : 'pb-24 sm:pb-28 lg:pb-6'}`}>
       {/* Header toggles */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -826,7 +826,7 @@ export default function DashboardPage() {
                   items={queue.map((t) => t.queueId)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-[280px] lg:min-h-0 pb-12 lg:pb-2">
+                  <div className={`space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-[280px] lg:min-h-0 ${isAdminMode ? 'pb-28 sm:pb-32 lg:pb-24' : 'pb-12 lg:pb-2'}`}>
                     {queue.map((track, index) => (
                       <SortableQueueItem
                         key={track.queueId}
