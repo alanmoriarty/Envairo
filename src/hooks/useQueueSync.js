@@ -710,17 +710,17 @@ export function useQueueSync() {
             
             if (result.approved === true) {
               store.approveRequest(newReq.id);
-              toast.success(`Auto DJ aprobó la petición de ${newReq.requester}`);
+              toast.success(`envAIro Filter aprobó la petición de ${newReq.requester}`);
               await supabase.rpc('manage_request', { p_request_id: newReq.id, p_session_id: sessionId, p_secret: useSettingsStore.getState().hostSecret, p_new_status: 'approved' });
             } else if (result.approved === false) {
               store.rejectRequest(newReq.id);
-              toast.error(`Auto DJ rechazó la petición de ${newReq.requester} (${result.reason})`);
+              toast.error(`envAIro Filter rechazó la petición de ${newReq.requester} (${result.reason})`);
               await supabase.rpc('manage_request', { p_request_id: newReq.id, p_session_id: sessionId, p_secret: useSettingsStore.getState().hostSecret, p_new_status: 'rejected' });
             } else {
-              toast.info(`Auto DJ requiere revisión manual para la petición de ${newReq.requester} (${result.reason || 'Sin etiquetas claras'})`);
+              toast.info(`envAIro Filter requiere revisión manual para la petición de ${newReq.requester} (${result.reason || 'Sin etiquetas claras'})`);
             }
           } catch (err) {
-            console.error('Error evaluating track in Auto DJ', err);
+            console.error('Error evaluating track in envAIro Filter', err);
           }
         } else {
           toast(`Nueva petición recibida de ${newReq.requester}`, { icon: '🎵' });

@@ -98,7 +98,7 @@ export default function OnboardingPage() {
                 <div className="flex gap-3 items-start p-4 rounded-xl bg-white/5 border border-white/5">
                   <Sparkles className="text-accent shrink-0 mt-0.5" size={20} />
                   <div>
-                    <h4 className="font-semibold text-sm text-white">AutoDJ Inteligente</h4>
+                    <h4 className="font-semibold text-sm text-white">envAIro Filter Inteligente</h4>
                     <p className="text-xs text-text-muted mt-1 leading-relaxed">Nuestra IA toma el control cuando la cola está vacía, asegurando que la música nunca se detenga.</p>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
                 </p>
 
                 <ul className="space-y-3 mb-8">
-                  {['Peticiones ilimitadas vía QR', 'Integración con YouTube sin anuncios', 'Modo AutoDJ con IA', 'Control multi-dispositivo y pantallas TV', 'Soporte prioritario'].map((feature, i) => (
+                  {['Peticiones ilimitadas vía QR', 'Integración con YouTube sin anuncios', 'Modo envAIro Filter con IA', 'Control multi-dispositivo y pantallas TV', 'Soporte prioritario'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-2.5 text-sm text-white/90">
                       <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
                       {feature}
