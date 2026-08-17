@@ -18,7 +18,7 @@ export const useAuthStore = create(
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: async (skipDbUpdate = false) => {
-        const { hostSecret } = useSettingsStore.getState();
+        const { hostSecret, isAdminMode } = useSettingsStore.getState();
         const currentUser = get().user;
         const sessionIdToClose = currentUser?.id || useSettingsStore.getState().sessionId;
         
@@ -27,14 +27,22 @@ export const useAuthStore = create(
           try {
             const { supabase } = await import('../lib/supabase');
             const playerState = usePlayerStore.getState();
-            const updates = { 
+            
+            // Si es Control Remoto, solo libera el active_remote_id sin apagar la sala ni las peticiones
+            // Si es el Anfitrión Principal, apaga la sala (active: false) para cerrar inmediatamente las peticiones a invitados
+            const updates = isAdminMode ? {
+              active_remote_id: null,
+              updated_at: new Date().toISOString()
+            } : { 
               queue: playerState.queue || [],
               current_queue_index: playerState.currentQueueIndex ?? -1,
               current_track: playerState.currentTrack || null,
               play_history: playerState.playHistory || [],
               active_instance_id: null,
               active_device_id: null,
-              active: true 
+              active_remote_id: null,
+              active: false,
+              updated_at: new Date().toISOString()
             };
 
             // 1. Intento directo con las credenciales de usuario autenticado
