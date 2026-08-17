@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, Moon, Clock, Send, Music2, User, Hash, Loader2, X, Download } from 'lucide-react';
-import { usePlayerStore } from '../store/usePlayerStore';
-import { useSettingsStore } from '../store/useSettingsStore';
 import { supabase } from '../lib/supabase';
 import { sanitizePrompt } from '../utils/security';
 import { AdSense } from '../components/ads/AdSense';
@@ -133,7 +131,9 @@ export default function GuestPage() {
     };
   }, [sessionId]);
 
-  const { queue, currentQueueIndex, playHistory, pendingRequests } = usePlayerStore();
+  const queue = Array.isArray(sessionConfig?.queue) ? sessionConfig.queue : [];
+  const currentQueueIndex = typeof sessionConfig?.current_queue_index === 'number' ? sessionConfig.current_queue_index : -1;
+  const playHistory = Array.isArray(sessionConfig?.play_history) ? sessionConfig.play_history : [];
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
   const { t, lang } = useTranslation();
 
@@ -252,8 +252,8 @@ export default function GuestPage() {
     if (maxUserRequests > 0) {
       // Calculate how many of the user's requested tracks are currently pending or in the upcoming queue
       const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
-      const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
-      const queueCount = queue.slice(currentQueueIndex + 1).filter(track => myActiveIds.includes(track.id)).length;
+      const pendingCount = Object.keys(myPendingRequests).length;
+      const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
 
       if (pendingCount + queueCount >= maxUserRequests) {
         toast.error(`Límite Anti-Spam: Solo puedes tener ${maxUserRequests} canciones en cola al mismo tiempo. Espera a que suene una de tus canciones para pedir otra.`);
@@ -314,7 +314,7 @@ export default function GuestPage() {
     const repeatCooldown = sessionConfig?.repeat_cooldown ?? -1;
     if (repeatCooldown !== -1) {
       const alreadyInQueue = queue.some(t => t.id === selected.id);
-      const alreadyPending = pendingRequests.some(r => r.track.id === selected.id);
+      const alreadyPending = Object.values(myPendingRequests).some(name => name.toLowerCase() === selected.name.toLowerCase());
       if (alreadyInQueue || alreadyPending) {
         toast.error(t('guest.error_queue'));
         return;
@@ -772,7 +772,7 @@ export default function GuestPage() {
         if (maxUserRequests <= 0) return null;
 
         const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
-        const pendingCount = pendingRequests.filter(req => myActiveIds.includes(req.track.id)).length;
+        const pendingCount = Object.keys(myPendingRequests).length;
         const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
 
         if (pendingCount + queueCount >= maxUserRequests) {

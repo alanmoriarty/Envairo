@@ -808,7 +808,7 @@ handleSyncRef.current = handleSync;
               <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
                   <QRCodeSVG
-                    value={`${window.location.origin}/app/dashboard?pair_pin=${tvPin}`}
+                    value={`${window.location.origin}/pair?pin=${tvPin}`}
                     size={160}
                     level="H"
                     includeMargin={false}
