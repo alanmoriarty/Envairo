@@ -68,12 +68,12 @@ const SortableQueueItem = React.memo(function SortableQueueItem({ track, onRemov
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing select-none ${isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
+      className={`flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border transition-all group cursor-grab active:cursor-grabbing ${isPlaying ? 'border-accent shadow-glow-sm' : 'border-white/5 hover:border-accent/20'
         }`}
       {...attributes}
       {...listeners}
     >
-      <div className="text-text-subtle p-1 flex items-center justify-center shrink-0 opacity-70 group-hover:opacity-100 touch-none">
+      <div className="text-text-subtle p-1 hidden sm:block">
         <GripVertical size={16} />
       </div>
 
@@ -83,7 +83,7 @@ const SortableQueueItem = React.memo(function SortableQueueItem({ track, onRemov
           alt=""
           loading="lazy"
           decoding="async"
-          className="w-10 h-10 rounded-lg object-cover flex-shrink-0 shadow-sm"
+          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
           draggable={false} />
       ) : (
         <div className="w-10 h-10 rounded-lg bg-bg-card flex items-center justify-center flex-shrink-0">
@@ -106,19 +106,18 @@ const SortableQueueItem = React.memo(function SortableQueueItem({ track, onRemov
       </span>
 
       <div
-        className="flex items-center gap-1 flex-shrink-0"
+        className="flex gap-1 flex-shrink-0"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <button
           onClick={() => onPlay(track)}
-          className="w-8 h-8 rounded-full bg-accent/15 hover:bg-accent text-accent hover:text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
-          title="Reproducir ahora"
+          className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/20"
         >
-          <Play size={13} />
+          <Play size={14} />
         </button>
         <button
           onClick={() => onRemove(track.queueId)}
-          className="p-2 rounded-lg hover:bg-danger/20 hover:text-danger text-text-muted transition-all"
+          className="p-1.5 rounded-lg hover:bg-danger/20 hover:text-danger text-text-muted transition-all"
           title={t('common.cancel')}
         >
           <Trash2 size={14} />
@@ -172,7 +171,6 @@ export default function DashboardPage() {
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [isAutoDjModalOpen, setIsAutoDjModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
-  const [mobileTab, setMobileTab] = useState('queue'); // 'queue' | 'requests' | 'playlists'
   const { t } = useTranslation();
 
   const {
@@ -342,220 +340,22 @@ export default function DashboardPage() {
     }, 150);
   };
 
-  const renderRequestsCard = () => (
-    <div className="card p-4 sm:p-5 flex flex-col flex-1 h-full min-h-0 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
-        <h2 className="font-bold text-text-primary flex items-center gap-2">
-          <Clock size={16} className="text-accent" />
-          {t('dashboard.requests_title')}
-          {pendingRequests.length > 0 && (
-            <span className="badge bg-accent text-white">{pendingRequests.length}</span>
-          )}
-        </h2>
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* Aceptar Peticiones Button */}
-          <button
-            onClick={async () => {
-              const newVal = !alwaysAvailable;
-              setAlwaysAvailable(newVal);
-
-              const currentState = useSettingsStore.getState();
-              const settingsObj = {};
-              const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset'];
-              allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
-              settingsObj.alwaysAvailable = newVal;
-
-              supabase.auth.updateUser({
-                data: { host_settings: JSON.stringify(settingsObj) }
-              }).catch(console.error);
-
-              const sessionId = currentState.sessionId;
-              const hostSecret = currentState.hostSecret;
-              if (sessionId && hostSecret) {
-                await supabase.rpc('sync_host_config', {
-                  p_session_id: sessionId,
-                  p_secret: hostSecret,
-                  p_updates: { active: newVal, updated_at: new Date().toISOString() }
-                });
-              }
-            }}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
-              ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
-              : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
-              }`}
-            title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
-          >
-            {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-            <span className="text-[11px] sm:text-xs">
-              {alwaysAvailable ? t('dashboard.open_requests') : t('dashboard.closed_requests')}
-            </span>
-          </button>
-
-          <div className="w-px h-4 bg-white/10" />
-
-          {/* envAIro Filter Button */}
-          <button
-            onClick={() => {
-              if (autoDJ) {
-                setAutoDJ(false);
-              } else {
-                setIsAutoDjModalOpen(true);
-              }
-            }}
-            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
-              ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
-              : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
-              }`}
-            title="envAIro Filter"
-          >
-            <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
-            <span className="text-[11px] sm:text-xs">envAIro Filter</span>
-          </button>
-        </div>
-      </div>
-
-      {pendingRequests.length === 0 ? (
-        <div className="text-center py-12 m-auto">
-          <Music2 size={36} className="text-text-subtle mx-auto mb-3" />
-          <p className="text-text-muted text-sm">{t('dashboard.requests_empty')}</p>
-        </div>
-      ) : (
-        <div className="space-y-3 flex-1 overflow-y-auto pr-1.5 custom-scrollbar pb-32">
-          {pendingRequests.map((req) => (
-            <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                {req.track.image && (
-                  <img src={req.track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'}
-                    onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
-                    alt=""
-                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
-                  <p className="text-xs text-text-muted truncate">
-                    {req.track.artists} · {t('dashboard.requested_by')} <span className="text-accent">{req.requester}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleApprove(req.reqId, req.track.name)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-success/15 hover:bg-success/25 text-success text-sm font-semibold transition-all"
-                >
-                  <CheckCircle2 size={15} /> {t('dashboard.approve')}
-                </button>
-                <button
-                  onClick={() => handleReject(req.reqId, req.track.name)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-danger/15 hover:bg-danger/25 text-danger text-sm font-semibold transition-all"
-                >
-                  <XCircle size={15} /> {t('dashboard.reject')}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderQueueCard = () => (
-    <div className="card p-3.5 sm:p-5 flex flex-col flex-1 h-full min-h-0 overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 sm:mb-4 flex-shrink-0">
-        <div className="flex flex-wrap items-center justify-between w-full">
-          <div className="flex items-center gap-2 mb-1 sm:mb-0">
-            <h2 className="font-bold text-text-primary flex items-center gap-2">
-              <Music2 size={16} className="text-accent" />
-              {t('dashboard.queue_title')}
-            </h2>
-            <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="ml-1 p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors"
-              title={t('dashboard.add_song')}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1.5 bg-black/20 px-2.5 sm:px-3 py-1.5 rounded-lg border border-white/5">
-              <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
-
-              {(!enairoTestMode && enairoUsageCount >= 3) ? (
-                <span className="text-xs font-medium text-text-muted" title={t('dashboard.daily_limit_reached')}>{t('dashboard.daily_limit')}</span>
-              ) : (!enairoTestMode && enairoCooldownUntil > localTime) ? (
-                <span className="text-xs font-medium text-text-muted">
-                  {t('dashboard.available_in', { min: Math.ceil((enairoCooldownUntil - localTime) / 60000) })}
-                </span>
-              ) : (
-                <button
-                  onClick={() => setIsEnairoModalOpen(true)}
-                  disabled={isThinking}
-                  className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
-                >
-                  {isThinking ? t('dashboard.generating') : 'envAIro Selector'}
-                </button>
-              )}
-            </div>
-
-            {queue.length > 0 && (
-              <button
-                onClick={() => usePlayerStore.getState().clearQueue()}
-                className="text-xs px-2.5 py-1.5 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
-              >
-                {t('dashboard.empty_queue_btn')}
-              </button>
-            )}
-          </div>
-        </div>
-        <p className="text-xs text-text-muted hidden sm:block">{t('dashboard.drag_reorder')}</p>
-      </div>
-
-      {queue.length === 0 ? (
-        <div className="text-center py-16 m-auto">
-          <Music2 size={40} className="text-text-subtle mx-auto mb-4" />
-          <p className="text-text-muted">{t('dashboard.queue_empty')}</p>
-          {autoDJ ? (
-            <p className="text-text-subtle text-sm mt-2">envAIro Filter {t('dashboard.queue_empty_sub')}</p>
-          ) : (
-            <p className="text-text-subtle text-sm mt-2">{t('dashboard.queue_empty_sub')}</p>
-          )}
-        </div>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={queue.map((t) => t.queueId)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className={`space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-0 ${isAdminMode ? 'pb-32 sm:pb-36 lg:pb-24' : 'pb-12 lg:pb-2'}`}>
-              {queue.map((track, index) => (
-                <SortableQueueItem
-                  key={track.queueId}
-                  track={track}
-                  onRemove={handleRemoveQueue}
-                  onPlay={handlePlayNow}
-                  isPlaying={index === currentQueueIndex}
-                  isPlayed={index < currentQueueIndex}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
-    </div>
-  );
+  const toggleRemoteMute = () => {
+    if (volume > 0) {
+      previousVolume.current = volume;
+      handleRemoteVolumeChange({ target: { value: 0 } });
+    } else {
+      handleRemoteVolumeChange({ target: { value: previousVolume.current || 100 } });
+    }
+  };
 
   return (
-    <div className={`absolute inset-0 p-3 sm:p-6 space-y-3 sm:space-y-4 flex flex-col overflow-hidden`}>
+    <div className={`absolute inset-0 p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex flex-col lg:overflow-hidden overflow-y-auto custom-scrollbar ${isAdminMode ? 'pb-32 sm:pb-36 lg:pb-28' : 'pb-24 sm:pb-28 lg:pb-6'}`}>
       {/* Header toggles */}
-      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 flex-shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
+            <h1 className="text-2xl font-bold text-text-primary">{t('dashboard.title')}</h1>
             {(playbackEngine === 'youtube' || visualizerEnabled) && (
               <button
                 disabled={!currentTrack}
@@ -584,7 +384,7 @@ export default function DashboardPage() {
               <Monitor size={18} />
             </button>
           </div>
-          <p className="text-text-muted text-xs sm:text-sm mt-0.5 flex items-center gap-3">
+          <p className="text-text-muted text-sm mt-0.5 flex items-center gap-3">
             <span>
               {isAdminMode ? (
                 <span className="text-success">● {t('dashboard.connected_host')}</span>
@@ -596,14 +396,14 @@ export default function DashboardPage() {
             </span>
             {isThinking && (
               <span className="text-accent flex items-center gap-1 animate-pulse">
-                <Sparkles size={13} /> {t('dashboard.envairo_thinking')}
+                <Sparkles size={14} /> {t('dashboard.envairo_thinking')}
               </span>
             )}
           </p>
         </div>
 
-        {/* Controls Bar: Desktop View */}
-        <div className="hidden lg:flex items-center gap-2.5 flex-wrap">
+        {/* Controls Bar: Horizontal Scrollable Segmented Pills */}
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex items-center gap-2.5 flex-nowrap sm:flex-wrap">
           {/* Grupo 1: Modo (Fiesta / Comercial) - Solo para el Anfitrión Principal */}
           {!isAdminMode && (
             <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
@@ -637,9 +437,6 @@ export default function DashboardPage() {
             >
               <ClipboardList size={14} />
               <span>{t('dashboard.toggle_requests')}</span>
-              {pendingRequests.length > 0 && (
-                <span className="badge bg-accent text-white text-[10px] ml-0.5">{pendingRequests.length}</span>
-              )}
             </button>
 
             {(() => {
@@ -729,97 +526,6 @@ export default function DashboardPage() {
                 <span>Lyrics</span>
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Controls Bar: Mobile View (Segmented Tabs) */}
-        <div className="flex lg:hidden w-full overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 items-center gap-2 flex-nowrap">
-          <button
-            onClick={() => setMobileTab('queue')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${mobileTab === 'queue' ? 'bg-accent text-white shadow-glow-sm' : 'bg-white/5 border border-white/10 text-text-muted hover:text-white'}`}
-          >
-            <Music2 size={14} />
-            <span>{t('dashboard.queue_title')}</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${mobileTab === 'queue' ? 'bg-white/20 text-white' : 'bg-white/10 text-text-muted'}`}>{queue.length}</span>
-          </button>
-
-          <button
-            onClick={() => setMobileTab('requests')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${mobileTab === 'requests' ? 'bg-accent text-white shadow-glow-sm' : 'bg-white/5 border border-white/10 text-text-muted hover:text-white'}`}
-          >
-            <Clock size={14} />
-            <span>{t('dashboard.requests_title')}</span>
-            {pendingRequests.length > 0 && (
-              <span className="badge bg-accent text-white text-[10px] font-bold">{pendingRequests.length}</span>
-            )}
-          </button>
-
-          {(playbackEngine === 'spotify' || playbackEngine === 'youtube') && (
-            <button
-              onClick={() => setMobileTab('playlists')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${mobileTab === 'playlists' ? 'bg-accent text-white shadow-glow-sm' : 'bg-white/5 border border-white/10 text-text-muted hover:text-white'}`}
-            >
-              <ListMusic size={14} />
-              <span>{t('dashboard.toggle_playlists')}</span>
-            </button>
-          )}
-
-          {playbackEngine === 'youtube' && (
-            <>
-              <button
-                onClick={() => {
-                  const store = usePlayerStore.getState();
-                  if (!store.canSwitchMode()) {
-                    toast.info('Espera un momento antes de volver a cambiar de modo.', { icon: '⏳' });
-                    return;
-                  }
-                  store.recordModeSwitch();
-                  const newValue = !karaokeEnabled;
-                  setKaraokeEnabled(newValue);
-                  if (isAdminMode) {
-                    sendRemotePlaybackCommand('toggle_karaoke', { value: newValue });
-                  } else {
-                    const currentTrack = store.currentTrack;
-                    const progress = store.progress;
-                    if (currentTrack) {
-                      const newMode = newValue ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-                      store.playEngineTrack(currentTrack, progress, newMode);
-                    }
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'bg-white/5 border border-white/10 text-text-muted hover:text-white'}`}
-              >
-                <Mic2 size={13} />
-                <span>Karaoke</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const store = usePlayerStore.getState();
-                  if (!store.canSwitchMode()) {
-                    toast.info('Espera un momento antes de volver a cambiar de modo.', { icon: '⏳' });
-                    return;
-                  }
-                  store.recordModeSwitch();
-                  const newValue = !lyricsEnabled;
-                  setLyricsEnabled(newValue);
-                  if (isAdminMode) {
-                    sendRemotePlaybackCommand('toggle_lyrics', { value: newValue });
-                  } else {
-                    const currentTrack = store.currentTrack;
-                    const progress = store.progress;
-                    if (currentTrack) {
-                      const newMode = newValue ? 'lyrics' : karaokeEnabled ? 'karaoke' : 'normal';
-                      store.playEngineTrack(currentTrack, progress, newMode);
-                    }
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'bg-white/5 border border-white/10 text-text-muted hover:text-white'}`}
-              >
-                <Type size={13} />
-                <span>Lyrics</span>
-              </button>
-            </>
           )}
         </div>
       </div>
@@ -920,36 +626,229 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 1. Desktop Layout (lg:grid) */}
-      <div className={`hidden lg:grid ${(!showRequests && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6 flex-1 min-h-0`}>
+      {/* Main grid */}
+      <div className={`flex-1 flex flex-col lg:grid ${(!showRequests && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-4 sm:gap-6 min-h-0`}>
         {/* Left Column: Modules */}
         {(showRequests || showPlaylists) && (
-          <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-0">
-            {showRequests && renderRequestsCard()}
+          <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto pr-2 custom-scrollbar lg:min-h-0">
+
+            {showRequests && (
+              <div className="card p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h2 className="font-bold text-text-primary flex items-center gap-2">
+                    <Clock size={16} className="text-accent" />
+                    {t('dashboard.requests_title')}
+                    {pendingRequests.length > 0 && (
+                      <span className="badge bg-accent text-white">{pendingRequests.length}</span>
+                    )}
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    {/* Aceptar Peticiones Button */}
+                    <button
+                      onClick={async () => {
+                        const newVal = !alwaysAvailable;
+                        setAlwaysAvailable(newVal);
+
+                        // Force immediate sync to user_metadata to avoid race condition on refresh
+                        const currentState = useSettingsStore.getState();
+                        const settingsObj = {};
+                        const allKeys = ['djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset'];
+                        allKeys.forEach(k => { settingsObj[k] = currentState[k]; });
+                        settingsObj.alwaysAvailable = newVal; // Ensure the new value is explicitly set
+
+                        supabase.auth.updateUser({
+                          data: { host_settings: JSON.stringify(settingsObj) }
+                        }).catch(console.error);
+
+                        // Sync to sessions table for guests and remotes
+                        const sessionId = currentState.sessionId;
+                        const hostSecret = currentState.hostSecret;
+                        if (sessionId && hostSecret) {
+                          await supabase.rpc('sync_host_config', {
+                            p_session_id: sessionId,
+                            p_secret: hostSecret,
+                            p_updates: { active: newVal, updated_at: new Date().toISOString() }
+                          });
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${alwaysAvailable
+                        ? 'bg-success/20 text-success border border-success/50 shadow-glow-sm'
+                        : 'bg-danger/20 text-danger border border-danger/50 shadow-glow-sm'
+                        }`}
+                      title={alwaysAvailable ? 'Cerrar Peticiones' : 'Abrir Peticiones'}
+                    >
+                      {alwaysAvailable ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                      <span className="text-[11px] sm:text-xs">
+                        {alwaysAvailable ? t('dashboard.open_requests') : t('dashboard.closed_requests')}
+                      </span>
+                    </button>
+
+                    <div className="w-px h-4 bg-white/10" />
+
+                    {/* envAIro Filter Button */}
+                    <button
+                      onClick={() => {
+                        if (autoDJ) {
+                          setAutoDJ(false);
+                        } else {
+                          setIsAutoDjModalOpen(true);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${autoDJ
+                        ? 'bg-accent/20 text-accent border border-accent/50 shadow-glow-sm'
+                        : 'bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary border border-white/5'
+                        }`}
+                      title="envAIro Filter"
+                    >
+                      <Sparkles size={14} className={autoDJ ? 'text-accent' : 'text-text-muted'} />
+                      <span className="text-[11px] sm:text-xs">envAIro Filter</span>
+                    </button>
+                  </div>
+                </div>
+
+                {pendingRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Music2 size={32} className="text-text-subtle mx-auto mb-3" />
+                    <p className="text-text-muted text-sm">{t('dashboard.requests_empty')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-52 sm:max-h-64 lg:max-h-full overflow-y-auto pr-2 custom-scrollbar">
+                    {pendingRequests.map((req) => (
+                      <div key={req.reqId} className="p-3 bg-bg-elevated rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3 mb-3">
+                          {req.track.image && (
+                            <img src={req.track.image || 'https://ui-avatars.com/api/?name=Music&background=222&color=fff'}
+                              onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Music&background=222&color=fff' }}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-text-primary truncate">{req.track.name}</p>
+                            <p className="text-xs text-text-muted truncate">
+                              {req.track.artists} · {t('dashboard.requested_by')} <span className="text-accent">{req.requester}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApprove(req.reqId, req.track.name)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-success/15 hover:bg-success/25 text-success text-sm font-semibold transition-all"
+                          >
+                            <CheckCircle2 size={14} /> {t('dashboard.approve')}
+                          </button>
+                          <button
+                            onClick={() => handleReject(req.reqId, req.track.name)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger/15 hover:bg-danger/25 text-danger text-sm font-semibold transition-all"
+                          >
+                            <XCircle size={14} /> {t('dashboard.reject')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {showPlaylists && <PlaylistsPanel />}
           </div>
         )}
 
-        {/* Playlist Queue */}
-        <div className={`flex flex-col flex-1 h-full min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
-          {renderQueueCard()}
+        {/* Playlist Queue with DnD */}
+        <div className={`flex flex-col flex-1 min-h-[380px] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"} ${isAdminMode ? 'mb-24 lg:mb-0' : ''}`}>
+          <div className="card p-4 sm:p-5 flex flex-col flex-1 h-full overflow-hidden min-h-[380px] lg:min-h-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
+              <div className="flex flex-wrap items-center justify-between w-full">
+                <div className="flex items-center gap-2 mb-1 sm:mb-0">
+                  <h2 className="font-bold text-text-primary flex items-center gap-2">
+                    <Music2 size={16} className="text-accent" />
+                    {t('dashboard.queue_title')}
+                  </h2>
+                  <span className="badge bg-bg-elevated text-text-muted">{queue.length}</span>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="ml-1 p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors"
+                    title={t('dashboard.add_song')}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                    <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
+
+                    {(!enairoTestMode && enairoUsageCount >= 3) ? (
+                       <span className="text-xs font-medium text-text-muted" title={t('dashboard.daily_limit_reached')}>{t('dashboard.daily_limit')}</span>
+                    ) : (!enairoTestMode && enairoCooldownUntil > localTime) ? (
+                      <span className="text-xs font-medium text-text-muted">
+                        {t('dashboard.available_in', { min: Math.ceil((enairoCooldownUntil - localTime) / 60000) })}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setIsEnairoModalOpen(true)}
+                        disabled={isThinking}
+                        className="text-xs font-medium text-text-primary hover:text-accent transition-colors disabled:opacity-50"
+                      >
+                        {isThinking ? t('dashboard.generating') : 'envAIro Selector'}
+                      </button>
+                    )}
+                  </div>
+
+                  {queue.length > 0 && (
+                    <button
+                      onClick={() => usePlayerStore.getState().clearQueue()}
+                      className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
+                    >
+                      {t('dashboard.empty_queue_btn')}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-text-muted">{t('dashboard.drag_reorder')}</p>
+            </div>
+
+            {queue.length === 0 ? (
+              <div className="text-center py-16 m-auto">
+                <Music2 size={40} className="text-text-subtle mx-auto mb-4" />
+                <p className="text-text-muted">{t('dashboard.queue_empty')}</p>
+                {autoDJ ? (
+                  <p className="text-text-subtle text-sm mt-2">envAIro Filter {t('dashboard.queue_empty_sub')}</p>
+                ) : (
+                  <p className="text-text-subtle text-sm mt-2">{t('dashboard.queue_empty_sub')}</p>
+                )}
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={queue.map((t) => t.queueId)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className={`space-y-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar min-h-[280px] lg:min-h-0 ${isAdminMode ? 'pb-36 sm:pb-40 lg:pb-24' : 'pb-12 lg:pb-2'}`}>
+                    {queue.map((track, index) => (
+                      <SortableQueueItem
+                        key={track.queueId}
+                        track={track}
+                        onRemove={handleRemoveQueue}
+                        onPlay={handlePlayNow}
+                        isPlaying={index === currentQueueIndex}
+                        isPlayed={index < currentQueueIndex}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 2. Mobile Layout (Clean Single-Tab Full Height) */}
-      <div className="flex lg:hidden flex-col flex-1 min-h-0 h-full">
-        {mobileTab === 'queue' && renderQueueCard()}
-        {mobileTab === 'requests' && (
-          <div className="flex-1 flex flex-col min-h-0 h-full">
-            {renderRequestsCard()}
-          </div>
-        )}
-        {mobileTab === 'playlists' && (
-          <div className="flex-1 flex flex-col min-h-0 h-full overflow-y-auto pb-32 custom-scrollbar">
-            <PlaylistsPanel />
-          </div>
-        )}
-      </div>
+      {/* Espaciador inferior en Control Remoto para garantizar scroll total sobre la barra fija */}
+      {isAdminMode && <div className="h-28 sm:h-32 shrink-0 pointer-events-none lg:hidden" aria-hidden="true" />}
 
       {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} />}
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
