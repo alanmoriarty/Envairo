@@ -13,7 +13,6 @@ import PrivacyPage from '../pages/PrivacyPage';
 import TermsPage from '../pages/TermsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import TVDisplayPage from '../pages/TVDisplayPage';
-import PairTVPage from '../pages/PairTVPage';
 import { RootLayout } from '../components/layout/RootLayout';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary';
 import { useAuthStore } from '../store/useAuthStore';
@@ -42,7 +41,7 @@ const router = createBrowserRouter([
   { path: '/terms', element: <TermsPage /> },
 
   { path: '/reset-password', element: <ResetPasswordPage /> },
-  { path: '/pair', element: <PairTVPage />, errorElement: <ErrorBoundary /> },
+  { path: '/pair', element: <Navigate to="/app/dashboard" replace /> },
   { path: '/guest/:sessionId', element: <GuestPage />, errorElement: <ErrorBoundary /> },
   {
     path: '/onboarding',

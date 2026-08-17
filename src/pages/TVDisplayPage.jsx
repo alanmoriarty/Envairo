@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { Tv, Activity, Maximize, Minimize, X, Unlink, Volume2, VolumeX, Music2 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 
@@ -817,31 +816,22 @@ handleSyncRef.current = handleSync;
               <span className="text-sm font-semibold tracking-wider uppercase text-text-muted">envAIro TV Display</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">{t('tv.link_this_screen')}</h1>
-
-            {/* Tarjeta de Vinculación */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-bg-elevated/80 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-3xl">
-              {/* Columna QR */}
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="bg-white p-4 rounded-2xl shadow-xl border border-white/20">
-                  <QRCodeSVG
-                    value={`${window.location.origin}/pair?pin=${tvPin}`}
-                    size={160}
-                    level="H"
-                    includeMargin={false}
-                  />
-                </div>
-                <p className="text-xs text-text-muted font-medium">{t('tv.scan_from_host')}</p>
+            {/* Tarjeta de Vinculación por PIN */}
+            <div className="flex flex-col items-center bg-bg-elevated/80 border border-white/10 p-8 sm:p-10 rounded-3xl backdrop-blur-xl shadow-2xl w-full max-w-lg space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shadow-glow-sm">
+                <Tv size={36} />
               </div>
 
-              {/* Columna PIN */}
-              <div className="flex flex-col items-center md:items-start space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 w-full min-w-0">
-                <span className="text-xs font-semibold text-accent uppercase tracking-widest">{t('tv.or_enter_pin')}</span>
-                <div className="bg-black/50 border border-white/15 rounded-2xl px-4 py-3 md:px-5 md:py-3.5 font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-wider shadow-inner w-full text-center whitespace-nowrap overflow-hidden flex items-center justify-center">
+              <div className="space-y-2 text-center w-full">
+                <span className="text-xs font-bold text-accent uppercase tracking-widest">
+                  {t('tv.or_enter_pin')}
+                </span>
+                <div className="bg-black/60 border border-white/15 rounded-2xl px-6 py-4 font-mono text-4xl sm:text-5xl font-black text-white tracking-widest shadow-inner w-full text-center flex items-center justify-center select-all">
                   {tvPin.slice(0, 3)} - {tvPin.slice(3)}
                 </div>
-                <p className="text-xs text-text-muted text-center md:text-left leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('tv.pin_instructions')) }} />
               </div>
+
+              <p className="text-xs text-text-muted text-center leading-relaxed max-w-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('tv.pin_instructions')) }} />
             </div>
 
             {/* Status footer */}

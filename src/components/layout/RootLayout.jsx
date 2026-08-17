@@ -32,58 +32,6 @@ export function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [kickedOut, setKickedOut] = useState(false);
 
-  // Vinculación automática por escaneo de código QR (URL ?pair_pin=XXXXXX)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pairPin = urlParams.get('pair_pin');
-    if (!pairPin) return;
-
-    const cleanPin = pairPin.replace(/\D/g, '');
-    if (cleanPin.length !== 6) return;
-
-    const activeSessionId = user?.id || sessionId;
-    const hostSecret = useSettingsStore.getState().hostSecret;
-
-    const doPairFromQr = async () => {
-      try {
-        const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
-        await pairChannel.subscribe();
-        await pairChannel.send({
-          type: 'broadcast',
-          event: 'pairing_result',
-          payload: {
-            type: 'PAIRED',
-            sessionId: activeSessionId,
-            tvWithSound: false // El QR vincula sin sonido por defecto; se puede cambiar en el modal
-          }
-        });
-
-        const pairedTvs = useSettingsStore.getState().pairedTvs || [];
-        const newTv = {
-          id: cleanPin,
-          name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
-          linkedAt: new Date().toISOString()
-        };
-        const updatedList = [...pairedTvs.filter(t => t.id !== cleanPin), newTv];
-        useSettingsStore.getState().setPairedTvs(updatedList);
-        window.dispatchEvent(new Event('bq-paired-tvs-updated'));
-
-        toast.success(t('layout.tv_linked_qr', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }), { icon: '📺' });
-
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-
-        setTimeout(() => {
-          supabase.removeChannel(pairChannel);
-        }, 2000);
-      } catch (err) {
-        console.error('Error al vincular TV por escaneo QR:', err);
-      }
-    };
-
-    doPairFromQr();
-  }, [user?.id, sessionId]);
-
   useEffect(() => {
     // Evitar múltiples pestañas del reproductor anfitrión (nunca para control remoto)
     const isAdmin = useSettingsStore.getState().isAdminMode;
