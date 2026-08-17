@@ -112,7 +112,7 @@ export default function GuestPage() {
           if (payload.new.status === 'approved') {
             setMyPendingRequests(prev => {
               if (prev[payload.new.id]) {
-                toast.success(`¡Tu petición "${prev[payload.new.id]}" fue aprobada y añadida a la cola!`);
+                toast.success(t('guest.approved_toast', { name: prev[payload.new.id] }));
                 const newPending = { ...prev };
                 delete newPending[payload.new.id];
                 return newPending;
@@ -256,7 +256,7 @@ export default function GuestPage() {
       const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
 
       if (pendingCount + queueCount >= maxUserRequests) {
-        toast.error(`Límite Anti-Spam: Solo puedes tener ${maxUserRequests} canciones en cola al mismo tiempo. Espera a que suene una de tus canciones para pedir otra.`);
+        toast.error(t('guest.antispam_limit_error', { max: maxUserRequests }));
         return;
       }
     }
@@ -466,12 +466,10 @@ export default function GuestPage() {
               <path d="M14 14h.01M14 17h.01M17 14h.01M17 17h3" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Acceso expirado</h1>
-          <p className="text-white/60 leading-relaxed mb-2">
-            Tu acceso a este evento duró <strong className="text-orange-400">6 horas</strong> desde que escaneaste el QR.
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-3">{t('guest.token_expired_title')}</h1>
+          <p className="text-white/60 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: t('guest.token_expired_desc') }} />
           <p className="text-white/40 text-sm">
-            Escanea el código QR del evento nuevamente para seguir pidiendo canciones.
+            {t('guest.token_expired_scan_again')}
           </p>
         </div>
       </div>
@@ -543,7 +541,7 @@ export default function GuestPage() {
           {/* Track info */}
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-accent)' }}>
-              Sonando ahora
+              {t('guest.playing_now')}
             </p>
             <p className="text-sm font-semibold text-text-primary truncate leading-tight">
               {sessionConfig.current_track.name}
@@ -711,7 +709,7 @@ export default function GuestPage() {
                     className="inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded mb-1"
                     style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}
                   >
-                    Seleccionada
+                    {t('guest.selected_badge')}
                   </span>
                   <p className="text-sm font-bold text-text-primary truncate leading-tight">{selected.name}</p>
                   <p className="text-xs text-text-muted truncate">{formatArtists(selected.artists)}</p>
@@ -733,12 +731,12 @@ export default function GuestPage() {
             {/* Version preference selector — only shown when host enables this feature */}
             {guestVersionRequestEnabled && (
               <div className="mt-3 animate-slide-up-sm">
-                <p className="text-xs text-text-muted mb-2">¿Qué versión prefieres?</p>
+                <p className="text-xs text-text-muted mb-2">{t('guest.version_question')}</p>
                 <div className="flex gap-2">
                   {[
-                    { value: 'normal', label: 'Normal', emoji: '🎵' },
-                    { value: 'lyrics', label: 'Letra', emoji: '📝' },
-                    { value: 'karaoke', label: 'Karaoke', emoji: '🎤' },
+                    { value: 'normal', label: t('guest.version_normal'), emoji: '🎵' },
+                    { value: 'lyrics', label: t('guest.version_lyrics'), emoji: '📝' },
+                    { value: 'karaoke', label: t('guest.version_karaoke'), emoji: '🎤' },
                   ].map(({ value, label, emoji }) => (
                     <button
                       key={value}
@@ -781,8 +779,8 @@ export default function GuestPage() {
               <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center mx-auto mb-3">
                 <X size={24} className="text-danger" />
               </div>
-              <p className="font-semibold text-danger">Límite alcanzado</p>
-              <p className="text-text-muted text-sm mt-1">Ya tienes el máximo de {maxUserRequests} canciones en espera o en la cola.</p>
+              <p className="font-semibold text-danger">{t('guest.limit_reached_title')}</p>
+              <p className="text-text-muted text-sm mt-1">{t('guest.limit_reached_desc', { max: maxUserRequests })}</p>
             </div>
           );
         }
@@ -815,7 +813,7 @@ export default function GuestPage() {
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </div>
-                  <span className="text-[10px] text-green-400 font-medium">Petición enviada</span>
+                  <span className="text-[10px] text-green-400 font-medium">{t('guest.sent_status')}</span>
                 </div>
               </div>
             </div>
@@ -859,7 +857,7 @@ export default function GuestPage() {
           </div>
           <p className="font-bold text-text-primary">{lastSubmittedTrack.name}</p>
           <p className="text-xs text-text-muted mt-0.5 mb-3">{formatArtists(lastSubmittedTrack.artists)}</p>
-          <p className="text-sm text-green-400 font-medium">¡Petición enviada con éxito!</p>
+          <p className="text-sm text-green-400 font-medium">{t('guest.sent_success_brief')}</p>
         </div>
       ) : (
         <button
@@ -870,7 +868,7 @@ export default function GuestPage() {
           {isSubmitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Enviando...</span>
+              <span>{t('guest.sending')}</span>
             </>
           ) : (
             <>
