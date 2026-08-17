@@ -395,10 +395,10 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Controls Bar: Horizontal Scrollable Chips on Mobile, Flex on Desktop */}
-        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex items-center gap-2 flex-nowrap sm:flex-wrap">
-          {/* Mode toggle */}
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0">
+        {/* Controls Bar: Horizontal Scrollable Segmented Pills */}
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex items-center gap-2.5 flex-nowrap sm:flex-wrap">
+          {/* Grupo 1: Modo (Fiesta / Comercial) */}
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
             <button
               onClick={() => setMode('party')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === 'party' ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
@@ -418,38 +418,43 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* View/Panel toggles */}
-          <button
-            onClick={() => setShowRequests(!showRequests)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${showRequests ? 'bg-accent text-white border-accent shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
-              }`}
-            title={t('dashboard.toggle_requests')}
-          >
-            <ClipboardList size={14} />
-            <span>{t('dashboard.toggle_requests')}</span>
-          </button>
+          {/* Grupo 2: Paneles (Peticiones / Playlists) */}
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
+            <button
+              onClick={() => setShowRequests(!showRequests)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${showRequests ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                }`}
+              title={t('dashboard.toggle_requests')}
+            >
+              <ClipboardList size={14} />
+              <span>{t('dashboard.toggle_requests')}</span>
+            </button>
 
-          {(() => {
-            const engine = usePlayerStore.getState().playbackEngine;
-            if (engine === 'spotify' || engine === 'youtube') {
-              return (
-                <button
-                  onClick={() => setShowPlaylists(!showPlaylists)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${showPlaylists ? 'bg-accent text-white border-accent shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
-                    }`}
-                  title={t('dashboard.toggle_playlists')}
-                >
-                  <ListMusic size={14} />
-                  <span>{t('dashboard.toggle_playlists')}</span>
-                </button>
-              );
-            }
-            return null;
-          })()}
+            {(() => {
+              const engine = usePlayerStore.getState().playbackEngine;
+              if (engine === 'spotify' || engine === 'youtube') {
+                return (
+                  <>
+                    <div className="w-px h-4 bg-white/10 mx-0.5" />
+                    <button
+                      onClick={() => setShowPlaylists(!showPlaylists)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${showPlaylists ? 'bg-accent text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
+                        }`}
+                      title={t('dashboard.toggle_playlists')}
+                    >
+                      <ListMusic size={14} />
+                      <span>{t('dashboard.toggle_playlists')}</span>
+                    </button>
+                  </>
+                );
+              }
+              return null;
+            })()}
+          </div>
 
-          {/* Karaoke / Lyrics toggles: solo con motor YouTube */}
+          {/* Grupo 3: Karaoke / Lyrics (Motor YouTube) */}
           {playbackEngine === 'youtube' && (
-            <>
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
               <button
                 onClick={() => {
                   const newValue = !karaokeEnabled;
@@ -465,13 +470,15 @@ export default function DashboardPage() {
                     }
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${karaokeEnabled ? 'bg-pink-500 text-white border-pink-500 shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${karaokeEnabled ? 'bg-pink-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                   }`}
                 title="Karaoke"
               >
                 <Mic2 size={14} />
                 <span>Karaoke</span>
               </button>
+
+              <div className="w-px h-4 bg-white/10 mx-0.5" />
 
               <button
                 onClick={() => {
@@ -488,14 +495,14 @@ export default function DashboardPage() {
                     }
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border ${lyricsEnabled ? 'bg-sky-500 text-white border-sky-500 shadow-glow-sm' : 'bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${lyricsEnabled ? 'bg-sky-500 text-white shadow-glow-sm' : 'text-text-muted hover:text-white'
                   }`}
                 title="Lyrics"
               >
                 <Type size={14} />
                 <span>Lyrics</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -585,7 +592,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className={`flex-1 grid grid-cols-1 gap-6 ${(!showRequests && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} lg:min-h-0`}>
+      <div className={`flex-1 flex flex-col lg:grid ${(!showRequests && !showPlaylists) ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-4 sm:gap-6 min-h-0`}>
         {/* Left Column: Modules */}
         {(showRequests || showPlaylists) && (
           <div className="lg:col-span-1 space-y-4 lg:overflow-y-auto pr-2 custom-scrollbar lg:min-h-0">
@@ -713,8 +720,8 @@ export default function DashboardPage() {
         )}
 
         {/* Playlist Queue with DnD */}
-        <div className={`flex flex-col h-[56vh] sm:h-[62vh] lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
-          <div className="card p-4 sm:p-5 flex flex-col h-full overflow-hidden min-h-0 lg:min-h-0">
+        <div className={`flex flex-col flex-1 min-h-0 lg:h-full lg:min-h-0 ${(!showRequests && !showPlaylists) ? "lg:col-span-1" : "lg:col-span-2"}`}>
+          <div className="card p-4 sm:p-5 flex flex-col flex-1 h-full overflow-hidden min-h-0 lg:min-h-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
               <div className="flex flex-wrap items-center justify-between w-full">
                 <div className="flex items-center gap-2 mb-1 sm:mb-0">

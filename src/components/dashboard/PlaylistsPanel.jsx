@@ -66,7 +66,7 @@ export function PlaylistsPanel() {
     if (groups['Hoy']) {
       result.push({
         id: 'history-hoy',
-        name: t('dashboard.history_today'),
+        name: t('dashboard.history_today') || 'Playlist de Hoy',
         isHistory: true,
         tracks: groups['Hoy'],
         images: groups['Hoy'].length > 0 && groups['Hoy'][0].image ? [{ url: groups['Hoy'][0].image }] : []
@@ -75,7 +75,7 @@ export function PlaylistsPanel() {
     if (groups['Ayer']) {
       result.push({
         id: 'history-ayer',
-        name: t('dashboard.history_yesterday'),
+        name: t('dashboard.history_yesterday') || 'Playlist de Ayer',
         isHistory: true,
         tracks: groups['Ayer'],
         images: groups['Ayer'].length > 0 && groups['Ayer'][0].image ? [{ url: groups['Ayer'][0].image }] : []
@@ -83,7 +83,7 @@ export function PlaylistsPanel() {
     }
     
     return result;
-  }, [playHistory, playbackEngine]);
+  }, [playHistory, playbackEngine, t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -382,7 +382,7 @@ export function PlaylistsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text-primary truncate">{pl.name}</p>
                 <p className="text-xs text-text-muted truncate mt-0.5">
-                  {/* Canciones count removed */}
+                  {pl.tracks?.length ? `${pl.tracks.length} ${pl.tracks.length === 1 ? 'canción' : 'canciones'}` : ''}
                 </p>
               </div>
 

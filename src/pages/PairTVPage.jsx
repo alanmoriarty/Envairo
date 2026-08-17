@@ -24,19 +24,26 @@ export default function PairTVPage() {
       return;
     }
 
-    // Validar autorización: debe ser un Host con sesión activa o un Control Remoto autorizado
-    const isAuthorizedHost = isAuthenticated && !!user?.id;
-    const isAuthorizedRemote = isAdminMode && !!sessionId;
-
-    if (!isAuthorizedHost && !isAuthorizedRemote) {
-      setStatus('no_session');
-      return;
-    }
-
-    const activeSessionId = isAuthorizedHost ? user.id : sessionId;
+    let isMounted = true;
 
     const pairScreen = async () => {
       try {
+        // 1. Obtener sesión de Supabase o de Zustand
+        const { data: { session } } = await supabase.auth.getSession();
+        const hostUser = session?.user || user;
+        const currentAdmin = useSettingsStore.getState().isAdminMode;
+        const currentSessionId = useSettingsStore.getState().sessionId;
+
+        const isAuthorizedHost = !!hostUser?.id;
+        const isAuthorizedRemote = currentAdmin && !!currentSessionId;
+
+        if (!isAuthorizedHost && !isAuthorizedRemote) {
+          if (isMounted) setStatus('no_session');
+          return;
+        }
+
+        const activeSessionId = isAuthorizedHost ? hostUser.id : currentSessionId;
+
         const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
         await pairChannel.subscribe(async (subStatus) => {
           if (subStatus === 'SUBSCRIBED') {
@@ -51,7 +58,7 @@ export default function PairTVPage() {
             });
 
             // Guardar en la lista de TVs emparejadas localmente
-            const currentTvs = Array.isArray(pairedTvs) ? pairedTvs : [];
+            const currentTvs = Array.isArray(useSettingsStore.getState().pairedTvs) ? useSettingsStore.getState().pairedTvs : [];
             const newTv = {
               id: cleanPin,
               name: `Smart TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)})`,
@@ -62,7 +69,7 @@ export default function PairTVPage() {
             window.dispatchEvent(new Event('bq-paired-tvs-updated'));
 
             toast.success(`¡Pantalla TV (${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}) vinculada con éxito!`, { icon: '📺' });
-            setStatus('success');
+            if (isMounted) setStatus('success');
 
             setTimeout(() => {
               supabase.removeChannel(pairChannel);
@@ -71,12 +78,18 @@ export default function PairTVPage() {
         });
       } catch (err) {
         console.error('Error emparejando TV:', err);
-        setStatus('error');
-        setErrorMessage(err.message || 'Error al conectar con la pantalla');
+        if (isMounted) {
+          setStatus('error');
+          setErrorMessage(err.message || 'Error al conectar con la pantalla');
+        }
       }
     };
 
     pairScreen();
+
+    return () => {
+      isMounted = false;
+    };
   }, [cleanPin, user?.id, sessionId]);
 
   return (
