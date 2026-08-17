@@ -242,6 +242,10 @@ export default function GuestPage() {
 
   const handleSubmit = async () => {
     if (!selected) { toast.error('Selecciona una canción primero'); return; }
+    if (!guestToken) {
+      toast.error('Debes escanear el código QR del anfitrión para solicitar canciones.');
+      return;
+    }
     if (isCommercial && !identifier.trim()) {
       toast.error('El número de mesa es obligatorio');
       return;
