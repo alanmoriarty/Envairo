@@ -94,6 +94,7 @@ const ES = {
     email_required: 'Por favor ingresa tu correo electrónico para enviarte el enlace de recuperación.',
     reset_link_sent: 'Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.',
     reset_error: 'Error al solicitar el restablecimiento',
+    login_success: '¡Sesión iniciada con éxito!',
   },
   reset: {
     password_short: 'La contraseña debe tener al menos 6 caracteres.',
@@ -857,6 +858,7 @@ const EN = {
     email_required: 'Please enter your email to send you the recovery link.',
     reset_link_sent: 'We have sent you a link to reset your password. Check your email.',
     reset_error: 'Error requesting reset',
+    login_success: 'Logged in successfully!',
   },
   reset: {
     password_short: 'The password must be at least 6 characters long.',
