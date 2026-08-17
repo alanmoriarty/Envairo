@@ -46,6 +46,29 @@ export const usePlayerStore = create(
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
 
+      // 8-hour continuous playback protection
+      continuousPlaybackMs: 0,
+      showPlaybackLimitModal: false,
+      setShowPlaybackLimitModal: (val) => set({ showPlaybackLimitModal: val }),
+      resetContinuousPlayback: () => set({ continuousPlaybackMs: 0 }),
+      resumeAfterPlaybackLimit: () => {
+        const state = get();
+        set({
+          continuousPlaybackMs: 0,
+          showPlaybackLimitModal: false
+        });
+        if (state.youtubePlayer && state.currentTrack) {
+          const pState = typeof state.youtubePlayer.getPlayerState === 'function' ? state.youtubePlayer.getPlayerState() : null;
+          if (pState === -1 || pState === null || pState === 5) {
+            state.playEngineTrack(state.currentTrack, state.progress, null, true);
+          } else {
+            state.youtubePlayer.playVideo();
+          }
+        } else if (state.currentTrack) {
+          state.playEngineTrack(state.currentTrack, state.progress, null, true);
+        }
+      },
+
       // Anti-spam & Cooldowns
       skipHistory: [],
       skipCooldownUntil: null,

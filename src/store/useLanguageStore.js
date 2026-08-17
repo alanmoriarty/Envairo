@@ -724,6 +724,12 @@ const ES = {
     no_results: 'Sin resultados',
     play_again: 'Jugar de nuevo',
   },
+  playback_limit: {
+    title: '¿Sigues ahí?',
+    desc: 'La música se ha estado reproduciendo de forma continua durante 8 horas. Hemos pausado la reproducción para confirmar que deseas continuar con el evento.',
+    continue_btn: 'Continuar Reproducción',
+    pause_notice: 'Reproducción pausada por límite de 8 horas'
+  },
   terms: {
     back: 'Volver al inicio',
     title: 'Términos y Condiciones',
@@ -1392,5 +1398,11 @@ const EN = {
     pin_desc: 'Open <span className="text-white font-medium">envairo.app/tv</span> on any Smart TV. Copy the PIN that appears on the screen and press Link.',
     linked_screens: 'Linked Screens ({{count}})',
     realtime_connected: 'Connected via Realtime',
+  },
+  playback_limit: {
+    title: 'Are you still there?',
+    desc: 'Music has been playing continuously for 8 hours. We paused playback to confirm if you want to continue.',
+    continue_btn: 'Continue Playback',
+    pause_notice: 'Playback paused due to 8-hour limit'
   },
 };

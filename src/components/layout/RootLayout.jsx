@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { Menu, Music2, AlertCircle } from 'lucide-react';
 import { useEnairoSelector } from '../../hooks/useEnairoSelector';
 import { useTVBroadcast } from '../../hooks/useTVBroadcast';
+import { usePlaybackGuard } from '../../hooks/usePlaybackGuard';
+import { PlaybackLimitModal } from '../dashboard/PlaybackLimitModal';
 
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { isWithinInterval, parse, addDays, isBefore } from 'date-fns';
@@ -27,6 +29,7 @@ export function RootLayout() {
   useQueueSync();
   useEnairoSelector();
   useTVBroadcast();
+  usePlaybackGuard();
 
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -308,6 +311,9 @@ export function RootLayout() {
       
       {/* 2. Visualizador y Fondo Reactivo (Z-index base) */}
       <VisualizerBackground />
+
+      {/* Modal de Límite de 8 Horas de Reproducción */}
+      <PlaybackLimitModal />
 
       {/* Footer Player */}
       {!isAdminMode && <PersistentPlayer />}
