@@ -168,8 +168,8 @@ export default function TVDisplayPage() {
   useEffect(() => {
     if (!sessionId) return;
 
-    // 2.a. BroadcastChannel Local
-    channelRef.current = new BroadcastChannel('envairo_tv_sync');
+    // 2.a. BroadcastChannel Local aislado por sesión
+    channelRef.current = new BroadcastChannel(`envairo_tv_sync_${sessionId}`);
 
     const handleMessage = (e) => {
       if (e.data.type === 'PING') {
@@ -746,9 +746,9 @@ handleSyncRef.current = handleSync;
     const currentPin = tvPin || localStorage.getItem('bq-tv-pin');
     const currentSessId = sessionId || localStorage.getItem('bq-tv-session-id');
 
-    // 1. Notificar al anfitrión por BroadcastChannel local (si está en la misma PC)
+    // 1. Notificar al anfitrión por BroadcastChannel local aislado (si está en la misma PC)
     try {
-      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      const localChannel = new BroadcastChannel(currentSessId ? `envairo_tv_sync_${currentSessId}` : 'envairo_tv_sync');
       localChannel.postMessage({ type: 'SLAVE_UNPAIRED', tvId: currentPin });
       setTimeout(() => localChannel.close(), 100);
     } catch (e) {}

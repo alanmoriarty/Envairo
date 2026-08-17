@@ -861,7 +861,9 @@ export function useYouTubeSDK() {
 
     // Emitir broadcast de inicio de transición a pantallas esclavas (TVs)
     try {
-      const bc = new BroadcastChannel('envairo_tv_sync');
+      const sessId = useSettingsStore.getState().sessionId || useAuthStore.getState().user?.id;
+      const { getLocalTvSyncChannelName } = await import('../lib/tvSyncChannel');
+      const bc = new BroadcastChannel(getLocalTvSyncChannelName(sessId));
       const payload = {
         type: 'DJ_TRANSITION_START',
         nextVideoId: videoIdToPlay,

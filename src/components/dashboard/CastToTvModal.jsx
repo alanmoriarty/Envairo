@@ -136,7 +136,8 @@ export function CastToTvModal({ isOpen, onClose }) {
 
     // 2. Broadcast Local
     try {
-      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
+      const localChannel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
       localChannel.postMessage({ type: 'UNPAIRED', tvId: cleanTvId });
       setTimeout(() => localChannel.close(), 100);
     } catch (e) {}
@@ -186,7 +187,8 @@ export function CastToTvModal({ isOpen, onClose }) {
 
     // 2. Broadcast Local
     try {
-      const localChannel = new BroadcastChannel('envairo_tv_sync');
+      const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
+      const localChannel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
       localChannel.postMessage({ type: 'TOGGLE_SOUND', tvWithSound: newVal, tvId: cleanTvId });
       setTimeout(() => localChannel.close(), 100);
     } catch (e) {}

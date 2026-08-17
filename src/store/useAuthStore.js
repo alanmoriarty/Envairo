@@ -64,9 +64,14 @@ export const useAuthStore = create(
 
         set({ user: null, isAuthenticated: false });
         
-        // Mantener la cola y el historial guardados localmente para cuando vuelva a iniciar sesión
-        // Limpiar únicamente credenciales sensibles y tokens de autenticación
+        // Limpiar estado local del reproductor y configuración para evitar fugas entre cuentas
+        usePlayerStore.getState().clearPlayerState();
+        useSettingsStore.getState().clearSettingsState();
+        
+        // Limpiar credenciales sensibles y tokens de autenticación
         localStorage.removeItem('bq-auth');
+        localStorage.removeItem('bq-player');
+        localStorage.removeItem('bq-settings');
         
         // Asegurar que el token de Supabase se elimine localmente
         Object.keys(localStorage).forEach(key => {

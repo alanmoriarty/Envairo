@@ -18,8 +18,8 @@ export function useTVBroadcast() {
   const activeSessionId = user?.id || settingsSessionId;
 
   useEffect(() => {
-    // 1. Inicializar canal BroadcastChannel local para ventanas en la misma máquina
-    channelRef.current = new BroadcastChannel('envairo_tv_sync');
+    // 1. Inicializar canal BroadcastChannel local aislado por sesión para ventanas en la misma máquina
+    channelRef.current = new BroadcastChannel(activeSessionId ? `envairo_tv_sync_${activeSessionId}` : 'envairo_tv_sync');
 
     // 2. Inicializar Supabase Realtime Broadcast para Smart TVs remotas sobre Internet
     if (activeSessionId) {

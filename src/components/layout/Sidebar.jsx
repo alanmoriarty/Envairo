@@ -53,7 +53,8 @@ export function Sidebar({ isOpen, onClose }) {
 
       // Notificar a las pantallas esclavas que el anfitrión se ha desconectado
       try {
-        const channel = new BroadcastChannel('envairo_tv_sync');
+        const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
+        const channel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
         channel.postMessage({ type: 'MASTER_DISCONNECT' });
         channel.close();
       } catch (e) {

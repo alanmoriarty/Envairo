@@ -12,3 +12,7 @@ export function setTvSyncChannel(channel) {
 export function getTvSyncChannel() {
   return activeTvSyncChannel;
 }
+
+export function getLocalTvSyncChannelName(sessionId) {
+  return sessionId ? `envairo_tv_sync_${sessionId}` : 'envairo_tv_sync';
+}

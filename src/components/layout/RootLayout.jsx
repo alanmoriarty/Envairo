@@ -35,14 +35,15 @@ export function RootLayout() {
   useEffect(() => {
     // Evitar múltiples pestañas del reproductor anfitrión (nunca para control remoto)
     const isAdmin = useSettingsStore.getState().isAdminMode;
-    if (isAdmin) return;
+    const activeSessionId = user?.id || sessionId;
+    if (isAdmin || !activeSessionId) return;
 
-    const channel = new BroadcastChannel('envairo_app_tabs');
+    const channel = new BroadcastChannel(`envairo_app_tabs_${activeSessionId}`);
     const myTabId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString();
 
     channel.onmessage = (event) => {
       if (event.data.type === 'NEW_TAB_OPENED' && event.data.tabId !== myTabId) {
-        // Solo desconectar si la otra pestaña abierta es otro Host, NUNCA si es un control remoto
+        // Solo desconectar si la otra pestaña abierta es del mismo Host, NUNCA si es un control remoto
         if (!event.data.isAdmin) {
           setKickedOut(true);
         }
@@ -54,7 +55,7 @@ export function RootLayout() {
     return () => {
       channel.close();
     };
-  }, []);
+  }, [user?.id, sessionId]);
 
 
 
