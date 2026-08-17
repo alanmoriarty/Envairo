@@ -137,7 +137,7 @@ export function Sidebar({ isOpen, onClose }) {
             <button 
               onClick={() => setShowProfileModal(true)}
               className="w-full flex items-center gap-3 p-3 bg-bg-elevated hover:bg-white/5 border border-transparent hover:border-white/10 rounded-xl transition-all group text-left"
-              title="Editar Perfil"
+              title={t('profile.edit_profile')}
             >
               <div className="relative">
                 <img
@@ -154,7 +154,7 @@ export function Sidebar({ isOpen, onClose }) {
                   {djName}
                 </p>
                 <p className="text-[10px] text-accent font-medium truncate uppercase tracking-wide flex items-center gap-1">
-                  <PencilLine size={10} /> Editar Perfil
+                  <PencilLine size={10} /> {t('profile.edit_profile')}
                 </p>
               </div>
             </button>
@@ -167,10 +167,10 @@ export function Sidebar({ isOpen, onClose }) {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">
-                  Control Remoto
+                  {t('nav.remote')}
                 </p>
                 <p className="text-xs text-text-muted truncate">
-                  Modo Admin
+                  {t('nav.remoteMode')}
                 </p>
               </div>
             </div>

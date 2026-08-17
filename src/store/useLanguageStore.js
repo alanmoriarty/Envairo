@@ -800,6 +800,7 @@ const ES = {
     nickname_placeholder: 'Ej: Dj Anfitrión',
     avatar_label: 'Selecciona tu Avatar',
     save_btn: 'Guardar Perfil',
+    edit_profile: 'Editar Perfil',
   },
   cast: {
     pin_length_error: 'El código PIN debe tener 6 dígitos (ej: 482910)',
@@ -1370,6 +1371,7 @@ const EN = {
     nickname_placeholder: 'Ex: Dj Host',
     avatar_label: 'Select your Avatar',
     save_btn: 'Save Profile',
+    edit_profile: 'Edit Profile',
   },
   cast: {
     pin_length_error: 'The PIN code must have 6 digits (ex: 482910)',
