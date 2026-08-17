@@ -294,15 +294,22 @@ export default function DashboardPage() {
   };
 
   const handlePlayNow = async (track) => {
-    if (!usePlayerStore.getState().checkSkipSpam()) return;
+    const store = usePlayerStore.getState();
+    if (!store.checkSkipSpam()) return;
+    if (!store.canSwitchTrack()) {
+      toast.info('Espera un momento antes de volver a cambiar de canción.', { icon: '⏳' });
+      return;
+    }
+    store.recordTrackSwitch();
+
     const isAdminMode = useSettingsStore.getState().isAdminMode;
     if ((sdkReady || isAdminMode) && track.uri) {
       if (isAdminMode) {
-        usePlayerStore.getState().playTrackFromQueue(track.queueId);
+        store.playTrackFromQueue(track.queueId);
         sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
       } else {
-        usePlayerStore.getState().playTrackFromQueue(track.queueId);
-        usePlayerStore.getState().playEngineTrack(track);
+        store.playTrackFromQueue(track.queueId);
+        store.playEngineTrack(track);
       }
       toast.success(t('dashboard.toast_playing', { name: track.name }));
     }
@@ -457,16 +464,23 @@ export default function DashboardPage() {
             <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 shrink-0 shadow-sm">
               <button
                 onClick={() => {
+                  const store = usePlayerStore.getState();
+                  if (!store.canSwitchMode()) {
+                    toast.info('Espera un momento antes de volver a cambiar de modo.', { icon: '⏳' });
+                    return;
+                  }
+                  store.recordModeSwitch();
+
                   const newValue = !karaokeEnabled;
                   setKaraokeEnabled(newValue);
                   if (isAdminMode) {
                     sendRemotePlaybackCommand('toggle_karaoke', { value: newValue });
                   } else {
-                    const currentTrack = usePlayerStore.getState().currentTrack;
-                    const progress = usePlayerStore.getState().progress;
+                    const currentTrack = store.currentTrack;
+                    const progress = store.progress;
                     if (currentTrack) {
                       const newMode = newValue ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal';
-                      usePlayerStore.getState().playEngineTrack(currentTrack, progress, newMode);
+                      store.playEngineTrack(currentTrack, progress, newMode);
                     }
                   }
                 }}
@@ -482,16 +496,23 @@ export default function DashboardPage() {
 
               <button
                 onClick={() => {
+                  const store = usePlayerStore.getState();
+                  if (!store.canSwitchMode()) {
+                    toast.info('Espera un momento antes de volver a cambiar de modo.', { icon: '⏳' });
+                    return;
+                  }
+                  store.recordModeSwitch();
+
                   const newValue = !lyricsEnabled;
                   setLyricsEnabled(newValue);
                   if (isAdminMode) {
                     sendRemotePlaybackCommand('toggle_lyrics', { value: newValue });
                   } else {
-                    const currentTrack = usePlayerStore.getState().currentTrack;
-                    const progress = usePlayerStore.getState().progress;
+                    const currentTrack = store.currentTrack;
+                    const progress = store.progress;
                     if (currentTrack) {
                       const newMode = newValue ? 'lyrics' : karaokeEnabled ? 'karaoke' : 'normal';
-                      usePlayerStore.getState().playEngineTrack(currentTrack, progress, newMode);
+                      store.playEngineTrack(currentTrack, progress, newMode);
                     }
                   }
                 }}
@@ -523,7 +544,13 @@ export default function DashboardPage() {
 
           <button
             onClick={() => {
-              const track = usePlayerStore.getState().prevQueue();
+              const store = usePlayerStore.getState();
+              if (!store.canSwitchTrack()) {
+                toast.info('Espera un momento antes de volver a cambiar de canción.', { icon: '⏳' });
+                return;
+              }
+              store.recordTrackSwitch();
+              const track = store.prevQueue();
               if (track) {
                 sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
               }
@@ -557,8 +584,14 @@ export default function DashboardPage() {
 
           <button
             onClick={() => {
-              if (!usePlayerStore.getState().checkSkipSpam()) return;
-              const track = usePlayerStore.getState().shiftQueue();
+              const store = usePlayerStore.getState();
+              if (!store.checkSkipSpam()) return;
+              if (!store.canSwitchTrack()) {
+                toast.info('Espera un momento antes de volver a cambiar de canción.', { icon: '⏳' });
+                return;
+              }
+              store.recordTrackSwitch();
+              const track = store.shiftQueue();
               if (track) {
                 sendRemotePlaybackCommand('play_specific', { queueId: track.queueId });
               }

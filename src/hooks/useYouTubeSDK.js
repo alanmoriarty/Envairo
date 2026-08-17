@@ -1038,12 +1038,24 @@ export function useYouTubeSDK() {
         else p.playVideo();
       },
       skipNext: () => {
-        const next = usePlayerStore.getState().shiftQueue();
-        if (next) usePlayerStore.getState().playEngineTrack(next);
+        const store = usePlayerStore.getState();
+        if (!store.canSwitchTrack()) {
+          import('sonner').then(({ toast }) => toast.info('Espera un momento antes de volver a cambiar de canción.', { icon: '⏳' }));
+          return;
+        }
+        store.recordTrackSwitch();
+        const next = store.shiftQueue();
+        if (next) store.playEngineTrack(next);
       },
       skipPrev: () => {
-        const prev = usePlayerStore.getState().prevQueue();
-        if (prev) usePlayerStore.getState().playEngineTrack(prev);
+        const store = usePlayerStore.getState();
+        if (!store.canSwitchTrack()) {
+          import('sonner').then(({ toast }) => toast.info('Espera un momento antes de volver a cambiar de canción.', { icon: '⏳' }));
+          return;
+        }
+        store.recordTrackSwitch();
+        const prev = store.prevQueue();
+        if (prev) store.playEngineTrack(prev);
       }
     }
   };

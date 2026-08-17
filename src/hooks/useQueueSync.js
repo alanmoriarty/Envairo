@@ -235,16 +235,22 @@ export function useQueueSync() {
         currentState.setIsPlaying(false);
       } else if (cmd.action === 'next') {
         if (!currentState.checkSkipSpam()) return;
+        if (!currentState.canSwitchTrack()) return;
+        currentState.recordTrackSwitch();
         const nextTrack = currentState.shiftQueue();
         if (nextTrack) {
           currentState.playEngineTrack(nextTrack);
         }
       } else if (cmd.action === 'play_specific') {
+        if (!currentState.canSwitchTrack()) return;
+        currentState.recordTrackSwitch();
         const track = currentState.playTrackFromQueue(cmd.queueId);
         if (track) {
           currentState.playEngineTrack(track);
         }
       } else if (cmd.action === 'prev') {
+        if (!currentState.canSwitchTrack()) return;
+        currentState.recordTrackSwitch();
         const prevTrack = currentState.prevQueue();
         if (prevTrack) {
           currentState.playEngineTrack(prevTrack);
@@ -267,12 +273,16 @@ export function useQueueSync() {
           currentState.youtubePlayer.setVolume(cmd.value);
         }
       } else if (cmd.action === 'toggle_karaoke') {
+        if (!currentState.canSwitchMode()) return;
+        currentState.recordModeSwitch();
         useSettingsStore.getState().setKaraokeEnabled(cmd.value);
         if (currentState.currentTrack) {
           const newMode = cmd.value ? 'karaoke' : useSettingsStore.getState().lyricsEnabled ? 'lyrics' : 'normal';
           currentState.playEngineTrack(currentState.currentTrack, currentState.progress, newMode);
         }
       } else if (cmd.action === 'toggle_lyrics') {
+        if (!currentState.canSwitchMode()) return;
+        currentState.recordModeSwitch();
         useSettingsStore.getState().setLyricsEnabled(cmd.value);
         if (currentState.currentTrack) {
           const newMode = cmd.value ? 'lyrics' : useSettingsStore.getState().karaokeEnabled ? 'karaoke' : 'normal';

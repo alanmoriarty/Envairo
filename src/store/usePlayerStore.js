@@ -46,9 +46,24 @@ export const usePlayerStore = create(
       incrementPlaybackMinutes: () => set((state) => ({ playbackMinutes: state.playbackMinutes + 1 })),
       resetPlaybackMinutes: () => set({ playbackMinutes: 0 }),
 
-      // Anti-spam para saltar canciones
+      // Anti-spam & Cooldowns
       skipHistory: [],
       skipCooldownUntil: null,
+      lastTrackSwitchTs: 0,
+      lastModeSwitchTs: 0,
+
+      canSwitchTrack: () => {
+        const now = Date.now();
+        return (now - get().lastTrackSwitchTs) >= 2500;
+      },
+
+      canSwitchMode: () => {
+        const now = Date.now();
+        return (now - get().lastModeSwitchTs) >= 2500;
+      },
+
+      recordTrackSwitch: () => set({ lastTrackSwitchTs: Date.now() }),
+      recordModeSwitch: () => set({ lastModeSwitchTs: Date.now() }),
 
       checkSkipSpam: () => {
         const state = get();
