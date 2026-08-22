@@ -111,6 +111,8 @@ export default function TVDisplayPage() {
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const loadingTimerRef = useRef(null);
   const hostRefreshingRef = useRef(false);
+  const trackStartedAtRef = useRef(0);
+  const lastSeekTimeRef = useRef(0);
 
   // 1. Escuchar canal de emparejamiento SIEMPRE (tanto para PAIRED como para UNPAIRED)
   useEffect(() => {
