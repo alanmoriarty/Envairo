@@ -805,11 +805,21 @@ export function useYouTubeSDK() {
             // Respaldo para superar bloqueos de autoplay de navegadores (Chrome/Edge/Safari)
             const handleFirstGesture = () => {
               const fresh = usePlayerStore.getState();
-              const p = getActivePlayer();
-              if (fresh.currentTrack && p) {
+              const pA = playerARef.current;
+              const pB = playerBRef.current;
+
+              // Autorizar AMBOS reproductores simultáneamente con el gesto del usuario
+              try {
+                if (pA && typeof pA.unMute === 'function') pA.unMute();
+              } catch (e) {}
+              try {
+                if (pB && typeof pB.mute === 'function') pB.mute();
+                if (pB && typeof pB.setVolume === 'function') pB.setVolume(0);
+              } catch (e) {}
+
+              if (fresh.currentTrack && pA) {
                 try {
-                  if (typeof p.unMute === 'function') p.unMute();
-                  if (typeof p.playVideo === 'function') p.playVideo();
+                  if (typeof pA.playVideo === 'function') pA.playVideo();
                 } catch (e) {}
               }
             };
@@ -832,6 +842,10 @@ export function useYouTubeSDK() {
                 iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
                 iframe.setAttribute('allowfullscreen', '1');
               }
+              // Inicializar Deck B en silencio con consumo ultra-bajo para registrar sesión multimedia activa
+              if (typeof e.target?.mute === 'function') e.target.mute();
+              if (typeof e.target?.setVolume === 'function') e.target.setVolume(0);
+              if (typeof e.target?.setPlaybackQuality === 'function') e.target.setPlaybackQuality('small');
             } catch (err) {}
           },
           onStateChange: (e) => handleStateChange('B', e),
