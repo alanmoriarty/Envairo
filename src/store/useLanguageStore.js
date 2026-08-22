@@ -765,10 +765,6 @@ const ES = {
       {
         question: '¿Para qué sirven las Actividades y Juegos Interactivos?',
         answer: 'La pestaña «Actividades» te ofrece juegos interactivos que usan la música que está sonando:\n\n• Juego de la Silla: Pausa la música en momentos aleatorios sorpresa para jugar en grupo.\n• Trivia Musical: Preguntas y acertijos en pantalla para desafiar los conocimientos musicales de tus invitados.\n• Retos Interactivos: Dinámicas divertidas para romper el hielo.'
-      },
-      {
-        question: '¿Tiene algún costo o requiero suscripciones de pago?',
-        answer: 'No. envAIro es una plataforma 100% gratuita. No necesitas contratar suscripciones de música de terceros para disfrutar de la experiencia completa.'
       }
     ]
   },
