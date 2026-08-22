@@ -1545,10 +1545,6 @@ const EN = {
       {
         question: 'What are the Interactive Activities and Games?',
         answer: 'The «Activities» tab offers engaging interactive games powered by the active music:\n\n• Musical Chairs: Pauses the music at surprise random intervals for group games.\n• Music Trivia: Live on-screen quizzes to test your guests\' music knowledge.\n• Interactive Challenges: Fun icebreaker prompts for attendees.'
-      },
-      {
-        question: 'Is there any cost or do I need paid streaming subscriptions?',
-        answer: 'No. envAIro is 100% free to use and requires no paid third-party music streaming subscriptions for you or your guests.'
       }
     ]
   },

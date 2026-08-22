@@ -135,6 +135,22 @@ export default function TVDisplayPage() {
     return '';
   };
 
+  const disconnectTv = (customStatus) => {
+    safeDestroyPlayer(playerARef, 'tv-yt-deck-a', 'tv-youtube-player-deck-a');
+    safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
+    const cA = document.getElementById('tv-yt-deck-a');
+    const cB = document.getElementById('tv-yt-deck-b');
+    if (cA) { cA.style.opacity = '0.001'; cA.style.zIndex = '1'; }
+    if (cB) { cB.style.opacity = '0.001'; cB.style.zIndex = '1'; }
+    
+    currentVideoIdRef.current = null;
+    setCurrentVideoId(null);
+    localStorage.removeItem('bq-tv-session-id');
+    localStorage.removeItem('bq-tv-sound');
+    setSessionId(null);
+    setStatus(customStatus || t('tv.unpaired_by_host'));
+  };
+
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
   useEffect(() => {
     const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
@@ -195,14 +211,7 @@ export default function TVDisplayPage() {
           localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
           setTvWithSound(withSound);
         } else if (e.payload?.type === 'UNPAIRED') {
-          if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-            playerRef.current.pauseVideo();
-          }
-          currentVideoIdRef.current = null;
-          setCurrentVideoId(null);
-          localStorage.removeItem('bq-tv-session-id');
-          setSessionId(null);
-          setStatus(t('tv.unpaired_by_host'));
+          disconnectTv(t('tv.unpaired_by_host'));
         } else if (e.payload?.type === 'TOGGLE_SOUND') {
           handleToggleSound(e.payload.tvWithSound);
         }
@@ -213,6 +222,39 @@ export default function TVDisplayPage() {
       supabase.removeChannel(pairChannel);
     };
   }, [tvPin]);
+
+  // 1.5. Validar emparejamiento activo con la base de datos de Supabase
+  useEffect(() => {
+    if (!sessionId) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('session')) return; // Conexión directa por URL no requiere verificación de PIN en paired_tvs
+
+    let isMounted = true;
+    const verifyPairing = async () => {
+      try {
+        const { data } = await supabase
+          .from('sessions')
+          .select('paired_tvs')
+          .eq('id', sessionId)
+          .maybeSingle();
+
+        if (!isMounted) return;
+        if (data) {
+          const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
+          const pairedList = Array.isArray(data.paired_tvs) ? data.paired_tvs : [];
+          const myTvEntry = pairedList.find(t => String(t.id || '').replace(/\D/g, '') === cleanCurrentPin);
+          if (!myTvEntry) {
+            disconnectTv(t('tv.unpaired_by_host'));
+          }
+        }
+      } catch (err) {
+        console.warn('Error verificando estado de TV con Supabase:', err);
+      }
+    };
+
+    verifyPairing();
+    return () => { isMounted = false; };
+  }, [sessionId, tvPin]);
 
   // 2. Conectar a sincronización de reproducción (Local + Supabase Realtime Internet) cuando exista sessionId
   useEffect(() => {
@@ -259,19 +301,7 @@ export default function TVDisplayPage() {
         const cleanTargetId = String(e.data.tvId || '').replace(/\D/g, '');
         const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
         if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
-
-        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-          try { playerRef.current.pauseVideo(); } catch (err) {}
-        }
-        const cA = document.getElementById('tv-yt-deck-a');
-        const cB = document.getElementById('tv-yt-deck-b');
-        if (cA) cA.style.opacity = '0.001';
-        if (cB) cB.style.opacity = '0.001';
-        currentVideoIdRef.current = null;
-        setCurrentVideoId(null);
-        localStorage.removeItem('bq-tv-session-id');
-        setSessionId(null);
-        setStatus(t('tv.unpaired_by_host'));
+        disconnectTv(t('tv.unpaired_by_host'));
       } else if (e.data.type === 'TOGGLE_SOUND') {
         handleToggleSound(e.data.tvWithSound);
       }
@@ -310,19 +340,7 @@ export default function TVDisplayPage() {
             const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
             const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
             if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
-
-            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              try { playerRef.current.pauseVideo(); } catch (err) {}
-            }
-            const cA = document.getElementById('tv-yt-deck-a');
-            const cB = document.getElementById('tv-yt-deck-b');
-            if (cA) cA.style.opacity = '0.001';
-            if (cB) cB.style.opacity = '0.001';
-            currentVideoIdRef.current = null;
-            setCurrentVideoId(null);
-            localStorage.removeItem('bq-tv-session-id');
-            setSessionId(null);
-            setStatus(t('tv.unpaired_by_host'));
+            disconnectTv(t('tv.unpaired_by_host'));
           } else if (e.payload.type === 'TOGGLE_SOUND') {
             const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
             const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
@@ -340,9 +358,18 @@ export default function TVDisplayPage() {
           const newSession = payload.new;
           if (!newSession) return;
 
+          const urlParams = new URLSearchParams(window.location.search);
+          const isDirectUrlSession = !!urlParams.get('session');
+
           const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
           const pairedList = Array.isArray(newSession.paired_tvs) ? newSession.paired_tvs : [];
           const myTvEntry = pairedList.find(t => String(t.id || '').replace(/\D/g, '') === cleanCurrentPin);
+
+          // Si la TV estaba conectada por PIN y ya NO está en la lista de paired_tvs del anfitrión, desvincularla de inmediato
+          if (!isDirectUrlSession && !myTvEntry) {
+            disconnectTv(t('tv.unpaired_by_host'));
+            return;
+          }
 
           // Si cambió el estado de sonido en la base de datos para esta TV
           if (myTvEntry && typeof myTvEntry.soundEnabled === 'boolean' && myTvEntry.soundEnabled !== tvWithSoundRef.current) {
@@ -1071,14 +1098,7 @@ handleSyncRef.current = handleSync;
       } catch (e) {}
     }
 
-    safeDestroyPlayer(playerARef, 'tv-yt-deck-a', 'tv-youtube-player-deck-a');
-    safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
-    localStorage.removeItem('bq-tv-session-id');
-    localStorage.removeItem('bq-tv-pin');
-    setSessionId(null);
-    setCurrentVideoId(null);
-    currentVideoIdRef.current = null;
-    setStatus(t('tv.checking_availability'));
+    disconnectTv(t('tv.checking_availability'));
   };
 
   const handleLocalVolumeChange = (e) => {

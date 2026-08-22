@@ -177,11 +177,23 @@ export function CastToTvModal({ isOpen, onClose }) {
       const { getTvSyncChannel } = await import('../../lib/tvSyncChannel');
       const activeSbChannel = getTvSyncChannel();
       if (activeSbChannel && activeSbChannel.state === 'joined') {
-        activeSbChannel.send({
+        await activeSbChannel.send({
           type: 'broadcast',
           event: 'tv_sync',
           payload: { type: 'UNPAIRED', tvId: cleanTvId }
         }).catch(() => {});
+      } else if (activeSessionId) {
+        const tempSyncCh = supabase.channel(`tv-sync-${activeSessionId}`);
+        tempSyncCh.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await tempSyncCh.send({
+              type: 'broadcast',
+              event: 'tv_sync',
+              payload: { type: 'UNPAIRED', tvId: cleanTvId }
+            }).catch(() => {});
+            setTimeout(() => supabase.removeChannel(tempSyncCh), 1000);
+          }
+        });
       }
     } catch (e) {}
 
