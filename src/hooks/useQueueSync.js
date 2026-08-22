@@ -130,6 +130,10 @@ export function useQueueSync() {
     // 2. Subscribe to Supabase changes to pull to Zustand
     const processStateUpdates = (newSessionData) => {
       const currentState = usePlayerStore.getState();
+      const authUser = useAuthStore.getState().user;
+      const isAdmin = useSettingsStore.getState().isAdminMode;
+      const isHostMaster = authUser && !isAdmin;
+
       let updatesToApply = {};
       
       if (Array.isArray(newSessionData.queue)) {
@@ -141,7 +145,12 @@ export function useQueueSync() {
         updatesToApply.currentQueueIndex = newSessionData.current_queue_index;
       }
 
-      if (newSessionData.current_track !== undefined && JSON.stringify(newSessionData.current_track) !== JSON.stringify(currentState.currentTrack)) {
+      // Comparación estricta por ID único para evitar falsos cambios por diferencias en claves JSON
+      const currentTrackId = currentState.currentTrack?.id;
+      const newTrackId = newSessionData.current_track?.id;
+      const trackIdChanged = newSessionData.current_track !== undefined && newTrackId !== currentTrackId;
+
+      if (trackIdChanged) {
         updatesToApply.currentTrack = newSessionData.current_track;
       }
 
@@ -170,22 +179,18 @@ export function useQueueSync() {
       if (Object.keys(updatesToApply).length > 0) {
         isRemoteUpdate.current = true;
         
-        // Check if currentTrack changed from a remote update
-        const trackChanged = updatesToApply.currentTrack !== undefined && 
-                             JSON.stringify(updatesToApply.currentTrack) !== JSON.stringify(currentState.currentTrack);
-        
         usePlayerStore.setState(updatesToApply);
         usePlayerStore.getState().startQueuePreloadWorker();
 
         const finalState = usePlayerStore.getState();
         
-        // If the track changed remotely (e.g. Host auto-advanced), we MUST tell the local engine to play it!
-        if (trackChanged && finalState.currentTrack && finalState.youtubePlayer) {
+        // Si el anfitrión no es el master local o si un control remoto cambió la pista genuinamente
+        if (trackIdChanged && finalState.currentTrack && finalState.youtubePlayer && !isHostMaster) {
           finalState.playEngineTrack(finalState.currentTrack, 0, null, finalState.isPlaying);
         }
 
         // Auto-play if nothing is playing and the queue has unplayed tracks (from external changes like Guest additions or Request approvals)
-        if (!finalState.currentTrack && finalState.queue.length > 0) {
+        if (!finalState.currentTrack && finalState.queue.length > 0 && isHostMaster) {
           const nextTrack = finalState.shiftQueue();
           if (nextTrack) {
             usePlayerStore.getState().playEngineTrack(nextTrack);

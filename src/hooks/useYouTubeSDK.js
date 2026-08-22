@@ -689,7 +689,10 @@ export function useYouTubeSDK() {
       };
 
       const handleError = (deck, event) => {
-        console.warn(`YouTube Error ${event.data} en Deck ${deck}. Buscando alternativa...`);
+        console.warn(`YouTube Error ${event.data} en Deck ${deck}.`);
+        // Solo procesar fallbacks si el error ocurrió en el deck actualmente ACTIVO
+        if (activeDeckRef.current !== deck) return;
+
         const store = usePlayerStore.getState();
         const currentYtId = store.currentYtId || currentYtIdRef.current;
 
