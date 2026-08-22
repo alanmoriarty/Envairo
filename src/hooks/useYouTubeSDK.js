@@ -16,6 +16,7 @@ export function useYouTubeSDK() {
   const transitionTimerRef = useRef(null);
   const lastLoadTimeRef = useRef(0);
   const preCuedVideoIdRef = useRef(null);
+  const preCuedTrackQueueIdRef = useRef(null);
   const isPreCueingRef = useRef(false);
   const { visualizerEnabled, youtubeNativeCast } = useSettingsStore();
 
@@ -895,6 +896,74 @@ export function useYouTubeSDK() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playbackEngine, youtubeNativeCast]);
 
+  const preloadUpcomingTrack = async (track) => {
+    if (!track || isPreCueingRef.current) return;
+    isPreCueingRef.current = true;
+    preCuedTrackQueueIdRef.current = track.queueId || track.id;
+
+    try {
+      const freshStore = usePlayerStore.getState();
+      const { videoIdToPlay } = await freshStore.resolveYouTubeVideoId(track);
+
+      if (videoIdToPlay && videoIdToPlay !== 'null' && videoIdToPlay !== 'undefined' && videoIdToPlay.length === 11) {
+        preCuedVideoIdRef.current = videoIdToPlay;
+        const standbyPlayer = getStandbyPlayer();
+        const standbyDeck = activeDeckRef.current === 'A' ? 'B' : 'A';
+        const standbyContainer = document.getElementById(standbyDeck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+
+        if (standbyContainer) {
+          standbyContainer.style.opacity = '0.001';
+          standbyContainer.style.zIndex = '1';
+        }
+
+        // Precargar en el reproductor en standby del anfitrión en modo mudo
+        if (standbyPlayer && typeof standbyPlayer.loadVideoById === 'function') {
+          try {
+            if (typeof standbyPlayer.mute === 'function') standbyPlayer.mute();
+            standbyPlayer.loadVideoById({
+              videoId: videoIdToPlay,
+              startSeconds: 0,
+              suggestedQuality: 'small'
+            });
+            setTimeout(() => {
+              try {
+                if (standbyPlayer && typeof standbyPlayer.pauseVideo === 'function' && !isTransitioningRef.current) {
+                  standbyPlayer.pauseVideo();
+                }
+              } catch (e) {}
+            }, 350);
+          } catch (e) {}
+        }
+
+        // Notificar a pantallas TV vinculadas para que su standby deck también precargue
+        try {
+          const sessId = useSettingsStore.getState().sessionId || usePlayerStore.getState().sessionId;
+          if (sessId) {
+            const { getLocalTvSyncChannelName } = await import('../lib/tvSyncChannel');
+            const bc = new BroadcastChannel(getLocalTvSyncChannelName(sessId));
+            const preloadPayload = {
+              type: 'PRELOAD_STANDBY_DECK',
+              nextVideoId: videoIdToPlay,
+              trackId: track.id,
+              sentAt: Date.now()
+            };
+            bc.postMessage(preloadPayload);
+            bc.close();
+
+            const tvChannel = getTvSyncChannel();
+            if (tvChannel && tvChannel.state === 'joined') {
+              tvChannel.send({ type: 'broadcast', event: 'tv_sync', payload: preloadPayload }).catch(() => {});
+            }
+          }
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.warn('Error en precarga de siguiente tema:', err);
+    } finally {
+      isPreCueingRef.current = false;
+    }
+  };
+
   const startProgressTimer = (p) => {
     stopProgressTimer();
     progressInterval.current = setInterval(() => {
@@ -907,11 +976,25 @@ export function useYouTubeSDK() {
           if (dur > 0) setDuration(Math.floor(dur * 1000));
         }
 
-        // ── DJ Transiciones Automáticas a 5 segundos de terminar ──────────────
         const settings = useSettingsStore.getState();
         const store = usePlayerStore.getState();
         const remainingSeconds = dur - time;
+        const nextIdx = store.currentQueueIndex + 1;
+        const upcomingTrack = store.queue[nextIdx];
 
+        // ── Precarga Adelantada de la Siguiente Canción (20s antes de terminar) ──
+        if (
+          upcomingTrack &&
+          remainingSeconds <= 25 &&
+          remainingSeconds > (settings.djTransitionDuration || 5) + 1 &&
+          !isTransitioningRef.current &&
+          !isPreCueingRef.current &&
+          preCuedTrackQueueIdRef.current !== (upcomingTrack.queueId || upcomingTrack.id)
+        ) {
+          preloadUpcomingTrack(upcomingTrack);
+        }
+
+        // ── DJ Transiciones Automáticas a 5 segundos de terminar ──────────────
         if (
           settings.djTransitionsEnabled &&
           dur > 25 && // Solo aplicar si el track dura más de 25s
@@ -919,7 +1002,7 @@ export function useYouTubeSDK() {
           remainingSeconds <= (settings.djTransitionDuration || 5) &&
           remainingSeconds > 0.5 &&
           !isTransitioningRef.current &&
-          store.queue.length > 0
+          upcomingTrack
         ) {
           triggerDJTransition(p, remainingSeconds);
         }
@@ -965,8 +1048,15 @@ export function useYouTubeSDK() {
       label: 'Transición DJ'
     });
 
-    // 1. Resolver el video ID de la siguiente canción
-    const { videoIdToPlay } = await freshStore.resolveYouTubeVideoId(upcomingTrack);
+    // 1. Resolver el video ID de la siguiente canción (reusar el precargado si está listo)
+    let videoIdToPlay = (preCuedTrackQueueIdRef.current === (upcomingTrack.queueId || upcomingTrack.id) && preCuedVideoIdRef.current)
+      ? preCuedVideoIdRef.current
+      : null;
+
+    if (!videoIdToPlay) {
+      const res = await freshStore.resolveYouTubeVideoId(upcomingTrack);
+      videoIdToPlay = res.videoIdToPlay;
+    }
 
     if (!videoIdToPlay) {
       isTransitioningRef.current = false;

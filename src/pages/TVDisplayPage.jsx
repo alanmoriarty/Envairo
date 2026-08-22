@@ -65,6 +65,7 @@ export default function TVDisplayPage() {
   // Refs to always call the latest version of these handlers from useEffect listeners
   const handleSyncRef = useRef(null);
   const handleTransitionStartRef = useRef(null);
+  const handlePreloadStandbyRef = useRef(null);
 
   // Session & Pairing State
   const [sessionId, setSessionId] = useState(() => {
@@ -181,6 +182,8 @@ export default function TVDisplayPage() {
         }
       } else if (e.data.type === 'PONG') {
         activeTvs.current.add(e.data.tvId);
+      } else if (e.data.type === 'PRELOAD_STANDBY_DECK') {
+        if (!limitReached && handlePreloadStandbyRef.current) handlePreloadStandbyRef.current(e.data);
       } else if (e.data.type === 'DJ_TRANSITION_START') {
         if (!limitReached && handleTransitionStartRef.current) handleTransitionStartRef.current(e.data);
       } else if (e.data.type === 'SYNC' || e.data.type === 'SYNC_TIME') {
@@ -226,7 +229,9 @@ export default function TVDisplayPage() {
     sbSyncChannelRef.current
       .on('broadcast', { event: 'tv_sync' }, (e) => {
         if (e.payload) {
-          if (e.payload.type === 'DJ_TRANSITION_START') {
+          if (e.payload.type === 'PRELOAD_STANDBY_DECK') {
+            if (handlePreloadStandbyRef.current) handlePreloadStandbyRef.current(e.payload);
+          } else if (e.payload.type === 'DJ_TRANSITION_START') {
             if (handleTransitionStartRef.current) handleTransitionStartRef.current(e.payload);
           } else if (e.payload.type === 'HOST_REFRESHING') {
             hostRefreshingRef.current = true;
@@ -423,11 +428,13 @@ export default function TVDisplayPage() {
       }
       disableCaptions(event.target);
 
-      if (event.data === window.YT.PlayerState.PLAYING && activeTvDeckRef.current === deck) {
+      if (event.data === window.YT.PlayerState.PLAYING) {
         isBufferingRef.current = false;
         if (bufferSafetyTimerRef.current) clearTimeout(bufferSafetyTimerRef.current);
         if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
         setIsLoadingVideo(false);
+
+        // Revelar contenedor SOLO cuando el video está reproduciéndose con éxito
         const playingContainer = document.getElementById(deck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
         if (playingContainer) {
           playingContainer.style.opacity = '1';
@@ -529,6 +536,39 @@ export default function TVDisplayPage() {
   };
 }, [sessionId]);
 
+// ── handlePreloadStandby: precarga silenciosa en el deck de reserva de la TV ──
+const handlePreloadStandby = (data) => {
+  if (!data?.nextVideoId || isTvTransitioningRef.current) return;
+  const standbyDeck = activeTvDeckRef.current === 'A' ? 'B' : 'A';
+  const standbyPlayer = standbyDeck === 'A' ? playerARef.current : playerBRef.current;
+  const standbyContainer = document.getElementById(standbyDeck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+
+  if (standbyContainer) {
+    standbyContainer.style.opacity = '0.001';
+    standbyContainer.style.zIndex = '1';
+  }
+
+  if (standbyPlayer && typeof standbyPlayer.loadVideoById === 'function') {
+    try {
+      if (typeof standbyPlayer.mute === 'function') standbyPlayer.mute();
+      disableCaptions(standbyPlayer);
+      standbyPlayer.loadVideoById({
+        videoId: data.nextVideoId,
+        startSeconds: 0,
+        suggestedQuality: 'small'
+      });
+      setTimeout(() => {
+        try {
+          if (standbyPlayer && typeof standbyPlayer.pauseVideo === 'function' && !isTvTransitioningRef.current) {
+            standbyPlayer.pauseVideo();
+          }
+        } catch (e) {}
+      }, 350);
+    } catch (e) {}
+  }
+};
+handlePreloadStandbyRef.current = handlePreloadStandby;
+
 // ── handleTransitionStart: crossfade entre decks en pantalla esclava ──
 const handleTransitionStart = (data) => {
   if (!data?.nextVideoId) return;
@@ -578,10 +618,6 @@ const handleTransitionStart = (data) => {
     incomingContainer.style.opacity = '0.001';
     incomingContainer.style.transform = 'scale(1.02) translateZ(0)';
     incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
-    setTimeout(() => {
-      incomingContainer.style.opacity = '1';
-      incomingContainer.style.transform = 'translateZ(0)';
-    }, 50);
   }
 
   if (outgoingContainer) {
@@ -639,7 +675,6 @@ const handleTransitionStart = (data) => {
     if (incomingContainer) {
       incomingContainer.style.transform = 'translateZ(0)';
       incomingContainer.style.filter = 'none';
-      incomingContainer.style.opacity = '1';
       incomingContainer.style.zIndex = '2';
     }
   }, transitionMs);
@@ -682,13 +717,10 @@ const handleSync = (data) => {
         }, 6000);
 
         setIsLoadingVideo(true);
-        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = setTimeout(() => setIsLoadingVideo(false), 2000);
 
         const start = data.time ? data.time + 0.1 : 0;
         const cActive = document.getElementById(activeTvDeckRef.current === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
         if (cActive) {
-          cActive.style.opacity = '1';
           cActive.style.zIndex = '2';
         }
 
