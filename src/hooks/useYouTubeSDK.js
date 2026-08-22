@@ -533,8 +533,14 @@ export function useYouTubeSDK() {
             if (typeof p.unMute === 'function') p.unMute();
             if (typeof p.playVideo === 'function') p.playVideo();
           } catch (e) { }
+          setIsPlaying(true);
         },
-        pauseVideo: () => getActivePlayer()?.pauseVideo(),
+        pauseVideo: () => {
+          try {
+            getActivePlayer()?.pauseVideo();
+          } catch (e) {}
+          setIsPlaying(false);
+        },
         seekTo: (s, a) => getActivePlayer()?.seekTo(s, a),
         setVolume: (v) => {
           const p = getActivePlayer();

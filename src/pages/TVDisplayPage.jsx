@@ -529,11 +529,11 @@ export default function TVDisplayPage() {
           playingContainer.style.zIndex = '2';
         }
       } else if (event.data === window.YT.PlayerState.PAUSED) {
-        // Anti-Throttling de pestañas en segundo plano: si Chrome pausa el iframe en background mientras hay video activo, forzar play
-        if (activeTvDeckRef.current === deck && currentVideoIdRef.current && !hostRefreshingRef.current) {
+        // Anti-Throttling de pestañas en segundo plano: SOLO reanudar si el anfitrión está reproduciendo activamente
+        if (isHostPlayingRef.current && activeTvDeckRef.current === deck && currentVideoIdRef.current && !hostRefreshingRef.current) {
           setTimeout(() => {
             try {
-              if (activeTvDeckRef.current === deck && event.target && typeof event.target.playVideo === 'function') {
+              if (isHostPlayingRef.current && activeTvDeckRef.current === deck && event.target && typeof event.target.playVideo === 'function') {
                 event.target.playVideo();
               }
             } catch (e) {}
@@ -927,10 +927,14 @@ const handleSync = (data) => {
     // ── 2. Sincronización de Estado Play / Pause (Máxima Prioridad) ──
     if (typeof data.isPlaying === 'boolean') {
       isHostPlayingRef.current = data.isPlaying;
-      if (!data.isPlaying && isCurrentlyPlaying) {
-        activeP.pauseVideo();
-      } else if (data.isPlaying && !isCurrentlyPlaying) {
-        activeP.playVideo();
+      if (!data.isPlaying) {
+        if (typeof activeP.pauseVideo === 'function') {
+          try { activeP.pauseVideo(); } catch (e) {}
+        }
+      } else if (data.isPlaying && playerState !== window.YT.PlayerState.PLAYING) {
+        if (typeof activeP.playVideo === 'function') {
+          try { activeP.playVideo(); } catch (e) {}
+        }
       }
     }
 
