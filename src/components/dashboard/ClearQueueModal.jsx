@@ -9,8 +9,8 @@ export function ClearQueueModal({ isOpen, onClose, onConfirm }) {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop">
+      <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden animate-modal-content">
         {/* Glow backdrop effect */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-danger/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-accent/15 rounded-full blur-3xl pointer-events-none" />

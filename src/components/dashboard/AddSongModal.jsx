@@ -83,8 +83,8 @@ export function AddSongModal({ onClose }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-bg-base/95 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
+    <div className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop">
+      <div className="bg-bg-base/95 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-modal-content">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">

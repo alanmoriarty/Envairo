@@ -12,8 +12,8 @@ export function PlaybackLimitModal() {
   if (!show) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop">
+      <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden animate-modal-content">
         {/* Glow backdrop effect */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />

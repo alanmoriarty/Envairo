@@ -38,8 +38,8 @@ export function ProfileModal({ onClose }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-3 sm:p-4">
-      <div className="relative w-full max-w-md bg-bg-card rounded-2xl border border-white/10 shadow-2xl p-6 animate-in zoom-in-95 fade-in">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-3 sm:p-4 animate-modal-backdrop">
+      <div className="relative w-full max-w-md bg-bg-card rounded-2xl border border-white/10 shadow-2xl p-6 animate-modal-content">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"

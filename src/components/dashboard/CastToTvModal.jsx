@@ -251,8 +251,8 @@ export function CastToTvModal({ isOpen, onClose }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[20000] animate-in fade-in duration-200">
-      <div className="card p-0 max-w-lg w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[20000] animate-modal-backdrop">
+      <div className="card p-0 max-w-lg w-full shadow-2xl overflow-hidden animate-modal-content flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="relative p-6 bg-gradient-to-br from-accent/20 to-transparent border-b border-white/5 shrink-0">

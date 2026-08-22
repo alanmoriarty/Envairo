@@ -162,11 +162,11 @@ export function TVPairingModal({ isOpen, onClose }) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop"
       onClick={onClose}
     >
       <div 
-        className="bg-bg-elevated border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-text-primary"
+        className="bg-bg-elevated border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-text-primary animate-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

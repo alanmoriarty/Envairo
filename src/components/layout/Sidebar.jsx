@@ -248,8 +248,8 @@ export function Sidebar({ isOpen, onClose }) {
 
 
       {showQRModal && createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-4">
-          <div className="relative w-full max-w-sm animate-in zoom-in-95 fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-4 animate-modal-backdrop">
+          <div className="relative w-full max-w-sm animate-modal-content">
             <button
               onClick={() => setShowQRModal(false)}
               className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"

@@ -863,11 +863,11 @@ export default function DashboardPage() {
       {/* EnvAIro Selector Confirmation Modal */}
       {isEnairoModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop"
           onClick={() => setIsEnairoModalOpen(false)}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-modal-content relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}
@@ -1015,14 +1015,14 @@ export default function DashboardPage() {
       {/* envAIro Filter Configuration Modal */}
       {isAutoDjModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop"
           onClick={() => {
             setIsAutoDjModalOpen(false);
             setAutoDJ(false); // cancel activation
           }}
         >
           <div
-            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-slide-up relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-modal-content relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Close button and safe padding */}

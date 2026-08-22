@@ -39,7 +39,9 @@ export default {
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
         'slide-up': 'slide-up 0.3s ease-out',
         'slide-up-sm': 'slide-up-sm 0.25s ease-out',
-        'fade-in': 'fade-in 0.3s ease-out',
+        'fade-in': 'fade-in 0.2s ease-out',
+        'modal-backdrop': 'modal-backdrop 0.2s ease-out',
+        'modal-content': 'modal-content 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         'eq-bar-1': 'eq-bar 0.8s ease-in-out infinite',
         'eq-bar-2': 'eq-bar 0.8s ease-in-out infinite 0.2s',
         'eq-bar-3': 'eq-bar 0.8s ease-in-out infinite 0.4s',
@@ -48,6 +50,14 @@ export default {
         'pulse-glow': {
           '0%, 100%': { boxShadow: '0 0 10px rgba(157,78,221,0.2)' },
           '50%': { boxShadow: '0 0 30px rgba(157,78,221,0.5)' },
+        },
+        'modal-backdrop': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'modal-content': {
+          from: { opacity: '0', transform: 'scale(0.95) translateY(8px)' },
+          to: { opacity: '1', transform: 'scale(1) translateY(0)' },
         },
         'slide-up': {
           from: { opacity: 0, transform: 'translateY(10px)' },
