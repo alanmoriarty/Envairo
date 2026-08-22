@@ -744,8 +744,13 @@ export function useYouTubeSDK() {
 
       const handleError = (deck, event) => {
         console.warn(`YouTube Error ${event.data} en Deck ${deck}.`);
-        // Solo procesar fallbacks si el error ocurrió en el deck actualmente ACTIVO
-        if (activeDeckRef.current !== deck) return;
+
+        // Ocultar de inmediato el contenedor del deck que falló para que no se muestre el error rojo de YouTube
+        if (deck === 'A' && playerAContainerRef.current) {
+          playerAContainerRef.current.style.opacity = '0.001';
+        } else if (deck === 'B' && playerBContainerRef.current) {
+          playerBContainerRef.current.style.opacity = '0.001';
+        }
 
         const store = usePlayerStore.getState();
         const currentYtId = store.currentYtId || currentYtIdRef.current;
@@ -759,8 +764,26 @@ export function useYouTubeSDK() {
               localStorage.removeItem(`yt_bridge_${store.currentTrack.id}_${mode}`);
             }
           }
-          if (store.currentTrack) {
-            store.playEngineTrack(store.currentTrack, 0, null, 1);
+
+          if (activeDeckRef.current === deck) {
+            if (store.currentTrack) {
+              store.playEngineTrack(store.currentTrack, 0, null, 1);
+            }
+          } else {
+            // El error ocurrió en el deck de reserva (standby / transición previa)
+            if (store.queue && store.queue.length > 0) {
+              const upcomingTrack = store.queue[0];
+              if (upcomingTrack) {
+                store.resolveYouTubeVideoId(upcomingTrack).then(({ videoIdToPlay }) => {
+                  if (videoIdToPlay) {
+                    const standbyPlayer = deck === 'A' ? playerARef.current : playerBRef.current;
+                    if (standbyPlayer && typeof standbyPlayer.loadVideoById === 'function') {
+                      standbyPlayer.loadVideoById({ videoId: videoIdToPlay, startSeconds: 0 });
+                    }
+                  }
+                });
+              }
+            }
           }
         }
       };

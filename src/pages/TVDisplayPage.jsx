@@ -441,12 +441,30 @@ export default function TVDisplayPage() {
       isBufferingRef.current = false;
       if (bufferSafetyTimerRef.current) clearTimeout(bufferSafetyTimerRef.current);
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-      setIsLoadingVideo(false);
+
+      // Ocultar INMEDIATAMENTE el contenedor con error para que la pantalla de YouTube bloqueada nunca se vea
+      const errContainer = document.getElementById(deck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+      if (errContainer) {
+        errContainer.style.opacity = '0.001';
+      }
+
+      // Si el error ocurrió en el deck activo, activar el overlay de carga estilizado mientras se resuelve el reemplazo
+      if (activeTvDeckRef.current === deck) {
+        setIsLoadingVideo(true);
+      }
+
       // Notificar al anfitrión sin crashear la pantalla
       if (channelRef.current && currentVideoIdRef.current) {
         try {
-          channelRef.current.postMessage({ type: 'SLAVE_ERROR', videoId: currentVideoIdRef.current });
+          channelRef.current.postMessage({ type: 'SLAVE_ERROR', videoId: currentVideoIdRef.current, deck });
         } catch (e) {}
+      }
+      if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+        sbSyncChannelRef.current.send({
+          type: 'broadcast',
+          event: 'tv_sync',
+          payload: { type: 'SLAVE_ERROR', videoId: currentVideoIdRef.current, deck }
+        }).catch(() => {});
       }
     };
 
