@@ -39,11 +39,6 @@ export function Sidebar({ isOpen, onClose }) {
       const authState = useAuthStore.getState();
       const currentSessionId = authState.user?.id || settingsState.sessionId;
 
-      if (currentSessionId && !settingsState.isAdminMode) {
-        // Limpiar peticiones al cerrar sesión del anfitrión principal
-        await supabase.from('requests').delete().eq('session_id', currentSessionId);
-      }
-
       const { usePlayerStore } = await import('../../store/usePlayerStore');
       const state = usePlayerStore.getState();
 

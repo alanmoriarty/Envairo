@@ -58,9 +58,15 @@ export function useQueueSync() {
         return;
       }
 
-      // Guard: don't push to Supabase if the state is being cleared during logout
-      // (when playHistory is wiped along with queue and user is logged out)
-      if (prevState.playHistory?.length > 0 && state.playHistory?.length === 0 && !authStore.user) {
+      // Guard: don't push to Supabase if the state is being cleared during logout or user is logged out
+      if (typeof window !== 'undefined' && window._isEnvairoLoggingOut) {
+        if (playerSyncTimeoutRef.current) {
+          clearTimeout(playerSyncTimeoutRef.current);
+          playerSyncTimeoutRef.current = null;
+        }
+        return;
+      }
+      if (!useAuthStore.getState().user && !useSettingsStore.getState().hostSecret) {
         return;
       }
 
@@ -475,10 +481,11 @@ export function useQueueSync() {
         clearTimeout(settingsSyncTimeoutRef.current);
         settingsSyncTimeoutRef.current = null;
       }
+      if (typeof window !== 'undefined' && window._isEnvairoLoggingOut) return;
       const secret = useSettingsStore.getState().hostSecret;
       const user = useAuthStore.getState().user;
       const isAdmin = useSettingsStore.getState().isAdminMode;
-      if (isAdmin || (!user && !secret)) return;
+      if (isAdmin || !user) return;
 
       const state = usePlayerStore.getState();
       if (!state.initialSyncDone && state.queue.length === 0 && !state.currentTrack) return;

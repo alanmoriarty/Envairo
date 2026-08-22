@@ -18,6 +18,7 @@ export const useAuthStore = create(
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: async (skipDbUpdate = false) => {
+        window._isEnvairoLoggingOut = true;
         const { hostSecret, isAdminMode, sessionId } = useSettingsStore.getState();
         const currentUser = get().user;
         const sessionIdToClose = currentUser?.id || sessionId;
@@ -105,6 +106,10 @@ export const useAuthStore = create(
         // Limpiar token OAuth de YouTube de sessionStorage
         sessionStorage.removeItem('youtube_access_token');
         sessionStorage.removeItem('youtube_token_expires_at');
+
+        setTimeout(() => {
+          window._isEnvairoLoggingOut = false;
+        }, 500);
       },
     }),
     { 
