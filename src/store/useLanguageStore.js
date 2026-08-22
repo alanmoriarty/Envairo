@@ -727,32 +727,48 @@ const ES = {
   },
   support: {
     title: 'Soporte y Ayuda',
-    subtitle: 'Resolvemos todas tus dudas sobre envAIro',
-    faq_title: 'Preguntas Frecuentes',
+    subtitle: 'Todo lo que necesitas saber para sacarle el máximo provecho a envAIro',
+    faq_title: 'Preguntas Frecuentes y Guía Rápida',
     contact_title: '¿Necesitas ayuda directa?',
-    contact_desc: 'Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier problema en tiempo real.',
+    contact_desc: 'Nuestro equipo de soporte está disponible en WhatsApp para resolver cualquier consulta en tiempo real.',
     contact_btn: 'Contactar por WhatsApp',
-    version_info: 'Envairo v1.0.0 · Construido con ❤️',
+    version_info: 'envAIro v1.0.0 · Construido con ❤️',
     faqs: [
       {
-        question: '¿Qué es envAIro y cómo funciona?',
-        answer: 'Envairo permite que tus invitados o clientes pidan canciones escaneando un código QR con sus teléfonos. ¡No necesitan descargar ninguna app! La música se organiza sola y suena sin interrupciones.'
+        question: '¿Qué es envAIro y cómo funciona la rockola para mis invitados?',
+        answer: 'envAIro convierte cualquier dispositivo (computadora, tablet o laptop) en una rockola digital interactiva para tu fiesta o local.\n\n• Al iniciar tu sesión, se genera un código QR exclusivo en pantalla.\n• Tus invitados solo deben escanear el QR con la cámara de sus teléfonos (sin necesidad de instalar aplicaciones ni registrarse).\n• Desde su móvil, pueden buscar cualquier canción oficial, elegir su versión favorita (Normal, con Letra o Karaoke) y enviarla directamente a tu cola de reproducción.'
       },
       {
-        question: '¿Cómo controlo la música y las peticiones?',
-        answer: 'Todo se maneja desde el panel principal. Ahí puedes ver las peticiones que llegan, aceptar o rechazar canciones, y controlar el volumen. Además, cuentas con herramientas como el "envAIro Filter" y listas de reproducción (playlists) para mantener el ambiente.'
+        question: '¿Cómo funciona "envAIro Filter" (Filtro Inteligente de canciones)?',
+        answer: 'Es tu asistente de cabina automatizado. Cuando está activado, evalúa cada petición en tiempo real antes de que suene:\n\n• Filtro de Contenido Explícito: Bloquea canciones con lenguaje vulgar o contenido no apto para todo público.\n• Filtro de Repeticiones por Canción: Evita que se pida el mismo tema musical varias veces seguidas.\n• Filtro de Repeticiones por Artista: Impide saturar la fiesta con el mismo cantante o banda (puedes elegir enfriamientos desde 15 min hasta toda la sesión).\n• Listas Negras: Bloquea géneros, canciones o artistas específicos que no deseas escuchar en tu evento.\n• Posición de Inserción: Inserta las peticiones del público a la distancia que elijas (ej. 2 o 3 canciones después de la actual) para que suenen pronto sin cortar el momento.'
       },
       {
-        question: '¿Puedo filtrar qué tipo de música suena?',
-        answer: '¡Sí! Tienes el control total. Puedes bloquear artistas o géneros. También puedes usar "envAIro Selector", nuestra Inteligencia Artificial, para decirle qué tipo de ambiente quieres (por ejemplo, "fiesta de los 80s") y ella filtrará las peticiones por ti.'
+        question: '¿Cómo funciona "envAIro Selector" y qué hace el botón "Armonizar Cola"?',
+        answer: 'envAIro Selector es nuestro Director Musical impulsado por Inteligencia Artificial:\n\n• Curaduría por Ambiente: Puedes escribirle qué tipo de vibra deseas (por ejemplo: "Boda elegante con pop y baladas románticas") y la IA creará o mantendrá listas de canciones perfectas para ese estilo si se acaba la música.\n• Botón «Armonizar Cola»: Reorganiza inteligentemente las próximas canciones en espera para lograr transiciones suaves y fluidas de energía (BPM y estados de ánimo), garantizando al 100% que las canciones pedidas por tus invitados y la pista que está sonando nunca se borren ni se alteren.\n• Automatización periódica: Puedes activar la auto-armonización cada 30, 45 o 60 minutos desde el menú del botón.'
       },
       {
-        question: '¿Para qué sirven las Actividades y el Control Remoto?',
-        answer: 'Las Actividades (como el Juego de la Silla o trivias) animan tu evento usando la música actual. Con el Control Remoto (escaneando el QR de administrador), puedes manejar todo esto desde tu celular mientras caminas por la fiesta.'
+        question: '¿Cómo abro o cierro las peticiones y controlo el tiempo de mi evento?',
+        answer: 'Tienes el control total de cuándo y cuánto pueden pedir tus asistentes:\n\n• Abrir / Cerrar Peticiones: Con el botón de la barra superior puedes pausar las solicitudes al instante. Los invitados verán un aviso de "Peticiones Cerradas" en tiempo real.\n• Duración del Código QR: En Ajustes puedes configurar la validez del QR (de 2 a 24 horas) para que caduque automáticamente al finalizar tu fiesta.\n• Límites Anti-Spam: Puedes fijar un máximo de peticiones por hora para el evento y un tiempo de espera individual entre peticiones para que todos tengan oportunidad de participar.'
       },
       {
-        question: '¿Qué son los modos Fiesta y Comercial?',
-        answer: 'El "Modo Fiesta" es más libre y divertido (los invitados usan apodos). El "Modo Comercial" es perfecto para bares y restaurantes, ya que pide el número de mesa para saber de dónde viene cada petición. Ambas opciones son 100% gratuitas.'
+        question: '¿Qué diferencia hay entre el Modo Fiesta y el Modo Comercial?',
+        answer: '• Modo Fiesta: Pensado para celebraciones privadas, cumpleaños y bodas. Los invitados pueden identificarse con un apodo o nombre divertido.\n• Modo Comercial: Especial para bares, restaurantes y cafeterías. Solicita obligatoriamente el Número de Mesa del cliente para que el personal sepa exactamente de dónde provino cada petición.'
+      },
+      {
+        question: '¿Cómo conecto pantallas de televisión (Transmitir a TV)?',
+        answer: 'En la sección «Transmitir a TV» puedes vincular hasta 4 pantallas simultáneas:\n\n1. Abre el navegador de tu Smart TV e ingresa a envairo.app/tv.\n2. Aparecerá un código PIN de 6 dígitos en la pantalla de la TV.\n3. Ingresa ese código en tu panel de anfitrión y presiona Vincular.\n\nLos videos musicales oficiales, fondos visualizadores y letras se sincronizarán en alta definición a través de Internet.'
+      },
+      {
+        question: '¿Puedo controlar la música desde mi celular mientras camino por el evento?',
+        answer: '¡Sí! Puedes escanear el código QR de «Control Remoto» o iniciar sesión con tu cuenta en tu teléfono. Tu móvil se convertirá en un control a distancia para pausar, cambiar canciones, ajustar el volumen y aprobar peticiones en vivo desde cualquier rincón de la fiesta.'
+      },
+      {
+        question: '¿Para qué sirven las Actividades y Juegos Interactivos?',
+        answer: 'La pestaña «Actividades» te ofrece juegos interactivos que usan la música que está sonando:\n\n• Juego de la Silla: Pausa la música en momentos aleatorios sorpresa para jugar en grupo.\n• Trivia Musical: Preguntas y acertijos en pantalla para desafiar los conocimientos musicales de tus invitados.\n• Retos Interactivos: Dinámicas divertidas para romper el hielo.'
+      },
+      {
+        question: '¿Tiene algún costo o requiero suscripciones de pago?',
+        answer: 'No. envAIro es una plataforma 100% gratuita. No necesitas contratar suscripciones de música de terceros para disfrutar de la experiencia completa.'
       }
     ]
   },
@@ -1492,5 +1508,52 @@ const EN = {
     desc: 'Music has been playing continuously for 8 hours. We paused playback to confirm if you want to continue.',
     continue_btn: 'Continue Playback',
     pause_notice: 'Playback paused due to 8-hour limit'
+  },
+  support: {
+    title: 'Support & Help',
+    subtitle: 'Everything you need to know to get the most out of envAIro',
+    faq_title: 'Frequently Asked Questions & Quick Guide',
+    contact_title: 'Need Direct Assistance?',
+    contact_desc: 'Our support team is available on WhatsApp to answer any questions in real time.',
+    contact_btn: 'Contact via WhatsApp',
+    version_info: 'envAIro v1.0.0 · Built with ❤️',
+    faqs: [
+      {
+        question: 'What is envAIro and how does the jukebox work for my guests?',
+        answer: 'envAIro turns any device (computer, laptop, or tablet) into an interactive digital jukebox for your party or venue.\n\n• When you start a session, an exclusive QR code is displayed on your screen.\n• Guests simply scan the QR with their phone cameras (no app downloads or accounts required).\n• From their mobile browser, they can search official songs, choose their preferred version (Normal, Lyrics, or Karaoke), and send them directly to your playback queue.'
+      },
+      {
+        question: 'How does "envAIro Filter" (Smart Request Filter) work?',
+        answer: 'It acts as your automated DJ booth assistant. When enabled, it evaluates every incoming request in real time:\n\n• Explicit Content Filter: Blocks songs containing profanity or inappropriate lyrics.\n• Song Repeat Filter: Prevents the same track from being requested repeatedly.\n• Artist Repeat Filter: Avoids overwhelming the party with the same artist (configurable cooldowns from 15 mins to the whole session).\n• Blacklists: Blocks specific genres, songs, or artists you do not want played at your event.\n• Smart Insertion Offset: Inserts approved guest songs a few tracks ahead (e.g., 2 or 3 songs after the current track) so they play promptly without cutting off the vibe.'
+      },
+      {
+        question: 'How does "envAIro Selector" and the "Harmonize Queue" button work?',
+        answer: 'envAIro Selector is our AI-powered Music Director:\n\n• Vibe Curation: You can describe the desired party atmosphere (e.g., "Elegant wedding with 90s pop and romantic ballads") and the AI will suggest and load matching songs if the queue runs low.\n• "Harmonize Queue" Button: Intelligently reorganizes upcoming songs for smooth energy flow (BPM and moods), while 100% guaranteeing that guest requests and the currently playing track are never removed or altered.\n• Periodic Automation: You can enable automatic queue harmonization every 30, 45, or 60 minutes from the button menu.'
+      },
+      {
+        question: 'How do I open/close requests and control session hours?',
+        answer: 'You have full control over when and how much guests can request:\n\n• Open / Close Requests: Toggle requests instantly with the top bar button. Guests will see a real-time "Requests Closed" notice.\n• QR Code Expiry: In Settings, configure how long each guest access lasts (from 2 to 24 hours) so it automatically expires when the event ends.\n• Anti-Spam Limits: Set hourly event request caps and individual cooldown intervals so everyone gets a fair chance to participate.'
+      },
+      {
+        question: 'What is the difference between Party Mode and Commercial Mode?',
+        answer: '• Party Mode: Designed for private celebrations, birthdays, and weddings. Guests can identify themselves with nicknames or fun names.\n• Commercial Mode: Tailored for bars, restaurants, and clubs. Requires guests to input their Table Number so staff knows exactly where each request originated.'
+      },
+      {
+        question: 'How do I connect TV screens (Cast to TV)?',
+        answer: 'In the «Cast to TV» section, you can link up to 4 simultaneous screens:\n\n1. Open your Smart TV browser and visit envairo.app/tv.\n2. A 6-digit PIN code will appear on the TV screen.\n3. Enter that code in your host dashboard and click Link.\n\nOfficial music videos, visualizer loops, and synced lyrics will stream in high definition over the Internet.'
+      },
+      {
+        question: 'Can I control the music from my phone while moving around the party?',
+        answer: 'Yes! Scan the «Remote Control» QR code or log in with your host account on your phone. Your mobile becomes a wireless remote to play, pause, skip tracks, adjust volume, and approve requests on the fly from anywhere in the venue.'
+      },
+      {
+        question: 'What are the Interactive Activities and Games?',
+        answer: 'The «Activities» tab offers engaging interactive games powered by the active music:\n\n• Musical Chairs: Pauses the music at surprise random intervals for group games.\n• Music Trivia: Live on-screen quizzes to test your guests\' music knowledge.\n• Interactive Challenges: Fun icebreaker prompts for attendees.'
+      },
+      {
+        question: 'Is there any cost or do I need paid streaming subscriptions?',
+        answer: 'No. envAIro is 100% free to use and requires no paid third-party music streaming subscriptions for you or your guests.'
+      }
+    ]
   },
 };

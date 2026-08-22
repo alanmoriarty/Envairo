@@ -8,7 +8,9 @@ This document is the authoritative reference for any AI assistant or developer w
 
 **envAIro** is a collaborative, real-time jukebox PWA. A **Host** creates a music session on their device (PC or tablet connected to speakers), displays a QR code, and **Guests** scan it to request songs from their phones.
 
-The application features an AI DJ system (**envAIro Filter** + **envAIro Selector**) that evaluates incoming requests and autonomously manages the music queue.
+The application features an intelligent dual-AI DJ system:
+1. **envAIro Filter (Auto-DJ & Rule Evaluator):** Evaluates incoming requests in real-time, enforcing blacklists, genre matching, explicit content blocks, artist rotation cooldowns, song repeat cooldowns, and smart insertion offsets.
+2. **envAIro Selector (Gemini AI Music Director):** Curates automated music sets based on the host's natural language vibe prompt and harmonizes playback queues for seamless energy transitions.
 
 **Deployment:** Vercel (static SPA + API routes). Database & Auth: Supabase.
 
@@ -26,7 +28,7 @@ The application features an AI DJ system (**envAIro Filter** + **envAIro Selecto
 | Serverless Proxies | Node.js Vercel API Routes with `https-proxy-agent` (Webshare residential proxies + Piped decentralized nodes) |
 | Playback Engine | **YouTube Iframe API** (exclusive — no Spotify Web Playback SDK) |
 | Music Catalog | Proxied Spotify-formatted search (`/api/music-search` via Webshare + Deezer/iTunes) |
-| i18n | Manual implementation via `useLanguageStore.js` |
+| i18n | Dual-dictionary implementation via `useLanguageStore.js` (`es-419` / `en`) |
 | Notifications | `sonner` (toast library) |
 | PWA | `vite-plugin-pwa` |
 
@@ -41,10 +43,11 @@ All YouTube searches, playlist imports, video details, and karaoke/lyrics bridge
 All song search queries in `AddSongModal.jsx` and `GuestPage.jsx` route through `searchMusicCatalog` in `src/lib/musicApi.js` (which queries `/api/music-search` with FIFO caching and Supabase Edge Function fallback). This guarantees rich Spotify-like metadata (exact artists, official tracks, high-res covers, durations) without quota limits.
 
 ### 3.3 Supabase RPC Over Direct Table Mutations
-The `sessions` and `requests` tables have **no public UPDATE/DELETE policies**. All writes from the host must go through:
+The `sessions` and `requests` tables have **no public UPDATE/DELETE policies**. All writes from the host and guest must go through secure RPCs:
 - `sync_host_config(p_session_id, p_secret, p_updates)` — JSONB patch-style upsert for session state.
-- `manage_request(p_request_id, p_session_id, p_secret, p_new_status)` — approve/reject a guest request.
-- Direct table inserts are only allowed for `SELECT` (everyone) and `INSERT` (anyone). Never call `.update()` or `.delete()` on these tables from the client.
+- `submit_guest_request(p_session_id, p_track, p_requester, p_guest_token)` — Submits a song request with server-side validation.
+- `manage_request(p_request_id, p_session_id, p_secret, p_new_status)` — Host approves/rejects a guest request.
+- Direct table inserts are blocked on `requests`. Never call `.update()` or `.delete()` on these tables from the client.
 
 ### 3.4 `hostSecret` Must Not Be Persisted to localStorage
 `hostSecret` is excluded from Zustand's `persist` middleware via `partialize`. It lives **in memory only** between page reloads. On reload it is recovered from Supabase via `host_takeover_session()` RPC inside `useQueueSync.js`. Never move `hostSecret` back into the persisted state.
@@ -63,7 +66,7 @@ No OAuth providers. Supabase Auth manages host login via `supabase.auth.signInWi
 |---|---|
 | **Host (Main)** | Authenticated user on the primary device. Runs `PersistentPlayer`, `useYouTubeSDK`, `useQueueSync`, `useTVBroadcast`, `useEnairoSelector`. Owns the session. |
 | **Host (Remote Control)** | The host logs in from a secondary device (phone). Enters `isAdminMode = true`. Sends playback commands via `sync_host_config` → `playback_command` field. Cannot play audio directly. |
-| **Guest** | Anonymous user who scanned the QR. Can search songs and submit requests. Validated via individual 6-hour guest access tokens (`create_guest_access`). |
+| **Guest** | Anonymous user who scanned the QR. Can search songs and submit requests. Validated via individual guest access tokens with configurable expiry (`create_guest_access`). |
 | **TV Display** | Anonymous browser on a Smart TV (`/tv/:sessionId`). Authenticated via `bq-tv-session-id` and `PIN`. Receives video sync via Supabase Realtime broadcast channel `tv-sync-{sessionId}` and local `BroadcastChannel`. |
 
 ---
@@ -77,19 +80,18 @@ The playback engine's brain. Persisted as `'bq-player'`.
 - `currentTrack` — The currently playing track object `{ id, name, artists, uri, source, queueId }`. Persisted in `partialize` for synchronous refresh recovery.
 - `queue` — Array of track objects with unique `queueId` (`${id}-${Date.now()}-${i}`).
 - `currentQueueIndex` — Index of the playing track in `queue`. `-1` means nothing is playing.
+- `playbackMinutes` — Accumulated playback minutes, used to trigger periodic queue harmonization.
 - `isPlaying` — Boolean. Reflects the YouTube player's actual play state.
-- `progress` / `duration` — Integers in milliseconds. `progress` is updated by the progress timer in `useYouTubeSDK`.
-- `youtubePlayer` — The **Virtual Player Proxy** object. Set by `useYouTubeSDK` after initialization.
-- `currentYtId` — The YouTube video ID currently loaded in the active player iframe.
-- `failedYouTubeIds` — Blacklist of YouTube IDs that triggered playback errors. Uploaded to `youtube_blocked_videos`.
-- `preloadWorkerRunning` — Guard flag to prevent concurrent preload workers.
+- `progress` / `duration` — Integers in milliseconds.
+- `youtubePlayer` — The Virtual Player Proxy object set by `useYouTubeSDK`.
+- `currentYtId` — The YouTube video ID currently loaded in the active iframe.
+- `failedYouTubeIds` — Blacklist of YouTube IDs that triggered playback errors.
 
 **Key actions:**
-- `playEngineTrack(track, progressMs, forceMode, autoplay)` — Main playback entry point. Resolves YouTube video ID dynamically via `resolveYouTubeVideoId`, updates `currentTrack` & `currentYtId`, and commands `get().youtubePlayer.loadVideoById`. Implements fallback cascade: `karaoke → lyrics → normal → skip`.
-- `resolveYouTubeVideoId(track, forceMode)` — Resolves the correct YouTube ID for a given track and mode. Returns `{ videoIdToPlay, isSpotifyTrack, effectiveMode }`. Uses localStorage cache (`yt_bridge_{trackId}_{mode}`).
+- `playEngineTrack(track, progressMs, forceMode, autoplay)` — Main playback entry point with fallback cascade: `karaoke → lyrics → normal → skip`.
+- `resolveYouTubeVideoId(track, forceMode)` — Resolves YouTube ID with localStorage cache (`yt_bridge_{trackId}_{mode}`).
 - `shiftQueue()` — Advances `currentQueueIndex` by 1 and returns the next track. Trims queue head if index exceeds 10.
-- `startQueuePreloadWorker()` — Asynchronously pre-resolves YouTube IDs for the next 5 tracks in the queue.
-- `addToQueue(track)` — Inserts track into queue, triggers preload, and auto-starts playback if the player is idle.
+- `addToQueue(track)` — Inserts track into queue and auto-starts playback if idle.
 
 ---
 
@@ -97,44 +99,84 @@ The playback engine's brain. Persisted as `'bq-player'`.
 Host configuration and session identity. Persisted as `'bq-settings'`.
 
 **Key state:**
-- `sessionId` — The Supabase `sessions.id`. Defaults to `session-${Date.now()}` on first load. Overwritten by `user.id` if the host is authenticated.
-- `hostSecret` — `crypto.randomUUID()` bypass key for RLS-protected RPCs. **NOT persisted** (see `partialize`).
-- `isAdminMode` — `true` when the current device is acting as a remote control.
-- `karaokeEnabled` / `lyricsEnabled` — **Mutually exclusive**. Setting one auto-disables the other. Alters YouTube search suffix.
-- `autoDJ` — Enables the Auto DJ (envAIro Filter) for autonomous request approval.
-- `pairedTvs` — Array of paired TV objects `{ id, name, linkedAt, soundEnabled }`. Synced to `sessions.paired_tvs`.
+- `sessionId` — The Supabase `sessions.id`.
+- `hostSecret` — `crypto.randomUUID()` bypass key for RLS-protected RPCs (**in memory only**).
+- `alwaysAvailable` — Master switch controlling whether guest song requests are open (`active = true`) or closed (`active = false`).
+- `repeatCooldown` — Track repeat cooldown (`-1` = allow always, `30`, `60`, `120`, `0` = whole session).
+- `artistRepeatCooldown` — Artist repeat cooldown (`-1` = allow always, `15`, `30`, `45`, `60`, `120`, `0` = whole session).
+- `guestSessionExpiryHours` — Duration of guest QR access (`2`, `4`, `6`, `8`, `12`, `24` hours).
+- `partyRequestOffset` — Guest request insertion position (`1` = next song, up to `20`).
+- `enairoAutoReorderEnabled` / `enairoAutoReorderIntervalMinutes` — Periodic AI queue harmonization settings (`30`, `45`, `60`, `90` minutes).
+- `enairoReorderCooldownUntil` / `enairoAutoReorderCount` — Anti-abuse controls for queue harmonization (5 min cooldown, max 5 runs/day).
+- `karaokeEnabled` / `lyricsEnabled` — Mutually exclusive playback modes.
+- `autoDJ` — Enables envAIro Filter.
 
 ---
 
-## 6. Hooks & Realtime Architecture
+## 6. AI DJ Architecture
 
-### `useQueueSync.js`
-**Purpose:** Bidirectional real-time sync between local Zustand state and Supabase.
-1. **Push (local → Supabase):** Debounced by **120ms** to push queue, current track, history, and paired TVs via `sync_host_config`.
-2. **Pull (Supabase → local):** Listens to `postgres_changes` on `sessions`. Applies remote state and processes `playback_command` actions (`play`, `pause`, `restart`, `set_volume`, `play_specific`).
-3. **Playback Broadcast (`playback_sync`):** Emits immediate broadcast on play/pause/ended state changes and a 1000ms pulse for progress synchronization with remote controls.
-4. **Initial Pull on Mount:** Hydrates store from Supabase `sessions` and starts playback with `autoplay: true`.
-
----
-
-### `useYouTubeSDK.js`
-**Purpose:** Manages the floating PiP YouTube Iframe Player with zero-overhead GPU compositing.
-1. **Floating PiP (240x135px) & Fullscreen (1080p):**
-   - PiP mode sets `suggestedQuality: 'medium'` (360p/480p) to conserve RAM buffer.
-   - Fullscreen expands to 100vw/100vh with `suggestedQuality: 'hd1080'`.
-2. **Instant State Broadcast:** Fires `playback_sync` immediately upon `PLAYING`, `PAUSED`, or `ENDED` events.
-3. **Autoplay on Refresh:** Resolves active track and starts playback reliably upon SDK `onReady`.
+### 6.1 envAIro Filter (`src/lib/autoDJ.js`)
+Autonomous rule evaluator running on the host and guest sides:
+1. **Genre Whitelist / Blacklist:** Matches track genres against permitted/forbidden families.
+2. **Song & Artist Blacklists:** Checks normalized title and artist strings.
+3. **Explicit Content Filter (`explicitFilter`):** Rejects songs flagged as explicit.
+4. **Artist Repeat Cooldown (`artistRepeatCooldown`):**
+   - Normalizes and splits multi-artist strings (`'Shakira, Bizarrap'`).
+   - Checks both active queue (no duplicate artists in upcoming queue) and `playHistory` timestamps against the cooldown window.
+5. **Track Repeat Cooldown (`repeatCooldown`):** Prevents the same track ID from being requested within the cooldown duration.
+6. **Smart Insertion Offset (`partyRequestOffset`):** Inserts approved requests at `currentQueueIndex + offset` instead of the end of the queue.
 
 ---
 
-### `useTVBroadcast.js`
-**Purpose:** Synchronizes Smart TVs connected locally via `BroadcastChannel('envairo_tv_sync')` and over the Internet via Supabase Realtime channel `tv-sync-{sessionId}`.
-- Handles time sync drift correction (`seekTo` / `setPlaybackRate`).
-- Listens to `SLAVE_UNPAIRED` events to immediately remove unlinked TVs from the host dashboard.
+### 6.2 envAIro Selector (`supabase/functions/enairo-selector/index.ts` & `src/hooks/useEnairoSelector.js`)
+Gemini AI Music Director that curates and maintains the vibe:
+1. **Catalog Auto-Curation:** Generates track batches matching the host's natural language vibe prompt and guest metrics.
+2. **Harmonize Queue (`autoReorderQueue`):**
+   - **Active & Past Song Immunity:** Slices strictly `upcomingQueue = queue.slice(currentQueueIndex + 1)`. The currently playing track and history are 100% immutable.
+   - **Guest Request Protection:** Gemini prompt and client guards strictly forbid deleting songs requested by guests (`requestedBy`).
+   - **Anti-Abuse Shielding:** Enforces a 5-minute cooldown (`enairoReorderCooldownUntil`) and a daily maximum limit of 5 runs/day (`enairoAutoReorderCount`).
+   - **Harmonize Modal & Automation:** Clicking "Armonizar Cola" displays a confirmation modal with on-demand execution and background periodic automation options (30, 45, 60, 90 min).
 
 ---
 
-## 7. Serverless API Endpoints (`api/`)
+## 7. Multi-Layer Security & Server-Side Enforcement
+
+All request limits, timeouts, and validations are enforced in PostgreSQL via `submit_guest_request` with `SECURITY DEFINER`:
+
+```
+                                [ GUEST SONG REQUEST FLOW ]
+                                             │
+                                             ▼
+                             1. Guest scans QR code
+                                (`create_guest_access`)
+                                             │
+                                             ▼
+                     2. Receives individual UUID token in `guest_access`
+                        (Configurable expiry: 2h, 4h, 6h, 8h, 12h, 24h)
+                                             │
+                                             ▼
+                     3. Submits request via `submit_guest_request` RPC
+                                             │
+        ┌────────────────────────────────────┼────────────────────────────────────┐
+        ▼                                    ▼                                    ▼
+[ Token & Expiry Check ]             [ Cooldown & Limits ]               [ Session Status ]
+• `p_guest_token` is MANDATORY       • Server cooldown (`last_request_at`) • `sessions.active = true`
+• Token must exist in DB             • Per-guest limit (`requests_per_guest`) • Rejects if closed
+• Token must not be expired          • Hourly limit (`requests_per_hour`)
+```
+
+### Server Error Codes:
+- `MISSING_GUEST_TOKEN` — Request sent without a valid QR token (blocks API bypasses).
+- `INVALID_TOKEN` — Token does not belong to the session.
+- `TOKEN_EXPIRED` — Guest token exceeded `guest_session_expiry_hours`.
+- `COOLDOWN_ACTIVE` — Guest submitted before `cooldown_minutes` elapsed (enforced via `last_request_at` in DB).
+- `GUEST_LIMIT_REACHED` — Guest exceeded `requests_per_guest` quota.
+- `HOURLY_LIMIT_REACHED` — Session exceeded `requests_per_hour`.
+- `SESSION_NOT_FOUND` — Session does not exist or requests are closed (`active = false`).
+
+---
+
+## 8. Serverless API Endpoints (`api/`)
 
 | Endpoint | Purpose | Upstream Provider |
 |---|---|---|
@@ -145,7 +187,7 @@ Host configuration and session identity. Persisted as `'bq-settings'`.
 
 ---
 
-## 8. GPU & Memory Optimization Standards
+## 9. GPU & Memory Optimization Standards
 
 1. **No CSS Blur Shaders on Dynamic/Large Elements:**
    - Avoid `backdrop-blur` and heavy `filter: blur(...)` on full-viewport backgrounds (`BackgroundVideo.jsx`, `VisualizerBackground.jsx`). Use pure `radial-gradient` color ramps and translucent alpha layers (`bg-bg-card/90`, `bg-bg-elevated/80`).
@@ -157,30 +199,3 @@ Host configuration and session identity. Persisted as `'bq-settings'`.
    - `searchCache` in `youtubeApi.js` capped at 50 items.
    - `searchMemoryCache` in `musicApi.js` capped at 60 items.
    - `playHistory` capped at 100 items in memory.
-
----
-
-## 9. QR Guest Access System
-
-1. Host QR contains a permanent `?t={qr_token}` URL parameter.
-2. When a guest scans the QR, `GuestPage.jsx` calls `create_guest_access(p_session_id, p_qr_token)`.
-3. The guest receives an individual **6-hour personal access token** (`gat_{sessionId}`) stored in `localStorage`.
-4. Each request submitted validates the guest token on the database level (`submit_guest_request`).
-5. Re-scanning a QR always refreshes and extends the 6-hour window.
-
----
-
-## 10. Playback Mode System (Normal / Karaoke / Lyrics)
-
-| Mode | YouTube Search Suffix |
-|---|---|
-| `normal` | Native video ID or clean artist/title search |
-| `lyrics` | `"[artist] [song] LETRA LYRICS NO COPYRIGHT"` |
-| `karaoke` | `"[artist] [song] KARAOKE ORIGINAL WITH LYRICS NO COPYRIGHT"` |
-
-**Fallback cascade in `playEngineTrack`:**
-```
-karaoke not found → retry with 'lyrics'
-lyrics not found  → retry with 'normal'
-normal not found  → show toast + skip to next track
-```
