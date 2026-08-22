@@ -532,12 +532,15 @@ export function useQueueSync() {
           });
           usePlayerStore.getState().startQueuePreloadWorker();
 
-          // If the SDK is already initialized, trigger playback immediately.
-          // Otherwise the onReady handler in useYouTubeSDK will pick up
-          // currentTrack (set above) and start from persistedProgress.
+          // If the SDK is already initialized and the track changed or player was idle, trigger playback.
+          // Otherwise, the onReady handler in useYouTubeSDK handles the hydrated track.
           const playerState = usePlayerStore.getState();
           if (data.current_track && playerState.sdkReady && playerState.youtubePlayer) {
-            playerState.playEngineTrack(data.current_track, persistedProgress, null, true);
+            const isDifferentTrack = playerState.currentTrack?.id !== data.current_track.id;
+            const isPlayerIdle = !playerState.isPlaying && !playerState.currentYtId;
+            if (isDifferentTrack || isPlayerIdle) {
+              playerState.playEngineTrack(data.current_track, persistedProgress, null, true);
+            }
           }
         }
         usePlayerStore.getState().setInitialSyncDone(true);

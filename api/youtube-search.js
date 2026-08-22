@@ -87,72 +87,67 @@ export default async function handler(req, res) {
       }
     };
 
-    // --- 1. INTENTO VÍA PIPED (JSON Descentralizado ultraligero de ~4 KB sin consumir proxy) ---
+    // --- 1. INTENTO CONCURRENTE VÍA PIPED (Máximo 1.5s total en paralelo) ---
     const pipedInstances = [
       'https://pipedapi.kavin.rocks',
-      'https://pipedapi.tokhmi.xyz',
-      'https://pipedapi.moomoo.me',
-      'https://pipedapi.syncpundit.io',
       'https://api-piped.mha.fi',
-      'https://pipedapi.r4fo.com'
+      'https://pipedapi.syncpundit.io'
     ];
-    const instancesToTry = pipedInstances.sort(() => 0.5 - Math.random());
 
-    for (const instance of instancesToTry) {
-      try {
+    try {
+      const pipedPromises = pipedInstances.map(async (instance) => {
         const pipedRes = await fetchWithTimeout(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`, {
-          headers: {
-            'Accept-Encoding': 'gzip, deflate, br'
-          }
-        }, 2500);
+          headers: { 'Accept-Encoding': 'gzip, deflate, br' }
+        }, 1500);
 
-        if (pipedRes.ok) {
-          const data = await pipedRes.json();
-          const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
-          
-          if (streams.length > 0) {
-            const items = streams.map(item => {
-              let videoId = '';
-              if (item.url.includes('v=')) {
-                videoId = item.url.split('v=')[1].split('&')[0];
-              } else if (item.url.includes('/shorts/')) {
-                videoId = item.url.split('/shorts/')[1].split('?')[0];
-              } else {
-                const match = item.url.match(/([a-zA-Z0-9_-]{11})/);
-                if (match) videoId = match[1];
+        if (!pipedRes.ok) throw new Error('Piped instance not OK');
+        const data = await pipedRes.json();
+        const streams = (data.items || []).filter(i => i.type === 'stream').slice(0, limit);
+        if (!streams || streams.length === 0) throw new Error('No streams');
+
+        const items = streams.map(item => {
+          let videoId = '';
+          if (item.url.includes('v=')) {
+            videoId = item.url.split('v=')[1].split('&')[0];
+          } else if (item.url.includes('/shorts/')) {
+            videoId = item.url.split('/shorts/')[1].split('?')[0];
+          } else {
+            const match = item.url.match(/([a-zA-Z0-9_-]{11})/);
+            if (match) videoId = match[1];
+          }
+
+          return {
+            id: { videoId },
+            snippet: {
+              title: item.title,
+              channelTitle: item.uploaderName || 'YouTube',
+              thumbnails: {
+                high: { url: item.thumbnail },
+                default: { url: item.thumbnail }
               }
-
-              return {
-                id: { videoId },
-                snippet: {
-                  title: item.title,
-                  channelTitle: item.uploaderName || 'YouTube',
-                  thumbnails: {
-                    high: { url: item.thumbnail },
-                    default: { url: item.thumbnail }
-                  }
-                }
-              };
-            }).filter(t => t.id && t.id.videoId && t.id.videoId.length === 11);
-
-            if (items.length > 0) {
-              const payload = { items };
-              setCachedYtResults(cacheKey, payload);
-              res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
-              res.setHeader('X-Cache', 'MISS');
-              return res.status(200).json(payload);
             }
-          }
-        }
-      } catch (err) {
-        // Continuar al siguiente nodo Piped rápidamente
+          };
+        }).filter(t => t.id && t.id.videoId && t.id.videoId.length === 11);
+
+        if (items.length === 0) throw new Error('No valid items');
+        return { items };
+      });
+
+      const pipedResult = await Promise.any(pipedPromises);
+      if (pipedResult && pipedResult.items && pipedResult.items.length > 0) {
+        setCachedYtResults(cacheKey, pipedResult);
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        res.setHeader('X-Cache', 'MISS');
+        return res.status(200).json(pipedResult);
       }
+    } catch (pipedErr) {
+      // Si fallan los nodos Piped rápidos, pasa inmediatamente al Scraper
     }
 
     // --- 2. INTENTO VÍA SCRAPER CON COMPRESIÓN (Webshare) ---
     let html = null;
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 2;
 
     while (attempts < maxAttempts) {
       try {
@@ -170,9 +165,9 @@ export default async function handler(req, res) {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br' // Reduce HTML de 1.5MB a ~180KB en el proxy
+            'Accept-Encoding': 'gzip, deflate, br'
           }
-        }, 4000);
+        }, 2500);
 
         if (!response.ok) {
           throw new Error(`YouTube returned status ${response.status}`);
@@ -181,12 +176,11 @@ export default async function handler(req, res) {
         html = await response.text();
         
         if (html && html.includes('ytInitialData')) {
-          break; // Exitoso
+          break;
         }
       } catch (err) {
-        console.warn(`Attempt ${attempts} failed:`, err.message);
         if (attempts >= maxAttempts) {
-          throw new Error('Todos los intentos de búsqueda fallaron o la red bloqueó las peticiones.');
+          throw new Error('Búsqueda agotó reintentos de conexión.');
         }
       }
     }

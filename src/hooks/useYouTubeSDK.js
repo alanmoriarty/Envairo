@@ -726,12 +726,17 @@ export function useYouTubeSDK() {
               autoplayAttempts++;
               const freshStore = usePlayerStore.getState();
               if (freshStore.currentTrack && freshStore.currentTrack.id) {
+                const p = getActivePlayer();
+                const pState = p && typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
+                if (pState === window.YT?.PlayerState?.PLAYING || pState === window.YT?.PlayerState?.BUFFERING) {
+                  return;
+                }
                 freshStore.playEngineTrack(freshStore.currentTrack, freshStore.progress || 0, null, true);
               } else if (autoplayAttempts < 20) {
-                setTimeout(tryAutoplay, 250);
+                setTimeout(tryAutoplay, 200);
               }
             };
-            setTimeout(tryAutoplay, 100);
+            setTimeout(tryAutoplay, 80);
 
             // Respaldo para superar bloqueos de autoplay de navegadores (Chrome/Edge/Safari)
             const handleFirstGesture = () => {

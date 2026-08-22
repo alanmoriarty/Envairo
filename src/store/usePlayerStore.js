@@ -388,6 +388,20 @@ export const usePlayerStore = create(
             : null;
 
         const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
+
+        // 1. Instant 0ms Reuse: Si el ID actual en memoria coincide y es válido (ej. recarga F5)
+        const currentStoredYtId = get().currentYtId;
+        const isSameTrack = get().currentTrack?.id === track.id;
+        if (isSameTrack && currentStoredYtId && currentStoredYtId.length === 11 && !get().failedYouTubeIds.includes(currentStoredYtId)) {
+          return { videoIdToPlay: currentStoredYtId, isSpotifyTrack, effectiveMode: mode };
+        }
+
+        // 2. Instant Check: Si el objeto track ya tiene youtube_id / ytId adjunto
+        const directYtId = track.youtube_id || track.ytId;
+        if (directYtId && directYtId.length === 11 && !get().failedYouTubeIds.includes(directYtId)) {
+          return { videoIdToPlay: directYtId, isSpotifyTrack, effectiveMode: mode };
+        }
+
         const needsSearch = querySuffix !== null || isSpotifyTrack;
 
         if (needsSearch) {
@@ -412,12 +426,12 @@ export const usePlayerStore = create(
               const nameStartsWithArtist = cleanName.toLowerCase().startsWith(firstArtist.toLowerCase());
               const queryBase = nameStartsWithArtist ? cleanName : `${allArtists} ${cleanName}`;
               const query = `${queryBase} ${effectiveSuffix}`;
-              // Fetch up to 12 results (increased from 5) to maximize chances of finding unblocked embedding-enabled videos
-              let results = await searchYouTubeVideos(query, 12);
+              
+              let results = await searchYouTubeVideos(query, 8);
 
               if ((!results || results.length === 0) && querySuffix) {
                 const relaxedQuery = `${queryBase} LETRA LYRICS`;
-                results = await searchYouTubeVideos(relaxedQuery, 12);
+                results = await searchYouTubeVideos(relaxedQuery, 8);
               }
 
               if (results && results.length > 0) {
@@ -426,7 +440,7 @@ export const usePlayerStore = create(
 
                 if (blockedCount >= 3 && mode === 'normal') {
                   const fallbackQuery = `${queryBase} AUDIO OFICIAL NO COPYRIGHT`;
-                  const fallbackResults = await searchYouTubeVideos(fallbackQuery, 12);
+                  const fallbackResults = await searchYouTubeVideos(fallbackQuery, 8);
                   if (fallbackResults && fallbackResults.length > 0) {
                     const fallbackUnblocked = fallbackResults.filter(r => !get().failedYouTubeIds.includes(r.id));
                     if (fallbackUnblocked.length > 0) {
@@ -443,7 +457,6 @@ export const usePlayerStore = create(
                     'teaser', 'trailer', 'tráiler', 'snippet', 'avance', 'q&a', 'vlog', 'unboxing', 'concert', 'live', 'onlive'
                   ];
 
-                  // Filter out interviews, podcasts, reactions, and non-music videos
                   const cleanUnblocked = unblocked.filter(r => {
                     const t = (r.name || '').toLowerCase();
                     return !BAD_VIDEO_KEYWORDS.some(kw => t.includes(kw));
@@ -462,7 +475,6 @@ export const usePlayerStore = create(
                     if (validResults.length > 0) {
                       videoIdToPlay = validResults[0].id;
                     } else if (poolToUse.length > 0) {
-                      // Fallback to top clean result if no strict keyword match in title
                       videoIdToPlay = poolToUse[0].id;
                     } else {
                       videoIdToPlay = null;
@@ -471,9 +483,13 @@ export const usePlayerStore = create(
                     videoIdToPlay = poolToUse[0].id;
                   }
 
-                  if (cacheKey && videoIdToPlay) localStorage.setItem(cacheKey, videoIdToPlay);
+                  if (cacheKey && videoIdToPlay) {
+                    localStorage.setItem(cacheKey, videoIdToPlay);
+                    if (!localStorage.getItem(`yt_bridge_${track.id}_normal`)) {
+                      localStorage.setItem(`yt_bridge_${track.id}_normal`, videoIdToPlay);
+                    }
+                  }
                 } else {
-                  // If all search results were marked blocked, fallback to original track ID if YouTube source
                   if (track.id && track.id.length === 11 && track.source !== 'spotify') {
                     videoIdToPlay = track.id;
                   } else {
@@ -504,49 +520,15 @@ export const usePlayerStore = create(
       // Worker en segundo plano para precargar IDs de los siguientes temas de la cola (hasta 2 canciones adelantadas)
       startQueuePreloadWorker: () => {
         const state = get();
-        if (state.playbackEngine !== 'youtube') return;
+        if (state.playbackEngine !== 'youtube' || !state.queue || state.queue.length === 0) return;
 
-        if (state._preloadTimer) clearTimeout(state._preloadTimer);
-
-        const timer = setTimeout(async () => {
-          const freshState = get();
-          if (freshState.preloadWorkerRunning || freshState.playbackEngine !== 'youtube') return;
-
-          set({ preloadWorkerRunning: true });
-
+        const nextTracks = state.queue.slice(0, 2);
+        nextTracks.forEach(async (track) => {
+          if (!track) return;
           try {
-            const { useSettingsStore } = await import('./useSettingsStore');
-            const { karaokeEnabled, lyricsEnabled } = useSettingsStore.getState();
-
-            // Recorrer la cola desde la canción siguiente (máximo 2 pistas adelantadas para ahorrar ancho de banda)
-            const queue = get().queue || [];
-            const currentIndex = get().currentQueueIndex;
-            const startIndex = Math.max(0, currentIndex + 1);
-            const endIndex = Math.min(queue.length, startIndex + 2);
-
-            for (let i = startIndex; i < endIndex; i++) {
-              if (get().playbackEngine !== 'youtube' || !get().queue[i]) break;
-
-              const track = get().queue[i];
-              const trackMode = track.version_preference ?? (karaokeEnabled ? 'karaoke' : lyricsEnabled ? 'lyrics' : 'normal');
-              const cacheKey = `yt_bridge_${track.id}_${trackMode}`;
-              const cachedId = localStorage.getItem(cacheKey);
-
-              // Precargar y resolver cualquier canción próxima que no esté cacheada
-              if (!cachedId || cachedId === 'undefined' || cachedId === 'null' || get().failedYouTubeIds.includes(cachedId)) {
-                await get().resolveYouTubeVideoId(track, trackMode);
-                // Pausa de 400ms entre búsquedas para no saturar
-                await new Promise(resolve => setTimeout(resolve, 400));
-              }
-            }
-          } catch (error) {
-            console.error("Error in queue preload worker:", error);
-          } finally {
-            set({ preloadWorkerRunning: false });
-          }
-        }, 500);
-
-        set({ _preloadTimer: timer });
+            await get().resolveYouTubeVideoId(track);
+          } catch (e) { }
+        });
       },
 
       playEngineTrack: async (track, progressMs = 0, forceMode = null, autoplay = true) => {
@@ -580,7 +562,7 @@ export const usePlayerStore = create(
               } else {
                 // Normal mode failed: no video available at all. Skip to next.
                 import('sonner').then(({ toast }) => toast.error('Video no disponible para esta canción. Saltando...'));
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 200));
                 const nextTrack = get().shiftQueue();
                 if (nextTrack) {
                   get().playEngineTrack(nextTrack);
