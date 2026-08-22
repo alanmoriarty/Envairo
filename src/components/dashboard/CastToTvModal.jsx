@@ -49,19 +49,39 @@ export function CastToTvModal({ isOpen, onClose }) {
     }
 
     setIsPairing(true);
+    let pairChannel = null;
+    let localPairChannel = null;
+
     try {
       let ackResult = null;
-      const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
-      pairChannel.on('broadcast', { event: 'pairing_ack' }, (e) => {
-        ackResult = e.payload || { success: true };
+
+      // 1. Canal Local para respuesta instantánea (si el anfitrión y la TV están en el mismo equipo/navegador)
+      try {
+        localPairChannel = new BroadcastChannel(`envairo_tv_pair_${cleanPin}`);
+        localPairChannel.onmessage = (ev) => {
+          if (ev.data?.event === 'pairing_ack' || ev.data?.type === 'pairing_ack') {
+            ackResult = ev.data.payload || { success: true };
+          }
+        };
+      } catch (err) {}
+
+      // 2. Canal Supabase Realtime para Smart TVs por Internet
+      try {
+        const existingChannel = supabase.getChannels().find(ch => ch.topic === `realtime:tv-pair-${cleanPin}`);
+        if (existingChannel) supabase.removeChannel(existingChannel);
+      } catch (err) {}
+
+      pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
+      pairChannel.on('broadcast', { event: 'pairing_ack' }, (ev) => {
+        ackResult = ev.payload || { success: true };
       });
 
-      // 1. Esperar suscripción al canal Realtime
+      // Esperar suscripción al canal Realtime (hasta 2.5s)
       await new Promise((resolve) => {
         let isDone = false;
         const subTimer = setTimeout(() => {
           if (!isDone) { isDone = true; resolve('TIMEOUT'); }
-        }, 3000);
+        }, 2500);
 
         pairChannel.subscribe((status) => {
           if (status === 'SUBSCRIBED' && !isDone) {
@@ -72,34 +92,52 @@ export function CastToTvModal({ isOpen, onClose }) {
         });
       });
 
-      // 2. Enviar ráfaga de comandos de emparejamiento con reintentos para asegurar entrega
-      for (let attempt = 0; attempt < 3; attempt++) {
+      const payload = {
+        type: 'PAIRED',
+        sessionId: activeSessionId,
+        tvWithSound: false
+      };
+
+      // 3. Enviar ráfaga de comandos de emparejamiento con reintentos para asegurar entrega
+      for (let attempt = 0; attempt < 5; attempt++) {
         if (ackResult) break;
-        await pairChannel.send({
+
+        // Enviar por Realtime
+        pairChannel.send({
           type: 'broadcast',
           event: 'pairing_result',
-          payload: {
-            type: 'PAIRED',
-            sessionId: activeSessionId,
-            tvWithSound: false
-          }
+          payload
         }).catch(() => {});
+
+        // Enviar por BroadcastChannel Local
+        if (localPairChannel) {
+          try {
+            localPairChannel.postMessage({
+              event: 'pairing_result',
+              payload
+            });
+          } catch (err) {}
+        }
 
         for (let i = 0; i < 6; i++) {
           if (ackResult) break;
-          await new Promise(r => setTimeout(r, 150));
+          await new Promise(r => setTimeout(r, 120));
         }
       }
 
+      if (localPairChannel) {
+        try { localPairChannel.close(); } catch (err) {}
+      }
+
       if (!ackResult) {
-        toast.error(t('cast.no_active_tv_found'));
-        supabase.removeChannel(pairChannel);
+        toast.error(t('cast.no_active_tv_found') || t('cast.link_error'));
+        if (pairChannel) supabase.removeChannel(pairChannel);
         return;
       }
 
       if (ackResult.busy) {
         toast.error(t('cast.tv_busy_error'));
-        supabase.removeChannel(pairChannel);
+        if (pairChannel) supabase.removeChannel(pairChannel);
         return;
       }
 
@@ -138,12 +176,15 @@ export function CastToTvModal({ isOpen, onClose }) {
       setPinInput('');
 
       setTimeout(() => {
-        supabase.removeChannel(pairChannel);
+        if (pairChannel) supabase.removeChannel(pairChannel);
       }, 2000);
     } catch (err) {
       console.error(err);
       toast.error(t('cast.link_error'));
     } finally {
+      if (localPairChannel) {
+        try { localPairChannel.close(); } catch (err) {}
+      }
       setIsPairing(false);
     }
   };

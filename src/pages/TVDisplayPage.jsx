@@ -185,47 +185,79 @@ export default function TVDisplayPage() {
 
   // 1. Escuchar canal de emparejamiento SIEMPRE (tanto para PAIRED como para UNPAIRED)
   useEffect(() => {
+    let localPairChannel = null;
+    try {
+      localPairChannel = new BroadcastChannel(`envairo_tv_pair_${tvPin}`);
+      localPairChannel.onmessage = (e) => {
+        const data = e.data;
+        if (data?.event === 'pairing_result' || data?.type === 'pairing_result') {
+          handlePairingPayload(data.payload, localPairChannel);
+        }
+      };
+    } catch (e) {}
+
     const pairChannel = supabase.channel(`tv-pair-${tvPin}`);
 
-    pairChannel
-      .on('broadcast', { event: 'pairing_result' }, (e) => {
-        if (e.payload?.type === 'PAIRED' && e.payload.sessionId) {
-          const incomingSessionId = e.payload.sessionId;
-          const currentSavedSession = localStorage.getItem('bq-tv-session-id');
+    const handlePairingPayload = (payload, localChannel = null) => {
+      if (payload?.type === 'PAIRED' && payload.sessionId) {
+        const incomingSessionId = payload.sessionId;
+        const currentSavedSession = localStorage.getItem('bq-tv-session-id');
 
-          // PROTECCIÓN DE PANTALLA OCUPADA:
-          // Si la TV ya está vinculada a una sesión DIFERENTE activa, rechazar
-          if (currentSavedSession && currentSavedSession !== incomingSessionId && sessionIdRef.current) {
-            pairChannel.send({
-              type: 'broadcast',
-              event: 'pairing_ack',
-              payload: { success: false, busy: true, message: 'TV_BUSY' }
-            }).catch(() => {});
-            return;
-          }
-
-          // Enviar ACK positivo al Host confirmando que la TV está disponible y enlazada
+        // PROTECCIÓN DE PANTALLA OCUPADA:
+        // Si la TV ya está vinculada a una sesión DIFERENTE activa, rechazar
+        if (currentSavedSession && currentSavedSession !== incomingSessionId && sessionIdRef.current) {
+          const busyAck = { success: false, busy: true, message: 'TV_BUSY' };
           pairChannel.send({
             type: 'broadcast',
             event: 'pairing_ack',
-            payload: { success: true, busy: false }
+            payload: busyAck
           }).catch(() => {});
-
-          localStorage.setItem('bq-tv-session-id', incomingSessionId);
-          setSessionId(incomingSessionId);
-          const withSound = !!e.payload.tvWithSound;
-          localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
-          setTvWithSound(withSound);
-        } else if (e.payload?.type === 'UNPAIRED') {
-          disconnectTv(t('tv.unpaired_by_host'));
-        } else if (e.payload?.type === 'TOGGLE_SOUND') {
-          handleToggleSound(e.payload.tvWithSound);
+          if (localChannel) {
+            try { localChannel.postMessage({ event: 'pairing_ack', payload: busyAck }); } catch (e) {}
+          }
+          return;
         }
+
+        // Enviar ACK positivo al Host confirmando que la TV está disponible y enlazada
+        const okAck = { success: true, busy: false };
+        const sendAck = () => {
+          pairChannel.send({
+            type: 'broadcast',
+            event: 'pairing_ack',
+            payload: okAck
+          }).catch(() => {});
+          if (localChannel) {
+            try { localChannel.postMessage({ event: 'pairing_ack', payload: okAck }); } catch (e) {}
+          }
+        };
+
+        sendAck();
+        setTimeout(sendAck, 100);
+        setTimeout(sendAck, 250);
+
+        localStorage.setItem('bq-tv-session-id', incomingSessionId);
+        setSessionId(incomingSessionId);
+        const withSound = !!payload.tvWithSound;
+        localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
+        setTvWithSound(withSound);
+      } else if (payload?.type === 'UNPAIRED') {
+        disconnectTv(t('tv.unpaired_by_host'));
+      } else if (payload?.type === 'TOGGLE_SOUND') {
+        handleToggleSound(payload.tvWithSound);
+      }
+    };
+
+    pairChannel
+      .on('broadcast', { event: 'pairing_result' }, (e) => {
+        handlePairingPayload(e.payload, localPairChannel);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(pairChannel);
+      if (localPairChannel) {
+        try { localPairChannel.close(); } catch (e) {}
+      }
     };
   }, [tvPin]);
 

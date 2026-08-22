@@ -47,7 +47,7 @@ export function Sidebar({ isOpen, onClose }) {
         state.youtubePlayer.pauseVideo();
       }
 
-      // Notificar a las pantallas esclavas que el anfitrión se ha desconectado
+      // Notificar a las pantallas esclavas que el anfitrión se ha desconectado (modo espera)
       try {
         const { getLocalTvSyncChannelName, getTvSyncChannel } = await import('../../lib/tvSyncChannel');
         const channel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
@@ -60,28 +60,6 @@ export function Sidebar({ isOpen, onClose }) {
         }
       } catch (e) {
         console.error('Error broadcasting disconnect', e);
-      }
-
-      // Desvincular individualmente cada TV guardada
-      try {
-        const pairedTvs = useSettingsStore.getState().pairedTvs || [];
-        for (const tv of pairedTvs) {
-          const pairChannel = supabase.channel(`tv-pair-${tv.id}`);
-          pairChannel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-              await pairChannel.send({
-                type: 'broadcast',
-                event: 'pairing_result',
-                payload: { type: 'UNPAIRED' }
-              });
-              setTimeout(() => supabase.removeChannel(pairChannel), 500);
-            }
-          });
-        }
-        useSettingsStore.getState().setPairedTvs([]);
-        window.dispatchEvent(new Event('bq-paired-tvs-updated'));
-      } catch (e) {
-        console.error('Error unpairing TVs on logout', e);
       }
 
       // NO limpiar estado antes de logout — logout() guarda la cola en Supabase

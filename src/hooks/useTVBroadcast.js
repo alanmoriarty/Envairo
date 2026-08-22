@@ -226,6 +226,13 @@ export function useTVBroadcast() {
           isPlaying: state.isPlaying,
           time: trueTime
         });
+      } else if (state.playbackEngine === 'youtube') {
+        broadcastMessage({
+          type: 'SYNC',
+          videoId: null,
+          isPlaying: false,
+          time: 0
+        });
       }
     };
 
