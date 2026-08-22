@@ -880,6 +880,19 @@ const ES = {
     linked_screens: 'Pantallas Vinculadas ({{count}})',
     realtime_connected: 'Conectado vía Realtime',
   },
+  reset: {
+    title: 'Recuperar Contraseña',
+    subtitle: 'Ingresa tu nueva contraseña para proteger tu cuenta.',
+    new_password_label: 'Nueva Contraseña',
+    save_btn: 'Guardar Nueva Contraseña',
+    saving_btn: 'Guardando...',
+    password_short: 'La contraseña debe tener al menos 8 caracteres',
+    password_complexity: 'La contraseña debe incluir al menos una mayúscula, una minúscula y un número',
+    password_success: '¡Contraseña actualizada con éxito! Redirigiendo...',
+    password_error: 'Error al actualizar la contraseña',
+    invalid_session: 'El enlace de recuperación es inválido o ha expirado.',
+    back_to_login: 'Volver al inicio de sesión',
+  },
 };
 
 // ─── English ──────────────────────────────────────────────────────────────────
@@ -1529,5 +1542,18 @@ const EN = {
         answer: 'The «Activities» tab offers engaging interactive games powered by the active music:\n\n• Musical Chairs: Pauses the music at surprise random intervals for group games.\n• Music Trivia: Live on-screen quizzes to test your guests\' music knowledge.\n• Interactive Challenges: Fun icebreaker prompts for attendees.'
       }
     ]
+  },
+  reset: {
+    title: 'Reset Password',
+    subtitle: 'Enter your new password to secure your account.',
+    new_password_label: 'New Password',
+    save_btn: 'Save New Password',
+    saving_btn: 'Saving...',
+    password_short: 'Password must be at least 8 characters',
+    password_complexity: 'Password must include at least one uppercase letter, one lowercase letter, and one number',
+    password_success: 'Password updated successfully! Redirecting...',
+    password_error: 'Error updating password',
+    invalid_session: 'The recovery link is invalid or has expired.',
+    back_to_login: 'Back to sign in',
   },
 };

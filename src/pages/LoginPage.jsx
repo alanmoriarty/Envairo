@@ -33,10 +33,14 @@ export default function LoginPage() {
     const session = params.get('session');
     const admin = params.get('admin');
 
-    if (session && admin) {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (session && admin && UUID_REGEX.test(session) && typeof admin === 'string' && admin.trim().length >= 8) {
+      const cleanSession = session.trim();
+      const cleanAdmin = admin.trim();
       const { setSessionId, setHostSecret, setIsAdminMode } = useSettingsStore.getState();
-      setSessionId(session);
-      setHostSecret(admin);
+      setSessionId(cleanSession);
+      setHostSecret(cleanAdmin);
       setIsAdminMode(true);
 
       // Limpiar cualquier estado del reproductor local para no interferir
@@ -53,7 +57,7 @@ export default function LoginPage() {
       if (currentUser || isAuthenticated) {
         useSettingsStore.getState().setIsAdminMode(false);
 
-        const userEmail = currentUser?.email || '';
+        const userEmail = (currentUser?.email || '').trim().toLowerCase();
         let isSubscribed = isAllowedEmail(userEmail);
 
         // Si no está en la lista de beta, comprobamos en la base de datos
@@ -119,12 +123,18 @@ export default function LoginPage() {
       return;
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setAuthError(t('login.email_required'));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (isRegistering) {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/app/dashboard`,
@@ -144,7 +154,7 @@ export default function LoginPage() {
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password,
           options: { captchaToken }
         });
@@ -152,6 +162,7 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.session) {
+          setPassword(''); // Clear password from memory immediately
           const prevSessionId = useSettingsStore.getState().sessionId;
           // Solo limpiar estado si la sesión anterior pertenecía a OTRO usuario autenticado distinto (UUID real)
           if (prevSessionId && !prevSessionId.startsWith('session-') && prevSessionId !== data.user.id) {
@@ -202,7 +213,8 @@ export default function LoginPage() {
     e?.preventDefault();
     setAuthError('');
 
-    if (!email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
       setAuthError(t('login.email_required'));
       return;
     }
@@ -213,7 +225,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
         captchaToken
       });
