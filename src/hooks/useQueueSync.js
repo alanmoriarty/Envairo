@@ -58,9 +58,9 @@ export function useQueueSync() {
         return;
       }
 
-      // Guard: don't push to Supabase if the state is being cleared (logout)
-      // This prevents clearPlayerState() from wiping the server-side queue
-      if (prevState.queue.length > 0 && state.queue.length === 0 && state.currentTrack === null) {
+      // Guard: don't push to Supabase if the state is being cleared during logout
+      // (when playHistory is wiped along with queue and user is logged out)
+      if (prevState.playHistory?.length > 0 && state.playHistory?.length === 0 && !authStore.user) {
         return;
       }
 
