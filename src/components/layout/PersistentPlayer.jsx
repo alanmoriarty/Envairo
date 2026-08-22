@@ -124,10 +124,13 @@ export function PersistentPlayer() {
 
   const handleRestart = () => {
     const state = usePlayerStore.getState();
-      if (state.youtubePlayer) {
-        state.youtubePlayer.seekTo(0, true);
-        state.youtubePlayer.playVideo();
-      }
+    if (!state.currentTrack || !state.currentYtId) return;
+    if (state.youtubePlayer) {
+      state.youtubePlayer.seekTo(0, true);
+      state.youtubePlayer.playVideo();
+      state.setProgress(0);
+      state.setIsPlaying(true);
+    }
   };
 
   // ── Web Audio API Keep-Alive: Prevenir suspensión de pestañas en segundo plano por el navegador ──
@@ -387,13 +390,18 @@ export function PersistentPlayer() {
             <button onClick={controls.skipPrev} className="btn-ghost p-2">
               <SkipBack size={18} />
             </button>
-            <button onClick={handleRestart} className="btn-ghost p-2" title="Reiniciar canción">
+            <button
+              onClick={handleRestart}
+              disabled={!currentTrack || !sdkReady}
+              className="btn-ghost p-2 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Reiniciar canción"
+            >
               <RotateCcw size={18} />
             </button>
             <button
               onClick={handlePlayPause}
-              disabled={!sdkReady}
-              className="w-10 h-10 rounded-full bg-accent hover:bg-accent-light disabled:opacity-40 flex items-center justify-center transition-all duration-200 shadow-glow-sm"
+              disabled={!sdkReady || (!currentTrack && queue.length === 0)}
+              className="w-10 h-10 rounded-full bg-accent hover:bg-accent-light disabled:opacity-30 flex items-center justify-center transition-all duration-200 shadow-glow-sm"
             >
               {isPlaying ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" />}
             </button>

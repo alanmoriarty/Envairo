@@ -539,9 +539,12 @@ export default function DashboardPage() {
           <span className="text-xs font-semibold text-accent uppercase tracking-wider absolute left-4 hidden sm:block">{t('nav.remote')}</span>
           <button
             onClick={() => {
+              const state = usePlayerStore.getState();
+              if (!state.currentTrack || !state.currentYtId) return;
               sendRemotePlaybackCommand('restart');
             }}
-            className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors hidden sm:block"
+            disabled={!currentTrack}
+            className="p-3 rounded-full hover:bg-white/10 text-text-primary transition-colors hidden sm:block disabled:opacity-30 disabled:cursor-not-allowed"
             title={t('dashboard.restart_song')}
           >
             <RotateCcw size={24} />

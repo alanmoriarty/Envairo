@@ -272,7 +272,7 @@ export function useQueueSync() {
           currentState.playEngineTrack(prevTrack);
         }
       } else if (cmd.action === 'restart') {
-        if (currentState.youtubePlayer) {
+        if (currentState.youtubePlayer && currentState.currentTrack && currentState.currentYtId) {
           currentState.youtubePlayer.seekTo(0, true);
           currentState.youtubePlayer.playVideo();
           currentState.setProgress(0);
