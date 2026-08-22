@@ -393,10 +393,19 @@ export default function TVDisplayPage() {
       iv_load_policy: 3,
       cc_load_policy: 0,
       cc_lang_pref: 'none',
-      origin: window.location.origin
+      origin: window.location.origin,
+      playsinline: 1
     };
 
     const handleDeckReady = (deck, event) => {
+      try {
+        const iframe = event.target?.getIframe?.();
+        if (iframe) {
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+          iframe.setAttribute('allowfullscreen', '1');
+        }
+      } catch (e) {}
+
       if (tvWithSoundRef.current) {
         try { event.target.unMute(); event.target.setVolume(100); } catch (e) {}
       } else {
@@ -439,6 +448,17 @@ export default function TVDisplayPage() {
         if (playingContainer) {
           playingContainer.style.opacity = '1';
           playingContainer.style.zIndex = '2';
+        }
+      } else if (event.data === window.YT.PlayerState.PAUSED) {
+        // Anti-Throttling de pestañas en segundo plano: si Chrome pausa el iframe en background mientras hay video activo, forzar play
+        if (activeTvDeckRef.current === deck && currentVideoIdRef.current && !hostRefreshingRef.current) {
+          setTimeout(() => {
+            try {
+              if (activeTvDeckRef.current === deck && event.target && typeof event.target.playVideo === 'function') {
+                event.target.playVideo();
+              }
+            } catch (e) {}
+          }, 150);
         }
       }
     };
@@ -504,11 +524,26 @@ export default function TVDisplayPage() {
     }
   };
 
+  // Re-sincronización y reactivación instantánea al volver de otra pestaña
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
+      if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
+        sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
+      }
+      const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+      if (activeP && typeof activeP.playVideo === 'function') {
+        try { activeP.playVideo(); } catch (e) {}
+      }
+    }
+  };
+
   document.addEventListener('fullscreenchange', handleFsChange);
   document.addEventListener('webkitfullscreenchange', handleFsChange);
   document.addEventListener('mozfullscreenchange', handleFsChange);
   document.addEventListener('MSFullscreenChange', handleFsChange);
-  window.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   return () => {
     clearInterval(syncRetryInterval);
@@ -532,7 +567,8 @@ export default function TVDisplayPage() {
     document.removeEventListener('webkitfullscreenchange', handleFsChange);
     document.removeEventListener('mozfullscreenchange', handleFsChange);
     document.removeEventListener('MSFullscreenChange', handleFsChange);
-    window.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   };
 }, [sessionId]);
 
