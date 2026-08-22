@@ -37,9 +37,22 @@ const formatArtists = (artists) => {
   return 'Artista Desconocido';
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const safeGetJson = (key, fallback = null) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
 export default function GuestPage() {
   const { sessionId } = useParams();
   const location = useLocation();
+
+  const isValidSessionId = typeof sessionId === 'string' && UUID_REGEX.test(sessionId.trim());
 
   // ── Sistema de acceso por token de invitado (6 horas desde el escaneo) ────────
   //
@@ -51,7 +64,7 @@ export default function GuestPage() {
   //  5. Si el host regenera el QR, el qr_token cambia y no se pueden obtener
   //     nuevos guest_access_tokens con el QR anterior.
   const [guestToken, setGuestToken] = useState(
-    () => localStorage.getItem(`gat_${sessionId}`) || null
+    () => (isValidSessionId ? localStorage.getItem(`gat_${sessionId}`) : null)
   );
   const [qrAccessDenied, setQrAccessDenied] = useState(false);
   const [isExchangingToken, setIsExchangingToken] = useState(false);
@@ -65,6 +78,7 @@ export default function GuestPage() {
   const sessionExpiryHours = sessionConfig?.guest_session_expiry_hours || stateData?.guest_session_expiry_hours || 6;
 
   useEffect(() => {
+    if (!isValidSessionId) return;
     const urlQrToken = new URLSearchParams(location.search).get('t');
     if (!urlQrToken) return; // Sin token en la URL, nada que canjear
 
@@ -89,10 +103,12 @@ export default function GuestPage() {
         }
       })
       .finally(() => setIsExchangingToken(false));
-  }, [sessionId, location.search, sessionExpiryHours]);
+  }, [sessionId, isValidSessionId, location.search, sessionExpiryHours]);
 
   // Verificación proactiva y periódica de expiración de sesión
   useEffect(() => {
+    if (!isValidSessionId) return;
+
     const checkExpiration = () => {
       const storedToken = localStorage.getItem(`gat_${sessionId}`);
       const storedExp = localStorage.getItem(`gat_exp_${sessionId}`);
@@ -119,9 +135,15 @@ export default function GuestPage() {
     checkExpiration();
     const interval = setInterval(checkExpiration, 15000);
     return () => clearInterval(interval);
-  }, [sessionId, guestToken]);
+  }, [sessionId, isValidSessionId, guestToken]);
 
   useEffect(() => {
+    if (!isValidSessionId) {
+      setSessionConfig({ _notFound: true });
+      setIsLoadingConfig(false);
+      return;
+    }
+
     const fetchSession = async () => {
       const { data } = await supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle();
       if (data) {
@@ -165,7 +187,7 @@ export default function GuestPage() {
       clearTimeout(initTimeout);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [sessionId]);
+  }, [sessionId, isValidSessionId]);
 
   const queue = Array.isArray(sessionConfig?.queue) ? sessionConfig.queue : [];
   const currentQueueIndex = typeof sessionConfig?.current_queue_index === 'number' ? sessionConfig.current_queue_index : -1;
@@ -173,7 +195,7 @@ export default function GuestPage() {
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
   const { t, lang } = useTranslation();
 
-  const isAvailable = !sessionConfig?._notFound && (sessionConfig?.active === true || stateData?.active === true);
+  const isAvailable = isValidSessionId && !sessionConfig?._notFound && (sessionConfig?.active === true || stateData?.active === true);
   const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
   const blacklistGenres = stateData.blacklist_genres || sessionConfig?.blacklist_genres || [];
   const blacklistSongs = stateData.blacklist_songs || sessionConfig?.blacklist_songs || [];
@@ -236,28 +258,64 @@ export default function GuestPage() {
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  // Restore cooldown from localStorage on mount
+  // Restore cooldown from localStorage on mount & recalculate on visibilitychange / focus (mobile resume)
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(`user_reqs_${sessionId}`);
-      if (stored) {
-        const reqs = JSON.parse(stored);
+    if (!isValidSessionId) return;
+
+    const refreshTimers = () => {
+      // 1. Recalcular tiempo de enfriamiento entre peticiones
+      const reqs = safeGetJson(`user_reqs_${sessionId}`, []);
+      if (Array.isArray(reqs) && reqs.length > 0) {
         setUserRequests(reqs);
-        if (reqs.length > 0) {
-          const lastReq = reqs[reqs.length - 1];
-          const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
+        const lastReq = reqs[reqs.length - 1];
+        const secondsSinceLast = Math.floor((Date.now() - lastReq) / 1000);
+        const cooldownSeconds = cooldownMinutes * 60;
 
-          const cooldownSeconds = cooldownMinutes * 60;
+        if (cooldownEnabled && secondsSinceLast < cooldownSeconds) {
+          setCooldown(cooldownSeconds - secondsSinceLast);
+        } else if (!cooldownEnabled) {
+          setCooldown(0);
+        }
+      } else {
+        setCooldown(0);
+      }
 
-          if (cooldownEnabled && secondsSinceLast < cooldownSeconds) {
-            setCooldown(cooldownSeconds - secondsSinceLast);
-          } else if (!cooldownEnabled) {
-            setCooldown(0);
+      // 2. Recalcular expiración de token QR
+      const storedToken = localStorage.getItem(`gat_${sessionId}`);
+      const storedExp = localStorage.getItem(`gat_exp_${sessionId}`);
+      if (storedToken && storedExp) {
+        const expTime = parseInt(storedExp, 10);
+        if (!isNaN(expTime)) {
+          const diffMs = expTime - Date.now();
+          const mins = Math.max(0, Math.floor(diffMs / 60000));
+          setMinutesRemaining(mins);
+          if (diffMs <= 0) {
+            localStorage.removeItem(`gat_${sessionId}`);
+            localStorage.removeItem(`gat_exp_${sessionId}`);
+            setGuestToken(null);
+            setQrAccessDenied(true);
+            setMinutesRemaining(0);
           }
         }
       }
-    } catch (e) { }
-  }, [sessionId, cooldownEnabled, cooldownMinutes]);
+    };
+
+    refreshTimers();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshTimers();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', refreshTimers);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', refreshTimers);
+    };
+  }, [sessionId, isValidSessionId, cooldownEnabled, cooldownMinutes]);
 
   // Cooldown countdown
   useEffect(() => {
@@ -289,7 +347,7 @@ export default function GuestPage() {
     const maxUserRequests = sessionConfig?.requests_per_guest || 0;
     if (maxUserRequests > 0) {
       // Calculate how many of the user's requested tracks are currently pending or in the upcoming queue
-      const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
+      const myActiveIds = safeGetJson(`my_tracks_${sessionId}`, []);
       const pendingCount = Object.keys(myPendingRequests).length;
       const queueCount = upcomingQueue.filter(track => myActiveIds.includes(track.id)).length;
 
@@ -492,7 +550,7 @@ export default function GuestPage() {
       localStorage.setItem(`user_reqs_${sessionId}`, JSON.stringify(newReqs));
 
       // Track this song ID for Anti-Spam concurrent limit
-      const myActiveIds = JSON.parse(localStorage.getItem(`my_tracks_${sessionId}`) || '[]');
+      const myActiveIds = safeGetJson(`my_tracks_${sessionId}`, []);
       if (!myActiveIds.includes(selected.id)) {
         myActiveIds.push(selected.id);
         localStorage.setItem(`my_tracks_${sessionId}`, JSON.stringify(myActiveIds));
@@ -724,7 +782,7 @@ export default function GuestPage() {
             className="input-field pr-10"
             placeholder={t('guest.search_placeholder')}
             value={query}
-            maxLength={30}
+            maxLength={80}
             onChange={(e) => { setQuery(e.target.value.replace(/[<>]/g, '')); setSelected(null); }}
             disabled={isInCooldown}
           />
