@@ -656,6 +656,8 @@ const handleSync = (data) => {
         setCurrentVideoId(data.videoId);
         setStatus('');
         isBufferingRef.current = true;
+        trackStartedAtRef.current = Date.now();
+        lastSeekTimeRef.current = Date.now();
 
         if (bufferSafetyTimerRef.current) clearTimeout(bufferSafetyTimerRef.current);
         bufferSafetyTimerRef.current = setTimeout(() => {
@@ -688,7 +690,7 @@ const handleSync = (data) => {
     const isCurrentlyPlaying = playerState === window.YT.PlayerState.PLAYING;
     const isCurrentlyPaused = playerState === window.YT.PlayerState.PAUSED;
 
-    // ── 2. Corrección de Deriva de Tiempo (Drift Correction) ──
+    // ── 2. Corrección Suave de Deriva de Tiempo (Smooth Drift Correction) ──
     if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current && isCurrentlyPlaying) {
       const isEnded = playerState === window.YT.PlayerState.ENDED;
       const duration = activeP.getDuration() || 0;
@@ -699,19 +701,25 @@ const handleSync = (data) => {
       const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
       const currentTime = activeP.getCurrentTime() || 0;
       const diff = targetTime - currentTime;
+      const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
+      const timeSinceLastSeek = Date.now() - lastSeekTimeRef.current;
 
       if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-      } else if (Math.abs(diff) > 1.5) {
+      } else if (Math.abs(diff) > 4.0 && timeSinceTrackStart > 8000 && timeSinceLastSeek > 4000) {
+        // Solo saltar con seekTo si hay un desfase masivo (>4s), el tema lleva más de 8s sonando y pasaron 4s del último seek
+        lastSeekTimeRef.current = Date.now();
         activeP.seekTo(targetTime, true);
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-      } else if (diff > 0.15) {
+      } else if (diff > 0.3) {
+        // Acelerar sutilmente para alcanzar al anfitrión sin congelar el búfer
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.15);
-      } else if (diff > 0.05) {
+      } else if (diff > 0.08) {
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.05);
-      } else if (diff < -0.15) {
+      } else if (diff < -0.3) {
+        // Desacelerar sutilmente para esperar al anfitrión
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.85);
-      } else if (diff < -0.05) {
+      } else if (diff < -0.08) {
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.95);
       } else {
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);

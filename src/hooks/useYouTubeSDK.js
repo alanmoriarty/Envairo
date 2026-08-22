@@ -807,12 +807,12 @@ export function useYouTubeSDK() {
 
         if (
           settings.djTransitionsEnabled &&
-          dur > 15 && // Solo aplicar si el track dura más de 15s
+          dur > 25 && // Solo aplicar si el track dura más de 25s
+          time > 10 && // La canción debe llevar al menos 10s reproduciéndose para evitar disparos prematuros
           remainingSeconds <= (settings.djTransitionDuration || 5) &&
           remainingSeconds > 0.5 &&
           !isTransitioningRef.current &&
-          store.queue.length > 0 &&
-          store.currentQueueIndex < store.queue.length - 1
+          store.queue.length > 0
         ) {
           triggerDJTransition(p, remainingSeconds);
         }
