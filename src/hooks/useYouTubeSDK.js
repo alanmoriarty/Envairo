@@ -881,6 +881,20 @@ export function useYouTubeSDK() {
     if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
 
+    const freshStore = usePlayerStore.getState();
+    const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+
+    // Si la pestaña está en segundo plano, NO intentar cruzar al Deck B (Chrome bloquea iframes secundarios con opacity 0).
+    // En su lugar, realizar el cambio continuo de pista directamente en el reproductor activo.
+    if (isHidden) {
+      isTransitioningRef.current = false;
+      const nextTrack = freshStore.shiftQueue();
+      if (nextTrack) {
+        freshStore.playEngineTrack(nextTrack, 0, null, true);
+      }
+      return;
+    }
+
     const settings = useSettingsStore.getState();
     const effects = ['fade', 'cut', 'brake', 'echo', 'start'];
     const chosenEffect = settings.djTransitionMode === 'random' || !settings.djTransitionMode
@@ -901,7 +915,6 @@ export function useYouTubeSDK() {
     const incomingPlayer = incomingDeck === 'A' ? playerARef.current : playerBRef.current;
 
     // Obtener la siguiente canción de la cola
-    const freshStore = usePlayerStore.getState();
     const nextIdx = freshStore.currentQueueIndex + 1;
     const upcomingTrack = freshStore.queue[nextIdx];
 
