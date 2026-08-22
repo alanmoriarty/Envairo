@@ -537,7 +537,6 @@ const handleTransitionStart = (data) => {
     isBufferingRef.current = false;
     return;
   }
-
   const durationSec = data.durationSec || 5;
   const chosenEffect = data.effect || 'fade';
   const transitionMs = Math.max(2500, Math.floor(durationSec * 1000));
@@ -558,12 +557,12 @@ const handleTransitionStart = (data) => {
   // 2. Transición visual simultánea en pantalla
   if (incomingContainer) {
     incomingContainer.style.zIndex = '3';
-    incomingContainer.style.opacity = '0';
-    incomingContainer.style.transform = 'scale(1.02)';
+    incomingContainer.style.opacity = '0.001';
+    incomingContainer.style.transform = 'scale(1.02) translateZ(0)';
     incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
     setTimeout(() => {
       incomingContainer.style.opacity = '1';
-      incomingContainer.style.transform = 'none';
+      incomingContainer.style.transform = 'translateZ(0)';
     }, 50);
   }
 
@@ -571,13 +570,13 @@ const handleTransitionStart = (data) => {
     outgoingContainer.style.zIndex = '2';
     outgoingContainer.style.transition = `opacity ${durationSec * 0.8}s ease, transform ${durationSec * 0.8}s ease, filter ${durationSec * 0.8}s ease`;
     if (chosenEffect === 'brake') {
-      outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95)';
+      outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95) translateZ(0)';
       outgoingContainer.style.filter = 'brightness(0.7)';
     } else if (chosenEffect === 'start') {
-      outgoingContainer.style.transform = 'rotate(8deg) scale(1.05)';
+      outgoingContainer.style.transform = 'rotate(8deg) scale(1.05) translateZ(0)';
       outgoingContainer.style.filter = 'brightness(1.1)';
     }
-    outgoingContainer.style.opacity = '0';
+    outgoingContainer.style.opacity = '0.001';
   }
 
   // 3. Rampa de volumen suave si la TV tiene sonido activado
@@ -607,20 +606,20 @@ const handleTransitionStart = (data) => {
     tvTransitionTimerRef.current = null;
 
     try {
-      if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
-        outgoingPlayer.stopVideo();
+      if (outgoingPlayer && typeof outgoingPlayer.pauseVideo === 'function') {
+        outgoingPlayer.pauseVideo();
       }
     } catch (e) { }
 
     if (outgoingContainer) {
-      outgoingContainer.style.transform = 'none';
+      outgoingContainer.style.transform = 'translateZ(0)';
       outgoingContainer.style.filter = 'none';
-      outgoingContainer.style.opacity = '0';
+      outgoingContainer.style.opacity = '0.001';
       outgoingContainer.style.zIndex = '1';
     }
 
     if (incomingContainer) {
-      incomingContainer.style.transform = 'none';
+      incomingContainer.style.transform = 'translateZ(0)';
       incomingContainer.style.filter = 'none';
       incomingContainer.style.opacity = '1';
       incomingContainer.style.zIndex = '2';
@@ -704,25 +703,33 @@ const handleSync = (data) => {
       const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
       const timeSinceLastSeek = Date.now() - lastSeekTimeRef.current;
 
+      let targetRate = 1.0;
       if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        targetRate = 1.0;
       } else if (Math.abs(diff) > 4.0 && timeSinceTrackStart > 8000 && timeSinceLastSeek > 4000) {
-        // Solo saltar con seekTo si hay un desfase masivo (>4s), el tema lleva más de 8s sonando y pasaron 4s del último seek
         lastSeekTimeRef.current = Date.now();
         activeP.seekTo(targetTime, true);
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-      } else if (diff > 0.3) {
-        // Acelerar sutilmente para alcanzar al anfitrión sin congelar el búfer
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.15);
-      } else if (diff > 0.08) {
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.05);
-      } else if (diff < -0.3) {
-        // Desacelerar sutilmente para esperar al anfitrión
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.85);
-      } else if (diff < -0.08) {
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(0.95);
+        targetRate = 1.0;
+      } else if (diff > 0.35) {
+        targetRate = 1.1;
+      } else if (diff > 0.1) {
+        targetRate = 1.04;
+      } else if (diff < -0.35) {
+        targetRate = 0.9;
+      } else if (diff < -0.1) {
+        targetRate = 0.96;
       } else {
-        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        targetRate = 1.0;
+      }
+
+      // Evitar llamar setPlaybackRate repetidamente cada 500ms si la velocidad ya es la deseada
+      if (typeof activeP.getPlaybackRate === 'function' && typeof activeP.setPlaybackRate === 'function') {
+        try {
+          const currentRate = activeP.getPlaybackRate();
+          if (currentRate !== targetRate) {
+            activeP.setPlaybackRate(targetRate);
+          }
+        } catch (e) {}
       }
     }
 
