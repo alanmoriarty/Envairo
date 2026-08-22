@@ -130,16 +130,18 @@ export function PersistentPlayer() {
       }
   };
 
-  // ── MediaSession API: elemento audio dummy para activar controles del sistema ──
-  // Android/iOS necesitan un <audio> real activo para mostrar controles en notificaciones
+  // ── Web Audio API Keep-Alive: Prevenir suspensión de pestañas en segundo plano por el navegador ──
+  const audioContextRef = useRef(null);
+  const audioSourceRef = useRef(null);
   const dummyAudioRef = useRef(null);
 
   useEffect(() => {
-    // Crear un audio dummy silenciado con un tono de 1Hz en loop
+    // Audio element para compatibilidad con controles nativos del sistema móvil
     const audio = new Audio();
-    audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    // WAV PCM de 1 segundo de silencio válido
+    audio.src = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
     audio.loop = true;
-    audio.volume = 0.001; // Prácticamente silencioso pero "activo" para el OS
+    audio.volume = 0.001;
     audio.muted = false;
     dummyAudioRef.current = audio;
 
@@ -149,15 +151,56 @@ export function PersistentPlayer() {
     };
   }, []);
 
-  // Sincronizar el audio dummy con el estado real de reproducción
+  // Mantener activo el hilo de audio del navegador en segundo plano
   useEffect(() => {
     const audio = dummyAudioRef.current;
-    if (!audio) return;
+
+    const startKeepAlive = () => {
+      if (audio) audio.play().catch(() => {});
+      try {
+        if (!audioContextRef.current) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) audioContextRef.current = new AudioCtx();
+        }
+        const ctx = audioContextRef.current;
+        if (ctx) {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          if (!audioSourceRef.current) {
+            const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+            const gain = ctx.createGain();
+            gain.gain.value = 0.0001;
+            source.connect(gain);
+            gain.connect(ctx.destination);
+            source.start();
+            audioSourceRef.current = source;
+          }
+        }
+      } catch (e) {}
+    };
+
+    const stopKeepAlive = () => {
+      if (audio) audio.pause();
+      try {
+        if (audioSourceRef.current) {
+          audioSourceRef.current.stop();
+          audioSourceRef.current.disconnect();
+          audioSourceRef.current = null;
+        }
+      } catch (e) {}
+    };
+
     if (isPlaying && currentTrack) {
-      audio.play().catch(() => {});
+      startKeepAlive();
     } else {
-      audio.pause();
+      stopKeepAlive();
     }
+
+    return () => {
+      stopKeepAlive();
+    };
   }, [isPlaying, currentTrack]);
 
   // Integración con MediaSession API para controles en segundo plano (notificaciones y pantalla de bloqueo)

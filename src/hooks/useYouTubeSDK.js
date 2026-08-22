@@ -631,10 +631,11 @@ export function useYouTubeSDK() {
             if (typeof activeP.unMute === 'function') activeP.unMute();
             if (typeof activeP.loadVideoById === 'function') {
               const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+              const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
               activeP.loadVideoById({
                 videoId: args.videoId,
                 startSeconds: args.startSeconds || 0,
-                suggestedQuality: isFs ? 'hd1080' : 'medium'
+                suggestedQuality: isHidden ? 'small' : isFs ? 'hd1080' : 'medium'
               });
             }
             if (typeof activeP.playVideo === 'function') {
