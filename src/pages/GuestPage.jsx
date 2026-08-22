@@ -450,6 +450,13 @@ export default function GuestPage() {
         const msg = error.message || '';
         if (msg.includes('HOURLY_LIMIT_REACHED')) {
           toast.error(t('guest.error_limit', { limit: requestsPerHour }));
+        } else if (msg.includes('GUEST_LIMIT_REACHED')) {
+          toast.error(t('guest.error_guest_limit'));
+        } else if (msg.includes('COOLDOWN_ACTIVE')) {
+          toast.error(t('guest.error_cooldown_server'));
+        } else if (msg.includes('MISSING_GUEST_TOKEN')) {
+          setQrAccessDenied(true);
+          toast.error(t('guest.error_missing_token'));
         } else if (msg.includes('TOKEN_EXPIRED')) {
           localStorage.removeItem(`gat_${sessionId}`);
           localStorage.removeItem(`gat_exp_${sessionId}`);
