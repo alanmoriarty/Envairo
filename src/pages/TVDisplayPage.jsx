@@ -154,7 +154,6 @@ export default function TVDisplayPage() {
           localStorage.removeItem('bq-tv-session-id');
           setSessionId(null);
           setStatus(t('tv.unpaired_by_host'));
-          window.location.reload();
         } else if (e.payload?.type === 'TOGGLE_SOUND') {
           handleToggleSound(e.payload.tvWithSound);
         }
@@ -212,7 +211,6 @@ export default function TVDisplayPage() {
         localStorage.removeItem('bq-tv-session-id');
         setSessionId(null);
         setStatus(t('tv.unpaired_by_host'));
-        window.location.reload();
       } else if (e.data.type === 'TOGGLE_SOUND') {
         handleToggleSound(e.data.tvWithSound);
       }
@@ -252,7 +250,6 @@ export default function TVDisplayPage() {
             localStorage.removeItem('bq-tv-session-id');
             setSessionId(null);
             setStatus(t('tv.unpaired_by_host'));
-            window.location.reload();
           } else if (e.payload.type === 'TOGGLE_SOUND') {
             const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
             const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
@@ -269,20 +266,6 @@ export default function TVDisplayPage() {
         (payload) => {
           const newSession = payload.new;
           if (!newSession) return;
-
-          // Si la sesión fue explícitamente finalizada o desactivada por el anfitrión
-          if (newSession.active === false) {
-            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              playerRef.current.pauseVideo();
-            }
-            currentVideoIdRef.current = null;
-            setCurrentVideoId(null);
-            localStorage.removeItem('bq-tv-session-id');
-            setSessionId(null);
-            setStatus(t('tv.session_ended') || 'Sesión finalizada');
-            window.location.reload();
-            return;
-          }
 
           const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
           const pairedList = Array.isArray(newSession.paired_tvs) ? newSession.paired_tvs : [];
@@ -817,7 +800,7 @@ handleSyncRef.current = handleSync;
     setSessionId(null);
     setCurrentVideoId(null);
     currentVideoIdRef.current = null;
-    window.location.reload();
+    setStatus(t('tv.checking_availability'));
   };
 
   const handleLocalVolumeChange = (e) => {
