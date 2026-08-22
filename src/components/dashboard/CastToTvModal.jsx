@@ -96,7 +96,21 @@ export function CastToTvModal({ isOpen, onClose }) {
         updatedList = updatedList.map(t => t.id === newTv.id ? newTv : t);
       }
       useSettingsStore.getState().setPairedTvs(updatedList);
+      setPairedTvs(updatedList);
       window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+
+      // Guardar en Base de Datos de inmediato (Directo + RPC para anfitrión o remoto)
+      if (activeSessionId) {
+        const secret = useSettingsStore.getState().hostSecret;
+        if (secret) {
+          supabase.rpc('sync_host_config', {
+            p_session_id: activeSessionId,
+            p_secret: secret,
+            p_updates: { paired_tvs: updatedList }
+          }).catch(console.error);
+        }
+        supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+      }
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');

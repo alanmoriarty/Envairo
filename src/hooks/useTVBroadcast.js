@@ -38,6 +38,12 @@ export function useTVBroadcast() {
     // Helper: check if this instance is the active master
     const isMaster = () => {
       const state = usePlayerStore.getState();
+      const settings = useSettingsStore.getState();
+      const auth = useAuthStore.getState();
+      // Remote control devices (phones) never act as audio master
+      if (settings.isAdminMode) return false;
+      // If we are the authenticated host with active playback engine, we are master
+      if (auth.user && state.playbackEngine === 'youtube') return true;
       // 'youtube-device' is always the local host's device ID (set in useYouTubeSDK onReady)
       return !state.activeDeviceId || state.activeDeviceId === 'youtube-device' || getInstanceId() === state.activeDeviceId;
     };

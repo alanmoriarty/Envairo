@@ -10,7 +10,8 @@ export function useQueueSync() {
   const authStore = useAuthStore((state) => state);
   const sessionId = authStore.user?.id || useSettingsStore((state) => state.sessionId);
   const isRemoteUpdate = useRef(false);
-  const syncTimeoutRef = useRef(null);
+  const playerSyncTimeoutRef = useRef(null);
+  const settingsSyncTimeoutRef = useRef(null);
   const isTakingOverRef = useRef(false);
   const hasClaimedOwnershipRef = useRef(false);
   const lastTakeoverTsRef = useRef(0);
@@ -68,17 +69,18 @@ export function useQueueSync() {
         return;
       }
 
-      // Limpiar el timeout anterior si existe
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
+      // Limpiar el timeout anterior de reproducción si existe
+      if (playerSyncTimeoutRef.current) {
+        clearTimeout(playerSyncTimeoutRef.current);
       }
 
       // Debounce the Supabase push by 120ms for ultra-responsive sync
-      syncTimeoutRef.current = setTimeout(() => {
+      playerSyncTimeoutRef.current = setTimeout(() => {
         const secret = useSettingsStore.getState().hostSecret;
         if (!authStore.user && !secret) return;
 
         const isAdmin = useSettingsStore.getState().isAdminMode;
+        const currentPairedTvs = useSettingsStore.getState().pairedTvs;
         const updates = isAdmin
           ? {
               queue: state.queue,
@@ -89,7 +91,7 @@ export function useQueueSync() {
               current_queue_index: state.currentQueueIndex,
               current_track: state.currentTrack,
               play_history: state.playHistory,
-              paired_tvs: useSettingsStore.getState().pairedTvs,
+              paired_tvs: Array.isArray(currentPairedTvs) ? currentPairedTvs : [],
               active_device_id: state.activeDeviceId,
               volume: state.volume
             };
@@ -197,8 +199,8 @@ export function useQueueSync() {
       if (state.pairedTvs === prevState.pairedTvs) return;
       if (isRemoteUpdate.current) return;
 
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-      syncTimeoutRef.current = setTimeout(() => {
+      if (settingsSyncTimeoutRef.current) clearTimeout(settingsSyncTimeoutRef.current);
+      settingsSyncTimeoutRef.current = setTimeout(() => {
         const secret = useSettingsStore.getState().hostSecret;
         if (!authStore.user && !secret) return;
         
@@ -211,14 +213,14 @@ export function useQueueSync() {
             current_queue_index: playerState.currentQueueIndex,
             current_track: playerState.currentTrack,
             play_history: playerState.playHistory,
-            paired_tvs: state.pairedTvs,
+            paired_tvs: Array.isArray(state.pairedTvs) ? state.pairedTvs : [],
             active_device_id: playerState.activeDeviceId,
             volume: playerState.volume
           }
         }).then(({ error }) => {
           if (error) console.error('Error syncing TV changes:', error);
         });
-      }, 500);
+      }, 250);
     });
 
     // Ejecución centralizada de comandos de reproducción en el Host
@@ -460,9 +462,13 @@ export function useQueueSync() {
 
     // 5. Flush inmediato antes de cerrar o recargar la pestaña
     const flushPendingSync = () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-        syncTimeoutRef.current = null;
+      if (playerSyncTimeoutRef.current) {
+        clearTimeout(playerSyncTimeoutRef.current);
+        playerSyncTimeoutRef.current = null;
+      }
+      if (settingsSyncTimeoutRef.current) {
+        clearTimeout(settingsSyncTimeoutRef.current);
+        settingsSyncTimeoutRef.current = null;
       }
       const secret = useSettingsStore.getState().hostSecret;
       const user = useAuthStore.getState().user;
@@ -472,6 +478,7 @@ export function useQueueSync() {
       const state = usePlayerStore.getState();
       if (!state.initialSyncDone && state.queue.length === 0 && !state.currentTrack) return;
 
+      const currentPairedTvs = useSettingsStore.getState().pairedTvs;
       supabase
         .rpc('sync_host_config', {
           p_session_id: sessionId,
@@ -481,7 +488,7 @@ export function useQueueSync() {
             current_queue_index: state.currentQueueIndex,
             current_track: state.currentTrack,
             play_history: state.playHistory,
-            paired_tvs: useSettingsStore.getState().pairedTvs,
+            paired_tvs: Array.isArray(currentPairedTvs) ? currentPairedTvs : [],
             active_device_id: state.activeDeviceId,
             volume: state.volume
           }

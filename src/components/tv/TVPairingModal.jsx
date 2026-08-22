@@ -96,7 +96,20 @@ export function TVPairingModal({ isOpen, onClose }) {
       }
       
       useSettingsStore.getState().setPairedTvs(updatedList);
+      setPairedTvs(updatedList);
       window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+
+      if (activeSessionId) {
+        const secret = useSettingsStore.getState().hostSecret;
+        if (secret) {
+          supabase.rpc('sync_host_config', {
+            p_session_id: activeSessionId,
+            p_secret: secret,
+            p_updates: { paired_tvs: updatedList }
+          }).catch(console.error);
+        }
+        supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+      }
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
       setPinInput('');
@@ -120,7 +133,7 @@ export function TVPairingModal({ isOpen, onClose }) {
         await pairChannel.send({
           type: 'broadcast',
           event: 'pairing_result',
-          payload: { type: 'UNPAIRED' }
+          payload: { type: 'UNPAIRED', tvId }
         });
         setTimeout(() => supabase.removeChannel(pairChannel), 500);
       }
@@ -128,7 +141,21 @@ export function TVPairingModal({ isOpen, onClose }) {
 
     const updatedList = getPairedTvs().filter(t => t.id !== tvId);
     useSettingsStore.getState().setPairedTvs(updatedList);
+    setPairedTvs(updatedList);
     window.dispatchEvent(new Event('bq-paired-tvs-updated'));
+
+    if (activeSessionId) {
+      const secret = useSettingsStore.getState().hostSecret;
+      if (secret) {
+        supabase.rpc('sync_host_config', {
+          p_session_id: activeSessionId,
+          p_secret: secret,
+          p_updates: { paired_tvs: updatedList }
+        }).catch(console.error);
+      }
+      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+    }
+
     toast.success(t('cast.tv_unlinked'));
   };
 
