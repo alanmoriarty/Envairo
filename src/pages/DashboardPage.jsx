@@ -927,6 +927,15 @@ export default function DashboardPage() {
                 />
               </div>
 
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <Toggle
+                  checked={explicitFilter}
+                  onChange={setExplicitFilter}
+                  label={t('settings.explicit_filter_title') || 'Filtro de Contenido Explícito'}
+                  description={t('settings.explicit_filter_desc') || 'Bloquea canciones con letras vulgares, lenguaje soez o contenido no apto para todo público.'}
+                />
+              </div>
+
               <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-2.5 sm:space-y-3">
                 <Toggle
                   checked={enairoAutoIntervalEnabled}

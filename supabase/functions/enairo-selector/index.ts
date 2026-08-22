@@ -51,6 +51,7 @@ Filtros de Seguridad:
 - Géneros bloqueados: ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}
 - Artistas PROHIBIDOS: ${settings?.blacklistArtists?.length ? settings.blacklistArtists.join(', ') : 'Ninguno'}
 - Canciones PROHIBIDAS: ${settings?.blacklistSongs?.length ? settings.blacklistSongs.join(', ') : 'Ninguna'}
+${settings?.explicitFilter ? '- FILTRO EXPLÍCITO ESTRICTO (ACTIVADO): Queda estrictamente PROHIBIDO incluir canciones con groserías, letras vulgares, contenido sexual explícito, violencia o doble sentido obsceno. Todas las pistas deben ser 100% limpias y aptas para todo público.' : ''}
 
 REGLAS DE ORO:
 1. PROHIBICIÓN TOTAL DE REPETIR CANCIONES: NUNCA sugieras ninguna canción que ya esté presente en el HISTORIAL DE CANCIONES ANTERIOR o en las Canciones PROHIBIDAS. Todas tus sugerencias deben ser canciones NUEVAS que no hayan sonado.
@@ -111,30 +112,45 @@ Estructura esperada:
     }
 
     const askGemini = async (promptText: string) => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.7
-          }
-        })
-      });
+      const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+      let lastError = null;
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+      for (const model of models) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.7
+              }
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleanJson);
+          } else {
+            const errText = await response.text();
+            lastError = new Error(`Gemini API Error with ${model} (${response.status}): ${errText}`);
+          }
+        } catch (e) {
+          lastError = e;
+        }
       }
 
-      const result = await response.json();
-      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      // Fallback a DeepSeek si Gemini falla
+      console.warn('Gemini falló, usando fallback de DeepSeek para generación:', lastError);
+      const deepSeekFallback = await askDeepSeek(promptText);
+      if (deepSeekFallback) return deepSeekFallback;
 
-      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
+      throw lastError || new Error('No se pudo generar con Gemini ni DeepSeek');
     };
 
     const askDeepSeek = async (promptText: string) => {

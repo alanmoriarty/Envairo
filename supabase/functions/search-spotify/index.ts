@@ -51,16 +51,10 @@ serve(async (req) => {
       };
     };
 
-    // 2. Búsqueda masiva (Bulk) para Inteligencia Artificial usando DEEZER (Mayor límite de peticiones)
+    // 2. Búsqueda masiva (Bulk) ultra-rápida en paralelo
     if (queries && queries.length > 0) {
-      const results = [];
-      const chunkSize = 15; // Deezer aguanta muy bien ráfagas (50 reqs / 5s)
-      
-      for (let i = 0; i < queries.length; i += chunkSize) {
-        const chunk = queries.slice(i, i + chunkSize);
-        
-        const chunkPromises = chunk.map(async (q: string) => {
-          // Extraer pista y artista si vienen en formato "Cancion - Artista" para precisión extrema
+      const searchPromises = queries.map(async (q: string) => {
+        try {
           let d_query = q;
           if (q.includes('-')) {
             const parts = q.split('-');
@@ -72,28 +66,42 @@ serve(async (req) => {
           const searchParams = new URLSearchParams({
             q: d_query,
             limit: fetchLimit,
-            order: 'RANKING' // Fuerza a ordenar por popularidad para evitar covers/karaokes
+            order: 'RANKING'
           });
-          
-          const searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`);
-          
-          if (!searchResponse.ok) {
-            const errText = await searchResponse.text();
-            console.error('Deezer API error for query:', q, searchResponse.status, errText);
-            return { error: true, status: searchResponse.status, message: errText, query: q };
+
+          // Timeout de 2500ms para evitar que una petición lenta bloquee al lote
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+          let searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`, {
+            signal: controller.signal
+          }).catch(() => null);
+
+          clearTimeout(timeoutId);
+
+          let deezerData = searchResponse && searchResponse.ok ? await searchResponse.json().catch(() => null) : null;
+
+          // Si la búsqueda estricta no trajo resultados, intentar búsqueda libre rápida
+          if (!deezerData || !deezerData.data || deezerData.data.length === 0) {
+            const fallbackParams = new URLSearchParams({
+              q: q.replace(/-/g, ' ').trim(),
+              limit: fetchLimit,
+              order: 'RANKING'
+            });
+            const fallbackRes = await fetch(`https://api.deezer.com/search?${fallbackParams}`).catch(() => null);
+            if (fallbackRes && fallbackRes.ok) {
+              deezerData = await fallbackRes.json().catch(() => null);
+            }
           }
-          
-          const deezerData = await searchResponse.json();
-          
+
           // Aplicar filtro de contenido explícito si está activado
-          let cleanData = deezerData.data || [];
+          let cleanData = deezerData?.data || [];
           if (filterExplicit) {
             cleanData = cleanData.filter((track: any) => track.explicit_lyrics === false);
           }
           cleanData = cleanData.slice(0, originalLimit);
-          
-          // Mapear la respuesta de Deezer para que luzca EXACTAMENTE como la de Spotify
-          const fakeSpotifyResponse = {
+
+          return {
             tracks: {
               items: cleanData.map((track: any) => ({
                 id: track.id.toString(),
@@ -110,22 +118,17 @@ serve(async (req) => {
               }))
             }
           };
-          
-          return fakeSpotifyResponse;
-        });
-        
-        const chunkResults = await Promise.all(chunkPromises);
-        results.push(...chunkResults);
-        
-        // Pausa diminuta para respetar el límite de 50 peticiones cada 5 segundos de Deezer
-        if (i + chunkSize < queries.length) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (err) {
+          console.error('Error buscando canción individual en lote:', q, err);
+          return { tracks: { items: [] } };
         }
-      }
+      });
+
+      const results = await Promise.all(searchPromises);
 
       return new Response(JSON.stringify({ results }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      });
     } else {
       // Single search mode usando iTUNES
       const searchParams = new URLSearchParams({

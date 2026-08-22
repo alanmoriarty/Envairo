@@ -137,7 +137,8 @@ export function useEnairoSelector() {
             blacklistGenres,
             blacklistSongs: combinedBlacklistSongs,
             blacklistArtists,
-            trackCount: enairoTrackCount
+            trackCount: enairoTrackCount,
+            explicitFilter: useSettingsStore.getState().explicitFilter
           }
         }
       });
@@ -207,13 +208,6 @@ export function useEnairoSelector() {
         } else if (foundTracks.length > 0) {
           toast.info(`envAIro omitió canciones sugeridas que ya habían sonado previamente.`);
         }
-      }
-
-      // Ejecutar el primer barrido de contenido explícito inmediatamente después de la generación
-      if (useSettingsStore.getState().explicitFilter) {
-        setTimeout(() => {
-          autoSweepExplicitContent();
-        }, 3000); // Pequeño delay para que la UI respire antes del barrido
       }
 
       return true;
