@@ -882,19 +882,6 @@ export function useYouTubeSDK() {
     isTransitioningRef.current = true;
 
     const freshStore = usePlayerStore.getState();
-    const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
-
-    // Si la pestaña está en segundo plano, NO intentar cruzar al Deck B (Chrome bloquea iframes secundarios con opacity 0).
-    // En su lugar, realizar el cambio continuo de pista directamente en el reproductor activo.
-    if (isHidden) {
-      isTransitioningRef.current = false;
-      const nextTrack = freshStore.shiftQueue();
-      if (nextTrack) {
-        freshStore.playEngineTrack(nextTrack, 0, null, true);
-      }
-      return;
-    }
-
     const settings = useSettingsStore.getState();
     const effects = ['fade', 'cut', 'brake', 'echo', 'start'];
     const chosenEffect = settings.djTransitionMode === 'random' || !settings.djTransitionMode
@@ -972,9 +959,9 @@ export function useYouTubeSDK() {
       freshStore.queueAddToHistory(nextTrack);
     }
 
-    // 3. Arrancar la canción entrante en el Deck en Standby en segundo plano con volumen 0
+    // 3. Arrancar la canción entrante en el Deck en Standby con mute inicial para garantizar arranque inmediato
     try {
-      if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
+      if (typeof incomingPlayer.mute === 'function') incomingPlayer.mute();
       if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
       if (typeof incomingPlayer.loadVideoById === 'function') {
         const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -989,7 +976,7 @@ export function useYouTubeSDK() {
       }
     } catch (e) { }
 
-    // Conectar inmediatamente el timer de progreso a la nueva canción (incomingPlayer)
+    // Conectar el timer de progreso a la nueva canción (incomingPlayer)
     startProgressTimer(incomingPlayer);
 
     // 4. Cruzar visualmente los contenedores (Opacity & Effects)
@@ -1032,7 +1019,10 @@ export function useYouTubeSDK() {
 
       try {
         if (outgoingPlayer && typeof outgoingPlayer.setVolume === 'function') outgoingPlayer.setVolume(outVol);
-        if (incomingPlayer && typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(inVol);
+        if (incomingPlayer) {
+          if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
+          if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(inVol);
+        }
       } catch (e) { }
 
       if (currentStep >= steps) {
