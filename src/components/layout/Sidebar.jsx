@@ -53,10 +53,15 @@ export function Sidebar({ isOpen, onClose }) {
 
       // Notificar a las pantallas esclavas que el anfitrión se ha desconectado
       try {
-        const { getLocalTvSyncChannelName } = await import('../../lib/tvSyncChannel');
+        const { getLocalTvSyncChannelName, getTvSyncChannel } = await import('../../lib/tvSyncChannel');
         const channel = new BroadcastChannel(getLocalTvSyncChannelName(activeSessionId));
         channel.postMessage({ type: 'MASTER_DISCONNECT' });
         channel.close();
+
+        const tvChannel = getTvSyncChannel();
+        if (tvChannel && tvChannel.state === 'joined') {
+          tvChannel.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'MASTER_DISCONNECT' } }).catch(() => {});
+        }
       } catch (e) {
         console.error('Error broadcasting disconnect', e);
       }

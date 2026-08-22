@@ -114,6 +114,7 @@ export default function TVDisplayPage() {
   const hostRefreshingRef = useRef(false);
   const trackStartedAtRef = useRef(0);
   const lastSeekTimeRef = useRef(0);
+  const lastHostSyncTimeRef = useRef(Date.now());
   const silentAudioRef = useRef(null);
 
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
@@ -226,9 +227,15 @@ export default function TVDisplayPage() {
       } else if (e.data.type === 'MASTER_DISCONNECT') {
         if (!limitReached) {
           if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-            playerRef.current.pauseVideo();
+            try { playerRef.current.pauseVideo(); } catch (err) {}
           }
-          setStatus(t('tv.host_disconnected'));
+          const cA = document.getElementById('tv-yt-deck-a');
+          const cB = document.getElementById('tv-yt-deck-b');
+          if (cA) cA.style.opacity = '0.001';
+          if (cB) cB.style.opacity = '0.001';
+          currentVideoIdRef.current = null;
+          setCurrentVideoId(null);
+          setStatus(t('tv.host_disconnected') || 'Anfitrión desconectado. Esperando conexión...');
         }
       } else if (e.data.type === 'UNPAIRED') {
         const cleanTargetId = String(e.data.tvId || '').replace(/\D/g, '');
@@ -236,8 +243,12 @@ export default function TVDisplayPage() {
         if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
 
         if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-          playerRef.current.pauseVideo();
+          try { playerRef.current.pauseVideo(); } catch (err) {}
         }
+        const cA = document.getElementById('tv-yt-deck-a');
+        const cB = document.getElementById('tv-yt-deck-b');
+        if (cA) cA.style.opacity = '0.001';
+        if (cB) cB.style.opacity = '0.001';
         currentVideoIdRef.current = null;
         setCurrentVideoId(null);
         localStorage.removeItem('bq-tv-session-id');
@@ -263,22 +274,32 @@ export default function TVDisplayPage() {
           } else if (e.payload.type === 'HOST_REFRESHING') {
             hostRefreshingRef.current = true;
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              playerRef.current.pauseVideo();
+              try { playerRef.current.pauseVideo(); } catch (err) {}
             }
             setStatus(t('tv.host_refreshing'));
           } else if (e.payload.type === 'MASTER_DISCONNECT') {
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              playerRef.current.pauseVideo();
+              try { playerRef.current.pauseVideo(); } catch (err) {}
             }
-            setStatus(t('tv.host_disconnected'));
+            const cA = document.getElementById('tv-yt-deck-a');
+            const cB = document.getElementById('tv-yt-deck-b');
+            if (cA) cA.style.opacity = '0.001';
+            if (cB) cB.style.opacity = '0.001';
+            currentVideoIdRef.current = null;
+            setCurrentVideoId(null);
+            setStatus(t('tv.host_disconnected') || 'Anfitrión desconectado. Esperando conexión...');
           } else if (e.payload.type === 'UNPAIRED') {
             const cleanTargetId = String(e.payload.tvId || '').replace(/\D/g, '');
             const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
             if (cleanTargetId && cleanCurrentPin && cleanTargetId !== cleanCurrentPin) return;
 
             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              playerRef.current.pauseVideo();
+              try { playerRef.current.pauseVideo(); } catch (err) {}
             }
+            const cA = document.getElementById('tv-yt-deck-a');
+            const cB = document.getElementById('tv-yt-deck-b');
+            if (cA) cA.style.opacity = '0.001';
+            if (cB) cB.style.opacity = '0.001';
             currentVideoIdRef.current = null;
             setCurrentVideoId(null);
             localStorage.removeItem('bq-tv-session-id');
@@ -321,11 +342,24 @@ export default function TVDisplayPage() {
         }
       });
 
-    // Intervalo de reintento automático (Heartbeat Retry):
-    // Solicita sincronización al anfitrión cada 2 segundos cuando:
-    // - No hay video cargado, O
-    // - El anfitrión está refrescando (para reconectar al volver)
+    // Intervalo de reintento automático y detección de anfitrión desconectado:
     const syncRetryInterval = setInterval(() => {
+      // Si llevamos más de 7.5s sin recibir heartbeat/sync del anfitrión mientras teníamos video cargado
+      const isHostOffline = currentVideoIdRef.current && !hostRefreshingRef.current && (Date.now() - lastHostSyncTimeRef.current > 7500);
+      if (isHostOffline) {
+        const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+        if (activeP && typeof activeP.pauseVideo === 'function') {
+          try { activeP.pauseVideo(); } catch (err) {}
+        }
+        const cA = document.getElementById('tv-yt-deck-a');
+        const cB = document.getElementById('tv-yt-deck-b');
+        if (cA) cA.style.opacity = '0.001';
+        if (cB) cB.style.opacity = '0.001';
+        currentVideoIdRef.current = null;
+        setCurrentVideoId(null);
+        setStatus(t('tv.host_disconnected') || 'Anfitrión desconectado. Esperando conexión...');
+      }
+
       const needsRetry = !currentVideoIdRef.current || hostRefreshingRef.current;
       if (needsRetry) {
         if (channelRef.current) {
@@ -778,6 +812,8 @@ const handleSync = (data) => {
   // Bloquear sincronización durante transiciones DJ para evitar interferencias
   if (isTvTransitioningRef.current) return;
 
+  lastHostSyncTimeRef.current = Date.now();
+
   const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
   if (!activeP || typeof activeP.getPlayerState !== 'function') {
     if (data?.videoId) {
@@ -789,6 +825,21 @@ const handleSync = (data) => {
   try {
     if (hostRefreshingRef.current && data.videoId) {
       hostRefreshingRef.current = false;
+    }
+
+    // Si el anfitrión no tiene canción en reproducción (cola vacía o reproductor detenido)
+    if (data && data.videoId === null) {
+      if (typeof activeP.pauseVideo === 'function') {
+        try { activeP.pauseVideo(); } catch (e) {}
+      }
+      const cA = document.getElementById('tv-yt-deck-a');
+      const cB = document.getElementById('tv-yt-deck-b');
+      if (cA) cA.style.opacity = '0.001';
+      if (cB) cB.style.opacity = '0.001';
+      currentVideoIdRef.current = null;
+      setCurrentVideoId(null);
+      setStatus(t('tv.waiting_realtime') || 'Esperando canciones...');
+      return;
     }
 
     // ── 1. Cambio de Video (Track Nuevo) ──
