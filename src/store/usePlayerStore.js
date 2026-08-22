@@ -389,14 +389,7 @@ export const usePlayerStore = create(
 
         const isSpotifyTrack = track.source === 'spotify' || (track.uri && track.uri.startsWith('spotify:')) || (track.id && track.id.length !== 11);
 
-        // 1. Instant 0ms Reuse: Si el ID actual en memoria coincide y es válido (ej. recarga F5)
-        const currentStoredYtId = get().currentYtId;
-        const isSameTrack = get().currentTrack?.id === track.id;
-        if (isSameTrack && currentStoredYtId && currentStoredYtId.length === 11 && !get().failedYouTubeIds.includes(currentStoredYtId)) {
-          return { videoIdToPlay: currentStoredYtId, isSpotifyTrack, effectiveMode: mode };
-        }
-
-        // 2. Instant Check: Si el objeto track ya tiene youtube_id / ytId adjunto
+        // 1. Instant Check: Si el objeto track ya tiene youtube_id / ytId adjunto
         const directYtId = track.youtube_id || track.ytId;
         if (directYtId && directYtId.length === 11 && !get().failedYouTubeIds.includes(directYtId)) {
           return { videoIdToPlay: directYtId, isSpotifyTrack, effectiveMode: mode };
