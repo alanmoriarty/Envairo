@@ -886,31 +886,55 @@ const handleSync = (data) => {
 
     const playerState = activeP.getPlayerState();
     const isCurrentlyPlaying = playerState === window.YT.PlayerState.PLAYING;
-    const isCurrentlyPaused = playerState === window.YT.PlayerState.PAUSED;
 
-    // ── 2. Corrección Suave de Deriva de Tiempo y Recuperación de Segundo Plano ──
-    if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current) {
+    // ── 2. Sincronización de Estado Play / Pause (Máxima Prioridad) ──
+    if (typeof data.isPlaying === 'boolean') {
+      isHostPlayingRef.current = data.isPlaying;
+      if (!data.isPlaying && isCurrentlyPlaying) {
+        activeP.pauseVideo();
+      } else if (data.isPlaying && !isCurrentlyPlaying) {
+        activeP.playVideo();
+      }
+    }
+
+    // Si el anfitrión está en PAUSA, NO realizar corrección continua de deriva de tiempo
+    if (!data.isPlaying) {
+      if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current) {
+        const currentTime = activeP.getCurrentTime() || 0;
+        const diff = Math.abs(data.time - currentTime);
+        // Solo saltar si el usuario en el anfitrión hizo un salto manual notable en pausa (> 4s)
+        const timeSinceLastSeek = Date.now() - lastSeekTimeRef.current;
+        if (diff > 4.0 && timeSinceLastSeek > 4000) {
+          lastSeekTimeRef.current = Date.now();
+          activeP.seekTo(data.time, true);
+        }
+      }
+      return;
+    }
+
+    // ── 3. Corrección Suave de Deriva de Tiempo (Solo en Reproducción Activa) ──
+    if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current && data.isPlaying) {
       const isEnded = playerState === window.YT.PlayerState.ENDED;
       const duration = activeP.getDuration() || 0;
 
       const transitDelay = (data.sentAt && data.sentAt > 0)
         ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
         : 0;
-      const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
+      const targetTime = data.time + transitDelay;
       const currentTime = activeP.getCurrentTime() || 0;
       const diff = targetTime - currentTime;
       const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
       const timeSinceLastSeek = Date.now() - lastSeekTimeRef.current;
 
-      // Si la pestaña estuvo en segundo plano y se quedó atrás (> 1.2s), saltar inmediatamente al tiempo real
-      if (Math.abs(diff) > 1.2 && timeSinceTrackStart > 2000 && timeSinceLastSeek > 1500) {
+      // Si la pestaña estuvo en segundo plano y se quedó atrás (> 1.5s), saltar inmediatamente al tiempo real
+      if (Math.abs(diff) > 1.5 && timeSinceTrackStart > 2000 && timeSinceLastSeek > 2000) {
         lastSeekTimeRef.current = Date.now();
         activeP.seekTo(targetTime, true);
         if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
-        if (data.isPlaying && typeof activeP.playVideo === 'function') {
+        if (typeof activeP.playVideo === 'function') {
           try { activeP.playVideo(); } catch (e) {}
         }
-      } else if (isCurrentlyPlaying) {
+      } else {
         let targetRate = 1.0;
         if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
           targetRate = 1.0;
@@ -935,16 +959,6 @@ const handleSync = (data) => {
             }
           } catch (e) {}
         }
-      }
-    }
-
-    // ── 3. Sincronización de Estado Play / Pause ──
-    if (typeof data.isPlaying === 'boolean') {
-      isHostPlayingRef.current = data.isPlaying;
-      if (!data.isPlaying && isCurrentlyPlaying) {
-        activeP.pauseVideo();
-      } else if (data.isPlaying && !isCurrentlyPlaying) {
-        activeP.playVideo();
       }
     }
   } catch (err) {

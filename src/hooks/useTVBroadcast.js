@@ -82,19 +82,26 @@ export function useTVBroadcast() {
         const isCurrentlyPlaying = playerState === window.YT.PlayerState.PLAYING;
         const isEnded = playerState === window.YT.PlayerState.ENDED;
 
-        // ── 1. Sync video ID ──
-        if (data.videoId && data.videoId !== store.currentYtId) {
-          // The master switched tracks — let playEngineTrack handle it via
-          // useQueueSync postgres_changes. We just need to sync play state.
-          // Don't attempt to seekTo or change rate for a different video.
+        // ── 1. Sync play/pause state (Priority 1) ──
+        if (typeof data.isPlaying === 'boolean') {
+          if (!data.isPlaying && isCurrentlyPlaying) {
+            player.pauseVideo();
+            store.setIsPlaying(false);
+          } else if (data.isPlaying && !isCurrentlyPlaying && !isEnded) {
+            player.playVideo();
+            store.setIsPlaying(true);
+          }
         }
 
-        // ── 2. Sync time (only for same video) ──
+        // Si el master está en pausa, no realizar corrección continua de deriva
+        if (!data.isPlaying) return;
+
+        // ── 2. Sync time (only while actively playing) ──
         if (typeof data.time === 'number' && data.videoId === store.currentYtId) {
           const transitDelay = (data.sentAt && data.sentAt > 0)
             ? Math.max(0, Math.min(2.0, (Date.now() - data.sentAt) / 1000))
             : 0;
-          const targetTime = data.time + (data.isPlaying ? transitDelay : 0);
+          const targetTime = data.time + transitDelay;
           const currentTime = player.getCurrentTime() || 0;
           const diff = targetTime - currentTime; // positive = slave is behind
           const duration = player.getDuration() || 0;
@@ -121,17 +128,6 @@ export function useTVBroadcast() {
           } else {
             // Ultra tight sync — standard speed
             if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
-          }
-        }
-
-        // ── 3. Sync play/pause state ──
-        if (typeof data.isPlaying === 'boolean') {
-          if (!data.isPlaying && isCurrentlyPlaying) {
-            player.pauseVideo();
-            store.setIsPlaying(false);
-          } else if (data.isPlaying && !isCurrentlyPlaying && !isEnded) {
-            player.playVideo();
-            store.setIsPlaying(true);
           }
         }
       } catch (err) {
