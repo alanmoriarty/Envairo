@@ -691,20 +691,24 @@ export function useYouTubeSDK() {
         const isTransitionDeck = isTransitioningRef.current;
         const p = deck === 'A' ? playerARef.current : playerBRef.current;
 
-        if (event.data === yt.PlayerState.PLAYING && (isCurrentDeck || isTransitionDeck)) {
-          const wrapper = document.getElementById('youtube-wrapper');
-          if (wrapper) wrapper.dataset.errorHidden = 'false';
+        if (event.data === yt.PlayerState.PLAYING) {
+          if (isCurrentDeck || isTransitionDeck) {
+            const wrapper = document.getElementById('youtube-wrapper');
+            if (wrapper) wrapper.dataset.errorHidden = 'false';
 
-          lastLoadTimeRef.current = 0;
-          try {
-            if (typeof p.unMute === 'function') p.unMute();
-          } catch (e) {}
-          setIsPlaying(true);
-          setDuration(Math.floor(p.getDuration() * 1000));
-          startProgressTimer(p);
-        } else if (event.data === yt.PlayerState.PAUSED && isCurrentDeck && !isTransitioningRef.current) {
-          // Ignorar estados transitorios PAUSED del ciclo de carga de YouTube en los primeros 2s
-          const isTransientLoadPause = Date.now() - lastLoadTimeRef.current < 2000;
+            lastLoadTimeRef.current = 0;
+            try {
+              if (typeof p.unMute === 'function') p.unMute();
+            } catch (e) {}
+            setIsPlaying(true);
+            setDuration(Math.floor(p.getDuration() * 1000));
+            startProgressTimer(p);
+          }
+        } else if (event.data === yt.PlayerState.PAUSED) {
+          // Ignorar eventos PAUSED si vienen del deck saliente o durante una transición activa
+          if (!isCurrentDeck || isTransitionDeck) return;
+          // Ignorar estados transitorios PAUSED del ciclo de carga de YouTube en los primeros 3s
+          const isTransientLoadPause = Date.now() - lastLoadTimeRef.current < 3000;
           if (!isTransientLoadPause) {
             setIsPlaying(false);
             stopProgressTimer();
@@ -719,10 +723,10 @@ export function useYouTubeSDK() {
               } catch (e) {}
             }, 250);
           }
-        } else if (event.data === yt.PlayerState.ENDED && isCurrentDeck) {
+        } else if (event.data === yt.PlayerState.ENDED) {
+          if (!isCurrentDeck || isTransitionDeck) return;
           setIsPlaying(false);
           stopProgressTimer();
-          if (isTransitioningRef.current) return;
           const store = usePlayerStore.getState();
           const nextTrack = store.shiftQueue();
           if (nextTrack) {
@@ -955,6 +959,8 @@ export function useYouTubeSDK() {
     const nextTrack = freshStore.shiftQueue();
     if (nextTrack) {
       currentYtIdRef.current = videoIdToPlay;
+      lastLoadTimeRef.current = Date.now();
+      activeDeckRef.current = incomingDeck;
       usePlayerStore.setState({
         currentYtId: videoIdToPlay,
         currentTrack: nextTrack,
@@ -1059,9 +1065,6 @@ export function useYouTubeSDK() {
       clearInterval(crossfadeInterval);
       clearInterval(watchdogInterval);
 
-      // Consolidar cambio definitivo de deck activo
-      activeDeckRef.current = incomingDeck;
-
       // Conectar el temporizador de progreso al nuevo reproductor activo
       if (incomingPlayer) {
         startProgressTimer(incomingPlayer);
@@ -1071,10 +1074,10 @@ export function useYouTubeSDK() {
         } catch (e) { }
       }
 
-      // Detener y resetear el deck saliente
+      // Pausar y resetear suavemente el deck saliente
       try {
-        if (outgoingPlayer && typeof outgoingPlayer.stopVideo === 'function') {
-          outgoingPlayer.stopVideo();
+        if (outgoingPlayer && typeof outgoingPlayer.pauseVideo === 'function') {
+          outgoingPlayer.pauseVideo();
         }
       } catch (e) { }
 
