@@ -59,7 +59,7 @@ export async function sendRemotePlaybackCommand(action, params = {}) {
       p_updates: {
         playback_command: command
       }
-    }).catch(err => {
+    }).then(() => {}, (err) => {
       console.error('Error persisting remote command to DB:', err);
     });
   }
@@ -100,7 +100,7 @@ export async function sendRemoteQueueUpdate(queue, currentQueueIndex) {
         queue,
         current_queue_index: payload.currentQueueIndex
       }
-    }).catch(err => {
+    }).then(() => {}, (err) => {
       console.error('Error persisting remote queue to DB:', err);
     });
   }

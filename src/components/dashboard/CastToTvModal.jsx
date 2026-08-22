@@ -163,13 +163,21 @@ export function CastToTvModal({ isOpen, onClose }) {
       if (activeSessionId) {
         const secret = useSettingsStore.getState().hostSecret;
         if (secret) {
-          supabase.rpc('sync_host_config', {
-            p_session_id: activeSessionId,
-            p_secret: secret,
-            p_updates: { paired_tvs: updatedList }
-          }).catch(console.error);
+          try {
+            await supabase.rpc('sync_host_config', {
+              p_session_id: activeSessionId,
+              p_secret: secret,
+              p_updates: { paired_tvs: updatedList }
+            });
+          } catch (rpcErr) {
+            console.error('Error syncing paired_tvs via RPC:', rpcErr);
+          }
         }
-        supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+        try {
+          await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId);
+        } catch (dbErr) {
+          console.error('Error updating paired_tvs table:', dbErr);
+        }
       }
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
@@ -202,13 +210,21 @@ export function CastToTvModal({ isOpen, onClose }) {
     if (activeSessionId) {
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        supabase.rpc('sync_host_config', {
-          p_session_id: activeSessionId,
-          p_secret: secret,
-          p_updates: { paired_tvs: updatedList }
-        }).catch(console.error);
+        try {
+          await supabase.rpc('sync_host_config', {
+            p_session_id: activeSessionId,
+            p_secret: secret,
+            p_updates: { paired_tvs: updatedList }
+          });
+        } catch (rpcErr) {
+          console.error('Error syncing paired_tvs via RPC:', rpcErr);
+        }
       }
-      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+      try {
+        await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId);
+      } catch (dbErr) {
+        console.error('Error updating paired_tvs table:', dbErr);
+      }
     }
 
     // 2. Broadcast Directo al canal específico de la TV (tv-pair-{tvId})
@@ -276,13 +292,21 @@ export function CastToTvModal({ isOpen, onClose }) {
     if (activeSessionId) {
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        supabase.rpc('sync_host_config', {
-          p_session_id: activeSessionId,
-          p_secret: secret,
-          p_updates: { paired_tvs: updatedList }
-        }).catch(console.error);
+        try {
+          await supabase.rpc('sync_host_config', {
+            p_session_id: activeSessionId,
+            p_secret: secret,
+            p_updates: { paired_tvs: updatedList }
+          });
+        } catch (rpcErr) {
+          console.error('Error syncing paired_tvs via RPC:', rpcErr);
+        }
       }
-      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+      try {
+        await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId);
+      } catch (dbErr) {
+        console.error('Error updating paired_tvs table:', dbErr);
+      }
     }
 
     // 2. Broadcast Directo al canal específico de la TV (tv-pair-{tvId})

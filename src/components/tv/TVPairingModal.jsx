@@ -103,13 +103,21 @@ export function TVPairingModal({ isOpen, onClose }) {
       if (activeSessionId) {
         const secret = useSettingsStore.getState().hostSecret;
         if (secret) {
-          supabase.rpc('sync_host_config', {
-            p_session_id: activeSessionId,
-            p_secret: secret,
-            p_updates: { paired_tvs: updatedList }
-          }).catch(console.error);
+          try {
+            await supabase.rpc('sync_host_config', {
+              p_session_id: activeSessionId,
+              p_secret: secret,
+              p_updates: { paired_tvs: updatedList }
+            });
+          } catch (rpcErr) {
+            console.error('Error syncing paired_tvs via RPC:', rpcErr);
+          }
         }
-        supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+        try {
+          await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId);
+        } catch (dbErr) {
+          console.error('Error updating paired_tvs table:', dbErr);
+        }
       }
 
       toast.success(t('cast.tv_linked', { pin: `${cleanPin.slice(0, 3)}-${cleanPin.slice(3)}` }));
@@ -126,7 +134,7 @@ export function TVPairingModal({ isOpen, onClose }) {
     }
   };
 
-  const handleUnpair = (tvId) => {
+  const handleUnpair = async (tvId) => {
     // Transmitir desconexión a esa TV
     const pairChannel = supabase.channel(`tv-pair-${tvId}`);
     pairChannel.subscribe(async (status) => {
@@ -148,13 +156,21 @@ export function TVPairingModal({ isOpen, onClose }) {
     if (activeSessionId) {
       const secret = useSettingsStore.getState().hostSecret;
       if (secret) {
-        supabase.rpc('sync_host_config', {
-          p_session_id: activeSessionId,
-          p_secret: secret,
-          p_updates: { paired_tvs: updatedList }
-        }).catch(console.error);
+        try {
+          await supabase.rpc('sync_host_config', {
+            p_session_id: activeSessionId,
+            p_secret: secret,
+            p_updates: { paired_tvs: updatedList }
+          });
+        } catch (rpcErr) {
+          console.error('Error syncing paired_tvs via RPC:', rpcErr);
+        }
       }
-      supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId).catch(() => {});
+      try {
+        await supabase.from('sessions').update({ paired_tvs: updatedList }).eq('id', activeSessionId);
+      } catch (dbErr) {
+        console.error('Error updating paired_tvs table:', dbErr);
+      }
     }
 
     toast.success(t('cast.tv_unlinked'));
