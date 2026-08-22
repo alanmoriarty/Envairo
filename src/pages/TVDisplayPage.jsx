@@ -115,6 +115,7 @@ export default function TVDisplayPage() {
   const trackStartedAtRef = useRef(0);
   const lastSeekTimeRef = useRef(0);
   const lastHostSyncTimeRef = useRef(Date.now());
+  const isHostPlayingRef = useRef(true);
   const silentAudioRef = useRef(null);
 
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
@@ -595,9 +596,11 @@ export default function TVDisplayPage() {
       if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
         sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
       }
-      const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
-      if (activeP && typeof activeP.playVideo === 'function') {
-        try { activeP.playVideo(); } catch (e) {}
+      if (isHostPlayingRef.current) {
+        const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+        if (activeP && typeof activeP.playVideo === 'function') {
+          try { activeP.playVideo(); } catch (e) {}
+        }
       }
     }
   };
@@ -605,6 +608,9 @@ export default function TVDisplayPage() {
   // Watchdog periódico para revivir la reproducción si el navegador intenta pausarla en segundo plano
   const bgWatchdogInterval = setInterval(() => {
     if (isTvTransitioningRef.current || hostRefreshingRef.current || isBufferingRef.current) return;
+    // NUNCA revivir ni despausar si el anfitrión está pausado por el usuario
+    if (!isHostPlayingRef.current) return;
+
     const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
     if (activeP && typeof activeP.getPlayerState === 'function' && currentVideoIdRef.current) {
       const state = activeP.getPlayerState();
@@ -934,9 +940,8 @@ const handleSync = (data) => {
 
     // ── 3. Sincronización de Estado Play / Pause ──
     if (typeof data.isPlaying === 'boolean') {
-      const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
-      // Ignorar órdenes de pausa transitorias durante los primeros 5 segundos de una pista nueva
-      if (!data.isPlaying && isCurrentlyPlaying && timeSinceTrackStart > 5000) {
+      isHostPlayingRef.current = data.isPlaying;
+      if (!data.isPlaying && isCurrentlyPlaying) {
         activeP.pauseVideo();
       } else if (data.isPlaying && !isCurrentlyPlaying) {
         activeP.playVideo();
