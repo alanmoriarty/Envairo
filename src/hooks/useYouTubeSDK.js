@@ -448,13 +448,15 @@ export function useYouTubeSDK() {
       applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, false);
       document.body.appendChild(wrapper);
 
-      // DECK A CONTAINER
+      // DECK A CONTAINER (GPU Layer)
       const containerA = document.createElement('div');
       containerA.id = 'yt-deck-a';
       containerA.style.position = 'absolute';
       containerA.style.inset = '0';
       containerA.style.opacity = '1';
       containerA.style.zIndex = '3';
+      containerA.style.transform = 'translateZ(0)';
+      containerA.style.willChange = 'opacity, transform';
       containerA.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
       wrapper.appendChild(containerA);
 
@@ -462,13 +464,15 @@ export function useYouTubeSDK() {
       targetA.id = 'youtube-player-deck-a';
       containerA.appendChild(targetA);
 
-      // DECK B CONTAINER (Standby / Dual-buffer player)
+      // DECK B CONTAINER (Standby / Dual-buffer GPU Layer)
       const containerB = document.createElement('div');
       containerB.id = 'yt-deck-b';
       containerB.style.position = 'absolute';
       containerB.style.inset = '0';
-      containerB.style.opacity = '0';
-      containerB.style.zIndex = '2';
+      containerB.style.opacity = '0.001'; // Opacidad microscópica pero activa para evitar que el compositor GPU congele el iframe
+      containerB.style.zIndex = '1';
+      containerB.style.transform = 'translateZ(0)';
+      containerB.style.willChange = 'opacity, transform';
       containerB.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
       wrapper.appendChild(containerB);
 
@@ -608,13 +612,13 @@ export function useYouTubeSDK() {
           if (activeContainer) {
             activeContainer.style.opacity = '1';
             activeContainer.style.zIndex = '3';
-            activeContainer.style.transform = 'none';
+            activeContainer.style.transform = 'translateZ(0)';
             activeContainer.style.filter = 'none';
           }
           if (standbyContainer) {
-            standbyContainer.style.opacity = '0';
-            standbyContainer.style.zIndex = '2';
-            standbyContainer.style.transform = 'none';
+            standbyContainer.style.opacity = '0.001';
+            standbyContainer.style.zIndex = '1';
+            standbyContainer.style.transform = 'translateZ(0)';
             standbyContainer.style.filter = 'none';
           }
           if (standbyP && typeof standbyP.stopVideo === 'function') {
@@ -684,9 +688,10 @@ export function useYouTubeSDK() {
       const handleStateChange = (deck, event) => {
         const yt = window.YT;
         const isCurrentDeck = activeDeckRef.current === deck;
+        const isTransitionDeck = isTransitioningRef.current;
         const p = deck === 'A' ? playerARef.current : playerBRef.current;
 
-        if (event.data === yt.PlayerState.PLAYING && isCurrentDeck) {
+        if (event.data === yt.PlayerState.PLAYING && (isCurrentDeck || isTransitionDeck)) {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
 
@@ -697,7 +702,7 @@ export function useYouTubeSDK() {
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
-        } else if (event.data === yt.PlayerState.PAUSED && isCurrentDeck) {
+        } else if (event.data === yt.PlayerState.PAUSED && isCurrentDeck && !isTransitioningRef.current) {
           // Ignorar estados transitorios PAUSED del ciclo de carga de YouTube en los primeros 2s
           const isTransientLoadPause = Date.now() - lastLoadTimeRef.current < 2000;
           if (!isTransientLoadPause) {
@@ -976,18 +981,37 @@ export function useYouTubeSDK() {
       }
     } catch (e) { }
 
+    // Watchdog de arranque forzado: insistir hasta que el reproductor entrante esté en PLAYING (1)
+    let watchdogAttempts = 0;
+    const watchdogInterval = setInterval(() => {
+      watchdogAttempts++;
+      try {
+        const pState = incomingPlayer && typeof incomingPlayer.getPlayerState === 'function' ? incomingPlayer.getPlayerState() : null;
+        if (pState === 1) { // PLAYING
+          clearInterval(watchdogInterval);
+          return;
+        }
+        if (incomingPlayer && typeof incomingPlayer.playVideo === 'function') {
+          incomingPlayer.playVideo();
+        }
+      } catch (e) {}
+      if (watchdogAttempts >= 15) {
+        clearInterval(watchdogInterval);
+      }
+    }, 150);
+
     // Conectar el timer de progreso a la nueva canción (incomingPlayer)
     startProgressTimer(incomingPlayer);
 
     // 4. Cruzar visualmente los contenedores (Opacity & Effects)
     if (incomingContainer) {
       incomingContainer.style.zIndex = '3';
-      incomingContainer.style.opacity = '0';
-      incomingContainer.style.transform = 'scale(1.02)';
+      incomingContainer.style.opacity = '0.001';
+      incomingContainer.style.transform = 'scale(1.02) translateZ(0)';
       incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
       setTimeout(() => {
         incomingContainer.style.opacity = '1';
-        incomingContainer.style.transform = 'none';
+        incomingContainer.style.transform = 'translateZ(0)';
       }, 50);
     }
 
@@ -996,13 +1020,13 @@ export function useYouTubeSDK() {
       outgoingContainer.style.transition = `opacity ${durationSec * 0.8}s ease, transform ${durationSec * 0.8}s ease, filter ${durationSec * 0.8}s ease`;
       
       if (chosenEffect === 'brake') {
-        outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95)';
+        outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95) translateZ(0)';
         outgoingContainer.style.filter = 'brightness(0.7)';
       } else if (chosenEffect === 'start') {
-        outgoingContainer.style.transform = 'rotate(8deg) scale(1.05)';
+        outgoingContainer.style.transform = 'rotate(8deg) scale(1.05) translateZ(0)';
         outgoingContainer.style.filter = 'brightness(1.1)';
       }
-      outgoingContainer.style.opacity = '0';
+      outgoingContainer.style.opacity = '0.001';
     }
 
     // 5. Rampa simultánea de volumen: Fade-out Deck saliente / Fade-in Deck entrante
@@ -1033,6 +1057,7 @@ export function useYouTubeSDK() {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
       clearInterval(crossfadeInterval);
+      clearInterval(watchdogInterval);
 
       // Consolidar cambio definitivo de deck activo
       activeDeckRef.current = incomingDeck;
@@ -1054,14 +1079,14 @@ export function useYouTubeSDK() {
       } catch (e) { }
 
       if (outgoingContainer) {
-        outgoingContainer.style.transform = 'none';
+        outgoingContainer.style.transform = 'translateZ(0)';
         outgoingContainer.style.filter = 'none';
-        outgoingContainer.style.opacity = '0';
+        outgoingContainer.style.opacity = '0.001';
         outgoingContainer.style.zIndex = '1';
       }
 
       if (incomingContainer) {
-        incomingContainer.style.transform = 'none';
+        incomingContainer.style.transform = 'translateZ(0)';
         incomingContainer.style.filter = 'none';
         incomingContainer.style.opacity = '1';
         incomingContainer.style.zIndex = '3';
