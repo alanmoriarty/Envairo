@@ -33,6 +33,9 @@ serve(async (req) => {
     let prompt = '';
     let systemPrompt = '';
 
+    const requestedTrackCount = Math.min(50, Math.max(1, settings?.trackCount || 35));
+    const promptTrackCount = Math.min(55, requestedTrackCount + 5);
+
     if (action_mode === 'generate') {
       prompt = `
 Eres "envAIro Selector", un DJ de Inteligencia Artificial experto en curación musical de clase mundial.
@@ -56,7 +59,7 @@ ${settings?.explicitFilter ? '- FILTRO EXPLÍCITO ESTRICTO (ACTIVADO): Queda est
 REGLAS DE ORO:
 1. PROHIBICIÓN TOTAL DE REPETIR CANCIONES: NUNCA sugieras ninguna canción que ya esté presente en el HISTORIAL DE CANCIONES ANTERIOR o en las Canciones PROHIBIDAS. Todas tus sugerencias deben ser canciones NUEVAS que no hayan sonado.
 2. CONTINUIDAD CON EL HISTORIAL: Utiliza el historial reciente como referencia de estilo, tempo y energía para que la sesión continúe de forma natural y armónica, aportando variedad y frescura.
-3. CANTIDAD EXACTA: Genera una lista EXACTA de ${settings?.trackCount || 35} sugerencias de canciones (formato "Nombre Canción - Artista"). IMPORTANTE: Si el usuario especifica una cantidad exacta en las Instrucciones Especiales (ej. "dame 10 canciones" o "solo 5"), DEBES ignorar tu límite por defecto y generar EXACTAMENTE esa cantidad solicitada (máximo absoluto 50).
+3. CANTIDAD EXACTA: Genera una lista con al menos ${promptTrackCount} sugerencias de canciones (formato "Nombre Canción - Artista") para asegurar que tras aplicar filtros el anfitrión reciba exactamente ${requestedTrackCount} canciones válidas.
 4. DIVERSIDAD EXTREMA: NUNCA repitas el mismo artista en la lista generada; cada canción debe ser de un artista diferente. Tampoco repitas artistas que ya hayan tenido protagonismo excesivo en el historial.
 5. TRANSICIONES: El orden debe tener fluidez (ej. no saltes de una balada lenta a algo extremadamente agresivo de golpe).
 6. REVISIÓN: Antes de generar la respuesta, verifica una por una que ninguna canción sugerida esté en el historial o en los filtros.

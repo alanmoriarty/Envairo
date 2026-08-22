@@ -51,73 +51,92 @@ serve(async (req) => {
       };
     };
 
-    // 2. Búsqueda masiva (Bulk) ultra-rápida en paralelo
+    // 2. Búsqueda masiva (Bulk) ultra-rápida usando iTunes CDN (con fallback Deezer)
     if (queries && queries.length > 0) {
       const searchPromises = queries.map(async (q: string) => {
         try {
-          let d_query = q;
-          if (q.includes('-')) {
-            const parts = q.split('-');
-            const trackPart = parts[0].trim();
-            const artistPart = parts.slice(1).join('-').trim();
-            d_query = `track:"${trackPart}" artist:"${artistPart}"`;
-          }
-
-          const searchParams = new URLSearchParams({
-            q: d_query,
-            limit: fetchLimit,
-            order: 'RANKING'
+          const cleanQuery = q.replace(/-/g, ' ').trim();
+          const itunesParams = new URLSearchParams({
+            term: cleanQuery,
+            entity: 'song',
+            limit: fetchLimit
           });
 
-          // Timeout de 2500ms para evitar que una petición lenta bloquee al lote
+          // Timeout de 2000ms
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2500);
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-          let searchResponse = await fetch(`https://api.deezer.com/search?${searchParams}`, {
+          let itunesResponse = await fetch(`https://itunes.apple.com/search?${itunesParams}`, {
             signal: controller.signal
           }).catch(() => null);
 
           clearTimeout(timeoutId);
 
-          let deezerData = searchResponse && searchResponse.ok ? await searchResponse.json().catch(() => null) : null;
+          let itunesData = itunesResponse && itunesResponse.ok ? await itunesResponse.json().catch(() => null) : null;
 
-          // Si la búsqueda estricta no trajo resultados, intentar búsqueda libre rápida
-          if (!deezerData || !deezerData.data || deezerData.data.length === 0) {
-            const fallbackParams = new URLSearchParams({
-              q: q.replace(/-/g, ' ').trim(),
-              limit: fetchLimit,
-              order: 'RANKING'
-            });
-            const fallbackRes = await fetch(`https://api.deezer.com/search?${fallbackParams}`).catch(() => null);
-            if (fallbackRes && fallbackRes.ok) {
-              deezerData = await fallbackRes.json().catch(() => null);
+          if (itunesData && itunesData.results && itunesData.results.length > 0) {
+            let results = itunesData.results;
+            if (filterExplicit) {
+              results = results.filter((track: any) => track.trackExplicitness !== 'explicit');
             }
-          }
+            results = results.slice(0, originalLimit);
 
-          // Aplicar filtro de contenido explícito si está activado
-          let cleanData = deezerData?.data || [];
-          if (filterExplicit) {
-            cleanData = cleanData.filter((track: any) => track.explicit_lyrics === false);
-          }
-          cleanData = cleanData.slice(0, originalLimit);
-
-          return {
-            tracks: {
-              items: cleanData.map((track: any) => ({
-                id: track.id.toString(),
-                uri: `deezer:track:${track.id}`,
-                name: track.title,
-                duration_ms: track.duration * 1000,
-                artists: [{ name: track.artist.name }],
-                album: {
-                  name: track.album.title,
-                  images: [
-                    { url: track.album.cover_xl || track.album.cover_big || track.album.cover }
-                  ]
+            if (results.length > 0) {
+              return {
+                tracks: {
+                  items: results.map((track: any) => {
+                    const bigImageUrl = track.artworkUrl100 ? track.artworkUrl100.replace('100x100bb', '600x600bb') : '';
+                    return {
+                      id: track.trackId?.toString() || Math.random().toString(),
+                      uri: `itunes:track:${track.trackId}`,
+                      name: track.trackName || track.collectionName || 'Unknown',
+                      duration_ms: track.trackTimeMillis || 0,
+                      artists: [{ name: track.artistName || 'Unknown' }],
+                      album: {
+                        name: track.collectionName || '',
+                        images: [{ url: bigImageUrl }]
+                      }
+                    };
+                  })
                 }
-              }))
+              };
             }
-          };
+          }
+
+          // Fallback a Deezer si iTunes no arrojó resultados
+          const deezerParams = new URLSearchParams({
+            q: cleanQuery,
+            limit: fetchLimit,
+            order: 'RANKING'
+          });
+
+          const deezerRes = await fetch(`https://api.deezer.com/search?${deezerParams}`).catch(() => null);
+          if (deezerRes && deezerRes.ok) {
+            const deezerData = await deezerRes.json().catch(() => null);
+            let cleanData = deezerData?.data || [];
+            if (filterExplicit) {
+              cleanData = cleanData.filter((track: any) => track.explicit_lyrics === false);
+            }
+            cleanData = cleanData.slice(0, originalLimit);
+
+            return {
+              tracks: {
+                items: cleanData.map((track: any) => ({
+                  id: track.id.toString(),
+                  uri: `deezer:track:${track.id}`,
+                  name: track.title,
+                  duration_ms: track.duration * 1000,
+                  artists: [{ name: track.artist.name }],
+                  album: {
+                    name: track.album.title,
+                    images: [{ url: track.album.cover_xl || track.album.cover_big || track.album.cover }]
+                  }
+                }))
+              }
+            };
+          }
+
+          return { tracks: { items: [] } };
         } catch (err) {
           console.error('Error buscando canción individual en lote:', q, err);
           return { tracks: { items: [] } };

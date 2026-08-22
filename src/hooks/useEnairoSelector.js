@@ -202,9 +202,12 @@ export function useEnairoSelector() {
           return !isDuplicate;
         });
 
-        if (nonRepeatedTracks.length > 0) {
-          usePlayerStore.getState().addMultipleToQueue(nonRepeatedTracks);
-          toast.success(`envAIro añadió ${nonRepeatedTracks.length} canciones únicas al ambiente.`);
+        // Asegurar entregar exactamente la cantidad solicitada por el usuario
+        const finalTracks = nonRepeatedTracks.slice(0, enairoTrackCount || 35);
+
+        if (finalTracks.length > 0) {
+          usePlayerStore.getState().addMultipleToQueue(finalTracks);
+          toast.success(`envAIro añadió ${finalTracks.length} canciones únicas al ambiente.`);
         } else if (foundTracks.length > 0) {
           toast.info(`envAIro omitió canciones sugeridas que ya habían sonado previamente.`);
         }
