@@ -488,10 +488,17 @@ export default function TVDisplayPage() {
     setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement));
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'f' || e.key === 'F') {
+      toggleFullscreen();
+    }
+  };
+
   document.addEventListener('fullscreenchange', handleFsChange);
   document.addEventListener('webkitfullscreenchange', handleFsChange);
   document.addEventListener('mozfullscreenchange', handleFsChange);
   document.addEventListener('MSFullscreenChange', handleFsChange);
+  window.addEventListener('keydown', handleKeyDown);
 
   return () => {
     clearInterval(syncRetryInterval);
@@ -515,6 +522,7 @@ export default function TVDisplayPage() {
     document.removeEventListener('webkitfullscreenchange', handleFsChange);
     document.removeEventListener('mozfullscreenchange', handleFsChange);
     document.removeEventListener('MSFullscreenChange', handleFsChange);
+    window.removeEventListener('keydown', handleKeyDown);
   };
 }, [sessionId]);
 
@@ -841,6 +849,7 @@ handleSyncRef.current = handleSync;
       className={`fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center overflow-hidden ${isIdle ? 'cursor-none' : ''}`}
       onMouseMove={handleMouseMove}
       onClick={handleMouseMove}
+      onDoubleClick={toggleFullscreen}
     >
       {/* 1. Contenedores permanentes de reproductores YouTube (Deck A y Deck B - Doble Buffer) */}
       <div
@@ -859,9 +868,9 @@ handleSyncRef.current = handleSync;
         <div id="tv-youtube-player-deck-b"></div>
       </div>
 
-      {/* Overlay de transición con nota musical animada (evita pantalla en negro) */}
+      {/* Overlay de transición con nota musical animada (evita pantalla en negro y preserva pantalla completa) */}
       {sessionId && isLoadingVideo && (
-        <div className="absolute inset-0 z-[5] bg-[#0c0914] flex flex-col items-center justify-center gap-4 transition-opacity duration-300 animate-fade-in pointer-events-none">
+        <div className="absolute inset-0 z-[5] bg-[#0c0914] flex flex-col items-center justify-center gap-4 transition-opacity duration-300 animate-fade-in pointer-events-none select-none">
           <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-accent/15 border-2 border-accent/40 shadow-[0_0_50px_rgba(157,78,221,0.35)]">
             <Music2 size={48} className="text-accent animate-pulse" />
           </div>
@@ -869,8 +878,8 @@ handleSyncRef.current = handleSync;
         </div>
       )}
 
-      {/* Click-blocking overlay */}
-      <div className="absolute inset-0 z-10 cursor-default"></div>
+      {/* Click-blocking & Fullscreen Double-Click overlay */}
+      <div className="absolute inset-0 z-10 cursor-default" onDoubleClick={toggleFullscreen}></div>
 
       {/* Modo Sin Emparejar (Pantalla de Vinculación con QR y PIN) */}
       {!sessionId && (
