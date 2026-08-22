@@ -120,6 +120,7 @@ export default function SettingsPage() {
     explicitFilter, setExplicitFilter,
     requestsPerHour, setRequestsPerHour,
     requestsPerGuest, setRequestsPerGuest,
+    guestSessionExpiryHours, setGuestSessionExpiryHours,
     tableCount, setTableCount,
     guestVersionRequest, setGuestVersionRequest,
     whitelistGenres, addWhitelistGenre, removeWhitelistGenre, clearWhitelistGenres,
@@ -155,7 +156,7 @@ export default function SettingsPage() {
 
   const ALL_KEYS_FOR_SYNC = [
     'eventName', 'mode', 'alwaysAvailable', 'startTime', 'endTime',
-    'requestsPerHour', 'requestsPerGuest', 'tableCount', 'partyRequestOffset',
+    'requestsPerHour', 'requestsPerGuest', 'guestSessionExpiryHours', 'tableCount', 'partyRequestOffset',
     'allowRepeats', 'repeatCooldown', 'cooldownEnabled', 'cooldownMinutes',
     'explicitFilter', 'guestVersionRequest', 'visualizerEnabled', 'visualizerUrl',
     'djTransitionsEnabled', 'djTransitionMode', 'djTransitionDuration',
@@ -428,6 +429,27 @@ export default function SettingsPage() {
                   onBlur={() => { if (requestsPerGuest === '') setRequestsPerGuest(0); }}
                   className="input-field w-full sm:w-24 text-center"
                 />
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">{t('settings.guest_expiry_title')}</label>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.guest_expiry_desc')}</p>
+                </div>
+                <select
+                  value={guestSessionExpiryHours || 6}
+                  onChange={(e) => setGuestSessionExpiryHours(Number(e.target.value))}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+                >
+                  <option value={2} className="bg-bg-root text-white">{t('settings.expiry_2h')}</option>
+                  <option value={4} className="bg-bg-root text-white">{t('settings.expiry_4h')}</option>
+                  <option value={6} className="bg-bg-root text-white">{t('settings.expiry_6h')}</option>
+                  <option value={8} className="bg-bg-root text-white">{t('settings.expiry_8h')}</option>
+                  <option value={12} className="bg-bg-root text-white">{t('settings.expiry_12h')}</option>
+                  <option value={24} className="bg-bg-root text-white">{t('settings.expiry_24h')}</option>
+                </select>
               </div>
             </div>
 

@@ -24,6 +24,7 @@ export const useSettingsStore = create(
       requestsPerGuest: 0,
       tableCount: 0,
       guestVersionRequest: false, // Allow guests to request Normal / Lyrics / Karaoke version
+      guestSessionExpiryHours: 6, // 2 | 4 | 6 | 8 | 12 | 24
       partyRequestOffset: 5,
       pairedTvs: [],
 
@@ -85,6 +86,7 @@ export const useSettingsStore = create(
         tableCount: 0,
         partyRequestOffset: 5,
         guestVersionRequest: false,
+        guestSessionExpiryHours: 6,
         djName: 'Dj Anfitrión',
         djAvatar: 'avatar1',
         lastSavedSignature: '',
@@ -134,6 +136,7 @@ export const useSettingsStore = create(
       setTableCount: (v) => set({ tableCount: v }),
       setPartyRequestOffset: (v) => set({ partyRequestOffset: Math.max(1, Math.min(20, parseInt(v, 10) || 5)) }),
       setGuestVersionRequest: (v) => set({ guestVersionRequest: v }),
+      setGuestSessionExpiryHours: (v) => set({ guestSessionExpiryHours: Math.max(1, Math.min(48, parseInt(v, 10) || 6)) }),
 
       // envAIro Selector AI
       enairoEnabled: false,

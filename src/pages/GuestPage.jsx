@@ -55,12 +55,20 @@ export default function GuestPage() {
   );
   const [qrAccessDenied, setQrAccessDenied] = useState(false);
   const [isExchangingToken, setIsExchangingToken] = useState(false);
+  const [minutesRemaining, setMinutesRemaining] = useState(null);
+
+  // Real-time session config from Supabase
+  const [sessionConfig, setSessionConfig] = useState(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  const stateData = sessionConfig?.session_state || {};
+  const sessionExpiryHours = sessionConfig?.guest_session_expiry_hours || stateData?.guest_session_expiry_hours || 6;
 
   useEffect(() => {
     const urlQrToken = new URLSearchParams(location.search).get('t');
     if (!urlQrToken) return; // Sin token en la URL, nada que canjear
 
-    // Al escanear un QR con ?t= siempre canjeamos un nuevo token de acceso de 6 horas
+    // Al escanear un QR con ?t= siempre canjeamos un nuevo token de acceso
     // para refrescar la sesión del invitado y no quedar bloqueado por tokens viejos expirados en localStorage
     setIsExchangingToken(true);
     supabase
@@ -72,18 +80,46 @@ export default function GuestPage() {
         if (error || !data) {
           console.warn('QR token no válido:', error?.message);
         } else {
-          // Guardar el nuevo token personal en localStorage
+          // Guardar el nuevo token personal y su expiración calculada en localStorage
+          const expiresAt = Date.now() + sessionExpiryHours * 3600 * 1000;
           localStorage.setItem(`gat_${sessionId}`, data);
+          localStorage.setItem(`gat_exp_${sessionId}`, String(expiresAt));
           setGuestToken(data);
           setQrAccessDenied(false); // Desbloquear pantalla si estaba en expirado
         }
       })
       .finally(() => setIsExchangingToken(false));
-  }, [sessionId, location.search]);
+  }, [sessionId, location.search, sessionExpiryHours]);
 
-  // Real-time session config from Supabase
-  const [sessionConfig, setSessionConfig] = useState(null);
-  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  // Verificación proactiva y periódica de expiración de sesión
+  useEffect(() => {
+    const checkExpiration = () => {
+      const storedToken = localStorage.getItem(`gat_${sessionId}`);
+      const storedExp = localStorage.getItem(`gat_exp_${sessionId}`);
+      if (storedToken && storedExp) {
+        const expTime = parseInt(storedExp, 10);
+        if (!isNaN(expTime)) {
+          const diffMs = expTime - Date.now();
+          const mins = Math.max(0, Math.floor(diffMs / 60000));
+          setMinutesRemaining(mins);
+
+          if (diffMs <= 0) {
+            localStorage.removeItem(`gat_${sessionId}`);
+            localStorage.removeItem(`gat_exp_${sessionId}`);
+            setGuestToken(null);
+            setQrAccessDenied(true);
+            setMinutesRemaining(0);
+          }
+        }
+      } else {
+        setMinutesRemaining(null);
+      }
+    };
+
+    checkExpiration();
+    const interval = setInterval(checkExpiration, 15000);
+    return () => clearInterval(interval);
+  }, [sessionId, guestToken]);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -136,8 +172,6 @@ export default function GuestPage() {
   const playHistory = Array.isArray(sessionConfig?.play_history) ? sessionConfig.play_history : [];
   const upcomingQueue = queue.slice(currentQueueIndex + 1);
   const { t, lang } = useTranslation();
-
-  const stateData = sessionConfig?.session_state || {};
 
   const isAvailable = !sessionConfig?._notFound && (sessionConfig?.active === true || stateData?.active === true);
   const isCommercial = (stateData.mode || sessionConfig?.mode) === 'commercial';
@@ -376,14 +410,16 @@ export default function GuestPage() {
           toast.error(t('guest.error_limit', { limit: requestsPerHour }));
         } else if (msg.includes('TOKEN_EXPIRED')) {
           localStorage.removeItem(`gat_${sessionId}`);
+          localStorage.removeItem(`gat_exp_${sessionId}`);
           setGuestToken(null);
           setQrAccessDenied(true);
-          toast.error('Tu acceso expiró (6 horas). Escanea el código QR de nuevo para continuar.');
+          toast.error(t('guest.token_expired_title'));
         } else if (msg.includes('INVALID_TOKEN')) {
           localStorage.removeItem(`gat_${sessionId}`);
+          localStorage.removeItem(`gat_exp_${sessionId}`);
           setGuestToken(null);
           setQrAccessDenied(true);
-          toast.error('Tu acceso ya no es válido. Escanea el código QR de nuevo.');
+          toast.error(t('guest.token_expired_title'));
         } else if (msg.includes('SESSION_NOT_FOUND')) {
           toast.error(t('guest.error_send'));
         } else {
@@ -463,7 +499,7 @@ export default function GuestPage() {
   if (qrAccessDenied) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%)' }}>
-        <div className="text-center max-w-sm">
+        <div className="text-center max-w-sm card p-6 sm:p-8 bg-bg-card/90 border border-white/10 shadow-2xl rounded-3xl animate-modal-content">
           <div className="w-20 h-20 rounded-3xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mx-auto mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
@@ -471,10 +507,16 @@ export default function GuestPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">{t('guest.token_expired_title')}</h1>
-          <p className="text-white/60 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: t('guest.token_expired_desc') }} />
-          <p className="text-white/40 text-sm">
+          <p className="text-white/70 text-sm leading-relaxed mb-6" dangerouslySetInnerHTML={{ __html: t('guest.token_expired_desc', { hours: sessionExpiryHours }) }} />
+          <p className="text-white/50 text-xs mb-6">
             {t('guest.token_expired_scan_again')}
           </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-primary w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-glow-sm cursor-pointer"
+          >
+            <span>{t('guest.rescan_qr_btn')}</span>
+          </button>
         </div>
       </div>
     );
@@ -499,6 +541,14 @@ export default function GuestPage() {
         <p className="text-text-muted mt-1 text-sm">
           {isCommercial ? t('guest.subtitle_commercial') : t('guest.subtitle_party')}
         </p>
+
+        {/* Warning when session is expiring soon (< 30 minutes) */}
+        {minutesRemaining !== null && minutesRemaining > 0 && minutesRemaining <= 30 && (
+          <div className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold animate-pulse">
+            <Clock size={13} />
+            <span>{t('guest.session_expiring_soon', { min: minutesRemaining })}</span>
+          </div>
+        )}
       </div>
 
       {/* Top Banner Ad */}
