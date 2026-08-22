@@ -728,7 +728,9 @@ const handleSync = (data) => {
 
     // ── 3. Sincronización de Estado Play / Pause ──
     if (typeof data.isPlaying === 'boolean') {
-      if (!data.isPlaying && isCurrentlyPlaying) {
+      const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
+      // Ignorar órdenes de pausa transitorias durante los primeros 5 segundos de una pista nueva
+      if (!data.isPlaying && isCurrentlyPlaying && timeSinceTrackStart > 5000) {
         activeP.pauseVideo();
       } else if (data.isPlaying && isCurrentlyPaused) {
         activeP.playVideo();

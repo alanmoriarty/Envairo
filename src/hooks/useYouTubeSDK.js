@@ -14,6 +14,7 @@ export function useYouTubeSDK() {
   const progressInterval = useRef(null);
   const isTransitioningRef = useRef(false);
   const transitionTimerRef = useRef(null);
+  const lastLoadTimeRef = useRef(0);
   const { visualizerEnabled, youtubeNativeCast } = useSettingsStore();
 
   const getActivePlayer = () => activeDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
@@ -624,6 +625,7 @@ export function useYouTubeSDK() {
           if (!activeP) return;
 
           currentYtIdRef.current = args.videoId;
+          lastLoadTimeRef.current = Date.now();
 
           try {
             if (typeof activeP.unMute === 'function') activeP.unMute();
@@ -667,12 +669,17 @@ export function useYouTubeSDK() {
           const wrapper = document.getElementById('youtube-wrapper');
           if (wrapper) wrapper.dataset.errorHidden = 'false';
 
+          lastLoadTimeRef.current = 0;
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
         } else if (event.data === yt.PlayerState.PAUSED && isCurrentDeck) {
-          setIsPlaying(false);
-          stopProgressTimer();
+          // Ignorar estados transitorios PAUSED del ciclo de carga de YouTube en los primeros 2s
+          const isTransientLoadPause = Date.now() - lastLoadTimeRef.current < 2000;
+          if (!isTransientLoadPause) {
+            setIsPlaying(false);
+            stopProgressTimer();
+          }
         } else if (event.data === yt.PlayerState.ENDED && isCurrentDeck) {
           setIsPlaying(false);
           stopProgressTimer();
