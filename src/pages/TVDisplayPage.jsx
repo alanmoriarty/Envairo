@@ -541,11 +541,11 @@ const handleTransitionStart = (data) => {
   const chosenEffect = data.effect || 'fade';
   const transitionMs = Math.max(2500, Math.floor(durationSec * 1000));
 
-  // 1. Cargar y arrancar el video entrante en el Deck en Standby en segundo plano
+  // 1. Cargar y arrancar el video entrante en el Deck en Standby en segundo plano con Audio Handshake
   try {
     if (tvWithSoundRef.current) {
       if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
-      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
+      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(1);
     } else {
       if (typeof incomingPlayer.mute === 'function') incomingPlayer.mute();
     }

@@ -808,13 +808,13 @@ export function useYouTubeSDK() {
               const pA = playerARef.current;
               const pB = playerBRef.current;
 
-              // Autorizar AMBOS reproductores simultáneamente con el gesto del usuario
+              // Autorizar AMBOS reproductores con Audio Handshake simultáneo
               try {
                 if (pA && typeof pA.unMute === 'function') pA.unMute();
               } catch (e) {}
               try {
-                if (pB && typeof pB.mute === 'function') pB.mute();
-                if (pB && typeof pB.setVolume === 'function') pB.setVolume(0);
+                if (pB && typeof pB.unMute === 'function') pB.unMute();
+                if (pB && typeof pB.setVolume === 'function') pB.setVolume(1);
               } catch (e) {}
 
               if (fresh.currentTrack && pA) {
@@ -842,9 +842,9 @@ export function useYouTubeSDK() {
                 iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
                 iframe.setAttribute('allowfullscreen', '1');
               }
-              // Inicializar Deck B en silencio con consumo ultra-bajo para registrar sesión multimedia activa
-              if (typeof e.target?.mute === 'function') e.target.mute();
-              if (typeof e.target?.setVolume === 'function') e.target.setVolume(0);
+              // Inicializar Deck B con Audio Handshake (unMute + volumen 1%) para registrar sesión multimedia activa
+              if (typeof e.target?.unMute === 'function') e.target.unMute();
+              if (typeof e.target?.setVolume === 'function') e.target.setVolume(1);
               if (typeof e.target?.setPlaybackQuality === 'function') e.target.setPlaybackQuality('small');
             } catch (err) {}
           },
@@ -988,10 +988,10 @@ export function useYouTubeSDK() {
       freshStore.queueAddToHistory(nextTrack);
     }
 
-    // 3. Arrancar la canción entrante en el Deck en Standby de forma limpia y continua
+    // 3. Arrancar la canción entrante en el Deck en Standby con Audio Handshake (unMute + volumen 1% para mantener vivo el canal de audio en el navegador)
     try {
-      if (typeof incomingPlayer.mute === 'function') incomingPlayer.mute();
-      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(0);
+      if (typeof incomingPlayer.unMute === 'function') incomingPlayer.unMute();
+      if (typeof incomingPlayer.setVolume === 'function') incomingPlayer.setVolume(1);
       if (typeof incomingPlayer.loadVideoById === 'function') {
         const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
         incomingPlayer.loadVideoById({
@@ -1063,7 +1063,7 @@ export function useYouTubeSDK() {
       const progressRatio = currentStep / steps; // 0 -> 1
 
       const outVol = Math.max(0, Math.floor(initialVolume * (1 - progressRatio)));
-      const inVol = Math.min(initialVolume, Math.floor(initialVolume * progressRatio));
+      const inVol = Math.max(1, Math.min(initialVolume, Math.floor(initialVolume * progressRatio)));
 
       try {
         if (outgoingPlayer && typeof outgoingPlayer.setVolume === 'function') outgoingPlayer.setVolume(outVol);
