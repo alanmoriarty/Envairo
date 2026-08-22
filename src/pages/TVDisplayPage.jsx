@@ -127,6 +127,7 @@ export default function TVDisplayPage() {
   const [visualizerEnabled, setVisualizerEnabled] = useState(false);
   const [visualizerUrl, setVisualizerUrl] = useState('');
   const visualizerEnabledRef = useRef(false);
+  const hasBeenConfirmedInDbRef = useRef(false);
 
   const getVisualizerEmbedUrl = (url) => {
     if (!url) return '';
@@ -143,6 +144,7 @@ export default function TVDisplayPage() {
   };
 
   const disconnectTv = (customStatus) => {
+    hasBeenConfirmedInDbRef.current = false;
     safeDestroyPlayer(playerARef, 'tv-yt-deck-a', 'tv-youtube-player-deck-a');
     safeDestroyPlayer(playerBRef, 'tv-yt-deck-b', 'tv-youtube-player-deck-b');
     const cA = document.getElementById('tv-yt-deck-a');
@@ -232,39 +234,6 @@ export default function TVDisplayPage() {
       supabase.removeChannel(pairChannel);
     };
   }, [tvPin, sessionId]);
-
-  // 1.5. Validar emparejamiento activo con la base de datos de Supabase
-  useEffect(() => {
-    if (!sessionId) return;
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('session')) return; // Conexión directa por URL no requiere verificación de PIN en paired_tvs
-
-    let isMounted = true;
-    const verifyPairing = async () => {
-      try {
-        const { data } = await supabase
-          .from('sessions')
-          .select('paired_tvs')
-          .eq('id', sessionId)
-          .maybeSingle();
-
-        if (!isMounted) return;
-        if (data) {
-          const cleanCurrentPin = String(tvPin || '').replace(/\D/g, '');
-          const pairedList = Array.isArray(data.paired_tvs) ? data.paired_tvs : [];
-          const myTvEntry = pairedList.find(t => String(t.id || '').replace(/\D/g, '') === cleanCurrentPin);
-          if (!myTvEntry) {
-            disconnectTv(t('tv.unpaired_by_host'));
-          }
-        }
-      } catch (err) {
-        console.warn('Error verificando estado de TV con Supabase:', err);
-      }
-    };
-
-    verifyPairing();
-    return () => { isMounted = false; };
-  }, [sessionId, tvPin]);
 
   // 2. Conectar a sincronización de reproducción (Local + Supabase Realtime Internet) cuando exista sessionId
   useEffect(() => {
@@ -375,15 +344,16 @@ export default function TVDisplayPage() {
           const pairedList = Array.isArray(newSession.paired_tvs) ? newSession.paired_tvs : [];
           const myTvEntry = pairedList.find(t => String(t.id || '').replace(/\D/g, '') === cleanCurrentPin);
 
-          // Si la TV estaba conectada por PIN y ya NO está en la lista de paired_tvs del anfitrión, desvincularla de inmediato
-          if (!isDirectUrlSession && !myTvEntry) {
+          if (myTvEntry) {
+            hasBeenConfirmedInDbRef.current = true;
+            // Si cambió el estado de sonido en la base de datos para esta TV
+            if (typeof myTvEntry.soundEnabled === 'boolean' && myTvEntry.soundEnabled !== tvWithSoundRef.current) {
+              handleToggleSound(myTvEntry.soundEnabled);
+            }
+          } else if (!isDirectUrlSession && hasBeenConfirmedInDbRef.current) {
+            // Solo desconectar si YA había sido confirmada previamente en la BD y ahora fue eliminada
+            hasBeenConfirmedInDbRef.current = false;
             disconnectTv(t('tv.unpaired_by_host'));
-            return;
-          }
-
-          // Si cambió el estado de sonido en la base de datos para esta TV
-          if (myTvEntry && typeof myTvEntry.soundEnabled === 'boolean' && myTvEntry.soundEnabled !== tvWithSoundRef.current) {
-            handleToggleSound(myTvEntry.soundEnabled);
           }
         }
       )
