@@ -68,11 +68,7 @@ export function useEnairoSelector() {
     blacklistSongs,
     blacklistArtists,
     enairoTrackCount,
-    explicitFilter,
-    enairoSweepCount,
-    enairoSweepDate,
-    setEnairoSweepCount,
-    resetEnairoSweepUsage
+    explicitFilter
   } = useSettingsStore();
   const { queue, playHistory, addToQueue, removeFromQueue, reorderQueue } = usePlayerStore();
 
@@ -266,43 +262,58 @@ export function useEnairoSelector() {
   };
 
   const autoReorderQueue = async (isInitial = false) => {
-    // Solo ejecutamos si hay reproductor listo y no está pensando
-    if (isThinking) return;
+    if (isThinking) return false;
 
-    if (!isInitial) {
-      // 1. Validaciones de tiempo y uso diario para Auto Reorder (max 5)
-      const today = await getSecureServerDateString();
-      let currentAutoCount = useSettingsStore.getState().enairoAutoReorderCount || 0;
-      const autoDate = useSettingsStore.getState().enairoAutoReorderDate || '';
+    const state = usePlayerStore.getState();
+    const currentQueue = state.queue || [];
+    const currentQueueIndex = typeof state.currentQueueIndex === 'number' ? state.currentQueueIndex : -1;
 
-      if (autoDate !== today) {
-        useSettingsStore.getState().resetEnairoAutoReorderUsage();
-        currentAutoCount = 0;
+    // Solo enviamos las canciones por sonar (inmunidad total a la canción actual y pasadas)
+    const upcomingQueue = currentQueue.slice(currentQueueIndex + 1);
+
+    if (upcomingQueue.length < 3) {
+      if (!isInitial) {
+        toast.info('Se necesitan al menos 3 canciones en la lista para armonizar el orden.');
       }
+      return false;
+    }
 
-      if (!useSettingsStore.getState().enairoTestMode && currentAutoCount >= 5) {
-        console.warn('Límite de Auto Reordenamiento (5 al día) alcanzado. Esperando a mañana.');
-        return; // Skip reorder
-      }
+    const now = await getSecureServerTime();
+    const today = await getSecureServerDateString();
+    const settingsState = useSettingsStore.getState();
 
-      // Update usage (solo se actualiza el contador, la UI no bloquea pero esto previene spam)
-      useSettingsStore.getState().setEnairoAutoReorderCount(currentAutoCount + 1, today);
+    // 1. Validaciones de tiempo y uso diario para Auto Reorder (max 5)
+    let currentAutoCount = settingsState.enairoAutoReorderCount || 0;
+    const autoDate = settingsState.enairoAutoReorderDate || '';
+
+    if (autoDate !== today) {
+      settingsState.resetEnairoAutoReorderUsage();
+      currentAutoCount = 0;
+    }
+
+    if (!settingsState.enairoTestMode && currentAutoCount >= 5) {
+      toast.error('Límite de armonización diaria alcanzado (5/5). Vuelve mañana.', { icon: '🚫' });
+      return false;
+    }
+
+    // Cooldown de 5 minutos entre ejecuciones manuales (300000 ms)
+    if (!isInitial && !settingsState.enairoTestMode && now < (settingsState.enairoReorderCooldownUntil || 0)) {
+      const secondsLeft = Math.ceil((settingsState.enairoReorderCooldownUntil - now) / 1000);
+      const mins = Math.floor(secondsLeft / 60);
+      const secs = secondsLeft % 60;
+      toast.info(`Espera un momento antes de volver a armonizar (${mins}:${String(secs).padStart(2, '0')}).`, { icon: '⏳' });
+      return false;
     }
 
     setIsThinking(true);
 
     try {
-      const state = usePlayerStore.getState();
-      const currentQueue = state.queue;
-      const history = state.playHistory;
-
-      const settingsState = useSettingsStore.getState();
-
+      const history = state.playHistory || [];
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
           action_mode: 'reorder',
           history: history.slice(0, 5),
-          queue: currentQueue,
+          queue: upcomingQueue,
           settings: { 
             isInitialReorder: isInitial,
             enairoPrompt: settingsState.enairoPrompt,
@@ -317,19 +328,24 @@ export function useEnairoSelector() {
       if (error) throw error;
 
       const { actions = [], reasoning, tracksToAdd = [] } = data;
-
       let removedCount = 0;
 
       if (actions.length > 0) {
         actions.forEach(action => {
           if (action.type === 'remove' && action.queueId) {
-            state.removeFromQueue(action.queueId);
-            removedCount++;
+            // Protección de peticiones del público: NUNCA eliminar canciones pedidas por invitados
+            const targetTrack = currentQueue.find(t => t.queueId === action.queueId);
+            if (targetTrack && !targetTrack.requestedBy) {
+              state.removeFromQueue(action.queueId);
+              removedCount++;
+            }
           } else if (action.type === 'reorder' && action.queueId && typeof action.newIndex === 'number') {
             const latestQueue = usePlayerStore.getState().queue;
             const oldIndex = latestQueue.findIndex(t => t.queueId === action.queueId);
-            if (oldIndex !== -1 && oldIndex !== action.newIndex && action.newIndex < latestQueue.length) {
-              state.reorderQueue(oldIndex, action.newIndex);
+            // El nuevo índice es relativo a la parte upcoming
+            const targetIndex = (currentQueueIndex + 1) + action.newIndex;
+            if (oldIndex > currentQueueIndex && targetIndex > currentQueueIndex && targetIndex < latestQueue.length && oldIndex !== targetIndex) {
+              state.reorderQueue(oldIndex, targetIndex);
             }
           }
         });
@@ -372,114 +388,28 @@ export function useEnairoSelector() {
         nonRepeatedTracks.forEach(track => state.addToQueue(track));
       }
 
+      // Actualizar contador y cooldown
+      const REORDER_COOLDOWN_MS = settingsState.enairoTestMode ? 15000 : 5 * 60 * 1000; // 15s test, 5min real
+      settingsState.setEnairoAutoReorderCount(currentAutoCount + 1, today);
+      settingsState.setEnairoReorderCooldownUntil(now + REORDER_COOLDOWN_MS);
+
       if (removedCount > 0) {
-        toast.success(`envAIro eliminó ${removedCount} peticiones fuera de vibra y añadió reemplazos perfectos.`);
-      } else if (actions.length > 0 || tracksToAdd.length > 0) {
-        toast.info(`envAIro ha ajustado la lista para mantener la mejor vibra.`);
+        toast.success(`envAIro ajustó el orden y reemplazó ${removedCount} canciones fuera de vibra.`);
+      } else {
+        toast.success(`envAIro armonizó la cola para obtener las mejores transiciones.`, { icon: '✨' });
       }
+
+      return true;
 
     } catch (err) {
       console.error("Error en envAIro Auto-Reorder:", err);
+      toast.error('No se pudo armonizar la cola en este momento.');
+      return false;
     } finally {
       setIsThinking(false);
       // Reseteamos banderas sin importar si tuvo éxito o falló
       usePlayerStore.getState().resetNewRequestsFlag();
       usePlayerStore.getState().resetPlaybackMinutes();
-    }
-  };
-
-  const autoSweepExplicitContent = async () => {
-    if (!explicitFilter) return;
-
-    const today = await getSecureServerDateString();
-    let currentSweepCount = enairoSweepCount || 0;
-    
-    if (enairoSweepDate !== today) {
-      resetEnairoSweepUsage();
-      currentSweepCount = 0;
-    }
-
-    if (currentSweepCount >= 5) return; // Máximo 5 barridos por día
-
-    if (isThinking) return;
-    setIsThinking(true);
-
-    try {
-      const state = usePlayerStore.getState();
-      const currentQueue = state.queue;
-
-      if (currentQueue.length === 0) return;
-
-      const { data, error } = await supabase.functions.invoke('enairo-selector', {
-        body: {
-          action_mode: 'sweep_explicit',
-          queue: currentQueue
-        }
-      });
-
-      if (error) throw error;
-      const { tracksToAdd = [], actions = [], reasoning } = data;
-
-      if (actions.length > 0) {
-        actions.forEach(action => {
-          if (action.type === 'remove' && action.queueId) {
-            state.removeFromQueue(action.queueId);
-            toast.success(`Filtro de Contenido: envAIro eliminó una canción explícita de la cola.`);
-          }
-        });
-      }
-
-      // Si la IA nos mandó reemplazos limpios, los buscamos en Spotify y los agregamos
-      if (tracksToAdd.length > 0) {
-        let foundTracks = [];
-        try {
-          const { data: searchData, error: searchError } = await supabase.functions.invoke('search-spotify', {
-            body: { queries: tracksToAdd, type: 'track', limit: 1, filterExplicit: useSettingsStore.getState().explicitFilter }
-          });
-
-          if (searchError) throw searchError;
-
-          if (searchData && searchData.results) {
-            foundTracks = searchData.results.map((res) => {
-              if (res && res.tracks && res.tracks.items && res.tracks.items.length > 0) {
-                const spotifyTrack = res.tracks.items[0];
-                return {
-                  id: spotifyTrack.id,
-                  name: spotifyTrack.name,
-                  artists: spotifyTrack.artists.map(a => a.name).join(', '),
-                  image: spotifyTrack.album?.images?.[0]?.url || '',
-                  duration_ms: spotifyTrack.duration_ms,
-                  uri: spotifyTrack.uri,
-                  source: 'spotify',
-                  addedBy: 'Filtro envAIro'
-                };
-              }
-              return null;
-            }).filter(Boolean);
-          }
-        } catch (err) {
-          console.error("Error buscando reemplazos limpios:", err);
-        }
-
-        const currentFullHistory = usePlayerStore.getState().playHistory || [];
-        const currentQueueState = usePlayerStore.getState().queue || [];
-
-        const nonRepeatedTracks = foundTracks.filter(track => {
-          return !isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentFullHistory, currentQueueState);
-        });
-
-        nonRepeatedTracks.forEach(track => state.addToQueue(track));
-        if (nonRepeatedTracks.length > 0) {
-           toast.success(`Filtro de Contenido: envAIro añadió ${nonRepeatedTracks.length} canciones limpias en reemplazo.`);
-        }
-      }
-
-      setEnairoSweepCount(currentSweepCount + 1, today);
-
-    } catch (err) {
-      console.error("Error en sweep_explicit:", err);
-    } finally {
-      setIsThinking(false);
     }
   };
 
@@ -511,20 +441,16 @@ export function useEnairoSelector() {
         state.incrementPlaybackMinutes();
       }
 
-      // Chequeo cada minuto: si ya pasaron 40 min, reordenar sin importar si hay nuevas peticiones
+      // Chequeo cada minuto: si la auto-armonización está activa y pasaron los minutos configurados, reordenar
+      const settings = useSettingsStore.getState();
       const currentMins = usePlayerStore.getState().playbackMinutes;
+      const targetInterval = settings.enairoAutoReorderIntervalMinutes || 45;
 
-      if (currentMins >= 40 && !useSettingsStore.getState().enairoIsThinking) {
-        // Ejecutamos el barrido explícito primero, y luego reordenamos
-        if (useSettingsStore.getState().explicitFilter) {
-          autoSweepExplicitContent().then(() => autoReorderQueue());
-        } else {
-          autoReorderQueue();
-        }
+      if (settings.enairoAutoReorderEnabled && currentMins >= targetInterval && !settings.enairoIsThinking) {
+        autoReorderQueue(true);
       }
 
       // Chequeo de Auto-Ejecución cada 2 horas para envAIro Selector
-      const settings = useSettingsStore.getState();
       if (settings.enairoAutoIntervalEnabled && !settings.enairoIsThinking) {
         getSecureServerTime().then(async (now) => {
           const today = await getSecureServerDateString();
@@ -551,5 +477,5 @@ export function useEnairoSelector() {
     };
   }, []);
 
-  return { isThinking, triggerEnairo, autoReorderQueue, autoSweepExplicitContent };
+  return { isThinking, triggerEnairo, autoReorderQueue };
 }

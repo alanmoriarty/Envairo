@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, GripVertical, Trash2, X,
   Users, Store, Sparkles, Music2, Clock, ListMusic, QrCode, ClipboardList,
   SkipBack, Pause, Play, SkipForward, Plus, Maximize2, Palette, Mic2, Type, RotateCcw, Monitor,
-  Volume2, VolumeX
+  Volume2, VolumeX, Loader2
 } from 'lucide-react';
 import {
   DndContext,
@@ -165,7 +165,7 @@ export default function DashboardPage() {
   const volume = usePlayerStore(s => s.volume);
   const setVolume = usePlayerStore(s => s.setVolume);
 
-  const { isThinking, triggerEnairo } = useEnairoSelector();
+  const { isThinking, triggerEnairo, autoReorderQueue } = useEnairoSelector();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoteVolume, setShowRemoteVolume] = useState(false);
   const remoteVolumeRef = React.useRef(null);
@@ -173,6 +173,7 @@ export default function DashboardPage() {
   const [isClearQueueModalOpen, setIsClearQueueModalOpen] = useState(false);
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [isAutoDjModalOpen, setIsAutoDjModalOpen] = useState(false);
+  const [isHarmonizeModalOpen, setIsHarmonizeModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
   const { t } = useTranslation();
 
@@ -184,6 +185,10 @@ export default function DashboardPage() {
     enairoIncludeGuestMetrics, setEnairoIncludeGuestMetrics,
     enairoTestMode, setEnairoTestMode,
     enairoAutoIntervalEnabled, setEnairoAutoIntervalEnabled,
+    enairoAutoReorderCount,
+    enairoReorderCooldownUntil,
+    enairoAutoReorderEnabled, setEnairoAutoReorderEnabled,
+    enairoAutoReorderIntervalMinutes, setEnairoAutoReorderIntervalMinutes,
     explicitFilter, setExplicitFilter,
     partyRequestOffset, setPartyRequestOffset
   } = useSettingsStore();
@@ -192,7 +197,7 @@ export default function DashboardPage() {
   const canSeeTestMode = isAllowedEmail(user?.email);
 
   useEffect(() => {
-    const timer = setInterval(() => setLocalTime(Date.now()), 60000); // update every minute
+    const timer = setInterval(() => setLocalTime(Date.now()), 1000); // Actualizar cada segundo para cuenta regresiva suave
     return () => clearInterval(timer);
   }, []);
 
@@ -781,7 +786,49 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  {/* Botón Armonizar Cola con IA (Abre Modal de Configuración y Automatización) */}
+                  {queue.slice(currentQueueIndex + 1).length >= 3 && (
+                    <button
+                      onClick={() => setIsHarmonizeModalOpen(true)}
+                      disabled={isThinking || (!enairoTestMode && (enairoReorderCooldownUntil > localTime || (enairoAutoReorderCount || 0) >= 5))}
+                      className={`text-xs px-2.5 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition-all ${
+                        (!enairoTestMode && (enairoAutoReorderCount || 0) >= 5) || (!enairoTestMode && enairoReorderCooldownUntil > localTime)
+                          ? 'bg-white/5 border-white/5 text-text-muted cursor-not-allowed opacity-75'
+                          : 'bg-accent/10 border-accent/30 hover:bg-accent/20 text-accent cursor-pointer shadow-glow-sm'
+                      }`}
+                      title={t('dashboard.reorder_ai_title')}
+                    >
+                      {isThinking ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin text-accent" />
+                          <span>{t('dashboard.reordering_ai')}</span>
+                        </>
+                      ) : (!enairoTestMode && (enairoAutoReorderCount || 0) >= 5) ? (
+                        <>
+                          <Sparkles size={13} className="text-text-muted" />
+                          <span>{t('dashboard.reorder_limit_reached')}</span>
+                        </>
+                      ) : (!enairoTestMode && enairoReorderCooldownUntil > localTime) ? (
+                        <>
+                          <Clock size={13} className="text-text-muted" />
+                          <span>
+                            {(() => {
+                              const s = Math.max(0, Math.ceil((enairoReorderCooldownUntil - localTime) / 1000));
+                              const formatted = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+                              return t('dashboard.reorder_cooldown', { time: formatted });
+                            })()}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={13} className="text-accent" />
+                          <span>{t('dashboard.reorder_ai_btn')}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
                     <Sparkles size={14} className={enairoCooldownUntil > localTime || enairoUsageCount >= 3 ? 'text-text-muted' : (isThinking ? 'text-accent animate-pulse' : 'text-accent')} />
 
@@ -1143,6 +1190,109 @@ export default function DashboardPage() {
                 className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer"
               >
                 {t('dashboard.filter_activate_btn')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* envAIro Harmonize Queue Configuration Modal */}
+      {isHarmonizeModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-modal-backdrop"
+          onClick={() => setIsHarmonizeModalOpen(false)}
+        >
+          <div
+            className="bg-bg-elevated w-full max-w-md sm:max-w-lg rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl overflow-hidden animate-modal-content relative flex flex-col max-h-[82dvh] sm:max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 pr-2 min-w-0">
+                <div className="p-2 sm:p-3 bg-accent/20 border border-accent/30 rounded-xl sm:rounded-2xl shrink-0">
+                  <Sparkles size={20} className="text-accent animate-pulse" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-xl font-bold text-white leading-tight truncate">
+                    {t('dashboard.harmonize_modal_title')}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight sm:leading-relaxed line-clamp-2">
+                    {t('dashboard.harmonize_modal_desc')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsHarmonizeModalOpen(false)}
+                className="p-1.5 sm:p-2 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-3.5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0 space-y-3 sm:space-y-4 text-left">
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3">
+                <Toggle
+                  checked={enairoAutoReorderEnabled}
+                  onChange={setEnairoAutoReorderEnabled}
+                  label={t('dashboard.harmonize_auto_label')}
+                  description={t('dashboard.harmonize_auto_desc')}
+                />
+
+                {enairoAutoReorderEnabled && (
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    <label className="block text-xs font-semibold text-text-primary">
+                      {t('dashboard.harmonize_interval_label')}
+                    </label>
+                    <select
+                      value={enairoAutoReorderIntervalMinutes || 45}
+                      onChange={(e) => setEnairoAutoReorderIntervalMinutes(Number(e.target.value))}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+                    >
+                      <option value="30" className="bg-bg-root text-white">{t('dashboard.harmonize_interval_30')}</option>
+                      <option value="45" className="bg-bg-root text-white">{t('dashboard.harmonize_interval_45')}</option>
+                      <option value="60" className="bg-bg-root text-white">{t('dashboard.harmonize_interval_60')}</option>
+                      <option value="90" className="bg-bg-root text-white">{t('dashboard.harmonize_interval_90')}</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="bg-accent/10 border border-accent/20 rounded-xl p-2.5 sm:p-3 text-xs text-text-muted flex items-start gap-2.5">
+                  <Clock size={16} className="text-accent flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white text-xs sm:text-sm">{t('dashboard.envairo_auto_limit_title')}</p>
+                    <p className="mt-0.5 text-text-muted text-[11px] sm:text-xs leading-relaxed">
+                      {t('dashboard.harmonize_limit_note')}
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                      <span className="font-mono text-accent font-semibold">{t('dashboard.envairo_auto_today')}</span>
+                      <span className="font-mono font-bold text-white bg-accent/20 px-2 py-0.5 rounded-md">
+                        {enairoAutoReorderCount || 0} / 5
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Footer */}
+            <div className="p-3 sm:p-4 px-4 sm:px-6 bg-bg-card border-t border-white/10 shrink-0 flex gap-2.5 sm:gap-3 z-10">
+              <button
+                onClick={() => setIsHarmonizeModalOpen(false)}
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                {t('dashboard.harmonize_cancel_btn')}
+              </button>
+              <button
+                onClick={() => {
+                  setIsHarmonizeModalOpen(false);
+                  autoReorderQueue(false);
+                }}
+                className="flex-1 py-2.5 px-3 sm:px-4 rounded-xl font-semibold text-xs sm:text-sm text-white bg-accent hover:bg-accent-hover transition-all shadow-glow-sm cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Sparkles size={14} />
+                <span>{t('dashboard.harmonize_confirm_btn')}</span>
               </button>
             </div>
           </div>

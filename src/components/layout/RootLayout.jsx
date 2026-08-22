@@ -91,12 +91,13 @@ export function RootLayout() {
           const allKeys = [
             'djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'autoDJ', 'autoDjPrompt', 
             'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 
-            'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
+            'allowRepeats', 'repeatCooldown', 'artistRepeatCooldown', 'guestSessionExpiryHours', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
             'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset',
             'themeColor', 'showRequests', 'showQR', 'showPlaylists', 'visualizerEnabled', 'visualizerUrl', 
             'karaokeEnabled', 'lyricsEnabled', 'youtubeNativeCast', 'enairoTrackCount', 'enairoAutoIntervalEnabled',
+            'enairoAutoReorderEnabled', 'enairoAutoReorderIntervalMinutes',
             'enairoUsageCount', 'enairoLastUsedDate', 'enairoCooldownUntil', 'enairoAutoReorderCount', 
-            'enairoAutoReorderDate', 'enairoSweepCount', 'enairoSweepDate', 'enairoLastRunAt'
+            'enairoAutoReorderDate', 'enairoReorderCooldownUntil', 'enairoLastRunAt'
           ];
           const newSettingsObj = {};
           allKeys.forEach(k => { newSettingsObj[k] = validSettings[k] ?? currentState[k]; });
@@ -195,12 +196,13 @@ export function RootLayout() {
       const allKeys = [
         'djName', 'djAvatar', 'enairoPrompt', 'enairoEnabled', 'enairoTestMode', 'autoDJ', 'autoDjPrompt', 
         'whitelistGenres', 'mode', 'eventName', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists', 
-        'allowRepeats', 'repeatCooldown', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
+        'allowRepeats', 'repeatCooldown', 'artistRepeatCooldown', 'guestSessionExpiryHours', 'alwaysAvailable', 'startTime', 'endTime', 'cooldownEnabled', 
         'cooldownMinutes', 'tableCount', 'requestsPerHour', 'requestsPerGuest', 'explicitFilter', 'partyRequestOffset',
         'themeColor', 'showRequests', 'showQR', 'showPlaylists', 'visualizerEnabled', 'visualizerUrl', 
         'karaokeEnabled', 'lyricsEnabled', 'youtubeNativeCast', 'enairoTrackCount', 'enairoAutoIntervalEnabled',
+        'enairoAutoReorderEnabled', 'enairoAutoReorderIntervalMinutes',
         'enairoUsageCount', 'enairoLastUsedDate', 'enairoCooldownUntil', 'enairoAutoReorderCount', 
-        'enairoAutoReorderDate', 'enairoSweepCount', 'enairoSweepDate', 'enairoLastRunAt'
+        'enairoAutoReorderDate', 'enairoReorderCooldownUntil', 'enairoLastRunAt'
       ];
       const changed = allKeys.some(k => state[k] !== prevState[k]);
 

@@ -105,12 +105,13 @@ Filtros de Seguridad Actuales:
 - Canciones PROHIBIDAS: ${settings?.blacklistSongs?.length ? settings.blacklistSongs.join(', ') : 'Ninguna'}
 
 REGLA MUY IMPORTANTE DE ESPACIADO: DEBES separar las canciones del mismo artista. Está estrictamente PROHIBIDO dejar dos o más canciones del mismo artista juntas de forma consecutiva. Asegúrate de que haya varias canciones de diferencia entre apariciones del mismo artista.
+REGLA ESTRICTA DE PROTECCIÓN AL PÚBLICO: Si una canción tiene 'requestedBy' (fue solicitada por un invitado de la fiesta), está ESTRICTAMENTE PROHIBIDO ELIMINARLA (remove). Solo tienes autorización para REUBICARLA (reorder) para que suene con la mejor transición armónica.
 ${isInitial ?
           'REGLA ESTRICTA: Este es el primer ordenamiento. NO PUEDES ELIMINAR (remove) ninguna canción bajo ninguna circunstancia. Solo debes reordenarlas.' :
-          'También puedes ELIMINAR (remove) canciones, pero SOLO aquellas que rompan completamente el CONTEXTO DE LA VIBRA anterior o violen los filtros de seguridad.\nREGLA DE REEMPLAZO: Si ELIMINAS una canción, DEBES proponer en el arreglo "tracksToAdd" el título y artista de una canción NUEVA que SÍ encaje perfectamente con la VIBRA para reemplazar el hueco (formato: "Canción - Artista").'}
+          'También puedes ELIMINAR (remove) canciones que NO sean de invitados, pero SOLO aquellas que rompan completamente el CONTEXTO DE LA VIBRA anterior o violen los filtros de seguridad.\nREGLA DE REEMPLAZO: Si ELIMINAS una canción, DEBES proponer en el arreglo "tracksToAdd" el título y artista de una canción NUEVA que SÍ encaje perfectamente con la VIBRA para reemplazar el hueco (formato: "Canción - Artista").'}
 
 Cola actual pendiente (ESTAS SON LAS QUE DEBES REORDENAR${isInitial ? '' : ' O ELIMINAR'}):
-${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists })))}
+${JSON.stringify(queue.map((t: any, i: number) => ({ index: i, id: t.queueId, name: t.name, artist: t.artists, requestedBy: t.requestedBy || null })))}
 
 ACCIONES PERMITIDAS:
 ${isInitial ? '' : '- {"type": "remove", "queueId": "id_de_la_cola"}\n'}- {"type": "reorder", "queueId": "id_de_la_cola", "newIndex": indice_entero} (donde newIndex es la nueva posición deseada dentro de la cola)
@@ -205,29 +206,6 @@ Estructura esperada:
     if (action_mode === 'generate') {
       // Generación inicial con Gemini (eliminamos la segunda capa de DeepSeek según la nueva arquitectura)
       finalData = await askGemini(prompt);
-    } else if (action_mode === 'sweep_explicit') {
-      // Barrido de la cola actual con DeepSeek
-      const sweepPrompt = `
-REVISIÓN DE COLA (CONTENIDO EXPLÍCITO)
-Aquí está la cola actual de reproducción:
-${JSON.stringify(queue.map((t: any) => ({ queueId: t.queueId, name: t.name, artist: t.artists })), null, 2)}
-
-TAREA: FILTRO DE CONTENIDO EXPLÍCITO ESTRICTO
-Busca canciones que, en su letra, título o contexto cultural, contengan: lenguaje soez (groserías, malas palabras), contenido sexual, doble sentido obsceno, apología a drogas/violencia, o que sean canciones de géneros urbanos conocidas por ser vulgares.
-Para cada canción explícita o soez que encuentres:
-1. Emite una acción de tipo "remove" con el 'queueId'.
-2. Propón en 'tracksToAdd' una canción nueva del MISMO GÉNERO EXACTO, pero que sea 100% limpia y apta para todo público.
-
-REGLAS DE SALIDA:
-Devuelve un JSON estrictamente así (vacío si no hay nada que limpiar):
-{
-  "tracksToAdd": ["Canción Limpia Reemplazo - Artista X"],
-  "actions": [
-    {"type": "remove", "queueId": "id-de-la-cancion-mala"}
-  ],
-  "reasoning": "Se eliminó X por contenido explícito y se reemplazó por Y."
-}`;
-      finalData = await askDeepSeek(sweepPrompt) || { tracksToAdd: [], actions: [] };
     } else if (action_mode === 'check_single_explicit') {
       const trackName = reqBody.trackName || '';
       const singlePrompt = `Eres un filtro censor extremadamente estricto. Analiza la siguiente canción: "${trackName}".
