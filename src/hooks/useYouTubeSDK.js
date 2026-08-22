@@ -627,11 +627,18 @@ export function useYouTubeSDK() {
           currentYtIdRef.current = args.videoId;
           lastLoadTimeRef.current = Date.now();
 
+          const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+
           try {
-            if (typeof activeP.unMute === 'function') activeP.unMute();
+            if (isHidden) {
+              // Mute temporal para que Chrome autorice el inicio inmediato del stream en segundo plano
+              if (typeof activeP.mute === 'function') activeP.mute();
+            } else {
+              if (typeof activeP.unMute === 'function') activeP.unMute();
+            }
+
             if (typeof activeP.loadVideoById === 'function') {
               const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-              const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
               activeP.loadVideoById({
                 videoId: args.videoId,
                 startSeconds: args.startSeconds || 0,
@@ -640,6 +647,19 @@ export function useYouTubeSDK() {
             }
             if (typeof activeP.playVideo === 'function') {
               activeP.playVideo();
+            }
+
+            if (isHidden) {
+              // Restaurar volumen tras inicio concedido por el navegador
+              setTimeout(() => {
+                try {
+                  const p = getActivePlayer();
+                  if (p) {
+                    if (typeof p.playVideo === 'function') p.playVideo();
+                    if (typeof p.unMute === 'function') p.unMute();
+                  }
+                } catch (e) {}
+              }, 150);
             }
           } catch (e) {
             console.warn('Error en loadVideoById:', e);
@@ -671,6 +691,9 @@ export function useYouTubeSDK() {
           if (wrapper) wrapper.dataset.errorHidden = 'false';
 
           lastLoadTimeRef.current = 0;
+          try {
+            if (typeof p.unMute === 'function') p.unMute();
+          } catch (e) {}
           setIsPlaying(true);
           setDuration(Math.floor(p.getDuration() * 1000));
           startProgressTimer(p);
@@ -680,6 +703,16 @@ export function useYouTubeSDK() {
           if (!isTransientLoadPause) {
             setIsPlaying(false);
             stopProgressTimer();
+          }
+        } else if ((event.data === yt.PlayerState.UNSTARTED || event.data === yt.PlayerState.BUFFERING) && isCurrentDeck) {
+          // Respaldo para desbloquear autoplay en pestañas en segundo plano
+          if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+            setTimeout(() => {
+              try {
+                if (typeof p.playVideo === 'function') p.playVideo();
+                if (typeof p.unMute === 'function') p.unMute();
+              } catch (e) {}
+            }, 250);
           }
         } else if (event.data === yt.PlayerState.ENDED && isCurrentDeck) {
           setIsPlaying(false);
@@ -723,7 +756,14 @@ export function useYouTubeSDK() {
       playerARef.current = new window.YT.Player('youtube-player-deck-a', {
         height: '100%', width: '100%', playerVars,
         events: {
-          onReady: () => {
+          onReady: (e) => {
+            try {
+              const iframe = e.target?.getIframe?.();
+              if (iframe) {
+                iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '1');
+              }
+            } catch (err) {}
             setYtReady(true);
             const store = usePlayerStore.getState();
             store.setSdkReady(true);
@@ -772,6 +812,15 @@ export function useYouTubeSDK() {
       playerBRef.current = new window.YT.Player('youtube-player-deck-b', {
         height: '100%', width: '100%', playerVars,
         events: {
+          onReady: (e) => {
+            try {
+              const iframe = e.target?.getIframe?.();
+              if (iframe) {
+                iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '1');
+              }
+            } catch (err) {}
+          },
           onStateChange: (e) => handleStateChange('B', e),
           onError: (e) => handleError('B', e)
         }
