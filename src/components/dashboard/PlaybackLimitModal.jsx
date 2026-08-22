@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useTranslation } from '../../store/useLanguageStore';
 import { Clock, Play, Sparkles } from 'lucide-react';
@@ -10,7 +11,7 @@ export function PlaybackLimitModal() {
 
   if (!show) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
       <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden">
         {/* Glow backdrop effect */}
@@ -42,6 +43,7 @@ export function PlaybackLimitModal() {
           <span>{t('playback_limit.continue_btn')}</span>
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

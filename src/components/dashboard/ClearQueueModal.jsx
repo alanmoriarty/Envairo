@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../store/useLanguageStore';
 import { Trash2, AlertTriangle } from 'lucide-react';
 
@@ -7,7 +8,7 @@ export function ClearQueueModal({ isOpen, onClose, onConfirm }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-bg-card/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Glow backdrop effect */}
@@ -50,6 +51,7 @@ export function ClearQueueModal({ isOpen, onClose, onConfirm }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

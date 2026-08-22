@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, BarChart2, Zap,
@@ -246,8 +247,8 @@ export function Sidebar({ isOpen, onClose }) {
 
 
 
-      {showQRModal && (
-        <div className="fixed inset-0 bg-bg-base/90 backdrop-blur-md flex flex-col items-center justify-center z-[110] p-4">
+      {showQRModal && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-4">
           <div className="relative w-full max-w-sm animate-in zoom-in-95 fade-in">
             <button
               onClick={() => setShowQRModal(false)}
@@ -257,7 +258,8 @@ export function Sidebar({ isOpen, onClose }) {
             </button>
             <QRCard />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showProfileModal && (

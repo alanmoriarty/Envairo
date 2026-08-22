@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import {
   CheckCircle2, XCircle, GripVertical, Trash2, X,
@@ -860,9 +861,9 @@ export default function DashboardPage() {
       <CastToTvModal isOpen={isCastModalOpen} onClose={() => setIsCastModalOpen(false)} />
 
       {/* EnvAIro Selector Confirmation Modal */}
-      {isEnairoModalOpen && (
+      {isEnairoModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
           onClick={() => setIsEnairoModalOpen(false)}
         >
           <div
@@ -1007,13 +1008,14 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* envAIro Filter Configuration Modal */}
-      {isAutoDjModalOpen && (
+      {isAutoDjModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[20000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
           onClick={() => {
             setIsAutoDjModalOpen(false);
             setAutoDJ(false); // cancel activation
@@ -1144,7 +1146,8 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal de confirmación para vaciar cola */}

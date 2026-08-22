@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import DOMPurify from 'dompurify';
 import { Tv, X, CheckCircle2, Trash2, Smartphone, Sparkles, MonitorPlay } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -159,9 +160,9 @@ export function TVPairingModal({ isOpen, onClose }) {
     toast.success(t('cast.tv_unlinked'));
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div 
@@ -246,6 +247,7 @@ export function TVPairingModal({ isOpen, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

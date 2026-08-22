@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { XCircle, Save, UserCircle2 } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTranslation } from '../../store/useLanguageStore';
@@ -36,8 +37,8 @@ export function ProfileModal({ onClose }) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-3 sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[20000] p-3 sm:p-4">
       <div className="relative w-full max-w-md bg-bg-card rounded-2xl border border-white/10 shadow-2xl p-6 animate-in zoom-in-95 fade-in">
         <button
           onClick={onClose}
@@ -111,6 +112,7 @@ export function ProfileModal({ onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
