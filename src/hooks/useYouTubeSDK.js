@@ -978,6 +978,11 @@ export function useYouTubeSDK() {
   const startProgressTimer = (p) => {
     stopProgressTimer();
     progressInterval.current = setInterval(() => {
+      const store = usePlayerStore.getState();
+      if (!store.currentTrack || !store.isPlaying) {
+        stopProgressTimer();
+        return;
+      }
       if (p && typeof p.getCurrentTime === 'function') {
         const time = p.getCurrentTime();
         if (time > 0) setProgress(Math.floor(time * 1000));

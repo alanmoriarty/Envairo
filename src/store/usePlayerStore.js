@@ -293,17 +293,30 @@ export const usePlayerStore = create(
 
       clearQueue: () => {
         const state = get();
-        if (state.youtubePlayer) {
-          state.youtubePlayer.stopVideo();
+        if (state.youtubePlayer && typeof state.youtubePlayer.stopVideo === 'function') {
+          try { state.youtubePlayer.stopVideo(); } catch (e) {}
         }
-        set(() => {
-          return {
-            queue: [],
-            currentQueueIndex: -1,
-            currentTrack: null,
-            isPlaying: false
-          };
-        });
+        if (state.youtubePlayerB && typeof state.youtubePlayerB.stopVideo === 'function') {
+          try { state.youtubePlayerB.stopVideo(); } catch (e) {}
+        }
+
+        // Ocultar contenedores de video YouTube a opacidad mínima
+        if (typeof document !== 'undefined') {
+          const deckA = document.getElementById('yt-deck-a');
+          const deckB = document.getElementById('yt-deck-b');
+          if (deckA) deckA.style.opacity = '0.001';
+          if (deckB) deckB.style.opacity = '0.001';
+        }
+
+        set(() => ({
+          queue: [],
+          currentQueueIndex: -1,
+          currentTrack: null,
+          currentYtId: null,
+          isPlaying: false,
+          progress: 0,
+          duration: 0
+        }));
       },
 
       reorderQueue: (oldIndex, newIndex) => {

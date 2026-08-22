@@ -229,11 +229,11 @@ export function useTVBroadcast() {
       const isPlaying = state.isPlaying;
 
       if (state.playbackEngine !== 'youtube' || !currentYtId) {
-        if (lastStateRef.current.isPlaying) {
-          lastStateRef.current.isPlaying = false;
+        if (lastStateRef.current.videoId || lastStateRef.current.isPlaying) {
+          lastStateRef.current = { videoId: null, isPlaying: false };
           broadcastMessage({
             type: 'SYNC',
-            videoId: lastStateRef.current.videoId,
+            videoId: null,
             isPlaying: false,
             time: 0
           });

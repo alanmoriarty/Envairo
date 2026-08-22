@@ -33,6 +33,7 @@ import { Toggle } from '../components/ui/Toggle';
 import { PlaylistsPanel } from '../components/dashboard/PlaylistsPanel';
 import { AddSongModal } from '../components/dashboard/AddSongModal';
 import { CastToTvModal } from '../components/dashboard/CastToTvModal';
+import { ClearQueueModal } from '../components/dashboard/ClearQueueModal';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from '../store/useLanguageStore';
 import { useEnairoSelector } from '../hooks/useEnairoSelector';
@@ -168,6 +169,7 @@ export default function DashboardPage() {
   const [showRemoteVolume, setShowRemoteVolume] = useState(false);
   const remoteVolumeRef = React.useRef(null);
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);
+  const [isClearQueueModalOpen, setIsClearQueueModalOpen] = useState(false);
   const [isEnairoModalOpen, setIsEnairoModalOpen] = useState(false);
   const [isAutoDjModalOpen, setIsAutoDjModalOpen] = useState(false);
   const [localTime, setLocalTime] = useState(Date.now());
@@ -798,8 +800,8 @@ export default function DashboardPage() {
 
                   {queue.length > 0 && (
                     <button
-                      onClick={() => usePlayerStore.getState().clearQueue()}
-                      className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted"
+                      onClick={() => setIsClearQueueModalOpen(true)}
+                      className="text-xs px-2 py-1 bg-bg-card border border-white/5 hover:bg-danger/20 hover:text-danger rounded-md transition-all text-text-muted cursor-pointer"
                     >
                       {t('dashboard.empty_queue_btn')}
                     </button>
@@ -1141,6 +1143,13 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmación para vaciar cola */}
+      <ClearQueueModal
+        isOpen={isClearQueueModalOpen}
+        onClose={() => setIsClearQueueModalOpen(false)}
+        onConfirm={() => usePlayerStore.getState().clearQueue()}
+      />
     </div>
   );
 }
