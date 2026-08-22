@@ -36,6 +36,20 @@ export function useYouTubeSDK() {
       return;
     }
 
+    // Si el fondo visualizador está activo y no estamos en pantalla completa del video de la canción,
+    // ocultar el reproductor flotante del video para que no compita visualmente con el visualizador
+    if (isVis && !isFs) {
+      wrapper.style.display = 'block';
+      wrapper.style.opacity = '0.001';
+      wrapper.style.pointerEvents = 'none';
+      wrapper.style.width = '1px';
+      wrapper.style.height = '1px';
+      wrapper.style.zIndex = '-9999';
+      if (dragHeader) dragHeader.style.display = 'none';
+      if (miniBadge) miniBadge.style.display = 'none';
+      return;
+    }
+
     if (isFs) {
       wrapper.style.display = 'block';
       wrapper.style.top = '50%';

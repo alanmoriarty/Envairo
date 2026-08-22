@@ -117,6 +117,23 @@ export default function TVDisplayPage() {
   const lastHostSyncTimeRef = useRef(Date.now());
   const isHostPlayingRef = useRef(true);
   const silentAudioRef = useRef(null);
+  const [visualizerEnabled, setVisualizerEnabled] = useState(false);
+  const [visualizerUrl, setVisualizerUrl] = useState('');
+  const visualizerEnabledRef = useRef(false);
+
+  const getVisualizerEmbedUrl = (url) => {
+    if (!url) return '';
+    try {
+      const listMatch = url.match(/[?&]list=([^&]+)/);
+      const vMatch = url.match(/(?:v=|youtu\.be\/)([^&?]+)/);
+      if (listMatch) {
+        return `https://www.youtube.com/embed?listType=playlist&list=${listMatch[1]}&autoplay=1&mute=1&controls=0&loop=1&fs=0&iv_load_policy=3&modestbranding=1&rel=0`;
+      } else if (vMatch) {
+        return `https://www.youtube.com/embed/${vMatch[1]}?autoplay=1&mute=1&controls=0&loop=1&playlist=${vMatch[1]}&fs=0&iv_load_policy=3&modestbranding=1&rel=0`;
+      }
+    } catch (e) {}
+    return '';
+  };
 
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
   useEffect(() => {
@@ -505,10 +522,10 @@ export default function TVDisplayPage() {
         if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
         setIsLoadingVideo(false);
 
-        // Revelar contenedor SOLO cuando el video está reproduciéndose con éxito
+        // Revelar contenedor SOLO cuando el video está reproduciéndose con éxito y el fondo visualizador no está activo
         const playingContainer = document.getElementById(deck === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
         if (playingContainer) {
-          playingContainer.style.opacity = '1';
+          playingContainer.style.opacity = visualizerEnabledRef.current ? '0.001' : '1';
           playingContainer.style.zIndex = '2';
         }
       } else if (event.data === window.YT.PlayerState.PAUSED) {
@@ -807,6 +824,7 @@ const handleTransitionStart = (data) => {
     if (incomingContainer) {
       incomingContainer.style.transform = 'translateZ(0)';
       incomingContainer.style.filter = 'none';
+      incomingContainer.style.opacity = visualizerEnabledRef.current ? '0.001' : '1';
       incomingContainer.style.zIndex = '2';
     }
   }, transitionMs);
@@ -815,6 +833,25 @@ handleTransitionStartRef.current = handleTransitionStart;
 
 // ── handleSync: sincronización de reproducción con el anfitrión ──
 const handleSync = (data) => {
+  // Sincronizar configuración de fondo visualizador
+  if (data && typeof data.visualizerEnabled === 'boolean') {
+    const isVis = data.visualizerEnabled;
+    const visUrl = data.visualizerUrl || '';
+    visualizerEnabledRef.current = isVis;
+    setVisualizerEnabled(isVis);
+    setVisualizerUrl(visUrl);
+
+    const cA = document.getElementById('tv-yt-deck-a');
+    const cB = document.getElementById('tv-yt-deck-b');
+    if (isVis) {
+      if (cA) cA.style.opacity = '0.001';
+      if (cB) cB.style.opacity = '0.001';
+    } else if (currentVideoIdRef.current) {
+      const activeContainer = document.getElementById(activeTvDeckRef.current === 'A' ? 'tv-yt-deck-a' : 'tv-yt-deck-b');
+      if (activeContainer) activeContainer.style.opacity = '1';
+    }
+  }
+
   // Bloquear sincronización durante transiciones DJ para evitar interferencias
   if (isTvTransitioningRef.current) return;
 
@@ -1088,6 +1125,21 @@ handleSyncRef.current = handleSync;
         <div id="tv-youtube-player-deck-b"></div>
       </div>
 
+      {/* Fondo Visualizador en TV (Ambiental / Playlist en loop a pantalla completa) */}
+      {sessionId && visualizerEnabled && visualizerUrl && (
+        <div
+          id="tv-visualizer-wrapper"
+          className="absolute inset-0 z-[3] overflow-hidden pointer-events-none transition-opacity duration-1000"
+          style={{ width: '100vw', height: '100vh' }}
+        >
+          <iframe
+            src={getVisualizerEmbedUrl(visualizerUrl)}
+            className="w-full h-full border-0 pointer-events-none"
+            allow="autoplay; encrypted-media"
+          />
+        </div>
+      )}
+
       {/* Overlay de transición con nota musical animada (evita pantalla en negro y preserva pantalla completa) */}
       {sessionId && isLoadingVideo && (
         <div className="absolute inset-0 z-[5] bg-[#0c0914] flex flex-col items-center justify-center gap-4 transition-opacity duration-300 animate-fade-in pointer-events-none select-none">
@@ -1143,7 +1195,7 @@ handleSyncRef.current = handleSync;
       )}
 
       {/* Modo Emparejado: Overlay status si no hay video activo */}
-      {sessionId && !currentVideoId && (
+      {sessionId && !currentVideoId && !visualizerEnabled && (
         <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center gap-6 animate-pulse">
           <div className="bg-white/10 p-6 rounded-full border border-white/20">
             <Tv size={64} className="text-white opacity-80" />

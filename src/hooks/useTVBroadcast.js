@@ -54,8 +54,14 @@ export function useTVBroadcast() {
         return;
       }
 
-      // Embed server timestamp so receivers can estimate transit delay
-      const envelope = { ...data, sentAt: Date.now() };
+      const settings = useSettingsStore.getState();
+      // Embed server timestamp and visualizer config so receivers can adjust visuals
+      const envelope = {
+        visualizerEnabled: settings.visualizerEnabled,
+        visualizerUrl: settings.visualizerUrl,
+        ...data,
+        sentAt: Date.now()
+      };
 
       // BroadcastChannel Local (Mismo equipo)
       if (channelRef.current) {
@@ -318,8 +324,24 @@ export function useTVBroadcast() {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
+    // ── Subscribe to visualizer settings changes to notify TVs instantly ──
+    const unsubSettings = useSettingsStore.subscribe((curr, prev) => {
+      if (curr.visualizerEnabled !== prev.visualizerEnabled || curr.visualizerUrl !== prev.visualizerUrl) {
+        const state = usePlayerStore.getState();
+        broadcastMessage({
+          type: 'SYNC',
+          videoId: state.currentYtId,
+          isPlaying: state.isPlaying,
+          visualizerEnabled: curr.visualizerEnabled,
+          visualizerUrl: curr.visualizerUrl,
+          time: (state.progress || 0) / 1000
+        });
+      }
+    });
+
     return () => {
       unsub();
+      unsubSettings();
       clearInterval(syncInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (channelRef.current) {
