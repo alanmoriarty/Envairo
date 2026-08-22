@@ -1005,7 +1005,7 @@ handleSyncRef.current = handleSync;
       <div
         id="tv-yt-deck-a"
         className={`absolute inset-0 z-[2] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
-        style={{ width: '100vw', height: '100vh', opacity: 1 }}
+        style={{ width: '100vw', height: '100vh', opacity: 0.001 }}
       >
         <div id="tv-youtube-player-deck-a"></div>
       </div>
@@ -1013,7 +1013,7 @@ handleSyncRef.current = handleSync;
       <div
         id="tv-yt-deck-b"
         className={`absolute inset-0 z-[1] flex items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${!sessionId ? 'pointer-events-none opacity-0' : ''}`}
-        style={{ width: '100vw', height: '100vh', opacity: 0 }}
+        style={{ width: '100vw', height: '100vh', opacity: 0.001 }}
       >
         <div id="tv-youtube-player-deck-b"></div>
       </div>

@@ -490,7 +490,7 @@ export function useYouTubeSDK() {
       overlay.style.inset = '0';
       overlay.style.zIndex = '10';
       overlay.style.cursor = 'grab';
-      overlay.style.pointerEvents = 'none';
+      overlay.style.pointerEvents = 'auto';
       overlay.style.display = useSettingsStore.getState().youtubeNativeCast ? 'none' : 'block';
       overlay.addEventListener('mousedown', onMouseDown);
       overlay.addEventListener('dblclick', () => {
@@ -1159,10 +1159,6 @@ export function useYouTubeSDK() {
       incomingContainer.style.opacity = '0.001';
       incomingContainer.style.transform = 'scale(1.02) translateZ(0)';
       incomingContainer.style.transition = `opacity ${animDuration * 0.9}s ease, transform ${animDuration * 0.9}s ease`;
-      setTimeout(() => {
-        incomingContainer.style.opacity = '1';
-        incomingContainer.style.transform = 'translateZ(0)';
-      }, 50);
     }
 
     if (outgoingContainer) {
