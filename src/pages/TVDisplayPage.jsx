@@ -88,13 +88,20 @@ export default function TVDisplayPage() {
   const tvWithSoundRef = useRef(tvWithSound);
   useEffect(() => { tvWithSoundRef.current = tvWithSound; }, [tvWithSound]);
 
-  const [tvPin] = useState(() => {
+  const [tvPin, setTvPin] = useState(() => {
     const saved = localStorage.getItem('bq-tv-pin');
     if (saved) return saved;
     const newPin = generate6DigitPin();
     localStorage.setItem('bq-tv-pin', newPin);
     return newPin;
   });
+
+  const rotatePin = () => {
+    const newPin = generate6DigitPin();
+    localStorage.setItem('bq-tv-pin', newPin);
+    setTvPin(newPin);
+    return newPin;
+  };
   const [status, setStatus] = useState(t('tv.checking_availability'));
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -149,6 +156,9 @@ export default function TVDisplayPage() {
     localStorage.removeItem('bq-tv-sound');
     setSessionId(null);
     setStatus(customStatus || t('tv.unpaired_by_host'));
+
+    // Rotar PIN para invalidar el código anterior y proteger la pantalla
+    rotatePin();
   };
 
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
@@ -184,29 +194,29 @@ export default function TVDisplayPage() {
     pairChannel
       .on('broadcast', { event: 'pairing_result' }, (e) => {
         if (e.payload?.type === 'PAIRED' && e.payload.sessionId) {
-          
-          // Enviar ACK al Host para confirmar que la TV existe y recibió el comando
+          const incomingSessionId = e.payload.sessionId;
+          const currentSavedSession = localStorage.getItem('bq-tv-session-id');
+
+          // PROTECCIÓN DE PANTALLA OCUPADA:
+          // Si la TV ya está vinculada a una sesión DIFERENTE, rechazar la conexión
+          if (currentSavedSession && currentSavedSession !== incomingSessionId && sessionId) {
+            pairChannel.send({
+              type: 'broadcast',
+              event: 'pairing_ack',
+              payload: { success: false, busy: true, message: 'TV_BUSY' }
+            }).catch(() => {});
+            return;
+          }
+
+          // Enviar ACK positivo al Host confirmando que la TV está disponible y enlazada
           pairChannel.send({
             type: 'broadcast',
             event: 'pairing_ack',
-            payload: { success: true }
-          }).catch(()=>{});
+            payload: { success: true, busy: false }
+          }).catch(() => {});
 
-          const newSessionId = e.payload.sessionId;
-          const oldSessionId = localStorage.getItem('bq-tv-session-id');
-          
-          if (oldSessionId && oldSessionId !== newSessionId) {
-             const oldSync = supabase.channel(`tv-sync-${oldSessionId}`);
-             oldSync.subscribe(async (status) => {
-                 if (status === 'SUBSCRIBED') {
-                     await oldSync.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'TV_STOLEN', tvId: tvPin } });
-                     setTimeout(() => supabase.removeChannel(oldSync), 500);
-                 }
-             });
-          }
-
-          localStorage.setItem('bq-tv-session-id', newSessionId);
-          setSessionId(newSessionId);
+          localStorage.setItem('bq-tv-session-id', incomingSessionId);
+          setSessionId(incomingSessionId);
           const withSound = !!e.payload.tvWithSound;
           localStorage.setItem('bq-tv-sound', withSound ? '1' : '0');
           setTvWithSound(withSound);
@@ -221,7 +231,7 @@ export default function TVDisplayPage() {
     return () => {
       supabase.removeChannel(pairChannel);
     };
-  }, [tvPin]);
+  }, [tvPin, sessionId]);
 
   // 1.5. Validar emparejamiento activo con la base de datos de Supabase
   useEffect(() => {

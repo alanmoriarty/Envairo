@@ -528,6 +528,8 @@ const ES = {
     enter_pin_label: 'Código PIN de la TV (6 dígitos)',
     link_btn: 'Vincular Pantalla',
     linking: 'Vinculando...',
+    no_active_tv_found: 'No se encontró ninguna TV activa con ese PIN. Verifica que la TV tenga abierta la página envairo.app/tv',
+    tv_busy_error: 'Esta pantalla ya está en uso por otro anfitrión. Debes desvincularla primero en la TV.',
   },
   support: {
     title: 'Soporte y Ayuda',
@@ -842,7 +844,7 @@ const ES = {
     searching_alternative: 'Buscando alternativa...',
     link_this_screen: 'Vincular esta pantalla',
     scan_from_host: 'Escanea desde el celular del Anfitrión',
-    or_enter_pin: 'O ingresa este PIN',
+    or_enter_pin: 'Ingresa este PIN',
     pin_instructions: 'Ingresa a tu panel de control de envAIro, presiona <strong className="text-white">Vincular TV</strong> e introduce este código de 6 dígitos.',
     waiting_realtime: 'Esperando vinculación en tiempo real...',
     unpair_tv: 'Desvincular esta pantalla TV',
@@ -1352,6 +1354,8 @@ const EN = {
     enter_pin_label: 'TV PIN code (6 digits)',
     link_btn: 'Link Screen',
     linking: 'Linking...',
+    no_active_tv_found: 'No active TV found with that PIN. Make sure envairo.app/tv is open on the screen',
+    tv_busy_error: 'This screen is already in use by another host. Please unlink it on the TV first.',
   },
   support: {
     title: 'Support and Help',

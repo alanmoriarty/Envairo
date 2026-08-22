@@ -50,34 +50,55 @@ export function CastToTvModal({ isOpen, onClose }) {
 
     setIsPairing(true);
     try {
-      let ackReceived = false;
+      let ackResult = null;
       const pairChannel = supabase.channel(`tv-pair-${cleanPin}`);
-      pairChannel.on('broadcast', { event: 'pairing_ack' }, () => {
-        ackReceived = true;
+      pairChannel.on('broadcast', { event: 'pairing_ack' }, (e) => {
+        ackResult = e.payload || { success: true };
       });
 
-      await pairChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await pairChannel.send({
-            type: 'broadcast',
-            event: 'pairing_result',
-            payload: {
-              type: 'PAIRED',
-              sessionId: activeSessionId,
-              tvWithSound: false
-            }
-          });
+      // 1. Esperar suscripción al canal Realtime
+      await new Promise((resolve) => {
+        let isDone = false;
+        const subTimer = setTimeout(() => {
+          if (!isDone) { isDone = true; resolve('TIMEOUT'); }
+        }, 3000);
+
+        pairChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED' && !isDone) {
+            isDone = true;
+            clearTimeout(subTimer);
+            resolve('SUBSCRIBED');
+          }
+        });
+      });
+
+      // 2. Enviar ráfaga de comandos de emparejamiento con reintentos para asegurar entrega
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (ackResult) break;
+        await pairChannel.send({
+          type: 'broadcast',
+          event: 'pairing_result',
+          payload: {
+            type: 'PAIRED',
+            sessionId: activeSessionId,
+            tvWithSound: false
+          }
+        }).catch(() => {});
+
+        for (let i = 0; i < 6; i++) {
+          if (ackResult) break;
+          await new Promise(r => setTimeout(r, 150));
         }
-      });
-
-      // Esperar hasta 2 segundos para ver si la TV responde
-      for (let i = 0; i < 10; i++) {
-        if (ackReceived) break;
-        await new Promise(r => setTimeout(r, 200));
       }
 
-      if (!ackReceived) {
-        toast.error("No se encontró ninguna TV activa con ese PIN");
+      if (!ackResult) {
+        toast.error(t('cast.no_active_tv_found'));
+        supabase.removeChannel(pairChannel);
+        return;
+      }
+
+      if (ackResult.busy) {
+        toast.error(t('cast.tv_busy_error'));
         supabase.removeChannel(pairChannel);
         return;
       }
@@ -89,12 +110,12 @@ export function CastToTvModal({ isOpen, onClose }) {
         soundEnabled: false
       };
 
-      const existing = getPairedTvs().find(t => t.id === newTv.id);
+      const existing = getPairedTvs().find(t => String(t.id || '').replace(/\D/g, '') === cleanPin);
       let updatedList = getPairedTvs();
       if (!existing) {
         updatedList = [...updatedList, newTv];
       } else {
-        updatedList = updatedList.map(t => t.id === newTv.id ? newTv : t);
+        updatedList = updatedList.map(t => String(t.id || '').replace(/\D/g, '') === cleanPin ? newTv : t);
       }
       useSettingsStore.getState().setPairedTvs(updatedList);
       setPairedTvs(updatedList);
