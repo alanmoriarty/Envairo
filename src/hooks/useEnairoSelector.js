@@ -8,15 +8,27 @@ import { toast } from 'sonner';
 
 let isEnairoTimerRunning = false;
 
+function cleanTrackName(name) {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/\s*\([^)]*(?:remix|mix|feat|ft|official|video|audio|version|edit|extended|live|radio)[^)]*\)/gi, "")
+    .replace(/\s*\[[^\]]*(?:remix|mix|feat|ft|official|video|audio|version|edit|extended|live|radio)[^\]]*\]/gi, "")
+    .replace(/[^a-z0-9\s]/g, "") // Remove punctuation
+    .trim();
+}
+
 function isTrackAlreadyPlayedOrInQueue(trackName, artistName, history = [], currentQueue = []) {
   if (!trackName) return false;
-  const normName = trackName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const normArtist = (artistName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const cleanName = cleanTrackName(trackName);
+  const normArtist = (artistName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
 
   const isPlayed = history.some(h => {
-    const hName = (h.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const hArtist = (typeof h.artists === 'string' ? h.artists : (h.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    if (hName === normName) {
+    const hCleanName = cleanTrackName(h.name);
+    const hArtist = (typeof h.artists === 'string' ? h.artists : (h.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    if (hCleanName === cleanName || (cleanName.length > 4 && hCleanName.includes(cleanName)) || (hCleanName.length > 4 && cleanName.includes(hCleanName))) {
       if (!normArtist || !hArtist) return true;
       return hArtist.includes(normArtist) || normArtist.includes(hArtist);
     }
@@ -26,9 +38,9 @@ function isTrackAlreadyPlayedOrInQueue(trackName, artistName, history = [], curr
   if (isPlayed) return true;
 
   const isInQueue = currentQueue.some(q => {
-    const qName = (q.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const qArtist = (typeof q.artists === 'string' ? q.artists : (q.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    if (qName === normName) {
+    const qCleanName = cleanTrackName(q.name);
+    const qArtist = (typeof q.artists === 'string' ? q.artists : (q.artists || []).map(a => a.name || a).join(', ')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    if (qCleanName === cleanName || (cleanName.length > 4 && qCleanName.includes(cleanName)) || (qCleanName.length > 4 && cleanName.includes(qCleanName))) {
       if (!normArtist || !qArtist) return true;
       return qArtist.includes(normArtist) || normArtist.includes(qArtist);
     }
@@ -97,26 +109,27 @@ export function useEnairoSelector() {
     setEnairoCooldown(now + cooldownDuration, currentUsageCount + 1, today);
     setEnairoEnabled(true);
 
-    // Filtrar el historial para considerar ÚNICAMENTE las canciones reproducidas HOY
-    const todayPlayHistory = (playHistory || []).filter(track => {
-      if (!track.playedAt) return false;
+    // Filtrar el historial de las últimas 24 horas (evita fallos por cambio de zona horaria UTC)
+    const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+    const sessionPlayHistory = (playHistory || []).filter(track => {
+      if (!track.playedAt) return true;
       try {
-        const trackDateStr = new Date(track.playedAt).toISOString().split('T')[0];
-        return trackDateStr === today;
+        const trackTime = new Date(track.playedAt).getTime();
+        return !isNaN(trackTime) ? trackTime >= twentyFourHoursAgo : true;
       } catch {
-        return false;
+        return true;
       }
     });
 
-    const playedSongNames = todayPlayHistory.map(t => `${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map(a => a.name || a).join(', ')}`);
+    const playedSongNames = sessionPlayHistory.map(t => `${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map(a => a.name || a).join(', ')}`);
     const combinedBlacklistSongs = Array.from(new Set([...(blacklistSongs || []), ...playedSongNames]));
 
     try {
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
           action_mode: 'generate',
-          history: todayPlayHistory.slice(0, 10),
-          playedHistory: playedSongNames,
+          history: sessionPlayHistory.slice(0, 30),
+          playedHistory: playedSongNames.slice(0, 50),
           queue: queue,
           settings: {
             enairoPrompt: sanitizePrompt(enairoPrompt),
@@ -181,21 +194,10 @@ export function useEnairoSelector() {
           console.error("Error buscando canciones recomendadas en lote:", err);
         }
 
-        const currentFullHistory = usePlayerStore.getState().playHistory || [];
-        const currentTodayHistory = currentFullHistory.filter(track => {
-          if (!track.playedAt) return false;
-          try {
-            const trackDateStr = new Date(track.playedAt).toISOString().split('T')[0];
-            return trackDateStr === today;
-          } catch {
-            return false;
-          }
-        });
         const currentQueueState = usePlayerStore.getState().queue || [];
 
         const nonRepeatedTracks = foundTracks.filter(track => {
-          const isDuplicate = isTrackAlreadyPlayedOrInQueue(track.name, track.artists, currentTodayHistory, currentQueueState);
-          
+          const isDuplicate = isTrackAlreadyPlayedOrInQueue(track.name, track.artists, sessionPlayHistory, currentQueueState);
           return !isDuplicate;
         });
 
