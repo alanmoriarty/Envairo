@@ -409,11 +409,12 @@ export function PersistentPlayer() {
               <SkipForward size={18} />
             </button>
 
-            {/* Mobile / Quick Video PiP Toggle */}
+            {/* Mobile / Quick Fullscreen Video Toggle */}
             <button
               onClick={() => window.toggleYouTubePiP?.()}
-              className="btn-ghost p-2 text-text-muted hover:text-accent transition-colors"
-              title="Mostrar / Ocultar Video"
+              disabled={!currentTrack}
+              className="btn-ghost p-2 text-text-muted hover:text-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Pantalla Completa de Video"
             >
               <Tv size={18} />
             </button>

@@ -28,18 +28,16 @@ export function useYouTubeSDK() {
 
     const dragHeader = document.getElementById('youtube-drag-header');
     const miniBadge = document.getElementById('youtube-mini-badge');
-    const isMinimized = wrapper.dataset.minimized === 'true';
-    const isHidden = wrapper.dataset.hidden === 'true';
+    const closeBtn = document.getElementById('youtube-fs-close');
+    const overlay = document.getElementById('youtube-overlay');
 
-    if (isHidden) {
-      wrapper.style.display = 'none';
-      return;
-    }
-
-    // Si el fondo visualizador está activo y no estamos en pantalla completa del video de la canción,
-    // ocultar el reproductor flotante del video para que no compita visualmente con el visualizador
+    // 1. Si el fondo visualizador personalizado (playlist/video de YouTube) está activo y no estamos en Fullscreen:
+    // Mantener el reproductor de canciones en segundo plano invisible (solo audio)
     if (isVis && !isFs) {
       wrapper.style.display = 'block';
+      wrapper.style.position = 'fixed';
+      wrapper.style.top = '0';
+      wrapper.style.left = '0';
       wrapper.style.opacity = '0.001';
       wrapper.style.pointerEvents = 'none';
       wrapper.style.width = '1px';
@@ -47,11 +45,15 @@ export function useYouTubeSDK() {
       wrapper.style.zIndex = '-9999';
       if (dragHeader) dragHeader.style.display = 'none';
       if (miniBadge) miniBadge.style.display = 'none';
+      if (closeBtn) closeBtn.style.display = 'none';
+      if (overlay) overlay.style.pointerEvents = 'none';
       return;
     }
 
+    // 2. Modo Pantalla Completa (Fullscreen / Proyector)
     if (isFs) {
       wrapper.style.display = 'block';
+      wrapper.style.position = 'fixed';
       wrapper.style.top = '50%';
       wrapper.style.left = '50%';
       wrapper.style.right = 'auto';
@@ -60,7 +62,7 @@ export function useYouTubeSDK() {
       wrapper.style.height = '56.25vw';
       wrapper.style.minHeight = '100vh';
       wrapper.style.minWidth = '177.77vh';
-      wrapper.style.transform = 'translate(-50%, -50%)';
+      wrapper.style.transform = 'translate(-50%, -50%) translateZ(0)';
       wrapper.style.borderRadius = '0';
       wrapper.style.border = 'none';
       wrapper.style.boxShadow = 'none';
@@ -70,113 +72,71 @@ export function useYouTubeSDK() {
       wrapper.style.pointerEvents = 'auto';
       if (dragHeader) dragHeader.style.display = 'none';
       if (miniBadge) miniBadge.style.display = 'none';
-    } else if (isMinimized) {
-      wrapper.style.display = 'block';
-      wrapper.style.width = '48px';
-      wrapper.style.height = '48px';
-      wrapper.style.minHeight = '0';
-      wrapper.style.minWidth = '0';
-      wrapper.style.transform = 'none';
-      wrapper.style.borderRadius = '24px';
-      wrapper.style.border = '2px solid rgba(157,78,221,0.85)';
-      wrapper.style.boxShadow = '0 8px 24px rgba(0,0,0,0.8), 0 0 15px rgba(157,78,221,0.4)';
-      wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
-      wrapper.style.zIndex = '9999';
-      wrapper.style.filter = 'none';
-      wrapper.style.cursor = 'pointer';
-      wrapper.style.pointerEvents = 'auto';
-      if (dragHeader) dragHeader.style.display = 'none';
-      if (miniBadge) miniBadge.style.display = 'flex';
-
-      const savedPosStr = localStorage.getItem('bq-pip-pos');
-      let hasSavedPos = false;
-      if (savedPosStr) {
-        try {
-          const pos = JSON.parse(savedPosStr);
-          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-            wrapper.style.left = `${Math.max(8, Math.min(window.innerWidth - 56, pos.x))}px`;
-            wrapper.style.top = `${Math.max(8, Math.min(window.innerHeight - 130, pos.y))}px`;
-            wrapper.style.right = 'auto';
-            wrapper.style.bottom = 'auto';
-            hasSavedPos = true;
-          }
-        } catch (e) { }
+      if (closeBtn) closeBtn.style.display = 'flex';
+      if (overlay) {
+        overlay.style.pointerEvents = 'auto';
+        overlay.style.cursor = 'pointer';
       }
-
-      if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
-        wrapper.style.left = 'auto';
-        wrapper.style.top = 'auto';
-        wrapper.style.right = '16px';
-        wrapper.style.bottom = '85px';
-      }
-    } else {
-      const isMobile = window.innerWidth < 640;
-      const pipW = isMobile ? 160 : 240;
-      const pipH = isMobile ? 90 : 135;
-
-      wrapper.style.display = 'block';
-      wrapper.style.width = `${pipW}px`;
-      wrapper.style.height = `${pipH}px`;
-      wrapper.style.minHeight = '0';
-      wrapper.style.minWidth = '0';
-      wrapper.style.transform = 'none';
-      wrapper.style.borderRadius = '12px';
-      wrapper.style.border = '2px solid rgba(157,78,221,0.6)';
-      wrapper.style.boxShadow = '0 10px 30px rgba(0,0,0,0.85), 0 0 12px rgba(157,78,221,0.25)';
-      wrapper.style.opacity = wrapper.dataset.errorHidden === 'true' ? '0' : '1';
-      wrapper.style.zIndex = '9999';
-      wrapper.style.filter = 'none';
-      wrapper.style.willChange = 'left, top';
-      wrapper.style.pointerEvents = 'auto';
-      if (dragHeader) dragHeader.style.display = 'flex';
-      if (miniBadge) miniBadge.style.display = 'none';
-
-      const savedPosStr = localStorage.getItem('bq-pip-pos');
-      let hasSavedPos = false;
-      if (savedPosStr) {
-        try {
-          const pos = JSON.parse(savedPosStr);
-          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-            wrapper.style.left = `${Math.max(8, Math.min(window.innerWidth - pipW - 8, pos.x))}px`;
-            wrapper.style.top = `${Math.max(8, Math.min(window.innerHeight - pipH - 85, pos.y))}px`;
-            wrapper.style.right = 'auto';
-            wrapper.style.bottom = 'auto';
-            hasSavedPos = true;
-          }
-        } catch (e) { }
-      }
-
-      if (!hasSavedPos && wrapper.dataset.userMoved !== 'true') {
-        wrapper.style.left = 'auto';
-        wrapper.style.top = 'auto';
-        wrapper.style.right = isMobile ? '12px' : '24px';
-        wrapper.style.bottom = isMobile ? '80px' : '96px';
-      }
+      return;
     }
+
+    // 3. Modo Fondo Ambiental Panorámico (Normal):
+    // El video de la canción que suena en ese momento se proyecta directamente de fondo
+    // a pantalla completa con opacidad suave (35%), sin bloquear ningún clic de la interfaz.
+    const state = usePlayerStore.getState();
+    const hasTrack = !!state.currentTrack && !!state.currentYtId;
+
+    wrapper.style.display = 'block';
+    wrapper.style.position = 'fixed';
+    wrapper.style.top = '50%';
+    wrapper.style.left = '50%';
+    wrapper.style.right = 'auto';
+    wrapper.style.bottom = 'auto';
+    wrapper.style.width = '100vw';
+    wrapper.style.height = '56.25vw';
+    wrapper.style.minHeight = '100vh';
+    wrapper.style.minWidth = '177.77vh';
+    wrapper.style.transform = 'translate(-50%, -50%) translateZ(0)';
+    wrapper.style.borderRadius = '0';
+    wrapper.style.border = 'none';
+    wrapper.style.boxShadow = 'none';
+    wrapper.style.zIndex = '-2';
+    wrapper.style.opacity = hasTrack ? '0.35' : '0.001';
+    wrapper.style.filter = 'none';
+    wrapper.style.pointerEvents = 'none';
+    wrapper.style.willChange = 'opacity, transform';
+    wrapper.style.transition = 'opacity 1s ease';
+
+    if (dragHeader) dragHeader.style.display = 'none';
+    if (miniBadge) miniBadge.style.display = 'none';
+    if (closeBtn) closeBtn.style.display = 'none';
+    if (overlay) overlay.style.pointerEvents = 'none';
   };
 
   useEffect(() => {
-    // Expose global controller for the floating PiP video
+    // Expose global controller for Fullscreen / Video toggle
     window.toggleYouTubePiP = (forcedOpen) => {
-      const wrapper = document.getElementById('youtube-wrapper');
+      const isVis = useSettingsStore.getState().visualizerEnabled;
+      const targetId = isVis ? 'visualizer-wrapper' : 'youtube-wrapper';
+      const wrapper = document.getElementById(targetId);
       if (!wrapper) return;
-      const isHidden = wrapper.dataset.hidden === 'true';
-      const isMinimized = wrapper.dataset.minimized === 'true';
 
       if (typeof forcedOpen === 'boolean') {
-        wrapper.dataset.hidden = forcedOpen ? 'false' : 'true';
-        if (forcedOpen) wrapper.dataset.minimized = 'false';
-      } else if (isHidden) {
-        wrapper.dataset.hidden = 'false';
-        wrapper.dataset.minimized = 'false';
-      } else if (!isMinimized) {
-        wrapper.dataset.minimized = 'true';
-      } else {
-        wrapper.dataset.minimized = 'false';
+        if (forcedOpen && !document.fullscreenElement) {
+          if (wrapper.requestFullscreen) wrapper.requestFullscreen().catch(() => {});
+          else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+        } else if (!forcedOpen && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+        return;
       }
 
-      const isFs = document.fullscreenElement === wrapper;
-      applyStyles(wrapper, useSettingsStore.getState().visualizerEnabled, isFs);
+      if (!document.fullscreenElement) {
+        if (wrapper.requestFullscreen) wrapper.requestFullscreen().catch(() => {});
+        else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
     };
 
     const handleResize = () => {
@@ -195,9 +155,10 @@ export function useYouTubeSDK() {
 
   useEffect(() => {
     const wrapper = document.getElementById('youtube-wrapper');
+    if (!wrapper) return;
     const isFs = document.fullscreenElement === wrapper;
     applyStyles(wrapper, visualizerEnabled, isFs);
-  }, [visualizerEnabled]);
+  }, [visualizerEnabled, currentTrack]);
 
   useEffect(() => {
     if (playbackEngine !== 'youtube') return;
