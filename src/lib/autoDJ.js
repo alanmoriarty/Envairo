@@ -208,8 +208,8 @@ export async function getAutoQueueRecommendations(playHistory = [], settings = {
     const { data, error } = await supabase.functions.invoke('enairo-selector', {
       body: {
         action_mode: 'generate',
-        history: todayPlayHistory.slice(-5),
-        playedHistory: playedSongNames,
+        history: todayPlayHistory.slice(-15),
+        playedHistory: playedSongNames.slice(0, 50),
         queue: currentState?.queue || [],
         settings: {
           enairoPrompt: settings.autoDjPrompt || settings.enairoPrompt || 'música variada según el ambiente',
