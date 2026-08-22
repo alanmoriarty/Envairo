@@ -739,7 +739,7 @@ export function useQueueSync() {
         if (settings.autoDJ) {
           try {
             const { evaluateTrack } = await import('../lib/autoDJ');
-            const result = await evaluateTrack(newReq.track, settings);
+            const result = await evaluateTrack(newReq.track, settings, store.queue, store.playHistory);
             
             if (result.approved === true) {
               store.approveRequest(newReq.id);

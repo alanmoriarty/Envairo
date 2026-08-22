@@ -33,12 +33,14 @@ async function getTrackGenresArray(trackName, artistName) {
 /**
  * Evalúa si una canción cumple con las reglas del Auto DJ
  */
-export async function evaluateTrack(track, settings) {
+export async function evaluateTrack(track, settings, queue = [], playHistory = []) {
   const {
     whitelistGenres = [],
     blacklistGenres = [],
     blacklistSongs = [],
     blacklistArtists = [],
+    repeatCooldown = -1,
+    artistRepeatCooldown = -1,
     allowRepeats = false
   } = settings;
 
@@ -49,6 +51,39 @@ export async function evaluateTrack(track, settings) {
   for (const name of trackArtistNames) {
     if (blockedArtists.includes(name)) {
       return { approved: false, reason: `El artista ${name} está en la lista negra.` };
+    }
+  }
+
+  // 1b. Artist Repeat Cooldown Check (Variedad de Artistas)
+  if (artistRepeatCooldown !== -1 && trackArtistNames.length > 0) {
+    // Verificar si el artista ya tiene canciones por sonar en la cola activa
+    const artistInQueue = queue.some(t => {
+      const qArtists = (t.artists || '').split(',').map(normalizeString).filter(Boolean);
+      return trackArtistNames.some(ta => qArtists.includes(ta));
+    });
+
+    if (artistInQueue) {
+      return { approved: false, reason: `Ya hay canciones de este artista en la cola de reproducción.` };
+    }
+
+    // Verificar si el artista sonó recientemente en el historial
+    const now = Date.now();
+    for (const h of playHistory) {
+      if (!h.playedAt) continue;
+      const hArtists = (h.artists || '').split(',').map(normalizeString).filter(Boolean);
+      const isSameArtist = trackArtistNames.some(ta => hArtists.includes(ta));
+
+      if (isSameArtist) {
+        const playedTime = new Date(h.playedAt).getTime();
+        const diffMinutes = (now - playedTime) / (1000 * 60);
+
+        if (artistRepeatCooldown === 0) {
+          return { approved: false, reason: `Este artista ya fue reproducido en esta sesión.` };
+        } else if (diffMinutes < artistRepeatCooldown) {
+          const remaining = Math.ceil(artistRepeatCooldown - diffMinutes);
+          return { approved: false, reason: `Este artista sonó recientemente. Disponible en ${remaining} min.` };
+        }
+      }
     }
   }
 

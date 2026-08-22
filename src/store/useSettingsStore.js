@@ -13,6 +13,7 @@ export const useSettingsStore = create(
       endTime: '03:00',
       allowRepeats: true, // DEPRECATED: use repeatCooldown instead
       repeatCooldown: -1, // -1 = always allow, 0 = block forever, >0 = minutes
+      artistRepeatCooldown: -1, // -1 = always allow, 0 = block forever, >0 = minutes
       cooldownEnabled: false,
       cooldownMinutes: 10,
       explicitFilter: false,
@@ -74,6 +75,7 @@ export const useSettingsStore = create(
         endTime: '03:00',
         allowRepeats: true,
         repeatCooldown: -1,
+        artistRepeatCooldown: -1,
         cooldownEnabled: false,
         cooldownMinutes: 10,
         explicitFilter: false,
@@ -128,6 +130,7 @@ export const useSettingsStore = create(
       setEndTime: (t) => set({ endTime: t }),
       setAllowRepeats: (v) => set({ allowRepeats: v }), // DEPRECATED
       setRepeatCooldown: (v) => set({ repeatCooldown: v }),
+      setArtistRepeatCooldown: (v) => set({ artistRepeatCooldown: Number(v) }),
       setCooldownEnabled: (v) => set({ cooldownEnabled: v }),
       setCooldownMinutes: (v) => set({ cooldownMinutes: v }),
       setExplicitFilter: (v) => set({ explicitFilter: v }),

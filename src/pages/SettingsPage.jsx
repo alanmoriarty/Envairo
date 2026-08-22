@@ -115,6 +115,7 @@ export default function SettingsPage() {
     startTime, setStartTime,
     endTime, setEndTime,
     repeatCooldown, setRepeatCooldown,
+    artistRepeatCooldown, setArtistRepeatCooldown,
     cooldownEnabled, setCooldownEnabled,
     cooldownMinutes, setCooldownMinutes,
     explicitFilter, setExplicitFilter,
@@ -157,7 +158,7 @@ export default function SettingsPage() {
   const ALL_KEYS_FOR_SYNC = [
     'eventName', 'mode', 'alwaysAvailable', 'startTime', 'endTime',
     'requestsPerHour', 'requestsPerGuest', 'guestSessionExpiryHours', 'tableCount', 'partyRequestOffset',
-    'allowRepeats', 'repeatCooldown', 'cooldownEnabled', 'cooldownMinutes',
+    'allowRepeats', 'repeatCooldown', 'artistRepeatCooldown', 'cooldownEnabled', 'cooldownMinutes',
     'explicitFilter', 'guestVersionRequest', 'visualizerEnabled', 'visualizerUrl',
     'djTransitionsEnabled', 'djTransitionMode', 'djTransitionDuration',
     'whitelistGenres', 'blacklistGenres', 'blacklistSongs', 'blacklistArtists'
@@ -354,6 +355,28 @@ export default function SettingsPage() {
                 <option value="120" className="bg-bg-root text-white">{t('settings.repeat_120')}</option>
                 <option value="0" className="bg-bg-root text-white">{t('settings.repeat_session')}</option>
               </select>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
+                <div>
+                  <p className="font-semibold text-text-primary text-sm">{t('settings.artist_repeat_filter')}</p>
+                  <p className="text-xs text-text-muted mt-0.5">{t('settings.artist_repeat_desc')}</p>
+                </div>
+                <select
+                  value={artistRepeatCooldown ?? -1}
+                  onChange={(e) => setArtistRepeatCooldown(Number(e.target.value))}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent cursor-pointer"
+                >
+                  <option value="-1" className="bg-bg-root text-white">{t('settings.artist_repeat_always')}</option>
+                  <option value="15" className="bg-bg-root text-white">{t('settings.artist_repeat_15')}</option>
+                  <option value="30" className="bg-bg-root text-white">{t('settings.artist_repeat_30')}</option>
+                  <option value="45" className="bg-bg-root text-white">{t('settings.artist_repeat_45')}</option>
+                  <option value="60" className="bg-bg-root text-white">{t('settings.artist_repeat_60')}</option>
+                  <option value="120" className="bg-bg-root text-white">{t('settings.artist_repeat_120')}</option>
+                  <option value="0" className="bg-bg-root text-white">{t('settings.artist_repeat_session')}</option>
+                </select>
+              </div>
             </div>
 
             <div className="border-t border-white/5 pt-4">

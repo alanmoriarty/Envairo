@@ -376,6 +376,48 @@ export default function GuestPage() {
       }
     }
 
+    // Check if artist is in cooldown (artist repeat cooldown logic)
+    const artistRepeatCooldown = stateData.artist_repeat_cooldown ?? sessionConfig?.artist_repeat_cooldown ?? -1;
+    if (artistRepeatCooldown !== -1 && selected.artists) {
+      const selectedArtists = (typeof selected.artists === 'string' ? selected.artists : (selected.artists?.name || '')).split(',').map(normalize).filter(Boolean);
+
+      if (selectedArtists.length > 0) {
+        // Check if artist has a song in queue
+        const artistInQueue = queue.some(t => {
+          const qArtists = (typeof t.artists === 'string' ? t.artists : (t.artists?.name || '')).split(',').map(normalize).filter(Boolean);
+          return selectedArtists.some(sa => qArtists.some(qa => qa.includes(sa) || sa.includes(qa)));
+        });
+
+        if (artistInQueue) {
+          const artistName = typeof selected.artists === 'string' ? selected.artists : 'este artista';
+          toast.error(t('guest.error_artist_cooldown', { artist: artistName, min: artistRepeatCooldown > 0 ? artistRepeatCooldown : 15 }));
+          return;
+        }
+
+        // Check if artist played recently in playHistory
+        const now = Date.now();
+        for (const historyTrack of playHistory) {
+          if (!historyTrack.playedAt) continue;
+          const hArtists = (typeof historyTrack.artists === 'string' ? historyTrack.artists : (historyTrack.artists?.name || '')).split(',').map(normalize).filter(Boolean);
+          const isSameArtist = selectedArtists.some(sa => hArtists.some(ha => ha.includes(sa) || sa.includes(ha)));
+
+          if (isSameArtist) {
+            const playedTime = new Date(historyTrack.playedAt).getTime();
+            const diffMinutes = (now - playedTime) / (1000 * 60);
+
+            if (artistRepeatCooldown === 0) {
+              toast.error(t('guest.error_artist_session', { artist: selected.artists }));
+              return;
+            } else if (diffMinutes < artistRepeatCooldown) {
+              const remaining = Math.ceil(artistRepeatCooldown - diffMinutes);
+              toast.error(t('guest.error_artist_cooldown', { artist: selected.artists, min: remaining }));
+              return;
+            }
+          }
+        }
+      }
+    }
+
     const sendRequest = async () => {
       let finalTrack = selected;
       if (selected.source === 'youtube' && selected.duration_ms === 0) {
