@@ -1140,12 +1140,14 @@ export function useYouTubeSDK() {
     // Conectar el timer de progreso a la nueva canción (incomingPlayer)
     startProgressTimer(incomingPlayer);
 
-    // 4. Cruzar visualmente los contenedores (Opacity & Effects)
+    // 4. Cruzar visualmente los contenedores (Opacity & Effects según tipo configurado)
+    const animDuration = chosenEffect === 'cut' ? 0.2 : durationSec;
+
     if (incomingContainer) {
       incomingContainer.style.zIndex = '3';
       incomingContainer.style.opacity = '0.001';
       incomingContainer.style.transform = 'scale(1.02) translateZ(0)';
-      incomingContainer.style.transition = `opacity ${durationSec * 0.9}s ease, transform ${durationSec * 0.9}s ease`;
+      incomingContainer.style.transition = `opacity ${animDuration * 0.9}s ease, transform ${animDuration * 0.9}s ease`;
       setTimeout(() => {
         incomingContainer.style.opacity = '1';
         incomingContainer.style.transform = 'translateZ(0)';
@@ -1154,14 +1156,23 @@ export function useYouTubeSDK() {
 
     if (outgoingContainer) {
       outgoingContainer.style.zIndex = '2';
-      outgoingContainer.style.transition = `opacity ${durationSec * 0.8}s ease, transform ${durationSec * 0.8}s ease, filter ${durationSec * 0.8}s ease`;
+      outgoingContainer.style.transition = `opacity ${animDuration * 0.8}s ease, transform ${animDuration * 0.8}s ease, filter ${animDuration * 0.8}s ease`;
       
       if (chosenEffect === 'brake') {
         outgoingContainer.style.transform = 'rotate(-6deg) scale(0.95) translateZ(0)';
-        outgoingContainer.style.filter = 'brightness(0.7)';
+        outgoingContainer.style.filter = 'brightness(0.6) grayscale(0.3)';
       } else if (chosenEffect === 'start') {
         outgoingContainer.style.transform = 'rotate(8deg) scale(1.05) translateZ(0)';
-        outgoingContainer.style.filter = 'brightness(1.1)';
+        outgoingContainer.style.filter = 'brightness(1.2)';
+      } else if (chosenEffect === 'echo') {
+        outgoingContainer.style.transform = 'scale(1.08) translateZ(0)';
+        outgoingContainer.style.filter = 'blur(6px) brightness(0.8)';
+      } else if (chosenEffect === 'cut') {
+        outgoingContainer.style.filter = 'none';
+        outgoingContainer.style.transform = 'translateZ(0)';
+      } else {
+        outgoingContainer.style.filter = 'none';
+        outgoingContainer.style.transform = 'translateZ(0)';
       }
       outgoingContainer.style.opacity = '0.001';
     }
