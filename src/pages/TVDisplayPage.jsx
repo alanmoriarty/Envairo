@@ -114,6 +114,33 @@ export default function TVDisplayPage() {
   const hostRefreshingRef = useRef(false);
   const trackStartedAtRef = useRef(0);
   const lastSeekTimeRef = useRef(0);
+  const silentAudioRef = useRef(null);
+
+  // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
+  useEffect(() => {
+    const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+    audio.loop = true;
+    audio.volume = 0.001;
+    silentAudioRef.current = audio;
+
+    const startKeepAlive = () => {
+      audio.play().catch(() => {});
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.playbackState = 'playing';
+        } catch (e) {}
+      }
+    };
+
+    startKeepAlive();
+    window.addEventListener('pointerdown', startKeepAlive, { once: true });
+    window.addEventListener('keydown', startKeepAlive, { once: true });
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, []);
 
   // 1. Escuchar canal de emparejamiento SIEMPRE (tanto para PAIRED como para UNPAIRED)
   useEffect(() => {
@@ -527,6 +554,9 @@ export default function TVDisplayPage() {
   // Re-sincronización y reactivación instantánea al volver de otra pestaña
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
+      if (silentAudioRef.current) {
+        silentAudioRef.current.play().catch(() => {});
+      }
       if (channelRef.current) channelRef.current.postMessage({ type: 'REQUEST_SYNC' });
       if (sbSyncChannelRef.current && sbSyncChannelRef.current.state === 'joined') {
         sbSyncChannelRef.current.send({ type: 'broadcast', event: 'tv_sync', payload: { type: 'REQUEST_SYNC' } }).catch(() => {});
@@ -538,6 +568,20 @@ export default function TVDisplayPage() {
     }
   };
 
+  // Watchdog periódico para revivir la reproducción si el navegador intenta pausarla en segundo plano
+  const bgWatchdogInterval = setInterval(() => {
+    if (isTvTransitioningRef.current || hostRefreshingRef.current || isBufferingRef.current) return;
+    const activeP = activeTvDeckRef.current === 'A' ? playerARef.current : playerBRef.current;
+    if (activeP && typeof activeP.getPlayerState === 'function' && currentVideoIdRef.current) {
+      const state = activeP.getPlayerState();
+      if (state === window.YT.PlayerState.PAUSED) {
+        try {
+          activeP.playVideo();
+        } catch (e) {}
+      }
+    }
+  }, 1200);
+
   document.addEventListener('fullscreenchange', handleFsChange);
   document.addEventListener('webkitfullscreenchange', handleFsChange);
   document.addEventListener('mozfullscreenchange', handleFsChange);
@@ -547,6 +591,7 @@ export default function TVDisplayPage() {
 
   return () => {
     clearInterval(syncRetryInterval);
+    clearInterval(bgWatchdogInterval);
     clearTimeout(timeoutId);
     if (channelRef.current) {
       channelRef.current.removeEventListener('message', handleMessage);
@@ -786,8 +831,8 @@ const handleSync = (data) => {
     const isCurrentlyPlaying = playerState === window.YT.PlayerState.PLAYING;
     const isCurrentlyPaused = playerState === window.YT.PlayerState.PAUSED;
 
-    // ── 2. Corrección Suave de Deriva de Tiempo (Smooth Drift Correction) ──
-    if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current && isCurrentlyPlaying) {
+    // ── 2. Corrección Suave de Deriva de Tiempo y Recuperación de Segundo Plano ──
+    if (typeof data.time === 'number' && data.videoId === currentVideoIdRef.current) {
       const isEnded = playerState === window.YT.PlayerState.ENDED;
       const duration = activeP.getDuration() || 0;
 
@@ -800,33 +845,39 @@ const handleSync = (data) => {
       const timeSinceTrackStart = Date.now() - trackStartedAtRef.current;
       const timeSinceLastSeek = Date.now() - lastSeekTimeRef.current;
 
-      let targetRate = 1.0;
-      if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
-        targetRate = 1.0;
-      } else if (Math.abs(diff) > 4.0 && timeSinceTrackStart > 8000 && timeSinceLastSeek > 4000) {
+      // Si la pestaña estuvo en segundo plano y se quedó atrás (> 1.2s), saltar inmediatamente al tiempo real
+      if (Math.abs(diff) > 1.2 && timeSinceTrackStart > 2000 && timeSinceLastSeek > 1500) {
         lastSeekTimeRef.current = Date.now();
         activeP.seekTo(targetTime, true);
-        targetRate = 1.0;
-      } else if (diff > 0.35) {
-        targetRate = 1.1;
-      } else if (diff > 0.1) {
-        targetRate = 1.04;
-      } else if (diff < -0.35) {
-        targetRate = 0.9;
-      } else if (diff < -0.1) {
-        targetRate = 0.96;
-      } else {
-        targetRate = 1.0;
-      }
+        if (typeof activeP.setPlaybackRate === 'function') activeP.setPlaybackRate(1.0);
+        if (data.isPlaying && typeof activeP.playVideo === 'function') {
+          try { activeP.playVideo(); } catch (e) {}
+        }
+      } else if (isCurrentlyPlaying) {
+        let targetRate = 1.0;
+        if ((isEnded || (duration > 0 && duration - currentTime < 3)) && data.time > duration - 10) {
+          targetRate = 1.0;
+        } else if (diff > 0.35) {
+          targetRate = 1.1;
+        } else if (diff > 0.1) {
+          targetRate = 1.04;
+        } else if (diff < -0.35) {
+          targetRate = 0.9;
+        } else if (diff < -0.1) {
+          targetRate = 0.96;
+        } else {
+          targetRate = 1.0;
+        }
 
-      // Evitar llamar setPlaybackRate repetidamente cada 500ms si la velocidad ya es la deseada
-      if (typeof activeP.getPlaybackRate === 'function' && typeof activeP.setPlaybackRate === 'function') {
-        try {
-          const currentRate = activeP.getPlaybackRate();
-          if (currentRate !== targetRate) {
-            activeP.setPlaybackRate(targetRate);
-          }
-        } catch (e) {}
+        // Evitar llamar setPlaybackRate repetidamente cada 500ms si la velocidad ya es la deseada
+        if (typeof activeP.getPlaybackRate === 'function' && typeof activeP.setPlaybackRate === 'function') {
+          try {
+            const currentRate = activeP.getPlaybackRate();
+            if (currentRate !== targetRate) {
+              activeP.setPlaybackRate(targetRate);
+            }
+          } catch (e) {}
+        }
       }
     }
 
@@ -836,7 +887,7 @@ const handleSync = (data) => {
       // Ignorar órdenes de pausa transitorias durante los primeros 5 segundos de una pista nueva
       if (!data.isPlaying && isCurrentlyPlaying && timeSinceTrackStart > 5000) {
         activeP.pauseVideo();
-      } else if (data.isPlaying && isCurrentlyPaused) {
+      } else if (data.isPlaying && !isCurrentlyPlaying) {
         activeP.playVideo();
       }
     }

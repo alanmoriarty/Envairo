@@ -178,6 +178,7 @@ export default function DashboardPage() {
     enairoPrompt, setEnairoPrompt,
     autoDjPrompt, setAutoDjPrompt,
     enairoTrackCount, setEnairoTrackCount,
+    enairoIncludeGuestMetrics, setEnairoIncludeGuestMetrics,
     enairoTestMode, setEnairoTestMode,
     enairoAutoIntervalEnabled, setEnairoAutoIntervalEnabled,
     explicitFilter, setExplicitFilter,
@@ -933,6 +934,15 @@ export default function DashboardPage() {
                   onChange={setExplicitFilter}
                   label={t('settings.explicit_filter_title') || 'Filtro de Contenido Explícito'}
                   description={t('settings.explicit_filter_desc') || 'Bloquea canciones con letras vulgares, lenguaje soez o contenido no apto para todo público.'}
+                />
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <Toggle
+                  checked={enairoIncludeGuestMetrics}
+                  onChange={setEnairoIncludeGuestMetrics}
+                  label={t('dashboard.envairo_guest_metrics_title')}
+                  description={t('dashboard.envairo_guest_metrics_desc')}
                 />
               </div>
 

@@ -124,6 +124,44 @@ export function useEnairoSelector() {
     const playedSongNames = sessionPlayHistory.map(t => `${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map(a => a.name || a).join(', ')}`);
     const combinedBlacklistSongs = Array.from(new Set([...(blacklistSongs || []), ...playedSongNames]));
 
+    // 2. Extraer métricas de peticiones de invitados APROBADAS (alineado con la página de Métricas)
+    const playerStoreState = usePlayerStore.getState();
+    const includeGuestMetrics = useSettingsStore.getState().enairoIncludeGuestMetrics !== false;
+    let guestMetrics = null;
+
+    if (includeGuestMetrics) {
+      const allApprovedRequests = (playerStoreState.requestHistory || []).filter(req => {
+        if (!req || req.status !== 'approved' || !req.track) return false;
+        if (req.requester === 'envAIro Selector' || req.requester === 'Dashboard') return false;
+        return true;
+      });
+
+      if (allApprovedRequests.length > 0) {
+        const artistCounts = {};
+        const approvedSongs = [];
+
+        allApprovedRequests.forEach(req => {
+          const track = req.track;
+          const artist = (track.artists || '').split(',')[0].trim();
+          if (artist) {
+            artistCounts[artist] = (artistCounts[artist] || 0) + 1;
+          }
+          approvedSongs.push(`${track.name} - ${track.artists}`);
+        });
+
+        const topApprovedArtists = Object.entries(artistCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([artist, count]) => `${artist} (${count} peticiones aprobadas)`);
+
+        guestMetrics = {
+          totalApprovedRequests: allApprovedRequests.length,
+          topApprovedArtists,
+          approvedSongsSample: Array.from(new Set(approvedSongs)).slice(0, 20)
+        };
+      }
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('enairo-selector', {
         body: {
@@ -131,6 +169,7 @@ export function useEnairoSelector() {
           history: sessionPlayHistory.slice(0, 30),
           playedHistory: playedSongNames.slice(0, 50),
           queue: queue,
+          guestMetrics: guestMetrics,
           settings: {
             enairoPrompt: sanitizePrompt(enairoPrompt),
             whitelistGenres,

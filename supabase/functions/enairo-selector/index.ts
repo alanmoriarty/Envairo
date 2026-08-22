@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const reqBody = await req.json()
-    const { history = [], playedHistory = [], queue = [], settings, action_mode = 'generate' } = reqBody
+    const { history = [], playedHistory = [], queue = [], guestMetrics, settings, action_mode = 'generate' } = reqBody
 
     // Formatear historial de sesión para el prompt
     const sessionHistoryList = Array.isArray(playedHistory) && playedHistory.length > 0
@@ -21,6 +21,20 @@ serve(async (req) => {
       : (Array.isArray(history) && history.length > 0 
           ? history.map((t: any, idx: number) => `${idx + 1}. ${t.name} - ${typeof t.artists === 'string' ? t.artists : (t.artists || []).map((a: any) => a.name || a).join(', ')}`).join('\n')
           : 'Ninguna (la sesión acaba de comenzar)');
+
+    // Formatear métricas de peticiones de invitados APROBADAS
+    let guestMetricsSection = '';
+    if (guestMetrics && (guestMetrics.topApprovedArtists?.length > 0 || guestMetrics.approvedSongsSample?.length > 0)) {
+      guestMetricsSection = `
+PETICIONES DE INVITADOS APROBADAS POR EL ANFITRIÓN EN ESTA SESIÓN:
+- Artistas más pedidos y aceptados: ${guestMetrics.topApprovedArtists?.length > 0 ? guestMetrics.topApprovedArtists.join(', ') : 'Ninguno'}
+- Canciones solicitadas por asistentes que fueron aceptadas:
+${guestMetrics.approvedSongsSample?.length > 0 ? guestMetrics.approvedSongsSample.map((s: string) => `  * ${s}`).join('\n') : '  * Ninguna'}
+- TOTAL DE PETICIONES APROBADAS: ${guestMetrics.totalApprovedRequests || 0}
+
+INSTRUCCIÓN DE AUDIENCIA: Utiliza estas peticiones aprobadas para entender qué géneros, artistas y ritmos conectan mejor con el público asistente en esta fiesta. Incluye sugerencias que mantengan esta energía y gustos aprobados, aportando variedad y sin repetir ninguna canción que ya haya sonado.
+`;
+    }
 
     // Obtener API Keys
     const apiKey = Deno.env.get('GEMINI_API_KEY')
@@ -48,7 +62,7 @@ IMPORTANTE: Si las instrucciones especiales especifican un género, ambiente o e
 
 HISTORIAL DE CANCIONES QUE YA HAN SONADO EN ESTA SESIÓN:
 ${sessionHistoryList}
-
+${guestMetricsSection}
 Filtros de Seguridad:
 - Géneros permitidos exclusivos: ${settings?.whitelistGenres?.length ? settings.whitelistGenres.join(', ') : 'Cualquiera que encaje con la vibra'}
 - Géneros bloqueados: ${settings?.blacklistGenres?.length ? settings.blacklistGenres.join(', ') : 'Ninguno'}

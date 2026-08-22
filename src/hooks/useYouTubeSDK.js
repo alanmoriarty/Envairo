@@ -456,7 +456,7 @@ export function useYouTubeSDK() {
       containerA.id = 'yt-deck-a';
       containerA.style.position = 'absolute';
       containerA.style.inset = '0';
-      containerA.style.opacity = '1';
+      containerA.style.opacity = '0.001';
       containerA.style.zIndex = '3';
       containerA.style.transform = 'translateZ(0)';
       containerA.style.willChange = 'opacity, transform';
@@ -698,6 +698,18 @@ export function useYouTubeSDK() {
 
         if (event.data === yt.PlayerState.PLAYING) {
           if (isCurrentDeck || isTransitionDeck) {
+            // Revelar contenedor del deck SOLO cuando el video está reproduciéndose con éxito
+            const playingContainer = document.getElementById(deck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+            if (playingContainer) {
+              playingContainer.style.opacity = '1';
+              playingContainer.style.zIndex = '3';
+            }
+            const otherContainer = document.getElementById(deck === 'A' ? 'yt-deck-b' : 'yt-deck-a');
+            if (otherContainer && !isTransitioningRef.current) {
+              otherContainer.style.opacity = '0.001';
+              otherContainer.style.zIndex = '1';
+            }
+
             const wrapper = document.getElementById('youtube-wrapper');
             if (wrapper) wrapper.dataset.errorHidden = 'false';
 
@@ -746,11 +758,10 @@ export function useYouTubeSDK() {
       const handleError = (deck, event) => {
         console.warn(`YouTube Error ${event.data} en Deck ${deck}.`);
 
-        // Ocultar de inmediato el contenedor del deck que falló para que no se muestre el error rojo de YouTube
-        if (deck === 'A' && playerAContainerRef.current) {
-          playerAContainerRef.current.style.opacity = '0.001';
-        } else if (deck === 'B' && playerBContainerRef.current) {
-          playerBContainerRef.current.style.opacity = '0.001';
+        // Ocultar de inmediato el contenedor del deck que falló para que no se muestre la pantalla de error de YouTube
+        const failedContainer = document.getElementById(deck === 'A' ? 'yt-deck-a' : 'yt-deck-b');
+        if (failedContainer) {
+          failedContainer.style.opacity = '0.001';
         }
 
         const store = usePlayerStore.getState();
@@ -768,10 +779,10 @@ export function useYouTubeSDK() {
 
           if (activeDeckRef.current === deck) {
             if (store.currentTrack) {
-              store.playEngineTrack(store.currentTrack, 0, null, 1);
+              store.playEngineTrack(store.currentTrack, 0, null, true);
             }
           } else {
-            // El error ocurrió en el deck de reserva (standby / transición previa)
+            // El error ocurrió en el deck de reserva (standby / precarga)
             if (store.queue && store.queue.length > 0) {
               const upcomingTrack = store.queue[0];
               if (upcomingTrack) {
