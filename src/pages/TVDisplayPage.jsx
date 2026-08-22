@@ -88,7 +88,7 @@ export default function TVDisplayPage() {
   const tvWithSoundRef = useRef(tvWithSound);
   useEffect(() => { tvWithSoundRef.current = tvWithSound; }, [tvWithSound]);
 
-  const [tvPin, setTvPin] = useState(() => {
+  const [tvPin] = useState(() => {
     const saved = localStorage.getItem('bq-tv-pin');
     if (saved) return saved;
     const newPin = generate6DigitPin();
@@ -96,12 +96,9 @@ export default function TVDisplayPage() {
     return newPin;
   });
 
-  const rotatePin = () => {
-    const newPin = generate6DigitPin();
-    localStorage.setItem('bq-tv-pin', newPin);
-    setTvPin(newPin);
-    return newPin;
-  };
+  const sessionIdRef = useRef(sessionId);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+
   const [status, setStatus] = useState(t('tv.checking_availability'));
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -158,9 +155,6 @@ export default function TVDisplayPage() {
     localStorage.removeItem('bq-tv-sound');
     setSessionId(null);
     setStatus(customStatus || t('tv.unpaired_by_host'));
-
-    // Rotar PIN para invalidar el código anterior y proteger la pantalla
-    rotatePin();
   };
 
   // 0. Elemento de audio silencioso en loop para otorgar prioridad de reproducción multimedia en segundo plano al navegador
@@ -200,8 +194,8 @@ export default function TVDisplayPage() {
           const currentSavedSession = localStorage.getItem('bq-tv-session-id');
 
           // PROTECCIÓN DE PANTALLA OCUPADA:
-          // Si la TV ya está vinculada a una sesión DIFERENTE, rechazar la conexión
-          if (currentSavedSession && currentSavedSession !== incomingSessionId && sessionId) {
+          // Si la TV ya está vinculada a una sesión DIFERENTE activa, rechazar
+          if (currentSavedSession && currentSavedSession !== incomingSessionId && sessionIdRef.current) {
             pairChannel.send({
               type: 'broadcast',
               event: 'pairing_ack',
@@ -233,7 +227,7 @@ export default function TVDisplayPage() {
     return () => {
       supabase.removeChannel(pairChannel);
     };
-  }, [tvPin, sessionId]);
+  }, [tvPin]);
 
   // 2. Conectar a sincronización de reproducción (Local + Supabase Realtime Internet) cuando exista sessionId
   useEffect(() => {
